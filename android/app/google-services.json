@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "906352601879",
+    "project_id": "tara-travel-app",
+    "storage_bucket": "tara-travel-app.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:906352601879:android:taratravel00000000",
+        "android_client_info": {
+          "package_name": "com.example.tara_travel"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "906352601879-ntkksh9ktk213nlkhhujt7sa2eej1je0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.tara_travel",
+            "certificate_hash": "27D0A24D96ABBB06B96EB806C2DA0CDBD483B4C0"
+          }
+        },
+        {
+          "client_id": "906352601879-7q0piqmnjku43739p5cnam6s781usg5t.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBnpvnIDwxYUnOX9lnFyUs0KMPKKMG_GMU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "906352601879-7q0piqmnjku43739p5cnam6s781usg5t.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,265 @@
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap');
+  .tt { font-family: 'DM Sans', sans-serif; }
+  .tt-serif { font-family: 'Playfair Display', serif; }
+  .section-label { font-size: 10px; font-weight: 600; color: #B4B2A9; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 14px; }
+  .brand-card { background: #fff; border: 0.5px solid #e8e8e8; border-radius: 20px; padding: 28px; }
+  .swatch { border-radius: 12px; height: 72px; display: flex; align-items: flex-end; padding: 10px 12px; }
+  .swatch-label { font-size: 11px; font-weight: 600; }
+  .type-row { padding: 14px 0; border-bottom: 0.5px solid #f0f0f0; display: flex; align-items: baseline; justify-content: space-between; }
+  .badge { display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+</style>
+
+<div class="tt" style="background: #FAFAF8; border-radius: 20px; padding: 32px 24px; display: flex; flex-direction: column; gap: 32px;">
+
+  <!-- Header -->
+  <div style="text-align: center; border-bottom: 0.5px solid #eee; padding-bottom: 24px;">
+    <div style="font-size: 10px; font-weight: 600; color: #B4B2A9; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px;">Brand identity</div>
+    <div class="tt-serif" style="font-size: 15px; color: #993C1D; font-style: italic; font-weight: 400;">Est. 2026</div>
+  </div>
+
+  <!-- LOGO SECTION -->
+  <div>
+    <div class="section-label">Logo</div>
+    <div style="display: flex; flex-wrap: wrap; gap: 16px;">
+
+      <!-- Primary logo — light bg -->
+      <div class="brand-card" style="flex: 1; min-width: 220px; display: flex; flex-direction: column; align-items: center; gap: 20px;">
+        <div style="font-size: 10px; color: #B4B2A9; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; align-self: flex-start;">Primary</div>
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <!-- Icon: stylized compass + path -->
+          <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
+            <rect width="52" height="52" rx="14" fill="#D85A30"/>
+            <circle cx="26" cy="26" r="13" stroke="#fff" stroke-width="1.5" stroke-opacity="0.3"/>
+            <path d="M26 14 L30 22 L26 20 L22 22 Z" fill="#fff"/>
+            <path d="M26 38 L22 30 L26 32 L30 30 Z" fill="#F0997B"/>
+            <circle cx="26" cy="26" r="2.5" fill="#fff"/>
+            <path d="M18 26 L22 24 L22 28 Z" fill="#fff" opacity="0.6"/>
+            <path d="M34 26 L30 24 L30 28 Z" fill="#fff" opacity="0.6"/>
+          </svg>
+          <div>
+            <div class="tt-serif" style="font-size: 26px; color: #1A1A1A; font-weight: 700; line-height: 1;">Tara</div>
+            <div class="tt-serif" style="font-size: 11px; color: #993C1D; font-weight: 400; font-style: italic; letter-spacing: 2px; text-transform: uppercase; margin-top: 1px;">Travel</div>
+          </div>
+        </div>
+        <div style="font-size: 11px; color: #B4B2A9; font-style: italic; letter-spacing: 0.5px;">Your journey, your way</div>
+      </div>
+
+      <!-- Dark bg version -->
+      <div class="brand-card" style="flex: 1; min-width: 220px; background: #2C1A14; border-color: #2C1A14; display: flex; flex-direction: column; align-items: center; gap: 20px;">
+        <div style="font-size: 10px; color: #712B13; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; align-self: flex-start;">Dark variant</div>
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
+            <rect width="52" height="52" rx="14" fill="#F0997B"/>
+            <circle cx="26" cy="26" r="13" stroke="#fff" stroke-width="1.5" stroke-opacity="0.3"/>
+            <path d="M26 14 L30 22 L26 20 L22 22 Z" fill="#2C1A14"/>
+            <path d="M26 38 L22 30 L26 32 L30 30 Z" fill="#712B13"/>
+            <circle cx="26" cy="26" r="2.5" fill="#2C1A14"/>
+            <path d="M18 26 L22 24 L22 28 Z" fill="#2C1A14" opacity="0.6"/>
+            <path d="M34 26 L30 24 L30 28 Z" fill="#2C1A14" opacity="0.6"/>
+          </svg>
+          <div>
+            <div class="tt-serif" style="font-size: 26px; color: #fff; font-weight: 700; line-height: 1;">Tara</div>
+            <div class="tt-serif" style="font-size: 11px; color: #F0997B; font-weight: 400; font-style: italic; letter-spacing: 2px; text-transform: uppercase; margin-top: 1px;">Travel</div>
+          </div>
+        </div>
+        <div style="font-size: 11px; color: #712B13; font-style: italic; letter-spacing: 0.5px;">Your journey, your way</div>
+      </div>
+
+      <!-- Icon only -->
+      <div class="brand-card" style="flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 20px 24px;">
+        <div style="font-size: 10px; color: #B4B2A9; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; align-self: flex-start;">Icon only</div>
+        <div style="display: flex; gap: 14px; align-items: center;">
+          <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
+            <rect width="52" height="52" rx="14" fill="#D85A30"/>
+            <circle cx="26" cy="26" r="13" stroke="#fff" stroke-width="1.5" stroke-opacity="0.3"/>
+            <path d="M26 14 L30 22 L26 20 L22 22 Z" fill="#fff"/>
+            <path d="M26 38 L22 30 L26 32 L30 30 Z" fill="#F0997B"/>
+            <circle cx="26" cy="26" r="2.5" fill="#fff"/>
+            <path d="M18 26 L22 24 L22 28 Z" fill="#fff" opacity="0.6"/>
+            <path d="M34 26 L30 24 L30 28 Z" fill="#fff" opacity="0.6"/>
+          </svg>
+          <svg width="36" height="36" viewBox="0 0 52 52" fill="none">
+            <rect width="52" height="52" rx="14" fill="#D85A30"/>
+            <circle cx="26" cy="26" r="13" stroke="#fff" stroke-width="1.5" stroke-opacity="0.3"/>
+            <path d="M26 14 L30 22 L26 20 L22 22 Z" fill="#fff"/>
+            <path d="M26 38 L22 30 L26 32 L30 30 Z" fill="#F0997B"/>
+            <circle cx="26" cy="26" r="2.5" fill="#fff"/>
+            <path d="M18 26 L22 24 L22 28 Z" fill="#fff" opacity="0.6"/>
+            <path d="M34 26 L30 24 L30 28 Z" fill="#fff" opacity="0.6"/>
+          </svg>
+          <svg width="24" height="24" viewBox="0 0 52 52" fill="none">
+            <rect width="52" height="52" rx="14" fill="#D85A30"/>
+            <path d="M26 14 L30 22 L26 20 L22 22 Z" fill="#fff"/>
+            <path d="M26 38 L22 30 L26 32 L30 30 Z" fill="#F0997B"/>
+            <circle cx="26" cy="26" r="2.5" fill="#fff"/>
+          </svg>
+        </div>
+        <div style="font-size: 11px; color: #D3D1C7;">52px · 36px · 24px</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COLOR PALETTE -->
+  <div>
+    <div class="section-label">Color palette</div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px;">
+      <div>
+        <div class="swatch" style="background: #D85A30;">
+          <div>
+            <div class="swatch-label" style="color: #fff;">Coral</div>
+            <div style="font-size: 10px; color: #F0997B;">#D85A30</div>
+          </div>
+        </div>
+        <div style="font-size: 11px; color: #888; margin-top: 6px; text-align: center;">Primary</div>
+      </div>
+      <div>
+        <div class="swatch" style="background: #F0997B;">
+          <div>
+            <div class="swatch-label" style="color: #712B13;">Light coral</div>
+            <div style="font-size: 10px; color: #993C1D;">#F0997B</div>
+          </div>
+        </div>
+        <div style="font-size: 11px; color: #888; margin-top: 6px; text-align: center;">Secondary</div>
+      </div>
+      <div>
+        <div class="swatch" style="background: #FAECE7;">
+          <div>
+            <div class="swatch-label" style="color: #993C1D;">Sand</div>
+            <div style="font-size: 10px; color: #D85A30;">#FAECE7</div>
+          </div>
+        </div>
+        <div style="font-size: 11px; color: #888; margin-top: 6px; text-align: center;">Background</div>
+      </div>
+      <div>
+        <div class="swatch" style="background: #EF9F27;">
+          <div>
+            <div class="swatch-label" style="color: #fff;">Sunset</div>
+            <div style="font-size: 10px; color: #FAEEDA;">#EF9F27</div>
+          </div>
+        </div>
+        <div style="font-size: 11px; color: #888; margin-top: 6px; text-align: center;">Accent</div>
+      </div>
+      <div>
+        <div class="swatch" style="background: #2C1A14;">
+          <div>
+            <div class="swatch-label" style="color: #F0997B;">Deep earth</div>
+            <div style="font-size: 10px; color: #712B13;">#2C1A14</div>
+          </div>
+        </div>
+        <div style="font-size: 11px; color: #888; margin-top: 6px; text-align: center;">Dark</div>
+      </div>
+      <div>
+        <div class="swatch" style="background: #F7F4F0;">
+          <div>
+            <div class="swatch-label" style="color: #888;">Warm white</div>
+            <div style="font-size: 10px; color: #B4B2A9;">#F7F4F0</div>
+          </div>
+        </div>
+        <div style="font-size: 11px; color: #888; margin-top: 6px; text-align: center;">Surface</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TYPOGRAPHY -->
+  <div>
+    <div class="section-label">Typography</div>
+    <div class="brand-card">
+      <div class="type-row" style="padding-top: 0;">
+        <div>
+          <div class="tt-serif" style="font-size: 32px; color: #1A1A1A; font-weight: 700; line-height: 1.1;">Your journey</div>
+          <div style="font-size: 11px; color: #B4B2A9; margin-top: 4px;">Playfair Display Bold · Headlines</div>
+        </div>
+      </div>
+      <div class="type-row">
+        <div>
+          <div class="tt-serif" style="font-size: 20px; color: #993C1D; font-weight: 400; font-style: italic; line-height: 1.3;">Your journey, your way.</div>
+          <div style="font-size: 11px; color: #B4B2A9; margin-top: 4px;">Playfair Display Italic · Taglines</div>
+        </div>
+      </div>
+      <div class="type-row">
+        <div>
+          <div class="tt" style="font-size: 16px; color: #1A1A1A; font-weight: 500; line-height: 1.5;">Plan your next adventure with Tara</div>
+          <div style="font-size: 11px; color: #B4B2A9; margin-top: 4px;">DM Sans Medium · UI labels</div>
+        </div>
+      </div>
+      <div class="type-row" style="border-bottom: none; padding-bottom: 0;">
+        <div>
+          <div class="tt" style="font-size: 14px; color: #888; font-weight: 400; line-height: 1.7;">Tara Travel helps you plan every detail of your trip — from itinerary to budget to packing list — so you can travel with confidence.</div>
+          <div style="font-size: 11px; color: #B4B2A9; margin-top: 4px;">DM Sans Regular · Body copy</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- UI COMPONENTS PREVIEW -->
+  <div>
+    <div class="section-label">UI components</div>
+    <div class="brand-card" style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start;">
+
+      <!-- Buttons -->
+      <div style="display: flex; flex-direction: column; gap: 10px; min-width: 160px;">
+        <div style="font-size: 11px; color: #B4B2A9; font-weight: 500; text-transform: uppercase; letter-spacing: 1px;">Buttons</div>
+        <div style="background: #D85A30; color: #fff; padding: 12px 22px; border-radius: 12px; font-size: 14px; font-weight: 600; text-align: center; cursor: pointer;">Plan a trip</div>
+        <div style="background: #FAECE7; color: #993C1D; padding: 12px 22px; border-radius: 12px; font-size: 14px; font-weight: 600; text-align: center; border: 1px solid #F5C4B3; cursor: pointer;">Learn more</div>
+        <div style="background: transparent; color: #D85A30; padding: 11px 22px; border-radius: 12px; font-size: 14px; font-weight: 500; text-align: center; border: 1.5px solid #D85A30; cursor: pointer;">Sign in</div>
+      </div>
+
+      <!-- Badges & tags -->
+      <div style="display: flex; flex-direction: column; gap: 10px; min-width: 160px;">
+        <div style="font-size: 11px; color: #B4B2A9; font-weight: 500; text-transform: uppercase; letter-spacing: 1px;">Badges</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 7px;">
+          <span class="badge" style="background: #D85A30; color: #fff;">Upcoming</span>
+          <span class="badge" style="background: #FAECE7; color: #993C1D;">Planning</span>
+          <span class="badge" style="background: #FFF8ED; color: #854F0B; border: 1px solid #FAC775;">Draft</span>
+          <span class="badge" style="background: #EAF3DE; color: #3B6D11;">Completed</span>
+          <span class="badge" style="background: #2C1A14; color: #F0997B;">Featured</span>
+        </div>
+      </div>
+
+      <!-- Input -->
+      <div style="display: flex; flex-direction: column; gap: 10px; min-width: 200px; flex: 1;">
+        <div style="font-size: 11px; color: #B4B2A9; font-weight: 500; text-transform: uppercase; letter-spacing: 1px;">Input field</div>
+        <div style="border: 1.5px solid #D85A30; border-radius: 12px; padding: 12px 14px; background: #fff; display: flex; align-items: center; gap: 10px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="8" stroke="#D85A30" stroke-width="1.8"/><path d="M21 21l-4.35-4.35" stroke="#D85A30" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <span style="font-size: 14px; color: #D3D1C7;">Where are you going?</span>
+        </div>
+        <div style="border: 1px solid #e8e8e8; border-radius: 12px; padding: 12px 14px; background: #fff; display: flex; align-items: center; gap: 10px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="3" stroke="#B4B2A9" stroke-width="1.8"/><path d="M16 2v4M8 2v4M3 10h18" stroke="#B4B2A9" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <span style="font-size: 14px; color: #D3D1C7;">Select travel dates</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ICON SYSTEM -->
+  <div>
+    <div class="section-label">Brand voice</div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px;">
+      <div class="brand-card" style="text-align: center; padding: 20px 16px;">
+        <div style="font-size: 24px; margin-bottom: 8px;">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" style="display: block; margin: 0 auto 8px;"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#FAECE7" stroke="#D85A30" stroke-width="1.5"/><circle cx="12" cy="9" r="2.5" fill="#D85A30"/></svg>
+        </div>
+        <div style="font-size: 13px; font-weight: 600; color: #1A1A1A; margin-bottom: 3px;">Local first</div>
+        <div style="font-size: 11px; color: #888; line-height: 1.5;">Built for Filipino & Southeast Asian travelers</div>
+      </div>
+      <div class="brand-card" style="text-align: center; padding: 20px 16px;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" style="display: block; margin: 0 auto 8px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="#D85A30" stroke-width="1.5" stroke-linecap="round"/><circle cx="9" cy="7" r="4" stroke="#D85A30" stroke-width="1.5"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="#D85A30" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <div style="font-size: 13px; font-weight: 600; color: #1A1A1A; margin-bottom: 3px;">Travel together</div>
+        <div style="font-size: 11px; color: #888; line-height: 1.5;">Group planning, bill splitting, shared itineraries</div>
+      </div>
+      <div class="brand-card" style="text-align: center; padding: 20px 16px;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" style="display: block; margin: 0 auto 8px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="#FAECE7" stroke="#D85A30" stroke-width="1.5" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke="#D85A30" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div style="font-size: 13px; font-weight: 600; color: #1A1A1A; margin-bottom: 3px;">Worry-free</div>
+        <div style="font-size: 11px; color: #888; line-height: 1.5;">Offline mode, secure data, no surprises</div>
+      </div>
+      <div class="brand-card" style="text-align: center; padding: 20px 16px;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" style="display: block; margin: 0 auto 8px;"><circle cx="12" cy="12" r="10" stroke="#D85A30" stroke-width="1.5"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" stroke="#D85A30" stroke-width="1.5"/></svg>
+        <div style="font-size: 13px; font-weight: 600; color: #1A1A1A; margin-bottom: 3px;">Go anywhere</div>
+        <div style="font-size: 11px; color: #888; line-height: 1.5;">Local to international, every trip matters</div>
+      </div>
+    </div>
+  </div>
+
+</div>
