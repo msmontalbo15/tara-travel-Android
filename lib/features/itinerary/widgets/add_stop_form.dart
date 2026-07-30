@@ -4,6 +4,7 @@ import '../../../core/models/itinerary_model.dart';
 import '../../../core/models/member_model.dart';
 import '../../../core/widgets/inputs/app_text_field.dart';
 import '../../../core/widgets/inputs/app_numeric_field.dart';
+import '../../../core/widgets/inputs/location_picker.dart';
 
 class AddStopForm extends StatefulWidget {
   final List<MemberModel> members;
@@ -19,18 +20,21 @@ class _AddStopFormState extends State<AddStopForm> {
   final _titleCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
   final _costCtrl = TextEditingController();
+  final _confirmCtrl = TextEditingController();
   StopType _selectedType = StopType.activity;
   TransportMode _selectedTransportMode = TransportMode.car;
   TimeOfDay? _startTime;
   TimeOfDay? _endTime;
   String? _assignedMemberId;
   String? _titleError;
+  LocationResult? _selectedLocation;
 
   @override
   void dispose() {
     _titleCtrl.dispose();
     _notesCtrl.dispose();
     _costCtrl.dispose();
+    _confirmCtrl.dispose();
     super.dispose();
   }
 
@@ -71,17 +75,23 @@ class _AddStopFormState extends State<AddStopForm> {
       estimatedCost: double.tryParse(_costCtrl.text),
       assignedMemberId: _assignedMemberId,
       transportMode: _selectedType == StopType.transport ? _selectedTransportMode : null,
+      location: _selectedLocation?.displayName,
+      lat: _selectedLocation?.lat,
+      lng: _selectedLocation?.lon,
+      confirmationNumber: _confirmCtrl.text.trim().isEmpty ? null : _confirmCtrl.text.trim(),
     );
     widget.onAdd(stop);
     _titleCtrl.clear();
     _notesCtrl.clear();
     _costCtrl.clear();
+    _confirmCtrl.clear();
     setState(() {
       _startTime = null;
       _endTime = null;
       _assignedMemberId = null;
       _selectedTransportMode = TransportMode.car;
       _titleError = null;
+      _selectedLocation = null;
     });
   }
 
@@ -153,6 +163,12 @@ class _AddStopFormState extends State<AddStopForm> {
           ),
           const SizedBox(height: 10),
 
+          // Location
+          LocationPicker(
+            onLocationSelected: (loc) => setState(() => _selectedLocation = loc),
+          ),
+          const SizedBox(height: 10),
+
           // Time row
           Row(
             children: [
@@ -168,6 +184,17 @@ class _AddStopFormState extends State<AddStopForm> {
             label: 'Estimated cost',
             controller: _costCtrl,
             semanticsLabel: 'Estimated cost of stop',
+          ),
+          const SizedBox(height: 10),
+          
+          // Confirmation Number
+          AppTextField(
+            label: 'Confirmation #',
+            controller: _confirmCtrl,
+            hint: 'e.g. ABC1234',
+            prefixIcon: Icons.confirmation_number_outlined,
+            textCapitalization: TextCapitalization.characters,
+            semanticsLabel: 'Confirmation number',
           ),
           const SizedBox(height: 10),
 

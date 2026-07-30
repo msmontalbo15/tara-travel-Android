@@ -10,6 +10,20 @@ class AppColors {
   static const Color darkAccent = Color(0xFF993C1D);     // Tagline / chip text
   static const Color warmMuted = Color(0xFFB4B2A9);      // Section labels, captions
 
+  // ── Next-Gen iOS Glassmorphism Tokens ─────────────────────────
+  static const Color glassWhite = Color(0xCCFFFFFF);
+  static const Color glassWhiteSubtle = Color(0x80FFFFFF);
+  static const Color glassDark = Color(0xCC1A0A04);
+  static const Color glassBorder = Color(0x40FFFFFF);
+  static const Color glassBorderDark = Color(0x1F000000);
+  static const Color ambientShadow = Color(0x0F000000);
+  static const Color dynamicIslandBg = Color(0xEA111113);
+
+  // ── Gradient Accents ─────────────────────────────────────────
+  static const Color meshGradientPrimary = Color(0xFFD85A30);
+  static const Color meshGradientSecondary = Color(0xFFF49D79);
+  static const Color meshGradientAccent = Color(0xFFEF9F27);
+
   // ── Surfaces ─────────────────────────────────────────────────
   static const Color surfaceDark = Color(0xFF1A0A04);    // Hero headers
   static const Color surfaceLight = Color(0xFFF7F4F0);   // Warm White — page bg

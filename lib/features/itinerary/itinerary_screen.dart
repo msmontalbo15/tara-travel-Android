@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:add_2_calendar/add_2_calendar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
@@ -7,10 +8,22 @@ import '../../core/providers/realtime_provider.dart';
 import '../../core/providers/trip_provider.dart';
 import '../../core/models/itinerary_model.dart';
 import '../../core/models/member_model.dart';
+import '../../core/providers/trip_weather_provider.dart';
 import 'widgets/day_strip.dart';
 import 'widgets/stop_card.dart';
 import 'widgets/add_stop_form.dart';
+import 'widgets/edit_stop_form.dart';
 import 'widgets/transport_badge.dart';
+import 'widgets/itinerary_map.dart';
+import 'widgets/navigate_route_button.dart';
+import 'widgets/timeline_view.dart';
+import 'widgets/day_budget_bar.dart';
+import 'widgets/day_summary_card.dart';
+import 'widgets/smart_suggestion_chips.dart';
+import '../../core/widgets/buttons/app_back_button.dart';
+
+// ── View mode toggle ─────────────────────────────────────────────────────────
+enum _StopViewMode { list, timeline }
 
 class ItineraryScreen extends ConsumerStatefulWidget {
   final bool showHeader;
@@ -21,7 +34,34 @@ class ItineraryScreen extends ConsumerStatefulWidget {
 }
 
 class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
-  bool _showAddForm = false;
+  _StopViewMode _viewMode = _StopViewMode.list;
+  // Track which stop is being edited (null = none)
+  String? _editingStopId;
+
+  void _openAddForm(BuildContext context, int dayIndex, List<MemberModel> members, ItineraryNotifier notifier) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(ctx).viewInsets.bottom,
+        ),
+        child: SingleChildScrollView(
+          child: Container(
+            margin: const EdgeInsets.all(12),
+            child: AddStopForm(
+              members: members,
+              onAdd: (stop) {
+                notifier.addStop(dayIndex, stop);
+                Navigator.pop(ctx);
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,11 +72,13 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
         if (trip == null) {
           return const Scaffold(body: Center(child: Text('No active trip found.')));
         }
-        
-        // Listen to live realtime stream for itinerary
+
+        // Feature 8 — listen to live realtime stream for itinerary
         ref.watch(itineraryRealtimeProvider(trip.id));
 
         final itineraryAsync = ref.watch(ref.watch(itineraryProvider(trip.id)));
+        final weatherAsync = ref.watch(tripWeatherProvider(trip.id));
+        final weatherList = weatherAsync.value;
 
         return itineraryAsync.when(
           data: (itinerary) {
@@ -48,7 +90,7 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
               backgroundColor: AppColors.deepEarth,
               body: Column(
                 children: [
-                  // Header
+                  // ── Header ────────────────────────────────────────────────
                   Container(
                     padding: EdgeInsets.fromLTRB(0, widget.showHeader ? 56 : 12, 0, 0),
                     decoration: const BoxDecoration(
@@ -67,16 +109,9 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                             child: Row(
                               children: [
                                 if (Navigator.canPop(context))
-                                  GestureDetector(
-                                    onTap: () => Navigator.pop(context),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withValues(alpha: 0.08),
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 16),
-                                    ),
+                                  const Padding(
+                                    padding: EdgeInsets.only(right: 12),
+                                    child: AppBackButton(),
                                   ),
                                 Expanded(
                                   child: Column(
@@ -87,9 +122,22 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                                     ],
                                   ),
                                 ),
+                                // Feature 8 — Live indicator dot
+                                _LiveDot(),
+                                const SizedBox(width: 10),
+                                // Feature 5 — View mode toggle
+                                _ViewToggleButton(
+                                  mode: _viewMode,
+                                  onToggle: () => setState(() {
+                                    _viewMode = _viewMode == _StopViewMode.list
+                                        ? _StopViewMode.timeline
+                                        : _StopViewMode.list;
+                                  }),
+                                ),
+                                const SizedBox(width: 10),
                                 // Calendar export btn
                                 GestureDetector(
-                                  onTap: () => _showCalendarSnack(context),
+                                  onTap: () => _showCalendarSnack(context, currentDay),
                                   child: Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
@@ -122,13 +170,14 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                           DayStrip(
                             dayLabels: days.map((d) => 'Day ${d.dayNumber} · ${DateFormat('MMM d').format(d.date)}').toList(),
                             activeIndex: activeDay,
+                            weather: weatherList,
                             onTap: (i) => ref.read(ref.read(itineraryProvider(trip.id)).notifier).setActiveDay(i),
                           ),
                       ],
                     ),
                   ),
 
-                  // Body
+                  // ── Body ──────────────────────────────────────────────────
                   Expanded(
                     child: Container(
                       decoration: const BoxDecoration(
@@ -137,18 +186,26 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                       ),
                       child: currentDay == null
                           ? const Center(child: Text('No itinerary yet.', style: TextStyle(fontFamily: 'DM Sans', color: AppColors.muted)))
-                          : _buildDayContent(currentDay, activeDay, trip.members, trip.id),
+                          : _viewMode == _StopViewMode.timeline
+                              ? TimelineView(
+                                  day: currentDay,
+                                  onStopTap: (s) => _showStopDetail(context, s, trip.members, activeDay, trip.id),
+                                )
+                              : _buildListContent(currentDay, activeDay, trip.members, trip.id, trip.totalBudget),
                     ),
                   ),
                 ],
               ),
 
-              floatingActionButton: FloatingActionButton.extended(
-                onPressed: () => setState(() => _showAddForm = !_showAddForm),
+              floatingActionButton: currentDay == null ? null : FloatingActionButton.extended(
+                onPressed: () {
+                  final notifier = ref.read(ref.read(itineraryProvider(trip.id)).notifier);
+                  _openAddForm(context, activeDay, trip.members, notifier);
+                },
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
-                icon: Icon(_showAddForm ? Icons.close_rounded : Icons.add_rounded),
-                label: Text(_showAddForm ? 'Close' : 'Add Stop', style: const TextStyle(fontFamily: 'DM Sans', fontWeight: FontWeight.w600)),
+                icon: const Icon(Icons.add_rounded),
+                label: const Text('Add Stop', style: TextStyle(fontFamily: 'DM Sans', fontWeight: FontWeight.w600)),
               ),
             );
           },
@@ -161,54 +218,149 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
     );
   }
 
-  Widget _buildDayContent(ItineraryDay day, int dayIndex, List<MemberModel> members, String tripId) {
+  // ── Feature 1+2+3+10 — List content with drag-reorder ───────────────────
+  Widget _buildListContent(ItineraryDay day, int dayIndex, List<MemberModel> members, String tripId, double tripBudget) {
+    final notifier = ref.read(ref.read(itineraryProvider(tripId)).notifier);
+    // Rough daily budget: split trip budget evenly across trip days (fallback to 0)
+    final dailyBudget = tripBudget > 0 ? tripBudget / 7 : 0.0;
+
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.only(bottom: 80),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Feature 3 — Budget bar
+          if (day.totalDayCost > 0 || dailyBudget > 0) ...[
+            const SizedBox(height: 12),
+            DayBudgetBar(spent: day.totalDayCost, dailyBudget: dailyBudget),
+          ],
+
           // Transport badge
           if (day.transport != null) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             TransportBadge(transport: day.transport!),
           ],
 
-          // Stops timeline
+          // Stop count header
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${day.stops.length} stops · Day ${day.dayNumber}',
-                  style: const TextStyle(fontFamily: 'DM Sans', fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.warmMuted, letterSpacing: 1.5),
-                ),
-                const SizedBox(height: 14),
-                ...day.stops.asMap().entries.map((e) => Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: StopCard(
-                    stop: e.value,
-                    members: members,
-                    isLast: e.key == day.stops.length - 1,
-                    onTap: () => _showStopDetail(context, e.value, members, dayIndex, tripId),
-                    onStatusChange: (s) => ref.read(ref.read(itineraryProvider(tripId)).notifier).updateStopStatus(dayIndex, e.value.id, s),
-                  ),
-                )),
-
-                if (_showAddForm) ...[
-                  const SizedBox(height: 20),
-                  AddStopForm(
-                    members: members,
-                    onAdd: (stop) {
-                      ref.read(ref.read(itineraryProvider(tripId)).notifier).addStop(dayIndex, stop);
-                      setState(() => _showAddForm = false);
-                    },
-                  ),
-                ],
-              ],
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+            child: Text(
+              '${day.stops.length} stop${day.stops.length == 1 ? '' : 's'} · Day ${day.dayNumber}',
+              style: const TextStyle(fontFamily: 'DM Sans', fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.warmMuted, letterSpacing: 1.5),
             ),
           ),
+
+          // Feature 1 — Drag & drop reorderable stop list
+          if (day.stops.isNotEmpty)
+            ReorderableListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              buildDefaultDragHandles: false,
+              onReorder: (oldIdx, newIdx) => notifier.reorderStop(dayIndex, oldIdx, newIdx),
+              itemCount: day.stops.length,
+              itemBuilder: (context, i) {
+                final stop = day.stops[i];
+                final isEditing = _editingStopId == stop.id;
+
+                return KeyedSubtree(
+                  key: ValueKey(stop.id),
+                  child: Column(
+                    key: ValueKey('col_${stop.id}'),
+                    children: [
+                      // Feature 2 — Dismissible for swipe-to-delete
+                      Dismissible(
+                        key: ValueKey('dis_${stop.id}'),
+                        direction: DismissDirection.endToStart,
+                        background: Container(
+                          margin: const EdgeInsets.only(bottom: 4),
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 20),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEF4444),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const Icon(Icons.delete_rounded, color: Colors.white, size: 22),
+                        ),
+                        confirmDismiss: (_) async {
+                          return await showDialog<bool>(
+                            context: context,
+                            builder: (_) => AlertDialog(
+                              title: const Text('Delete stop?', style: TextStyle(fontFamily: 'DM Sans', fontWeight: FontWeight.w700)),
+                              content: Text('Remove "${stop.title}" from Day ${day.dayNumber}?', style: const TextStyle(fontFamily: 'DM Sans')),
+                              actions: [
+                                TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context, true),
+                                  style: TextButton.styleFrom(foregroundColor: const Color(0xFFEF4444)),
+                                  child: const Text('Delete', style: TextStyle(fontWeight: FontWeight.w700)),
+                                ),
+                              ],
+                            ),
+                          ) ?? false;
+                        },
+                        onDismissed: (_) => notifier.deleteStop(dayIndex, stop.id),
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: Row(
+                            children: [
+                              // Feature 1 — Drag handle
+                              ReorderableDragStartListener(
+                                index: i,
+                                child: const Padding(
+                                  padding: EdgeInsets.only(right: 6),
+                                  child: Icon(Icons.drag_handle_rounded, size: 18, color: AppColors.muted),
+                                ),
+                              ),
+                              Expanded(
+                                child: StopCard(
+                                  stop: stop,
+                                  members: members,
+                                  isLast: i == day.stops.length - 1,
+                                  onTap: () => _showStopDetail(context, stop, members, dayIndex, tripId),
+                                  onStatusChange: (s) => notifier.updateStopStatus(dayIndex, stop.id, s),
+                                  // Feature 2 — edit button
+                                  onEdit: () => setState(() => _editingStopId = isEditing ? null : stop.id),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      // Feature 2 — Inline edit form
+                      if (isEditing) ...[
+                        const SizedBox(height: 8),
+                        EditStopForm(
+                          stop: stop,
+                          members: members,
+                          onSave: (updated) {
+                            notifier.updateStop(dayIndex, updated);
+                            setState(() => _editingStopId = null);
+                          },
+                          onCancel: () => setState(() => _editingStopId = null),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+                    ],
+                  ),
+                );
+              },
+            ),
+
+          // Feature 10 — Smart suggestion chips
+          SmartSuggestionChips(
+            day: day,
+            onSuggest: (type, title) {
+              _openAddForm(context, dayIndex, members, notifier);
+            },
+          ),
+
+          // Feature 10 — Day summary card
+          if (day.stops.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            DaySummaryCard(day: day),
+          ],
         ],
       ),
     );
@@ -223,6 +375,7 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
         stop: stop,
         members: members,
         onStatusChange: (s) => ref.read(ref.read(itineraryProvider(tripId)).notifier).updateStopStatus(dayIndex, stop.id, s),
+        onVote: (memberId, upvote) => ref.read(ref.read(itineraryProvider(tripId)).notifier).voteOnStop(dayIndex, stop.id, memberId, upvote),
       ),
     );
   }
@@ -237,10 +390,44 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
     );
   }
 
-  void _showCalendarSnack(BuildContext context) {
+  // Feature 9 — Calendar export
+  void _showCalendarSnack(BuildContext context, ItineraryDay? day) {
+    if (day == null || day.stops.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No stops to export for this day', style: TextStyle(fontFamily: 'DM Sans'))),
+      );
+      return;
+    }
+    
+    for (final stop in day.stops) {
+      DateTime startTime = day.date;
+      DateTime endTime = day.date.add(const Duration(hours: 1));
+      
+      if (stop.startTime != null) {
+        startTime = DateTime(day.date.year, day.date.month, day.date.day, stop.startTime!.hour, stop.startTime!.minute);
+        if (stop.endTime != null) {
+          endTime = DateTime(day.date.year, day.date.month, day.date.day, stop.endTime!.hour, stop.endTime!.minute);
+        } else {
+          endTime = startTime.add(const Duration(hours: 1));
+        }
+      }
+
+      final Event event = Event(
+        title: stop.title,
+        description: stop.notes ?? 'Trip stop from TaraTravel',
+        location: stop.location ?? '',
+        startDate: startTime,
+        endDate: endTime,
+        iosParams: const IOSParams(reminder: Duration(minutes: 30)),
+      );
+
+      Add2Calendar.addEvent2Cal(event);
+    }
+    
+    final count = day.stops.length;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('📅 All stops exported to Google Calendar!', style: TextStyle(fontFamily: 'DM Sans')),
+      SnackBar(
+        content: Text('📅 $count stop${count == 1 ? '' : 's'} exported to Calendar!', style: const TextStyle(fontFamily: 'DM Sans')),
         backgroundColor: AppColors.green,
         behavior: SnackBarBehavior.floating,
       ),
@@ -248,39 +435,152 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
   }
 }
 
+// ── Live indicator dot (Feature 8) ──────────────────────────────────────────
+class _LiveDot extends StatefulWidget {
+  @override
+  State<_LiveDot> createState() => _LiveDotState();
+}
+
+class _LiveDotState extends State<_LiveDot> with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(seconds: 1))..repeat(reverse: true);
+    _anim = Tween(begin: 0.4, end: 1.0).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (_, __) => Opacity(
+        opacity: _anim.value,
+        child: Container(
+          width: 8,
+          height: 8,
+          decoration: const BoxDecoration(color: Color(0xFF10B981), shape: BoxShape.circle),
+        ),
+      ),
+    );
+  }
+}
+
+// ── View toggle button (Feature 5) ──────────────────────────────────────────
+class _ViewToggleButton extends StatelessWidget {
+  final _StopViewMode mode;
+  final VoidCallback onToggle;
+
+  const _ViewToggleButton({required this.mode, required this.onToggle});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onToggle,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: mode == _StopViewMode.timeline
+              ? AppColors.primary.withValues(alpha: 0.25)
+              : Colors.white.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(10),
+          border: mode == _StopViewMode.timeline
+              ? Border.all(color: AppColors.primaryLight.withValues(alpha: 0.4))
+              : null,
+        ),
+        child: Icon(
+          mode == _StopViewMode.list ? Icons.timeline_rounded : Icons.view_list_rounded,
+          color: Colors.white,
+          size: 20,
+        ),
+      ),
+    );
+  }
+}
+
+// ── Stop Detail Sheet (Feature 6 — voting added) ────────────────────────────
 class _StopDetailSheet extends StatelessWidget {
   final ItineraryStop stop;
   final List<MemberModel> members;
   final void Function(StopStatus) onStatusChange;
+  final void Function(String memberId, bool upvote) onVote;
 
-  const _StopDetailSheet({required this.stop, required this.members, required this.onStatusChange});
+  const _StopDetailSheet({
+    required this.stop,
+    required this.members,
+    required this.onStatusChange,
+    required this.onVote,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: MediaQuery.of(context).size.height * 0.6,
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+      height: MediaQuery.of(context).size.height * 0.75,
+      padding: EdgeInsets.zero,
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.only(topLeft: Radius.circular(28), topRight: Radius.circular(28)),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Center(child: Container(width: 36, height: 4, decoration: BoxDecoration(color: AppColors.dividerLight, borderRadius: BorderRadius.circular(2)))),
-          const SizedBox(height: 16),
+          // Handle
+          Center(
+            child: Container(
+              margin: const EdgeInsets.only(top: 16, bottom: 16),
+              width: 36, 
+              height: 4, 
+              decoration: BoxDecoration(color: AppColors.dividerLight, borderRadius: BorderRadius.circular(2))
+            ),
+          ),
+          
+          // Feature 11 — Photo Gallery
+          if (stop.photoUrls.isNotEmpty)
+            SizedBox(
+              height: 200,
+              child: PageView.builder(
+                itemCount: stop.photoUrls.length,
+                itemBuilder: (context, index) {
+                  return Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 24),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      image: DecorationImage(
+                        image: NetworkImage(stop.photoUrls[index]),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          
+          if (stop.photoUrls.isNotEmpty) const SizedBox(height: 16),
+          
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
           Row(
             children: [
               Container(
-                width: 36,
-                height: 36,
+                width: 36, height: 36,
                 decoration: BoxDecoration(color: stop.type.color.withValues(alpha: 0.15), shape: BoxShape.circle),
                 child: Icon(stop.type.icon, color: stop.type.color, size: 18),
               ),
               const SizedBox(width: 12),
-              Expanded(
-                child: Text(stop.title, style: const TextStyle(fontFamily: 'Playfair Display', fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.deepEarth)),
-              ),
+              Expanded(child: Text(stop.title, style: const TextStyle(fontFamily: 'Playfair Display', fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.deepEarth))),
             ],
           ),
           const SizedBox(height: 16),
@@ -293,6 +593,78 @@ class _StopDetailSheet extends StatelessWidget {
             const SizedBox(height: 4),
             Text(stop.notes!, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 13, color: AppColors.textSecondary)),
           ],
+
+          // Feature 7 — Attachments
+          if (stop.attachmentUrls.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            const Text('Attachments', style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.muted)),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 40,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: stop.attachmentUrls.length,
+                itemBuilder: (context, index) {
+                  return Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceLight,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.dividerLight),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.attach_file_rounded, size: 14, color: AppColors.primary),
+                        const SizedBox(width: 6),
+                        Text('Attachment ${index + 1}', style: const TextStyle(fontFamily: 'DM Sans', fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary)),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+
+          // Feature 6 — Collaborative voting
+          const SizedBox(height: 16),
+          const Text('Group Vote', style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.muted)),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              _VoteButton(
+                icon: Icons.thumb_up_rounded,
+                count: stop.votes.values.where((v) => v).length,
+                color: const Color(0xFF10B981),
+                onTap: () {
+                  if (members.isNotEmpty) onVote(members.first.id, true);
+                },
+              ),
+              const SizedBox(width: 12),
+              _VoteButton(
+                icon: Icons.thumb_down_rounded,
+                count: stop.votes.values.where((v) => !v).length,
+                color: const Color(0xFFEF4444),
+                onTap: () {
+                  if (members.isNotEmpty) onVote(members.first.id, false);
+                },
+              ),
+              const Spacer(),
+              if (stop.voteScore != 0)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: stop.voteScore > 0 ? const Color(0xFF10B981).withValues(alpha: 0.1) : const Color(0xFFEF4444).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '${stop.voteScore > 0 ? '+' : ''}${stop.voteScore} score',
+                    style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, fontWeight: FontWeight.w700, color: stop.voteScore > 0 ? const Color(0xFF10B981) : const Color(0xFFEF4444)),
+                  ),
+                ),
+            ],
+          ),
+
           const Spacer(),
           Row(
             children: [
@@ -315,6 +687,10 @@ class _StopDetailSheet extends StatelessWidget {
               ),
             ],
           ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -334,6 +710,41 @@ class _StopDetailSheet extends StatelessWidget {
   }
 }
 
+class _VoteButton extends StatelessWidget {
+  final IconData icon;
+  final int count;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _VoteButton({required this.icon, required this.count, required this.color, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 16, color: color),
+            if (count > 0) ...[
+              const SizedBox(width: 5),
+              Text('$count', style: TextStyle(fontFamily: 'DM Sans', fontSize: 13, fontWeight: FontWeight.w700, color: color)),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Map View Sheet ───────────────────────────────────────────────────────────
 class _MapViewSheet extends StatelessWidget {
   final ItineraryDay day;
 
@@ -359,53 +770,13 @@ class _MapViewSheet extends StatelessWidget {
               ],
             ),
           ),
-          // Map placeholder
+          // Google Map
           Expanded(
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1E3A2B),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Stack(
-                children: [
-                  // Fake map grid
-                  Positioned.fill(
-                    child: GridView.count(
-                      crossAxisCount: 8,
-                      physics: const NeverScrollableScrollPhysics(),
-                      children: List.generate(64, (i) => Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.03)),
-                          color: i % 13 == 0 ? Colors.white.withValues(alpha: 0.04) : Colors.transparent,
-                        ),
-                      )),
-                    ),
-                  ),
-                  // Stop pins
-                  ...day.stops.asMap().entries.where((e) => e.value.lat != null).map((e) =>
-                    Positioned(
-                      left: 50.0 + e.key * 40,
-                      top: 80.0 + (e.key % 3) * 50,
-                      child: _MapPin(stop: e.value, number: e.key + 1),
-                    ),
-                  ),
-                  // Center notice
-                  if (day.stops.every((s) => s.lat == null))
-                    Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.map_rounded, size: 48, color: Colors.white24),
-                          const SizedBox(height: 12),
-                          Text('${day.stops.length} stops for Day ${day.dayNumber}', style: const TextStyle(fontFamily: 'Playfair Display', fontSize: 16, color: Colors.white, fontWeight: FontWeight.w600)),
-                          const SizedBox(height: 6),
-                          const Text('Route map loads when GPS data is available', style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, color: Colors.white54), textAlign: TextAlign.center),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
+              clipBehavior: Clip.antiAlias,
+              decoration: BoxDecoration(color: const Color(0xFF1E3A2B), borderRadius: BorderRadius.circular(20)),
+              child: ItineraryMap(day: day),
             ),
           ),
           const SizedBox(height: 16),
@@ -418,45 +789,41 @@ class _MapViewSheet extends StatelessWidget {
               itemCount: day.stops.length,
               itemBuilder: (_, i) {
                 final s = day.stops[i];
-                return Row(
-                  children: [
-                    Container(
-                      width: 22,
-                      height: 22,
-                      decoration: BoxDecoration(color: s.type.color, shape: BoxShape.circle),
-                      child: Center(child: Text('${i + 1}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white))),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(child: Text(s.title, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 12, color: Colors.white70))),
-                  ],
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 22, height: 22,
+                        decoration: BoxDecoration(color: s.type.color, shape: BoxShape.circle),
+                        child: Center(child: Text('${i + 1}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white))),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(s.title, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 13, color: Colors.white)),
+                            if (s.location != null)
+                              Text(s.location!, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 11, color: Colors.white54), maxLines: 1, overflow: TextOverflow.ellipsis),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 );
               },
             ),
           ),
+          const SizedBox(height: 16),
+          // Navigate button
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: NavigateRouteButton(stops: day.stops),
+          ),
           const SizedBox(height: 24),
         ],
       ),
-    );
-  }
-}
-
-class _MapPin extends StatelessWidget {
-  final ItineraryStop stop;
-  final int number;
-  const _MapPin({required this.stop, required this.number});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          width: 28,
-          height: 28,
-          decoration: BoxDecoration(color: stop.type.color, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2)),
-          child: Center(child: Text('$number', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white))),
-        ),
-        Container(width: 2, height: 8, color: stop.type.color),
-      ],
     );
   }
 }

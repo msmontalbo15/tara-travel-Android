@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/profile_provider.dart';
@@ -5,6 +6,7 @@ import '../../core/providers/packing_provider.dart';
 import '../../core/providers/trip_provider.dart';
 import '../../core/providers/selected_trip_provider.dart';
 import '../../core/theme/app_colors.dart';
+
 import '../budget/budget_screen.dart';
 import '../explore/explore_screen.dart';
 import '../profile/profile_screen.dart';
@@ -84,36 +86,51 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildBottomNav() {
     return Container(
-      padding: const EdgeInsets.only(bottom: 4),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: const Border(
-          top: BorderSide(color: AppColors.dividerLight, width: 0.5),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 16,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _navItem(0, Icons.home_outlined, Icons.home_rounded, 'Home'),
-            _navItem(1, Icons.luggage_outlined, Icons.luggage_rounded, 'Trips'),
-            _navItem(
-              2,
-              Icons.account_balance_wallet_outlined,
-              Icons.account_balance_wallet_rounded,
-              'Budget',
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(32),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.82),
+              borderRadius: BorderRadius.circular(32),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.8),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.10),
+                  blurRadius: 24,
+                  spreadRadius: 2,
+                  offset: const Offset(0, 8),
+                ),
+              ],
             ),
-            _navItem(3, Icons.explore_outlined, Icons.explore_rounded, 'Explore'),
-            _navItem(4, Icons.person_outline_rounded, Icons.person_rounded, 'Profile'),
-          ],
+            child: SafeArea(
+              top: false,
+              bottom: false,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _navItem(0, Icons.home_outlined, Icons.home_rounded, 'Home'),
+                  _navItem(1, Icons.luggage_outlined, Icons.luggage_rounded, 'Trips'),
+                  _navItem(
+                    2,
+                    Icons.account_balance_wallet_outlined,
+                    Icons.account_balance_wallet_rounded,
+                    'Budget',
+                  ),
+                  _navItem(
+                      3, Icons.explore_outlined, Icons.explore_rounded, 'Explore'),
+                  _navItem(4, Icons.person_outline_rounded, Icons.person_rounded,
+                      'Profile'),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -236,7 +253,7 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
   Widget build(BuildContext context) {
     final profile = ref.watch(profileProvider);
     const unreadCount = 0;
-    
+
     final activeTripAsync = ref.watch(activeTripProvider);
     final trip = activeTripAsync.value;
     final String packedPct;
@@ -279,98 +296,153 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
                                 style: TextStyle(
                                   fontFamily: 'DM Sans',
                                   fontSize: 13,
-                                  color: Colors.white.withValues(alpha: 0.4),
+                                  color: Colors.white.withValues(alpha: 0.6),
                                 ),
                               ),
-                              Text(
-                                profile.firstName,
-                                style: const TextStyle(
-                                  fontFamily: 'Playfair Display',
-                                  fontSize: 32,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                  height: 1.1,
-                                  letterSpacing: -0.5,
+                              AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 300),
+                                child: Text(
+                                  profile.firstName,
+                                  key: ValueKey(profile.firstName),
+                                  style: const TextStyle(
+                                    fontFamily: 'Playfair Display',
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                    height: 1.1,
+                                    letterSpacing: -0.5,
+                                  ),
                                 ),
                               ),
                             ],
                           ),
                           Row(
                             children: [
-                              GestureDetector(
-                                onTap: () =>
-                                    Navigator.pushNamed(context, '/notifications'),
-                                child: Stack(
-                                  clipBehavior: Clip.none,
-                                  children: [
-                                    Container(
+                              Tooltip(
+                                message: 'Friends',
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: () => Navigator.pushNamed(
+                                        context, '/friends'),
+                                    customBorder: const CircleBorder(),
+                                    child: Container(
                                       width: 44,
                                       height: 44,
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withValues(alpha: 0.08),
+                                        color: Colors.white
+                                            .withValues(alpha: 0.08),
                                         shape: BoxShape.circle,
                                         border: Border.all(
-                                          color: Colors.white.withValues(alpha: 0.06),
-                                        ),
+                                            color: Colors.white
+                                                .withValues(alpha: 0.06)),
                                       ),
-                                      child: const Icon(
-                                        Icons.notifications_outlined,
-                                        color: Colors.white,
-                                        size: 22,
-                                      ),
+                                      child: const Icon(Icons.people_outline,
+                                          color: Colors.white, size: 22),
                                     ),
-                                    if (unreadCount > 0)
-                                      Positioned(
-                                        top: -2,
-                                        right: -2,
-                                        child: Container(
-                                          width: 18,
-                                          height: 18,
-                                          decoration: BoxDecoration(
-                                            color: AppColors.primary,
-                                            shape: BoxShape.circle,
-                                            border: Border.all(
-                                              color: AppColors.deepEarth,
-                                              width: 2,
-                                            ),
-                                          ),
-                                          child: const Center(
-                                            child: Text(
-                                              '$unreadCount',
-                                              style: TextStyle(
-                                                fontFamily: 'DM Sans',
-                                                fontSize: 9,
-                                                fontWeight: FontWeight.w700,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                  ],
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 10),
-                              GestureDetector(
-                                onTap: () {},
-                                child: Container(
-                                  width: 44,
-                                  height: 44,
-                                  decoration: BoxDecoration(
-                                    color: profile.avatarColor,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: Colors.white.withValues(alpha: 0.15),
-                                      width: 2,
+                              Tooltip(
+                                message: 'Notifications',
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: () => Navigator.pushNamed(
+                                        context, '/notifications'),
+                                    customBorder: const CircleBorder(),
+                                    child: Stack(
+                                      clipBehavior: Clip.none,
+                                      children: [
+                                        Container(
+                                          width: 44,
+                                          height: 44,
+                                          decoration: BoxDecoration(
+                                            color: Colors.white
+                                                .withValues(alpha: 0.08),
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                                color: Colors.white
+                                                    .withValues(alpha: 0.06)),
+                                          ),
+                                          child: const Icon(
+                                              Icons.notifications_outlined,
+                                              color: Colors.white,
+                                              size: 22),
+                                        ),
+                                        if (unreadCount > 0)
+                                          Positioned(
+                                            top: -2,
+                                            right: -2,
+                                            child:
+                                                TweenAnimationBuilder<double>(
+                                              tween:
+                                                  Tween(begin: 0.0, end: 1.0),
+                                              duration: const Duration(
+                                                  milliseconds: 300),
+                                              curve: Curves.elasticOut,
+                                              builder: (context, scale, child) {
+                                                return Transform.scale(
+                                                    scale: scale, child: child);
+                                              },
+                                              child: Container(
+                                                width: 18,
+                                                height: 18,
+                                                decoration: BoxDecoration(
+                                                  color: AppColors.primary,
+                                                  shape: BoxShape.circle,
+                                                  border: Border.all(
+                                                      color:
+                                                          AppColors.deepEarth,
+                                                      width: 2),
+                                                ),
+                                                child: const Center(
+                                                  child: Text(
+                                                    '$unreadCount',
+                                                    style: TextStyle(
+                                                      fontFamily: 'DM Sans',
+                                                      fontSize: 9,
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                      ],
                                     ),
                                   ),
-                                  child: Center(
-                                    child: Text(
-                                      profile.initials,
-                                      style: const TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w700,
-                                        color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Tooltip(
+                                message: 'Profile',
+                                child: GestureDetector(
+                                  onTap: () =>
+                                      Navigator.pushNamed(context, '/profile'),
+                                  child: Semantics(
+                                    label: 'User avatar, ${profile.firstName}',
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                            color: Colors.white
+                                                .withValues(alpha: 0.15),
+                                            width: 2),
+                                      ),
+                                      child: CircleAvatar(
+                                        radius: 20,
+                                        backgroundColor: profile.avatarColor,
+                                        foregroundColor: Colors.white,
+                                        child: Text(
+                                          profile.initials,
+                                          style: const TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w700),
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -383,162 +455,209 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
                     ),
                     const SizedBox(height: 22),
                     ref.watch(activeTripProvider).when(
-                      data: (trip) => trip != null
-                          ? NextTripCard(trip: trip)
-                          : const SizedBox.shrink(),
-                      loading: () => const Center(
-                        child: CircularProgressIndicator(),
-                      ),
-                      error: (error, _) => Text('Error: $error'),
-                    ),
+                          data: (trip) => trip != null
+                              ? NextTripCard(trip: trip)
+                              : const SizedBox.shrink(),
+                          loading: () => const Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                          error: (error, _) => Text('Error: $error'),
+                        ),
                   ],
                 ),
               ),
               Expanded(
-                child: Container(
-                  width: double.infinity,
-                  decoration: const BoxDecoration(
-                    color: AppColors.surfaceLight,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(32),
-                      topRight: Radius.circular(32),
-                    ),
-                  ),
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 22,
+                child: RefreshIndicator(
+                  onRefresh: () async {
+                    ref.invalidate(allTripsProvider);
+                    ref.invalidate(activeTripProvider);
+                    ref.invalidate(profileProvider);
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    decoration: const BoxDecoration(
+                      color: AppColors.surfaceLight,
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(32),
+                        topRight: Radius.circular(32),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _TourFocus(
-                            highlight: _tourVisible && _tourStep == 1,
-                            borderRadius: 22,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text(
-                                  'Your trips',
-                                  style: TextStyle(
-                                    fontFamily: 'DM Sans',
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.textPrimary,
+                    ),
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 22,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _TourFocus(
+                              highlight: _tourVisible && _tourStep == 1,
+                              borderRadius: 22,
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    'Your trips',
+                                    style: TextStyle(
+                                      fontFamily: 'DM Sans',
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.textPrimary,
+                                    ),
                                   ),
-                                ),
-                                GestureDetector(
-                                  onTap: () =>
-                                      Navigator.pushNamed(context, '/trips'),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 5,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.sand,
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: const Text(
-                                      'See all',
-                                      style: TextStyle(
-                                        fontFamily: 'DM Sans',
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                        color: AppColors.primary,
+                                  GestureDetector(
+                                    onTap: () =>
+                                        Navigator.pushNamed(context, '/trips'),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 5,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.sand,
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: const Text(
+                                        'See all',
+                                        style: TextStyle(
+                                          fontFamily: 'DM Sans',
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.primary,
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          ref.watch(allTripsProvider).when(
-                            data: (trips) => Column(
-                              children: trips
-                                  .map(
-                                    (trip) => TripCard.upcoming(
-                                      name: trip.name,
-                                      dateRange:
-                                          '${trip.fromDate.month}/${trip.fromDate.day}-${trip.toDate.day}, ${trip.toDate.year}',
-                                      budget:
-                                          'P${(trip.totalBudget / 1000).toStringAsFixed(0)}k',
-                                      days: trip.toDate
-                                              .difference(trip.fromDate)
-                                              .inDays +
-                                          1,
-                                      people: trip.members.length,
-                                      travelers: trip.members
-                                          .map(
-                                            (member) => TravelerInfo(
-                                              member.initials,
-                                              member.color.toARGB32(),
-                                            ),
-                                          )
-                                          .toList(),
-                                      onTap: () {
-                                        // Set selected trip before navigating
-                                        ref
-                                            .read(selectedTripIdProvider.notifier)
-                                            .select(trip.id);
-                                        Navigator.pushNamed(
-                                          context,
-                                          '/trip-detail',
-                                        );
-                                      },
-                                    ),
-                                  )
-                                  .toList(),
-                            ),
-                            loading: () => const CircularProgressIndicator(),
-                            error: (error, _) =>
-                                Text('Error loading trips: $error'),
-                          ),
-                          const SizedBox(height: 20),
-                          _TourFocus(
-                            highlight: _tourVisible && _tourStep == 2,
-                            borderRadius: 22,
-                            child: const Text(
-                              'Quick actions',
-                              style: TextStyle(
-                                fontFamily: 'DM Sans',
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.textPrimary,
+                                ],
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 14),
-                          GridView.count(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 12,
-                            mainAxisSpacing: 12,
-                            childAspectRatio: 1.45,
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            children: [
-                              _TourFocus(
-                                highlight: _tourVisible && _tourStep == 3,
-                                borderRadius: 24,
-                                child: _PulsingGuide(
-                                  active: profile.isFirstRun ||
-                                      (_tourVisible && _tourStep == 3),
-                                  onTap: () {
-                                    ref
-                                        .read(profileProvider.notifier)
-                                        .setFirstRunCompleted();
-                                    Navigator.pushNamed(
-                                      context,
-                                      '/create-trip',
-                                    );
-                                  },
-                                  child: QuickActionTile(
-                                    icon: Icons.add_rounded,
-                                    label: 'New trip',
-                                    sublabel: 'Start planning',
-                                    orange: true,
+                            ref.watch(allTripsProvider).when(
+                                  data: (trips) => Column(
+                                    children: trips
+                                        .map(
+                                          (trip) => TripCard.upcoming(
+                                            name: trip.name,
+                                            destination: trip.destination,
+                                            tripId: trip.id,
+                                            dateRange:
+                                                '${trip.fromDate.month}/${trip.fromDate.day}-${trip.toDate.day}, ${trip.toDate.year}',
+                                            budget:
+                                                'P${(trip.totalBudget / 1000).toStringAsFixed(0)}k',
+                                            days: trip.toDate
+                                                    .difference(trip.fromDate)
+                                                    .inDays +
+                                                1,
+                                            people: trip.members.length,
+                                            travelers: trip.members
+                                                .map(
+                                                  (member) => TravelerInfo(
+                                                    member.initials,
+                                                    member.color.toARGB32(),
+                                                  ),
+                                                )
+                                                .toList(),
+                                            onTap: () {
+                                              // Set selected trip before navigating
+                                              ref
+                                                  .read(selectedTripIdProvider
+                                                      .notifier)
+                                                  .select(trip.id);
+                                              Navigator.pushNamed(
+                                                context,
+                                                '/trip-detail',
+                                              );
+                                            },
+                                            onItinerary: () {
+                                              ref
+                                                  .read(selectedTripIdProvider
+                                                      .notifier)
+                                                  .select(trip.id);
+                                              Navigator.pushNamed(
+                                                context,
+                                                '/itinerary',
+                                              );
+                                            },
+                                            onPacking: () {
+                                              ref
+                                                  .read(selectedTripIdProvider
+                                                      .notifier)
+                                                  .select(trip.id);
+                                              Navigator.pushNamed(
+                                                context,
+                                                '/packing',
+                                              );
+                                            },
+                                            onMembers: () {
+                                              ref
+                                                  .read(selectedTripIdProvider
+                                                      .notifier)
+                                                  .select(trip.id);
+                                              Navigator.pushNamed(
+                                                context,
+                                                '/members',
+                                              );
+                                            },
+                                            onExpenses: () {
+                                              ref
+                                                  .read(selectedTripIdProvider
+                                                      .notifier)
+                                                  .select(trip.id);
+                                              Navigator.pushNamed(
+                                                context,
+                                                '/budget',
+                                              );
+                                            },
+                                            onChat: () {
+                                              ref
+                                                  .read(selectedTripIdProvider
+                                                      .notifier)
+                                                  .select(trip.id);
+                                              Navigator.pushNamed(
+                                                context,
+                                                '/chat',
+                                              );
+                                            },
+                                          ),
+                                        )
+                                        .toList(),
+                                  ),
+                                  loading: () =>
+                                      const CircularProgressIndicator(),
+                                  error: (error, _) =>
+                                      Text('Error loading trips: $error'),
+                                ),
+                            const SizedBox(height: 20),
+                            _TourFocus(
+                              highlight: _tourVisible && _tourStep == 2,
+                              borderRadius: 22,
+                              child: const Text(
+                                'Quick actions',
+                                style: TextStyle(
+                                  fontFamily: 'DM Sans',
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+                            GridView.count(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 12,
+                              childAspectRatio: 1.45,
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              children: [
+                                _TourFocus(
+                                  highlight: _tourVisible && _tourStep == 3,
+                                  borderRadius: 24,
+                                  child: _PulsingGuide(
+                                    active: profile.isFirstRun ||
+                                        (_tourVisible && _tourStep == 3),
                                     onTap: () {
                                       ref
                                           .read(profileProvider.notifier)
@@ -548,34 +667,79 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
                                         '/create-trip',
                                       );
                                     },
+                                    child: QuickActionTile(
+                                      icon: Icons.add_rounded,
+                                      label: 'New trip',
+                                      sublabel: 'Start planning',
+                                      orange: true,
+                                      onTap: () {
+                                        ref
+                                            .read(profileProvider.notifier)
+                                            .setFirstRunCompleted();
+                                        Navigator.pushNamed(
+                                          context,
+                                          '/create-trip',
+                                        );
+                                      },
+                                    ),
                                   ),
                                 ),
-                              ),
-                              QuickActionTile(
-                                icon: Icons.person_add_outlined,
-                                label: 'Invite',
-                                sublabel: 'Plan together',
-                                onTap: () =>
-                                    Navigator.pushNamed(context, '/members'),
-                              ),
-                              QuickActionTile(
-                                icon: Icons.receipt_long_outlined,
-                                label: 'Split bill',
-                                sublabel: 'Settle fast',
-                                onTap: () =>
-                                    Navigator.pushNamed(context, '/budget'),
-                              ),
-                              QuickActionTile(
-                                icon: Icons.checklist_rounded,
-                                label: 'Packing',
-                                sublabel: '$packedPct% packed',
-                                onTap: () =>
-                                    Navigator.pushNamed(context, '/packing'),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 100),
-                        ],
+                                QuickActionTile(
+                                  icon: Icons.person_add_outlined,
+                                  label: 'Invite',
+                                  sublabel: 'Plan together',
+                                  onTap: () async {
+                                    final activeTrip = await ref
+                                        .read(activeTripProvider.future);
+                                    if (activeTrip != null) {
+                                      ref
+                                          .read(selectedTripIdProvider.notifier)
+                                          .select(activeTrip.id);
+                                    }
+                                    if (context.mounted) {
+                                      Navigator.pushNamed(context, '/members');
+                                    }
+                                  },
+                                ),
+                                QuickActionTile(
+                                  icon: Icons.receipt_long_outlined,
+                                  label: 'Split bill',
+                                  sublabel: 'Settle fast',
+                                  onTap: () async {
+                                    final activeTrip = await ref
+                                        .read(activeTripProvider.future);
+                                    if (activeTrip != null) {
+                                      ref
+                                          .read(selectedTripIdProvider.notifier)
+                                          .select(activeTrip.id);
+                                    }
+                                    if (context.mounted) {
+                                      Navigator.pushNamed(context, '/budget');
+                                    }
+                                  },
+                                ),
+                                QuickActionTile(
+                                  icon: Icons.checklist_rounded,
+                                  label: 'Packing',
+                                  sublabel: '$packedPct% packed',
+                                  onTap: () async {
+                                    final activeTrip = await ref
+                                        .read(activeTripProvider.future);
+                                    if (activeTrip != null) {
+                                      ref
+                                          .read(selectedTripIdProvider.notifier)
+                                          .select(activeTrip.id);
+                                    }
+                                    if (context.mounted) {
+                                      Navigator.pushNamed(context, '/packing');
+                                    }
+                                  },
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 100),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -608,9 +772,8 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
                     totalSteps: _tourSteps.length,
                     title: _tourSteps[_tourStep].title,
                     description: _tourSteps[_tourStep].description,
-                    actionLabel: _tourStep == _tourSteps.length - 1
-                        ? 'Done'
-                        : 'Next',
+                    actionLabel:
+                        _tourStep == _tourSteps.length - 1 ? 'Done' : 'Next',
                     onSkip: _dismissTour,
                     onNext: _advanceTour,
                   ),

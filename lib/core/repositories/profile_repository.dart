@@ -1,11 +1,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:sembast/sembast.dart';
+import '../security/three_layer_encryption_service.dart';
 import '../services/database_service.dart';
 
 class ProfileRepository {
   final DatabaseService _dbService = DatabaseService.instance;
   final SupabaseClient _supabase = Supabase.instance.client;
+  final ThreeLayerEncryptionService _encryption =
+      ThreeLayerEncryptionService.instance;
 
   /// Synchronous store reference — no need for async here.
   StoreRef<String, Map<String, dynamic>> get _store =>
@@ -28,14 +31,14 @@ class ProfileRepository {
     await _store.record('current_user').delete(db);
   }
 
-  // ── REMOTE STORAGE (SUPABASE) ──────────────────────────────────
+  // ── REMOTE STORAGE (SUPABASE WITH 3-LAYER ENCRYPTION) ──────────
 
   Future<Map<String, dynamic>?> getRemoteProfile(String userId) async {
     try {
       final response =
           await _supabase.from('users').select().eq('id', userId).maybeSingle();
       if (response == null) return null;
-      return _fromRemoteJson(response);
+      return await _fromRemoteJson(response);
     } catch (e) {
       debugPrint('[ProfileRepository] getRemoteProfile error: $e');
       return null;
@@ -59,9 +62,10 @@ class ProfileRepository {
         }
       }
 
-      final remoteData = _toRemoteJson({...data, 'displayName': displayName})
-        ..['id'] = userId
-        ..['updated_at'] = DateTime.now().toIso8601String();
+      final remoteData =
+          await _toRemoteJson({...data, 'displayName': displayName});
+      remoteData['id'] = userId;
+      remoteData['updated_at'] = DateTime.now().toIso8601String();
 
       await _supabase.from('users').upsert(remoteData);
     } catch (e) {
@@ -69,21 +73,35 @@ class ProfileRepository {
     }
   }
 
-  Map<String, dynamic> _toRemoteJson(Map<String, dynamic> data) {
+  Future<Map<String, dynamic>> _toRemoteJson(Map<String, dynamic> data) async {
     final healthNotes = data['healthNotes'];
     final primaryHealthNote =
-        healthNotes is List && healthNotes.isNotEmpty ? '${healthNotes.first}' : null;
+        healthNotes is List && healthNotes.isNotEmpty ? '${healthNotes.first}' : '';
+
+    final rawPhone = data['contactNumber'] as String? ?? '';
+    final rawGcashNumber = data['gcashNumber'] as String? ?? '';
+
+    // Encrypt sensitive fields with 3-Layer encryption before writing at rest
+    final encryptedPhone = rawPhone.isNotEmpty
+        ? await _encryption.encryptData(rawPhone)
+        : null;
+    final encryptedGcash = rawGcashNumber.isNotEmpty
+        ? await _encryption.encryptData(rawGcashNumber)
+        : null;
+    final encryptedHealth = primaryHealthNote.isNotEmpty
+        ? await _encryption.encryptData(primaryHealthNote)
+        : null;
 
     return {
       'email': data['accountEmail'] ?? _supabase.auth.currentUser?.email ?? '',
       'display_name': data['displayName'] ?? 'User',
       'avatar_url': data['profilePhotoUrl'],
       'gcash_qr_url': data['gcashQrUrl'],
-      'gcash_number': data['gcashNumber'],
-      'health_notes': primaryHealthNote,
+      'gcash_number': encryptedGcash ?? rawGcashNumber,
+      'health_notes': encryptedHealth ?? primaryHealthNote,
       'allergies': healthNotes is List ? healthNotes.cast<String>() : const <String>[],
       'home_city': data['homeCity'],
-      'phone': data['contactNumber'],
+      'phone': encryptedPhone ?? rawPhone,
       'share_health_with_org': data['shareHealthWithOrganizer'] ?? false,
       // Persist app-specific extras in a compatible way.
       'dietary': <String>[
@@ -97,7 +115,7 @@ class ProfileRepository {
     };
   }
 
-  Map<String, dynamic> _fromRemoteJson(Map<String, dynamic> row) {
+  Future<Map<String, dynamic>> _fromRemoteJson(Map<String, dynamic> row) async {
     final dietary = (row['dietary'] as List<dynamic>? ?? const [])
         .map((e) => '$e')
         .toList();
@@ -111,12 +129,26 @@ class ProfileRepository {
       return null;
     }
 
+    final rawPhone = row['phone'] as String? ?? '';
+    final rawGcash = row['gcash_number'] as String? ?? '';
+    final rawHealth = row['health_notes'] as String? ?? '';
+
+    // Decrypt sensitive fields with 3-Layer decryption upon fetch
+    final decryptedPhone = rawPhone.isNotEmpty
+        ? await _encryption.decryptData(rawPhone)
+        : '';
+    final decryptedGcash = rawGcash.isNotEmpty
+        ? await _encryption.decryptData(rawGcash)
+        : '';
+    final decryptedHealth = rawHealth.isNotEmpty
+        ? await _encryption.decryptData(rawHealth)
+        : '';
+
     final allergies =
         (row['allergies'] as List<dynamic>? ?? const []).map((e) => '$e').toList();
     final healthNotes = {
       ...allergies,
-      if ((row['health_notes'] as String?)?.isNotEmpty == true)
-        row['health_notes'] as String,
+      if (decryptedHealth.isNotEmpty) decryptedHealth,
     }.toList();
 
     return {
@@ -131,8 +163,8 @@ class ProfileRepository {
       'homeCountry': extractTag('country:') ?? 'Philippines',
       'preferredCurrency': extractTag('currency:') ?? 'PHP',
       'profilePhotoUrl': row['avatar_url'],
-      'contactNumber': row['phone'],
-      'gcashNumber': row['gcash_number'],
+      'contactNumber': decryptedPhone,
+      'gcashNumber': decryptedGcash,
       'gcashQrUrl': row['gcash_qr_url'],
       'healthNotes': healthNotes,
       'shareHealthWithOrganizer': row['share_health_with_org'] ?? false,

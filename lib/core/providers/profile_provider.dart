@@ -240,12 +240,17 @@ class ProfileNotifier extends Notifier<ProfileState> {
           final metadata = supaUser.userMetadata;
           final metaName = metadata?['full_name'] as String? ??
               metadata?['name'] as String?;
+          final metaPhoto = metadata?['avatar_url'] as String? ??
+              metadata?['picture'] as String?;
           final resolvedName = (metaName != null && metaName.isNotEmpty)
               ? metaName
               : current.displayName;
           current = current.copyWith(
             displayName: resolvedName,
             firstName: resolvedName.split(' ').first,
+            profilePhotoUrl: (metaPhoto != null && metaPhoto.isNotEmpty)
+                ? metaPhoto
+                : current.profilePhotoUrl,
             isCloudConnected: true,
             accountEmail: supaUser.email,
           );

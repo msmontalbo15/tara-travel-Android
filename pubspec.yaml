@@ -25,8 +25,9 @@ dependencies:
   location: ^8.0.1
   dio: ^5.9.2
   font_awesome_flutter: ^11.0.0
-  image_picker: ^1.2.1
+  image_picker: ^1.2.3
   share_plus: ^13.0.0
+  qr_flutter: ^4.1.0
   url_launcher: ^6.3.2
   cached_network_image: ^3.4.1
   flutter_dotenv: ^6.0.0
@@ -38,7 +39,13 @@ dependencies:
 
   # 🔐 Security
   flutter_secure_storage: ^10.3.1   # AES-256 via Android Keystore (EncryptedSharedPreferences)
+  local_auth: ^2.3.0                # Face ID & Biometric Authentication
   crypto: ^3.0.6                    # SHA-256 for password strength scoring
+  encrypt: ^5.0.3                   # AES-256-GCM & RSA Encryption
+  pointycastle: ^3.9.1              # Cryptographic primitives (RSA/AES)
+  http: ^1.6.0
+  logger: ^2.7.0
+  add_2_calendar: 3.0.1
 
 dev_dependencies:
   flutter_test:

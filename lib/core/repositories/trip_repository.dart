@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/trip_model.dart';
 import '../services/database_service.dart';
+import '../utils/invite_code_generator.dart';
 import 'package:sembast/sembast.dart';
 
 class TripRepository {
@@ -103,6 +104,11 @@ class TripRepository {
     final db = await _db.database;
     final ownerId = _supabase.auth.currentUser?.id;
 
+    // Ensure trip has a secure invite code
+    if (trip.inviteCode.trim().isEmpty) {
+      trip = trip.copyWith(inviteCode: InviteCodeGenerator.generate());
+    }
+
     // Optimistic local write for instant UI feedback
     await _tripStore.record(trip.id).put(db, trip.toMap());
 
@@ -122,6 +128,32 @@ class TripRepository {
     }
   }
 
+  /// Regenerates a fresh invite code for a trip (organizer action).
+  Future<String> regenerateInviteCode(String tripId) async {
+    final newCode = InviteCodeGenerator.generate();
+    final db = await _db.database;
+
+    // Update local cache
+    final localRecord = await _tripStore.record(tripId).get(db);
+    if (localRecord != null) {
+      final updatedMap = Map<String, dynamic>.from(localRecord);
+      updatedMap['invite_code'] = newCode;
+      await _tripStore.record(tripId).put(db, updatedMap);
+    }
+
+    // Update Supabase
+    try {
+      await _supabase
+          .from('trips')
+          .update({'invite_code': newCode})
+          .eq('id', tripId);
+    } catch (e) {
+      debugPrint('[TripRepository] regenerateInviteCode remote error: $e');
+    }
+
+    return newCode;
+  }
+
   /// Updates an existing trip both locally and in Supabase.
   Future<void> updateTrip(TripModel trip) async {
     final db = await _db.database;
@@ -136,6 +168,7 @@ class TripRepository {
         'budget': trip.totalBudget,
         'type': trip.tripType.toLowerCase(),
         'split_method': trip.splitEqually ? 'equal' : 'fixed',
+        'invite_code': trip.inviteCode,
       }).eq('id', trip.id);
     } catch (e) {
       debugPrint('[TripRepository] updateTrip sync error: $e');
@@ -171,25 +204,60 @@ class TripRepository {
 
   /// Joins a trip using an invite code.
   Future<void> joinTripByCode(String code) async {
+    final cleanCode = InviteCodeGenerator.sanitize(code);
+    if (!InviteCodeGenerator.isValidFormat(cleanCode)) {
+      throw Exception('Invalid invite code format. Please check the 6-character code.');
+    }
+
     final userId = _supabase.auth.currentUser?.id;
+
+    // 1. Try Supabase RPC `join_trip_by_code` (handles RLS security)
+    try {
+      final rpcRes = await _supabase.rpc(
+        'join_trip_by_code',
+        params: {'p_invite_code': cleanCode},
+      );
+      if (rpcRes != null && rpcRes['trip_id'] != null) {
+        final tripId = rpcRes['trip_id'].toString();
+        await _fetchAndCacheRemoteTrip(tripId);
+        return;
+      }
+    } catch (e) {
+      debugPrint('[TripRepository] RPC join_trip_by_code notice: $e');
+    }
+
+    // 2. Fallback direct Supabase query
     if (userId == null) {
       throw Exception('Must be logged in to join a trip.');
     }
 
-    // 1. Find the trip by invite code
+    String? tripId;
     final tripResponse = await _supabase
         .from('trips')
         .select('id')
-        .eq('invite_code', code.trim().toUpperCase())
+        .eq('invite_code', cleanCode)
         .maybeSingle();
 
-    if (tripResponse == null) {
+    if (tripResponse != null) {
+      tripId = tripResponse['id'] as String;
+    } else {
+      // 3. Fallback check local database for offline or local-only trips
+      final db = await _db.database;
+      final localTrips = await _tripStore.find(db);
+      for (final snap in localTrips) {
+        final codeInLocal = snap.value['invite_code']?.toString().toUpperCase();
+        if (codeInLocal == cleanCode) {
+          tripId = snap.key;
+          break;
+        }
+      }
+    }
+
+    if (tripId == null) {
       throw Exception('Invalid invite code or trip not found.');
     }
 
-    final tripId = tripResponse['id'] as String;
-
-    // 2. Insert into trip_members
+    // Insert into trip_members
     try {
       await _supabase.from('trip_members').insert({
         'trip_id': tripId,
@@ -201,9 +269,31 @@ class TripRepository {
       if (e.code != '23505') {
         rethrow;
       }
+    } catch (e) {
+      debugPrint('[TripRepository] joinTripByCode member insert error: $e');
     }
 
-    // 3. Fetch the full trip and cache it locally
-    await getTripById(tripId);
+    // Fetch the full trip from remote/local and refresh cache
+    await _fetchAndCacheRemoteTrip(tripId);
+  }
+
+  Future<TripModel?> _fetchAndCacheRemoteTrip(String tripId) async {
+    final db = await _db.database;
+    try {
+      final response = await _supabase
+          .from('trips')
+          .select('*, trip_members(*, users(*)), expenses(*)')
+          .eq('id', tripId)
+          .maybeSingle();
+
+      if (response != null) {
+        final trip = TripModel.fromMap((response as Map).cast<String, dynamic>());
+        await _tripStore.record(trip.id).put(db, trip.toMap());
+        return trip;
+      }
+    } catch (e) {
+      debugPrint('[TripRepository] _fetchAndCacheRemoteTrip error: $e');
+    }
+    return getTripById(tripId);
   }
 }

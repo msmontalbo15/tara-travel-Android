@@ -15,6 +15,11 @@ class TripModel {
   final bool isArchived;
   final String? coverEmoji;
   final String inviteCode;
+  // New metadata fields
+  final String? coverColor;
+  final String? departurePoint;
+  final String? departureMapUrl;
+  final Map<String, dynamic>? destinationDetails;
 
   TripModel({
     required this.id,
@@ -30,6 +35,10 @@ class TripModel {
     this.isArchived = false,
     this.coverEmoji,
     this.inviteCode = '',
+    this.coverColor,
+    this.departurePoint,
+    this.departureMapUrl,
+    this.destinationDetails,
   });
 
   double get totalSpent => expenses
@@ -52,6 +61,10 @@ class TripModel {
     bool? isArchived,
     String? coverEmoji,
     String? inviteCode,
+    String? coverColor,
+    String? departurePoint,
+    String? departureMapUrl,
+    Map<String, dynamic>? destinationDetails,
   }) {
     return TripModel(
       id: id ?? this.id,
@@ -67,6 +80,10 @@ class TripModel {
       isArchived: isArchived ?? this.isArchived,
       coverEmoji: coverEmoji ?? this.coverEmoji,
       inviteCode: inviteCode ?? this.inviteCode,
+      coverColor: coverColor ?? this.coverColor,
+      departurePoint: departurePoint ?? this.departurePoint,
+      departureMapUrl: departureMapUrl ?? this.departureMapUrl,
+      destinationDetails: destinationDetails ?? this.destinationDetails,
     );
   }
 
@@ -102,6 +119,12 @@ class TripModel {
           status == 'completed',
       coverEmoji: map['cover_emoji']?.toString(),
       inviteCode: map['invite_code']?.toString() ?? '',
+      coverColor: map['cover_color']?.toString(),
+      departurePoint: map['departure_point']?.toString(),
+      departureMapUrl: map['departure_map_url']?.toString(),
+      destinationDetails: map['destination_details'] != null
+          ? (map['destination_details'] as Map).cast<String, dynamic>()
+          : null,
     );
   }
 
@@ -122,6 +145,10 @@ class TripModel {
       'is_archived': isArchived,
       'cover_emoji': coverEmoji,
       'invite_code': inviteCode,
+      'cover_color': coverColor,
+      'departure_point': departurePoint,
+      'departure_map_url': departureMapUrl,
+      'destination_details': destinationDetails,
     };
   }
 
@@ -138,6 +165,11 @@ class TripModel {
       'split_method': splitEqually ? 'equal' : 'fixed',
       'owner_id': ownerId,
       'status': isArchived ? 'archived' : 'planned',
+      if (inviteCode.isNotEmpty) 'invite_code': inviteCode,
+      if (coverColor != null) 'cover_color': coverColor,
+      if (departurePoint != null) 'departure_point': departurePoint,
+      if (departureMapUrl != null) 'departure_map_url': departureMapUrl,
+      if (destinationDetails != null) 'destination_details': destinationDetails,
     };
   }
 }

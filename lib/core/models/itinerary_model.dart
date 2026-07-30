@@ -154,6 +154,12 @@ class ItineraryStop {
   final double? lng;
   final String? confirmationNumber;
   final TransportMode? transportMode;
+  // Feature 6 — collaborative voting: memberId → thumbsUp
+  final Map<String, bool> votes;
+  // Feature 11 — photo gallery
+  final List<String> photoUrls;
+  // Feature 7 — booking attachments
+  final List<String> attachmentUrls;
 
   ItineraryStop({
     required this.id,
@@ -170,7 +176,13 @@ class ItineraryStop {
     this.lng,
     this.confirmationNumber,
     this.transportMode,
+    this.votes = const {},
+    this.photoUrls = const [],
+    this.attachmentUrls = const [],
   });
+
+  /// Net vote score (upvotes minus downvotes).
+  int get voteScore => votes.values.fold(0, (sum, up) => sum + (up ? 1 : -1));
 
   String get duration {
     if (startTime == null || endTime == null) return '';
@@ -200,6 +212,9 @@ class ItineraryStop {
     double? lng,
     String? confirmationNumber,
     TransportMode? transportMode,
+    Map<String, bool>? votes,
+    List<String>? photoUrls,
+    List<String>? attachmentUrls,
   }) {
     return ItineraryStop(
       id: id ?? this.id,
@@ -216,6 +231,9 @@ class ItineraryStop {
       lng: lng ?? this.lng,
       confirmationNumber: confirmationNumber ?? this.confirmationNumber,
       transportMode: transportMode ?? this.transportMode,
+      votes: votes ?? this.votes,
+      photoUrls: photoUrls ?? this.photoUrls,
+      attachmentUrls: attachmentUrls ?? this.attachmentUrls,
     );
   }
 }
@@ -254,6 +272,13 @@ class ItineraryDay {
     this.transport,
     this.stops = const [],
   });
+
+  /// Feature 3 — total estimated cost for this day.
+  double get totalDayCost =>
+      stops.fold(0.0, (sum, s) => sum + (s.estimatedCost ?? 0.0));
+
+  /// Stops that have been marked arrived (completed).
+  int get completedStops => stops.where((s) => s.status == StopStatus.arrived).length;
 
   ItineraryDay copyWith({
     int? dayNumber,

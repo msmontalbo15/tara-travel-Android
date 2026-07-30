@@ -12,6 +12,9 @@ class NewTripModel {
   bool splitEqually;
   List<BudgetCategory> budgetBreakdown;
   TransportDetail? transportDetail;
+  int? coverColor;
+  String? departurePoint;
+  String? departureMapUrl;
 
   NewTripModel({
     this.tripName = '',
@@ -25,6 +28,9 @@ class NewTripModel {
     this.splitEqually = true,
     List<BudgetCategory>? budgetBreakdown,
     this.transportDetail,
+    this.coverColor,
+    this.departurePoint,
+    this.departureMapUrl,
   })  : travelers = travelers ??
             [],
         budgetBreakdown = budgetBreakdown ??
@@ -36,10 +42,19 @@ class NewTripModel {
 }
 
 class TravelerModel {
+  final String id;
   final String name;
   final String initials;
   final int color;
-  TravelerModel({required this.name, required this.initials, required this.color});
+  final String? profilePhotoUrl;
+
+  TravelerModel({
+    this.id = '',
+    required this.name,
+    required this.initials,
+    required this.color,
+    this.profilePhotoUrl,
+  });
 }
 
 class BudgetCategory {

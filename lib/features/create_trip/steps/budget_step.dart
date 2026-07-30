@@ -48,7 +48,10 @@ class _BudgetStepState extends State<BudgetStep> {
   }
 
   void _onContinue() {
-    final val = double.tryParse(_budgetCtrl.text) ?? 0;
+    // Always re-parse from the live controller text — do not rely on onChanged
+    // having the latest value (e.g. user could clear field after onChanged fired)
+    final raw = _budgetCtrl.text.trim().replaceAll(',', '');
+    final val = double.tryParse(raw) ?? 0;
     if (val <= 0) {
       setState(() => _budgetError = 'Please enter a budget greater than ₱0');
       return;

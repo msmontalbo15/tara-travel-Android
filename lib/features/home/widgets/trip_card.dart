@@ -6,34 +6,59 @@ import '../../../core/theme/app_colors.dart';
 class TripCard extends StatelessWidget {
   final String name;
   final String dateRange;
+  final String? destination;
   final bool isUpcoming;
   final String? budget;
   final int? days;
   final int? people;
   final List<TravelerInfo>? travelers;
   final VoidCallback? onTap;
+  // New metadata
+  final String? tripId;
+  final Color? coverColor;
+  final VoidCallback? onItinerary;
+  final VoidCallback? onPacking;
+  final VoidCallback? onMembers;
+  final VoidCallback? onExpenses;
+  final VoidCallback? onChat;
 
   const TripCard.upcoming({
     super.key,
     required this.name,
     required this.dateRange,
+    this.destination,
     this.budget,
     this.days,
     this.people,
     this.travelers,
     this.onTap,
+    this.tripId,
+    this.coverColor,
+    this.onItinerary,
+    this.onPacking,
+    this.onMembers,
+    this.onExpenses,
+    this.onChat,
   })  : isUpcoming = true;
 
   const TripCard.draft({
     super.key,
     required this.name,
     required this.dateRange,
+    this.destination,
     this.onTap,
   })  : isUpcoming = false,
         budget = null,
         days = null,
         people = null,
-        travelers = null;
+        travelers = null,
+        tripId = null,
+        coverColor = null,
+        onItinerary = null,
+        onPacking = null,
+        onMembers = null,
+        onExpenses = null,
+        onChat = null;
 
   @override
   Widget build(BuildContext context) {
@@ -41,21 +66,25 @@ class TripCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         width: double.infinity,
-        margin: const EdgeInsets.only(bottom: 14),
+        margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.cardBorder, width: 0.5),
+          borderRadius: BorderRadius.circular(26),
+          border: Border.all(
+            color: AppColors.cardBorder,
+            width: 1.0,
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 20,
+              spreadRadius: 1,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(26),
           child: isUpcoming ? _buildUpcoming() : _buildDraft(),
         ),
       ),
@@ -63,9 +92,16 @@ class TripCard extends StatelessWidget {
   }
 
   Widget _buildUpcoming() {
+    final accent = coverColor ?? AppColors.primary;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Cover color accent strip
+        Container(
+          width: double.infinity,
+          height: 5,
+          color: accent,
+        ),
         // Trip hero section with gradient
         Container(
           width: double.infinity,
@@ -109,6 +145,24 @@ class TripCard extends StatelessWidget {
                   height: 1.2,
                 ),
               ),
+              if (destination != null) ...[
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(Icons.location_on, color: Colors.white70, size: 14),
+                    const SizedBox(width: 4),
+                    Text(
+                      destination!,
+                      style: const TextStyle(
+                        fontFamily: 'DM Sans',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 4),
               Text(
                 dateRange,
@@ -186,11 +240,10 @@ class TripCard extends StatelessWidget {
               ),
               const SizedBox(height: 14),
 
-              // Avatars + tags
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  if (travelers != null)
+              // Avatars row
+              if (travelers != null && travelers!.isNotEmpty)
+                Row(
+                  children: [
                     SizedBox(
                       height: 30,
                       width: (travelers!.length * 20.0) + 10,
@@ -229,13 +282,24 @@ class TripCard extends StatelessWidget {
                         }).toList(),
                       ),
                     ),
-                  Row(
-                    children: [
-                      _tag('Itinerary', isAccent: true),
-                      const SizedBox(width: 6),
-                      _tag('Packing'),
-                    ],
-                  ),
+                  ],
+                ),
+              const SizedBox(height: 14),
+
+              // Action button bar — full width, evenly spaced
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _actionButton(Icons.calendar_today_outlined, 'Itinerary',
+                      const Color(0xFF5B8DEF), onItinerary),
+                  _actionButton(Icons.inventory_2_outlined, 'Packing',
+                      const Color(0xFFF59E0B), onPacking),
+                  _actionButton(Icons.group_outlined, 'Members',
+                      const Color(0xFF10B981), onMembers),
+                  _actionButton(Icons.attach_money_rounded, 'Expenses',
+                      const Color(0xFFD85A30), onExpenses),
+                  _actionButton(Icons.chat_bubble_outline_rounded, 'Chat',
+                      const Color(0xFF8B5CF6), onChat),
                 ],
               ),
             ],
@@ -283,6 +347,16 @@ class TripCard extends StatelessWidget {
                       color: AppColors.textPrimary,
                     ),
                   ),
+                  if (destination != null)
+                    Text(
+                      destination!,
+                      style: const TextStyle(
+                        fontFamily: 'DM Sans',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
                   Text(
                     dateRange,
                     style: const TextStyle(
@@ -352,22 +426,39 @@ class TripCard extends StatelessWidget {
     );
   }
 
-  Widget _tag(String label, {bool isAccent = false}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-      decoration: BoxDecoration(
-        color: isAccent ? AppColors.sand : AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontFamily: 'DM Sans',
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: isAccent ? AppColors.darkAccent : AppColors.textSecondary,
-          letterSpacing: 0.2,
-        ),
+  Widget _actionButton(
+      IconData icon, String label, Color accentColor, VoidCallback? onPressed) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onPressed,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: accentColor.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(
+              icon,
+              size: 20,
+              color: onPressed != null ? accentColor : AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            label,
+            style: TextStyle(
+              fontFamily: 'DM Sans',
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: onPressed != null ? AppColors.textPrimary : AppColors.textSecondary,
+              letterSpacing: 0.1,
+            ),
+          ),
+        ],
       ),
     );
   }

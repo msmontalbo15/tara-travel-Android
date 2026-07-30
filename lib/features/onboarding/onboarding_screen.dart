@@ -54,13 +54,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     // Update name immediately so it's visible in subsequent steps
     notifier.updateDisplayName(_userName);
 
-    // Set cloud/Google flags based on chosen mode
+    // Set cloud/Google flags and seed profile photo from Google metadata
     final isCloud  = mode == 'google' || mode == 'email';
     final isGoogle = mode == 'google';
+    final googlePhotoUrl = supaUser?.userMetadata?['avatar_url'] as String? ??
+        supaUser?.userMetadata?['picture'] as String?;
+
     notifier.updateProfile(ref.read(profileProvider).copyWith(
       isGoogleConnected: isGoogle,
       isCloudConnected: isCloud,
       accountEmail: isCloud ? (supaUser?.email) : null,
+      profilePhotoUrl: googlePhotoUrl ?? ref.read(profileProvider).profilePhotoUrl,
     ));
 
     // For cloud modes: if the user has already completed onboarding

@@ -5,12 +5,15 @@ import '../../core/models/trip_model.dart';
 import '../../core/models/member_model.dart';
 import '../../core/models/expense_model.dart';
 import '../../core/providers/realtime_provider.dart';
+import '../../core/providers/repository_providers.dart';
 import '../../core/providers/trip_provider.dart';
 import 'widgets/budget_overview_card.dart';
 import 'widgets/expense_log.dart';
 import 'widgets/alert_banner.dart';
 import 'widgets/member_contribution_card.dart';
 import 'widgets/add_expense_form.dart';
+import 'widgets/category_budget_chart.dart';
+import '../../core/widgets/buttons/app_back_button.dart';
 
 class BudgetScreen extends ConsumerStatefulWidget {
   final bool showHeader;
@@ -55,21 +58,11 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                   children: [
                     if (widget.showHeader) ...[
                       if (Navigator.canPop(context)) ...[
-                        Row(
+                        const Row(
                           children: [
-                            GestureDetector(
-                              onTap: () => Navigator.pop(context),
-                              child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.08),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 16),
-                              ),
-                            ),
-                            const SizedBox(width: 14),
-                            const Text('Budget', style: TextStyle(fontFamily: 'Playfair Display', fontSize: 22, fontWeight: FontWeight.w700, color: Colors.white)),
+                            AppBackButton(),
+                            SizedBox(width: 14),
+                            Text('Budget', style: TextStyle(fontFamily: 'Playfair Display', fontSize: 22, fontWeight: FontWeight.w700, color: Colors.white)),
                           ],
                         ),
                         const SizedBox(height: 16),
@@ -92,9 +85,9 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                     Container(
                       padding: const EdgeInsets.all(3),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.06),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
+                        color: Colors.white.withValues(alpha: 0.07),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
                       ),
                       child: Row(
                         children: [
@@ -135,9 +128,9 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
             color: active ? Colors.white : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(10),
             boxShadow: active 
-                ? [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 4, offset: const Offset(0, 1))]
+                ? [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 6, offset: const Offset(0, 2))]
                 : null,
           ),
           child: Text(
@@ -179,7 +172,11 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _sectionTitle('Category Breakdown'),
-        _buildCategoryBreakdownCard(categoryTotals),
+        CategoryBudgetChart(
+          categoryTotals: categoryTotals,
+          totalBudget: trip.totalBudget,
+          totalSpent: trip.totalSpent,
+        ),
         const SizedBox(height: 18),
         _sectionTitle('Distribution'),
         _buildDistributionCard(categoryTotals, trip.totalSpent),
@@ -208,7 +205,27 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
         ExpenseLog(expenses: trip.expenses, members: trip.members),
         const SizedBox(height: 24),
         _sectionTitle('Log New Expense'),
-        AddExpenseForm(members: trip.members),
+        AddExpenseForm(
+          members: trip.members,
+          onExpenseAdded: (expense) async {
+            // Capture messenger before async gap to avoid BuildContext-across-await lint
+            final messenger = ScaffoldMessenger.of(context);
+            try {
+              await ref
+                  .read(expenseRepositoryProvider)
+                  .addExpense(trip.id, expense);
+              // Refresh the active trip so the expense list updates instantly
+              ref.invalidate(activeTripProvider);
+            } catch (e) {
+              messenger.showSnackBar(
+                SnackBar(
+                  content: Text('Failed to save expense: $e'),
+                  backgroundColor: const Color(0xFFEF4444),
+                ),
+              );
+            }
+          },
+        ),
         const SizedBox(height: 40),
       ],
     );
@@ -409,34 +426,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
     );
   }
 
-  Widget _buildCategoryBreakdownCard(Map<String, double> categoryTotals) {
-    if (categoryTotals.isEmpty) {
-      return const Text(
-        'No approved expenses yet.',
-        style: TextStyle(fontFamily: 'DM Sans', color: AppColors.warmMuted),
-      );
-    }
-    final total = categoryTotals.values.fold<double>(0, (a, b) => a + b);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18)),
-      child: Column(
-        children: categoryTotals.entries.map((entry) {
-          final pct = total == 0 ? 0.0 : entry.value / total;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: Row(
-              children: [
-                Expanded(child: Text(entry.key, style: const TextStyle(fontFamily: 'DM Sans'))),
-                Text('₱${entry.value.toStringAsFixed(0)} (${(pct * 100).toStringAsFixed(0)}%)'),
-              ],
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
+
 
   Widget _buildDistributionCard(Map<String, double> categoryTotals, double totalSpent) {
     return Container(

@@ -9,6 +9,7 @@ class StopCard extends StatelessWidget {
   final bool isLast;
   final VoidCallback? onTap;
   final void Function(StopStatus)? onStatusChange;
+  final VoidCallback? onEdit; // Feature 2 — edit button
 
   const StopCard({
     super.key,
@@ -17,6 +18,7 @@ class StopCard extends StatelessWidget {
     this.isLast = false,
     this.onTap,
     this.onStatusChange,
+    this.onEdit,
   });
 
   MemberModel? get _assignedMember {
@@ -95,24 +97,58 @@ class StopCard extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 5),
-                    // Title
-                    Text(stop.title, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.deepEarth)),
-                    // Location
-                    if (stop.location != null) ...[
-                      const SizedBox(height: 3),
-                      Row(
-                        children: [
-                          const Icon(Icons.place_outlined, size: 13, color: AppColors.muted),
-                          const SizedBox(width: 3),
-                          Text(stop.location!, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 11, color: AppColors.muted)),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Title
+                              Text(stop.title, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.deepEarth)),
+                              // Location
+                              if (stop.location != null) ...[
+                                const SizedBox(height: 3),
+                                Row(
+                                  children: [
+                                    const Text('📍', style: TextStyle(fontSize: 12)),
+                                    const SizedBox(width: 3),
+                                    Expanded(
+                                      child: Text(
+                                        stop.location!, 
+                                        style: const TextStyle(fontFamily: 'DM Sans', fontSize: 11, color: AppColors.muted),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                              // Notes
+                              if (stop.notes != null && stop.notes!.isNotEmpty) ...[
+                                const SizedBox(height: 6),
+                                Text(stop.notes!, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 12, color: AppColors.textSecondary), maxLines: 2, overflow: TextOverflow.ellipsis),
+                              ],
+                            ],
+                          ),
+                        ),
+                        // Feature 11 — Photo Thumbnail
+                        if (stop.photoUrls.isNotEmpty) ...[
+                          const SizedBox(width: 12),
+                          Container(
+                            width: 64,
+                            height: 64,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              image: DecorationImage(
+                                image: NetworkImage(stop.photoUrls.first),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
                         ],
-                      ),
-                    ],
-                    // Notes
-                    if (stop.notes != null && stop.notes!.isNotEmpty) ...[
-                      const SizedBox(height: 6),
-                      Text(stop.notes!, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 12, color: AppColors.textSecondary), maxLines: 2, overflow: TextOverflow.ellipsis),
-                    ],
+                      ],
+                    ),
                     // Footer: cost + assigned member
                     const SizedBox(height: 8),
                     Row(
@@ -150,6 +186,12 @@ class StopCard extends StatelessWidget {
                           Text('₱${stop.estimatedCost!.toInt()}', style: const TextStyle(fontFamily: 'DM Sans', fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.deepEarth)),
                         ],
                         const Spacer(),
+                        if (onEdit != null)
+                          GestureDetector(
+                            onTap: onEdit,
+                            child: const Icon(Icons.edit_rounded, size: 14, color: AppColors.muted),
+                          ),
+                        const SizedBox(width: 4),
                         if (_assignedMember != null)
                           Row(
                             children: [

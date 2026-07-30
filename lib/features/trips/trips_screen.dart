@@ -263,8 +263,11 @@ class _JoinTripSheetState extends State<_JoinTripSheet> {
   }
 
   Future<void> _join() async {
-    final code = _codeController.text.trim();
-    if (code.isEmpty) return;
+    final code = _codeController.text.trim().toUpperCase();
+    if (code.isEmpty) {
+      setState(() => _error = 'Please enter a 6-character invite code.');
+      return;
+    }
 
     setState(() {
       _isLoading = true;
@@ -284,6 +287,7 @@ class _JoinTripSheetState extends State<_JoinTripSheet> {
           const SnackBar(
              content: Text('Successfully joined trip!'),
              backgroundColor: AppColors.green,
+             behavior: SnackBarBehavior.floating,
           ),
         );
       }
@@ -305,7 +309,7 @@ class _JoinTripSheetState extends State<_JoinTripSheet> {
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(28), topRight: Radius.circular(28)),
+            topLeft: Radius.circular(32), topRight: Radius.circular(32)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,

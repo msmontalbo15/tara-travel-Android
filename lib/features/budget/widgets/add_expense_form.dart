@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/models/member_model.dart';
 import '../../../core/models/expense_model.dart';
@@ -49,15 +50,18 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
     super.dispose();
   }
 
+  String? _payerError;
+
   bool _validate() {
     bool ok = true;
     setState(() {
       _descError   = _descCtrl.text.trim().isEmpty ? 'Please enter a description' : null;
-      _amountError = (double.tryParse(_amountCtrl.text) ?? 0) <= 0
+      _amountError = (double.tryParse(_amountCtrl.text.trim().replaceAll(',', '')) ?? 0) <= 0
           ? 'Please enter a valid amount'
           : null;
+      _payerError  = _payerId.isEmpty ? 'Please select who paid' : null;
     });
-    if (_descError != null || _amountError != null) ok = false;
+    if (_descError != null || _amountError != null || _payerError != null) ok = false;
     return ok;
   }
 
@@ -65,9 +69,9 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
     if (!_validate()) return;
 
     final expense = ExpenseModel(
-      id:          DateTime.now().millisecondsSinceEpoch.toString(),
+      id:          const Uuid().v4(),
       description: _descCtrl.text.trim(),
-      amount:      double.parse(_amountCtrl.text),
+      amount:      double.parse(_amountCtrl.text.trim().replaceAll(',', '')),
       category:    _category,
       paidById:    _payerId,
       date:        _date,
@@ -78,10 +82,11 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
     _descCtrl.clear();
     _amountCtrl.clear();
     setState(() {
-      _category   = ExpenseCategory.food;
-      _date       = DateTime.now();
-      _descError  = null;
+      _category    = ExpenseCategory.food;
+      _date        = DateTime.now();
+      _descError   = null;
       _amountError = null;
+      _payerError  = null;
     });
   }
 
@@ -182,7 +187,11 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
                 label: 'Paid by',
                 value: _payerId.isNotEmpty ? _payerId : null,
                 prefixIcon: Icons.person_rounded,
-                onChanged: (v) => setState(() => _payerId = v!),
+                errorText: _payerError,
+                onChanged: (v) => setState(() {
+                  _payerId = v!;
+                  _payerError = null;
+                }),
                 items: widget.members.map((m) => DropdownMenuItem(
                   value: m.id,
                   child: Text(m.name),

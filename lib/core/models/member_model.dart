@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
 
+enum MemberStatus {
+  pending,
+  approved,
+  rejected,
+}
+
 enum MemberRole {
   organizer,
   treasurer,
@@ -21,6 +27,7 @@ class MemberModel {
   final bool isLocationSharingPaused;
   final String? gcashNumber;
   final String? gcashQrUrl;
+  final MemberStatus status;
 
   const MemberModel({
     required this.id,
@@ -34,6 +41,7 @@ class MemberModel {
     this.isLocationSharingPaused = false,
     this.gcashNumber,
     this.gcashQrUrl,
+    this.status = MemberStatus.approved,
   });
 
   MemberModel copyWith({
@@ -48,6 +56,7 @@ class MemberModel {
     bool? isLocationSharingPaused,
     String? gcashNumber,
     String? gcashQrUrl,
+    MemberStatus? status,
   }) {
     return MemberModel(
       id: id ?? this.id,
@@ -61,6 +70,7 @@ class MemberModel {
       isLocationSharingPaused: isLocationSharingPaused ?? this.isLocationSharingPaused,
       gcashNumber: gcashNumber ?? this.gcashNumber,
       gcashQrUrl: gcashQrUrl ?? this.gcashQrUrl,
+      status: status ?? this.status,
     );
   }
 
@@ -101,6 +111,12 @@ class MemberModel {
         )
         .toList();
 
+    final statusStr = map['status']?.toString().toLowerCase() ?? 'approved';
+    final status = MemberStatus.values.firstWhere(
+      (e) => e.name == statusStr,
+      orElse: () => MemberStatus.approved,
+    );
+
     return MemberModel(
       id: id,
       name: displayName.toString(),
@@ -114,6 +130,7 @@ class MemberModel {
           map['is_location_sharing_paused'] ?? !(map['location_sharing'] ?? true),
       gcashNumber: map['gcash_number'] ?? nestedUser?['gcash_number'],
       gcashQrUrl: map['gcash_qr_url'] ?? nestedUser?['gcash_qr_url'],
+      status: status,
     );
   }
 
@@ -138,6 +155,7 @@ class MemberModel {
       'is_location_sharing_paused': isLocationSharingPaused,
       'gcash_number': gcashNumber,
       'gcash_qr_url': gcashQrUrl,
+      'status': status.name,
     };
   }
 }

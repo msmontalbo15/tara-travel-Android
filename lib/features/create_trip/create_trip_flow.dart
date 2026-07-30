@@ -6,6 +6,7 @@ import '../../core/models/member_model.dart';
 import '../../core/providers/repository_providers.dart';
 import '../../core/providers/selected_trip_provider.dart';
 import '../../core/providers/trip_provider.dart';
+import '../../core/utils/invite_code_generator.dart';
 import 'models/new_trip_model.dart';
 import 'steps/details_step.dart';
 import 'steps/transport_step.dart';
@@ -44,6 +45,10 @@ class _CreateTripFlowState extends ConsumerState<CreateTripFlow> {
 
     try {
       final tripId = const Uuid().v4();
+      // Convert int ARGB color → '#AARRGGBB' hex string expected by TripModel
+      final coverColorHex = _draft.coverColor != null
+          ? '#${_draft.coverColor!.toRadixString(16).padLeft(8, '0').toUpperCase()}'
+          : null;
       final trip = TripModel(
         id: tripId,
         name: _draft.tripName.isEmpty ? 'My Trip' : _draft.tripName,
@@ -56,12 +61,16 @@ class _CreateTripFlowState extends ConsumerState<CreateTripFlow> {
         tripType: _draft.tripType.toLowerCase(),
         totalBudget: _draft.totalBudget ?? 0,
         splitEqually: _draft.splitEqually,
+        inviteCode: InviteCodeGenerator.generate(),
+        coverColor: coverColorHex,
+        departurePoint: _draft.transportDetail?.departurePoint,
         members: _draft.travelers
             .map((t) => MemberModel(
-                  id: 'new_${t.name.hashCode}',
+                  id: t.id.isNotEmpty ? t.id : 'new_${t.name.hashCode}',
                   name: t.name,
                   initials: t.initials,
                   color: Color(t.color),
+                  profilePhotoUrl: t.profilePhotoUrl,
                 ))
             .toList(),
       );
@@ -106,6 +115,9 @@ class _CreateTripFlowState extends ConsumerState<CreateTripFlow> {
 
     try {
       final tripId = const Uuid().v4();
+      final coverColorHex = _draft.coverColor != null
+          ? '#${_draft.coverColor!.toRadixString(16).padLeft(8, '0').toUpperCase()}'
+          : null;
       final trip = TripModel(
         id: tripId,
         name: _draft.tripName.isEmpty ? 'Draft Trip' : _draft.tripName,
@@ -117,6 +129,9 @@ class _CreateTripFlowState extends ConsumerState<CreateTripFlow> {
         tripType: _draft.tripType.toLowerCase(),
         totalBudget: _draft.totalBudget ?? 0,
         splitEqually: _draft.splitEqually,
+        inviteCode: InviteCodeGenerator.generate(),
+        coverColor: coverColorHex,
+        departurePoint: _draft.transportDetail?.departurePoint,
       );
 
       await ref.read(tripRepositoryProvider).createTrip(trip);
@@ -149,7 +164,11 @@ class _CreateTripFlowState extends ConsumerState<CreateTripFlow> {
 
             // Step 2 — Transport
             TransportStep(
-              onNext: (detail) => _goTo(2),
+              initial: _draft.transportDetail,
+              onNext: (detail) {
+                _draft.transportDetail = detail;
+                _goTo(2);
+              },
               onBack: () => _goTo(0),
             ),
 

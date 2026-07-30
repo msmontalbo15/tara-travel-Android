@@ -1,11 +1,16 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
+import '../../../core/models/friend_model.dart';
+import '../../../core/providers/friend_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/inputs/app_text_field.dart';
-import '../../../core/widgets/inputs/app_date_picker.dart';
 import '../models/new_trip_model.dart';
 import '../widgets/step_indicator.dart';
 
-class DetailsStep extends StatefulWidget {
+class DetailsStep extends ConsumerStatefulWidget {
   final NewTripModel trip;
   final VoidCallback onNext;
   final VoidCallback onCancel;
@@ -18,10 +23,10 @@ class DetailsStep extends StatefulWidget {
   });
 
   @override
-  State<DetailsStep> createState() => _DetailsStepState();
+  ConsumerState<DetailsStep> createState() => _DetailsStepState();
 }
 
-class _DetailsStepState extends State<DetailsStep> {
+class _DetailsStepState extends ConsumerState<DetailsStep> {
   late TextEditingController _nameController;
   late TextEditingController _destController;
   final _formKey = GlobalKey<FormState>();
@@ -29,6 +34,9 @@ class _DetailsStepState extends State<DetailsStep> {
   String? _nameError;
   String? _destError;
   String? _dateError;
+
+  List<String> _placePredictions = [];
+  bool _isLoadingPlaces = false;
 
   static const _tripTypes = [
     ('Beach', '🏖️'),
@@ -38,11 +46,25 @@ class _DetailsStepState extends State<DetailsStep> {
     ('Cultural', '🏛️'),
   ];
 
+  static const _coverColors = [
+    0xFFD85A30, // primary
+    0xFF2C1A14, // deepEarth
+    0xFF10B981, // green
+    0xFF3B82F6, // blue
+    0xFF8B5CF6, // purple
+    0xFFF59E0B, // amber
+  ];
+
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.trip.tripName);
     _destController = TextEditingController(text: widget.trip.destination);
+    
+    // Default cover color
+    if (widget.trip.coverColor == null) {
+      widget.trip.coverColor = _coverColors[0];
+    }
   }
 
   @override
@@ -74,9 +96,86 @@ class _DetailsStepState extends State<DetailsStep> {
   }
 
   void _onContinue() {
+    // Validate first — only commit to the draft if inputs are valid
     widget.trip.tripName = _nameController.text.trim();
     widget.trip.destination = _destController.text.trim();
     if (_validate()) widget.onNext();
+  }
+
+  Future<void> _fetchPlaces(String query) async {
+    if (query.isEmpty) {
+      setState(() => _placePredictions = []);
+      return;
+    }
+    
+    setState(() => _isLoadingPlaces = true);
+    
+    final apiKey = dotenv.env['EXPO_PUBLIC_GOOGLE_MAPS_API_KEY'] ?? dotenv.env['GOOGLE_MAPS_API_KEY'];
+    
+    if (apiKey == null || apiKey.isEmpty) {
+      // Fallback to nominatim if no API key
+      try {
+        final uri = Uri.parse('https://nominatim.openstreetmap.org/search?q=${Uri.encodeComponent(query)}&format=json&limit=5');
+        final res = await http.get(uri);
+        if (res.statusCode == 200) {
+          final List data = json.decode(res.body);
+          setState(() {
+            _placePredictions = data.map((e) => e['display_name'] as String).toList();
+          });
+        }
+      } catch (_) {}
+    } else {
+      // Google Places
+      try {
+        final uri = Uri.parse('https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${Uri.encodeComponent(query)}&key=$apiKey');
+        final res = await http.get(uri);
+        if (res.statusCode == 200) {
+          final data = json.decode(res.body);
+          if (data['status'] == 'OK') {
+            setState(() {
+              _placePredictions = (data['predictions'] as List)
+                  .map((e) => e['description'] as String)
+                  .toList();
+            });
+          }
+        }
+      } catch (_) {}
+    }
+    
+    setState(() => _isLoadingPlaces = false);
+  }
+
+  Future<void> _selectDateRange() async {
+    final initialDateRange = (widget.trip.fromDate != null && widget.trip.toDate != null) 
+      ? DateTimeRange(start: widget.trip.fromDate!, end: widget.trip.toDate!)
+      : null;
+
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+      initialDateRange: initialDateRange,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.primary,
+              onPrimary: Colors.white,
+              onSurface: AppColors.deepEarth,
+            ),
+          ),
+          child: child!,
+        );
+      }
+    );
+
+    if (picked != null) {
+      setState(() {
+        widget.trip.fromDate = picked.start;
+        widget.trip.toDate = picked.end;
+        _dateError = null;
+      });
+    }
   }
 
   @override
@@ -158,22 +257,101 @@ class _DetailsStepState extends State<DetailsStep> {
                       const SizedBox(height: 18),
 
                       // Destination
-                      AppTextField(
-                        label: 'Destination',
-                        controller: _destController,
-                        hint: 'e.g. Paris, France',
-                        errorText: _destError,
-                        prefixIcon: Icons.location_on_rounded,
-                        textCapitalization: TextCapitalization.words,
-                        onChanged: (_) {
-                          if (_destError != null) setState(() => _destError = null);
-                          widget.trip.destination = _destController.text;
+                      const Text(
+                        'Destination',
+                        style: TextStyle(
+                          fontFamily: 'DM Sans',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.deepEarth,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Autocomplete<String>(
+                        optionsBuilder: (TextEditingValue textEditingValue) {
+                          if (textEditingValue.text == '') {
+                            return const Iterable<String>.empty();
+                          }
+                          return _placePredictions;
                         },
-                        semanticsLabel: 'Destination field',
+                        onSelected: (String selection) {
+                          _destController.text = selection;
+                          widget.trip.destination = selection;
+                          if (_destError != null) setState(() => _destError = null);
+                        },
+                        fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
+                          // keep them in sync
+                          if (textEditingController.text != _destController.text && !focusNode.hasFocus) {
+                            textEditingController.text = _destController.text;
+                          }
+                          
+                          textEditingController.addListener(() {
+                            if (focusNode.hasFocus) {
+                              _destController.text = textEditingController.text;
+                              widget.trip.destination = textEditingController.text;
+                              if (_destError != null) setState(() => _destError = null);
+                              _fetchPlaces(textEditingController.text);
+                            }
+                          });
+                          
+                          return TextField(
+                            controller: textEditingController,
+                            focusNode: focusNode,
+                            style: const TextStyle(fontFamily: 'DM Sans', fontSize: 15, color: AppColors.textPrimary),
+                            decoration: InputDecoration(
+                              hintText: 'e.g. Paris, France',
+                              hintStyle: const TextStyle(fontFamily: 'DM Sans', fontSize: 15, color: AppColors.muted),
+                              errorText: _destError,
+                              prefixIcon: const Icon(Icons.location_on_rounded, color: AppColors.textSecondary, size: 20),
+                              suffixIcon: _isLoadingPlaces 
+                                  ? Container(
+                                      width: 16, height: 16,
+                                      margin: const EdgeInsets.all(14),
+                                      child: const CircularProgressIndicator(strokeWidth: 2),
+                                    ) 
+                                  : null,
+                              filled: true,
+                              fillColor: AppColors.surfaceLight,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide.none,
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                            ),
+                          );
+                        },
+                        optionsViewBuilder: (context, onSelected, options) {
+                          return Align(
+                            alignment: Alignment.topLeft,
+                            child: Material(
+                              elevation: 4.0,
+                              borderRadius: BorderRadius.circular(16),
+                              child: Container(
+                                width: MediaQuery.of(context).size.width - 40,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: ListView.builder(
+                                  padding: EdgeInsets.zero,
+                                  shrinkWrap: true,
+                                  itemCount: options.length,
+                                  itemBuilder: (BuildContext context, int index) {
+                                    final option = options.elementAt(index);
+                                    return ListTile(
+                                      title: Text(option, style: const TextStyle(fontFamily: 'DM Sans')),
+                                      onTap: () => onSelected(option),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          );
+                        },
                       ),
                       const SizedBox(height: 18),
 
-                      // Travel dates — side by side pickers
+                      // Travel dates — Unified Date Range Picker
                       const Text(
                         'Travel dates',
                         style: TextStyle(
@@ -184,46 +362,36 @@ class _DetailsStepState extends State<DetailsStep> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: AppDatePicker(
-                              label: 'From',
-                              selectedDate: widget.trip.fromDate,
-                              errorText: _dateError != null && widget.trip.fromDate == null
-                                  ? ' '
-                                  : null,
-                              onDateSelected: (d) {
-                                setState(() {
-                                  widget.trip.fromDate = d;
-                                  _dateError = null;
-                                  // Auto-advance toDate if it's before fromDate
-                                  if (widget.trip.toDate != null &&
-                                      widget.trip.toDate!.isBefore(d)) {
-                                    widget.trip.toDate = d.add(const Duration(days: 1));
-                                  }
-                                });
-                              },
+                      GestureDetector(
+                        onTap: _selectDateRange,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceLight,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: _dateError != null ? AppColors.red : Colors.transparent,
                             ),
                           ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: AppDatePicker(
-                              label: 'To',
-                              selectedDate: widget.trip.toDate,
-                              firstDate: widget.trip.fromDate,
-                              errorText: _dateError != null && widget.trip.toDate == null
-                                  ? ' '
-                                  : null,
-                              onDateSelected: (d) {
-                                setState(() {
-                                  widget.trip.toDate = d;
-                                  _dateError = null;
-                                });
-                              },
-                            ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.calendar_month_rounded, color: AppColors.textSecondary, size: 20),
+                              const SizedBox(width: 12),
+                              Text(
+                                (widget.trip.fromDate != null && widget.trip.toDate != null)
+                                    ? '${widget.trip.fromDate!.month}/${widget.trip.fromDate!.day}/${widget.trip.fromDate!.year} - ${widget.trip.toDate!.month}/${widget.trip.toDate!.day}/${widget.trip.toDate!.year}'
+                                    : 'Select date range',
+                                style: TextStyle(
+                                  fontFamily: 'DM Sans',
+                                  fontSize: 15,
+                                  color: (widget.trip.fromDate != null && widget.trip.toDate != null) 
+                                      ? AppColors.textPrimary 
+                                      : AppColors.muted,
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
                       if (_dateError != null) ...[
                         const SizedBox(height: 6),
@@ -239,6 +407,42 @@ class _DetailsStepState extends State<DetailsStep> {
                           ),
                         ),
                       ],
+                      const SizedBox(height: 22),
+                      
+                      // Trip Cover Color selector
+                      const Text(
+                        'Trip Cover Color',
+                        style: TextStyle(
+                          fontFamily: 'DM Sans',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.deepEarth,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: _coverColors.map((colorValue) {
+                          final isSelected = widget.trip.coverColor == colorValue;
+                          return GestureDetector(
+                            onTap: () {
+                              setState(() => widget.trip.coverColor = colorValue);
+                            },
+                            child: Container(
+                              margin: const EdgeInsets.only(right: 12),
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: Color(colorValue),
+                                shape: BoxShape.circle,
+                                border: isSelected ? Border.all(color: AppColors.textPrimary, width: 3) : null,
+                              ),
+                              child: isSelected 
+                                  ? const Icon(Icons.check, color: Colors.white, size: 20)
+                                  : null,
+                            ),
+                          );
+                        }).toList(),
+                      ),
                       const SizedBox(height: 22),
 
                       // Trip type chips
@@ -354,37 +558,28 @@ class _DetailsStepState extends State<DetailsStep> {
   }
 
   Widget _travelersRow() {
-    return Row(
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 8,
+      runSpacing: 8,
       children: [
-        ...widget.trip.travelers.map((t) => _avatar(t.initials, t.color)),
-        const SizedBox(width: 8),
+        ...widget.trip.travelers.map((t) => _avatar(t)),
         GestureDetector(
-          onTap: () {
-            setState(() {
-              if (widget.trip.travelers.length < 5) {
-                widget.trip.travelers.add(
-                  TravelerModel(
-                    name: 'Traveler ${widget.trip.travelers.length + 1}',
-                    initials: 'T${widget.trip.travelers.length + 1}',
-                    color: [0xFFEAB308, 0xFF3B82F6, 0xFF10B981, 0xFF8B5CF6]
-                        [widget.trip.travelers.length % 4],
-                  ),
-                );
-              }
-            });
-          },
+          onTap: _showSelectFriendsBottomSheet,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              border: Border.all(color: AppColors.primary),
+              color: AppColors.primary.withValues(alpha: 0.08),
+              border: Border.all(color: AppColors.primary, width: 1.2),
               borderRadius: BorderRadius.circular(20),
             ),
             child: const Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.add, size: 14, color: AppColors.primary),
-                SizedBox(width: 4),
+                Icon(Icons.person_add_rounded, size: 16, color: AppColors.primary),
+                SizedBox(width: 6),
                 Text(
-                  'Add',
+                  'Add friends',
                   style: TextStyle(
                     fontFamily: 'DM Sans',
                     fontSize: 13,
@@ -400,27 +595,343 @@ class _DetailsStepState extends State<DetailsStep> {
     );
   }
 
-  Widget _avatar(String initials, int color) {
-    return Container(
-      margin: const EdgeInsets.only(right: 6),
-      width: 34,
-      height: 34,
-      decoration: BoxDecoration(
-        color: Color(color),
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 2),
-      ),
-      child: Center(
-        child: Text(
-          initials,
-          style: const TextStyle(
-            fontFamily: 'DM Sans',
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            color: Colors.white,
+  Widget _avatar(TravelerModel traveler) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: Color(traveler.color),
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: ClipOval(
+            child: traveler.profilePhotoUrl != null && traveler.profilePhotoUrl!.isNotEmpty
+                ? Image.network(
+                    traveler.profilePhotoUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Center(
+                      child: Text(
+                        traveler.initials,
+                        style: const TextStyle(
+                          fontFamily: 'DM Sans',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  )
+                : Center(
+                    child: Text(
+                      traveler.initials,
+                      style: const TextStyle(
+                        fontFamily: 'DM Sans',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
           ),
         ),
-      ),
+        Positioned(
+          right: -2,
+          top: -2,
+          child: GestureDetector(
+            onTap: () {
+              setState(() {
+                widget.trip.travelers.removeWhere((t) =>
+                    (t.id.isNotEmpty && t.id == traveler.id) || t.name == traveler.name);
+              });
+            },
+            child: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: const BoxDecoration(
+                color: AppColors.red,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.close,
+                size: 10,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showSelectFriendsBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalContext) {
+        return Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(modalContext).size.height * 0.75,
+          ),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Bottom sheet handle bar
+              const SizedBox(height: 12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.cardBorder,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Header
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: [
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Select Friends',
+                            style: TextStyle(
+                              fontFamily: 'DM Sans',
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            'Only existing friends can be added to your trip',
+                            style: TextStyle(
+                              fontFamily: 'DM Sans',
+                              fontSize: 13,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: AppColors.textSecondary),
+                      onPressed: () => Navigator.of(modalContext).pop(),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Divider(height: 1, color: AppColors.cardBorder),
+
+              // Friends list consumer
+              Flexible(
+                child: Consumer(
+                  builder: (context, ref, child) {
+                    final friendsAsync = ref.watch(friendsProvider);
+
+                    return friendsAsync.when(
+                      data: (friends) {
+                        // Filter for accepted friends
+                        final acceptedFriends = friends
+                            .where((f) => f.status == FriendStatus.accepted)
+                            .toList();
+
+                        if (acceptedFriends.isEmpty) {
+                          return Padding(
+                            padding: const EdgeInsets.all(32),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.surfaceLight,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.group_off_rounded,
+                                    size: 40,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                const Text(
+                                  'No Friends Found',
+                                  style: TextStyle(
+                                    fontFamily: 'DM Sans',
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                const Text(
+                                  'You do not have any accepted friends yet. Add friends from the Friends menu to invite them to trips.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontFamily: 'DM Sans',
+                                    fontSize: 13,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+
+                        return StatefulBuilder(
+                          builder: (context, setModalState) {
+                            return ListView.separated(
+                              shrinkWrap: true,
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                              itemCount: acceptedFriends.length,
+                              separatorBuilder: (_, __) => const Divider(height: 1, color: AppColors.surfaceLight),
+                              itemBuilder: (context, index) {
+                                final friend = acceptedFriends[index];
+                                final isSelected = widget.trip.travelers.any((t) =>
+                                    (t.id.isNotEmpty && t.id == friend.id) || t.name == friend.name);
+
+                                return ListTile(
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 4),
+                                  leading: CircleAvatar(
+                                    backgroundColor: friend.color,
+                                    backgroundImage: (friend.profilePhotoUrl != null && friend.profilePhotoUrl!.isNotEmpty)
+                                        ? NetworkImage(friend.profilePhotoUrl!)
+                                        : null,
+                                    child: (friend.profilePhotoUrl == null || friend.profilePhotoUrl!.isEmpty)
+                                        ? Text(
+                                            friend.initials,
+                                            style: const TextStyle(
+                                              fontFamily: 'DM Sans',
+                                              fontWeight: FontWeight.w700,
+                                              color: Colors.white,
+                                            ),
+                                          )
+                                        : null,
+                                  ),
+                                  title: Text(
+                                    friend.name,
+                                    style: const TextStyle(
+                                      fontFamily: 'DM Sans',
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  trailing: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 150),
+                                    width: 26,
+                                    height: 26,
+                                    decoration: BoxDecoration(
+                                      color: isSelected ? AppColors.primary : Colors.transparent,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: isSelected ? AppColors.primary : AppColors.muted,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    child: isSelected
+                                        ? const Icon(Icons.check, size: 16, color: Colors.white)
+                                        : null,
+                                  ),
+                                  onTap: () {
+                                    setState(() {
+                                      if (isSelected) {
+                                        widget.trip.travelers.removeWhere((t) =>
+                                            (t.id.isNotEmpty && t.id == friend.id) || t.name == friend.name);
+                                      } else {
+                                        widget.trip.travelers.add(
+                                          TravelerModel(
+                                            id: friend.id,
+                                            name: friend.name,
+                                            initials: friend.initials,
+                                            color: friend.color.toARGB32(),
+                                            profilePhotoUrl: friend.profilePhotoUrl,
+                                          ),
+                                        );
+                                      }
+                                    });
+                                    setModalState(() {});
+                                  },
+                                );
+                              },
+                            );
+                          },
+                        );
+                      },
+                      loading: () => const SizedBox(
+                        height: 180,
+                        child: Center(
+                          child: CircularProgressIndicator(color: AppColors.primary),
+                        ),
+                      ),
+                      error: (err, stack) => Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Center(
+                          child: Text(
+                            'Could not load friends: $err',
+                            style: const TextStyle(
+                              fontFamily: 'DM Sans',
+                              color: AppColors.red,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+
+              // Bottom Done Button
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(modalContext).pop(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: Text(
+                      'Done (${widget.trip.travelers.length} selected)',
+                      style: const TextStyle(
+                        fontFamily: 'DM Sans',
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

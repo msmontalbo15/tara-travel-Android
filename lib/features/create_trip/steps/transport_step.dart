@@ -229,7 +229,7 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
             ],
           ),
           const SizedBox(height: 16),
-          _buildTextField('Departure Point', 'e.g. EDSA Cubao → Caticlan Port', _departureCtrl),
+          _buildDepartureField('Departure Point', 'e.g. EDSA Cubao or Google Maps link', _departureCtrl),
           if (_selected == TransportMode.car || _selected == TransportMode.vanHire || _selected == TransportMode.motorcycle) ...[
             const SizedBox(height: 12),
             _buildVehicleCountStepper(),
@@ -250,6 +250,29 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
           _buildTextField('Estimated Travel Time', 'e.g. ~8h 30min', _durationCtrl),
         ],
       ),
+    );
+  }
+
+  Widget _buildDepartureField(String label, String hint, TextEditingController ctrl) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.muted)),
+        const SizedBox(height: 6),
+        TextField(
+          controller: ctrl,
+          style: const TextStyle(fontFamily: 'DM Sans', fontSize: 14, color: AppColors.deepEarth),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: const TextStyle(fontFamily: 'DM Sans', fontSize: 13, color: AppColors.muted),
+            filled: true,
+            fillColor: AppColors.surfaceLight,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            suffixIcon: const Icon(Icons.map_outlined, color: AppColors.textSecondary, size: 20),
+          ),
+        ),
+      ],
     );
   }
 

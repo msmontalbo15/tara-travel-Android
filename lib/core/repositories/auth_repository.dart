@@ -36,14 +36,15 @@ class AuthRepository {
   final SupabaseClient _supabase = Supabase.instance.client;
 
   // ── Google Sign-In ─────────────────────────────────────────────────────────
-  //
-  // Uses the `google_sign_in` package. On Android 14+ with Credential Manager
-  // support enabled in the package, it delegates to Credential Manager API
-  // automatically — no code change needed at this layer.
-  GoogleSignIn get _googleSignIn => GoogleSignIn(
-        serverClientId: dotenv.env['GOOGLE_WEB_CLIENT_ID'],
-        scopes: ['email', 'profile', 'openid'],
-      );
+  GoogleSignIn? _googleSignInInstance;
+
+  GoogleSignIn get _googleSignIn {
+    _googleSignInInstance ??= GoogleSignIn(
+      serverClientId: dotenv.env['GOOGLE_WEB_CLIENT_ID'],
+      scopes: const ['email', 'profile', 'openid'],
+    );
+    return _googleSignInInstance!;
+  }
 
   // ── OTP / Magic Link ───────────────────────────────────────────────────────
 
@@ -96,13 +97,6 @@ class AuthRepository {
   }
 
   /// Creates a new account with [email] and [password].
-  ///
-  /// [displayName] is stored in `user_metadata.full_name` for immediate
-  /// availability after sign-up without an additional profile fetch.
-  ///
-  /// IMPORTANT: The caller must validate [password] strength via
-  /// [validatePassword] before calling this — server-side validation
-  /// is a secondary guard only.
   Future<AuthResponse> signUpWithEmailPassword(
     String email,
     String password, {
@@ -120,9 +114,6 @@ class AuthRepository {
   // ── Password Reset ─────────────────────────────────────────────────────────
 
   /// Sends a password-reset email to [email].
-  ///
-  /// Register `taratravel://reset` in Supabase → Auth → URL Configuration →
-  /// Redirect URLs before enabling this flow.
   Future<void> sendPasswordResetEmail(String email) async {
     await _supabase.auth.resetPasswordForEmail(
       email.trim(),
@@ -132,39 +123,50 @@ class AuthRepository {
 
   // ── Google Sign-In ─────────────────────────────────────────────────────────
 
-  /// Performs native Google Sign-In and exchanges the ID token with Supabase.
-  ///
-  /// Returns the authenticated [User], or `null` if the user dismissed the
-  /// account picker (cancellation is not an error).
-  ///
-  /// Throws a strongly-typed [AuthFailure] subclass for all other failures.
+  /// Performs fast native Google Sign-In and exchanges the ID token with Supabase.
+  /// Automatically falls back to OAuth browser flow if native SDK is unconfigured.
   Future<User?> signInWithGoogle() async {
     try {
-      // Force the account picker to appear — prevents silent wrong-account
-      // selection in multi-account or shared-device setups.
-      await _googleSignIn.signOut();
-
-      final googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return null; // User cancelled — not an error.
-
-      final googleAuth = await googleUser.authentication;
-      final idToken = googleAuth.idToken;
-      final accessToken = googleAuth.accessToken;
-
-      if (idToken == null) {
-        throw const UnknownAuthFailure(
-          'Google sign-in failed: ID token not received. '
-          'Verify GOOGLE_WEB_CLIENT_ID in .env and google-services.json.',
-        );
+      GoogleSignInAccount? googleUser;
+      try {
+        if (await _googleSignIn.isSignedIn()) {
+          await _googleSignIn.signOut();
+        }
+        googleUser = await _googleSignIn.signIn();
+      } catch (e) {
+        debugPrint('[AuthRepository] Native Google sign-in note: $e');
       }
 
-      final response = await _supabase.auth.signInWithIdToken(
-        provider: OAuthProvider.google,
-        idToken: idToken,
-        accessToken: accessToken,
-      );
+      if (googleUser != null) {
+        final googleAuth = await googleUser.authentication;
+        final idToken = googleAuth.idToken;
+        final accessToken = googleAuth.accessToken;
 
-      return response.user;
+        if (idToken != null) {
+          final response = await _supabase.auth.signInWithIdToken(
+            provider: OAuthProvider.google,
+            idToken: idToken,
+            accessToken: accessToken,
+          );
+          return response.user;
+        }
+      }
+
+      // If user deliberately cancelled native account picker, return null
+      if (googleUser == null && await _googleSignIn.isSignedIn() == false) {
+        // User cancelled picker
+        return null;
+      }
+
+      // Fallback: Trigger browser OAuth flow if native token wasn't issued
+      final launched = await _supabase.auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: 'taratravel://callback',
+      );
+      if (launched) {
+        return await waitForSession(timeout: const Duration(seconds: 15));
+      }
+      return null;
     } on AuthException catch (e) {
       throw AuthFailureMapper.fromAuthException(e);
     } catch (e) {

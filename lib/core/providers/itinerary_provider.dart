@@ -37,7 +37,10 @@ class ItineraryNotifier extends AsyncNotifier<ItineraryState> {
     final repo = ref.watch(itineraryRepositoryProvider);
     final days = await repo.getItinerary(_tripId);
     days.sort((a, b) => a.dayNumber.compareTo(b.dayNumber));
-    return ItineraryState(days: days, activeDay: 0);
+    final effectiveDays = days.isEmpty
+        ? [ItineraryDay(dayNumber: 1, date: DateTime.now(), stops: const [])]
+        : days;
+    return ItineraryState(days: effectiveDays, activeDay: 0);
   }
 
   // ── Mutations ─────────────────────────────────────────────────────
@@ -77,6 +80,96 @@ class ItineraryNotifier extends AsyncNotifier<ItineraryState> {
       if (s.id == stopId) return s.copyWith(status: status);
       return s;
     }).toList();
+    final updatedDay = day.copyWith(stops: updatedStops);
+    final updatedDays = List<ItineraryDay>.from(currentState.days);
+    updatedDays[dayIndex] = updatedDay;
+
+    state = AsyncData(currentState.copyWith(days: updatedDays));
+    await repo.saveItineraryDay(_tripId, updatedDay);
+  }
+
+  // ── Feature 1: Drag-and-drop reorder ─────────────────────────────
+
+  Future<void> reorderStop(int dayIndex, int oldIndex, int newIndex) async {
+    final currentState = state.value;
+    if (currentState == null) return;
+
+    final repo = ref.read(itineraryRepositoryProvider);
+    final day = currentState.days[dayIndex];
+    final stops = List<ItineraryStop>.from(day.stops);
+
+    // ReorderableListView passes newIndex after removal so compensate
+    final adjustedNew = newIndex > oldIndex ? newIndex - 1 : newIndex;
+    final item = stops.removeAt(oldIndex);
+    stops.insert(adjustedNew, item);
+
+    final updatedDay = day.copyWith(stops: stops);
+    final updatedDays = List<ItineraryDay>.from(currentState.days);
+    updatedDays[dayIndex] = updatedDay;
+
+    state = AsyncData(currentState.copyWith(days: updatedDays));
+    await repo.saveItineraryDay(_tripId, updatedDay);
+  }
+
+  // ── Feature 2: Update a full stop ─────────────────────────────────
+
+  Future<void> updateStop(int dayIndex, ItineraryStop updated) async {
+    final currentState = state.value;
+    if (currentState == null) return;
+
+    final repo = ref.read(itineraryRepositoryProvider);
+    final day = currentState.days[dayIndex];
+    final updatedStops = day.stops.map((s) => s.id == updated.id ? updated : s).toList();
+    final updatedDay = day.copyWith(stops: updatedStops);
+    final updatedDays = List<ItineraryDay>.from(currentState.days);
+    updatedDays[dayIndex] = updatedDay;
+
+    state = AsyncData(currentState.copyWith(days: updatedDays));
+    await repo.saveItineraryDay(_tripId, updatedDay);
+  }
+
+  // ── Feature 2: Delete a stop ──────────────────────────────────────
+
+  Future<void> deleteStop(int dayIndex, String stopId) async {
+    final currentState = state.value;
+    if (currentState == null) return;
+
+    final repo = ref.read(itineraryRepositoryProvider);
+    final day = currentState.days[dayIndex];
+    final updatedStops = day.stops.where((s) => s.id != stopId).toList();
+    final updatedDay = day.copyWith(stops: updatedStops);
+    final updatedDays = List<ItineraryDay>.from(currentState.days);
+    updatedDays[dayIndex] = updatedDay;
+
+    state = AsyncData(currentState.copyWith(days: updatedDays));
+    await repo.saveItineraryDay(_tripId, updatedDay);
+  }
+
+  // ── Feature 6: Collaborative voting ──────────────────────────────
+
+  Future<void> voteOnStop(
+    int dayIndex,
+    String stopId,
+    String memberId,
+    bool upvote,
+  ) async {
+    final currentState = state.value;
+    if (currentState == null) return;
+
+    final repo = ref.read(itineraryRepositoryProvider);
+    final day = currentState.days[dayIndex];
+    final updatedStops = day.stops.map((s) {
+      if (s.id != stopId) return s;
+      final updatedVotes = Map<String, bool>.from(s.votes);
+      // Toggle: if already voted same way, remove vote
+      if (updatedVotes[memberId] == upvote) {
+        updatedVotes.remove(memberId);
+      } else {
+        updatedVotes[memberId] = upvote;
+      }
+      return s.copyWith(votes: updatedVotes);
+    }).toList();
+
     final updatedDay = day.copyWith(stops: updatedStops);
     final updatedDays = List<ItineraryDay>.from(currentState.days);
     updatedDays[dayIndex] = updatedDay;

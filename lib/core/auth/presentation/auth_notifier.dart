@@ -208,9 +208,22 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       }
     } on AuthException catch (e) {
       final failure = AuthFailureMapper.fromAuthException(e);
+      // DatabaseSaveFailure is non-fatal: the auth user was created.
+      // If Supabase OTP confirmation is needed, it will still work —
+      // the trigger fix (migration 009) will auto-recover the profile row.
+      if (failure is DatabaseSaveFailure) {
+        debugPrint('[AuthNotifier] DB trigger error — non-fatal, advancing to OTP.');
+        state = AsyncData(AuthOtpPending(email: email, pendingName: displayName));
+        return;
+      }
       state = AsyncData(AuthError(message: failure.userMessage));
     } catch (e) {
       final failure = AuthFailureMapper.fromException(e);
+      if (failure is DatabaseSaveFailure) {
+        debugPrint('[AuthNotifier] DB trigger error — non-fatal, advancing to OTP.');
+        state = AsyncData(AuthOtpPending(email: email, pendingName: displayName));
+        return;
+      }
       state = AsyncData(AuthError(message: failure.userMessage));
     }
   }

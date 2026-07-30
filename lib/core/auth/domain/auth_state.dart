@@ -128,13 +128,34 @@ final class UnknownAuthFailure extends AuthFailure {
       raw.length > 80 ? 'Authentication failed. Please try again.' : raw;
 }
 
+/// Supabase DB trigger error during signup — profile row creation failed
+/// but the auth user was created. Login can still proceed.
+final class DatabaseSaveFailure extends AuthFailure {
+  const DatabaseSaveFailure();
+
+  @override
+  String get userMessage =>
+      'Account created — profile sync will complete on next sign in.';
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 /// Maps a raw [AuthException] message to a strongly-typed [AuthFailure].
 /// Call site: `AuthFailure.fromAuthException(e)`
 extension AuthFailureMapper on AuthFailure {
   static AuthFailure fromAuthException(AuthException e) {
+    final code = (e.code ?? '').toLowerCase();
     final msg = e.message.toLowerCase();
+
+    // ── Supabase trigger error: DB couldn't insert profile row during signup.
+    // The auth user was already created — treat as non-fatal: allow login flow.
+    if (code.contains('unexpected_failure') ||
+        msg.contains('database error saving new user') ||
+        msg.contains('database error') && msg.contains('saving') ||
+        msg.contains('unexpected_failure')) {
+      return const DatabaseSaveFailure();
+    }
+
     if (msg.contains('invalid') && msg.contains('credential')) {
       return const InvalidCredentials();
     }
@@ -156,6 +177,10 @@ extension AuthFailureMapper on AuthFailure {
   static AuthFailure fromException(Object e) {
     if (e is AuthException) return fromAuthException(e);
     final msg = e.toString().toLowerCase();
+    if (msg.contains('database error saving new user') ||
+        msg.contains('unexpected_failure')) {
+      return const DatabaseSaveFailure();
+    }
     if (msg.contains('network') || msg.contains('socket')) {
       return const NetworkFailure();
     }

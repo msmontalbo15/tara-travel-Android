@@ -19,10 +19,12 @@ import 'features/trip_detail/trip_detail_screen.dart';
 import 'features/activity/activity_log_screen.dart';
 import 'features/chat/chat_screen.dart';
 import 'features/trips/trips_screen.dart';
+import 'features/friends/friends_screen.dart';
 
 import 'core/widgets/auth_gate.dart';
 import 'core/auth/data/secure_session_repository.dart';
 import 'core/services/database_service.dart';
+import 'core/security/three_layer_encryption_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -51,6 +53,11 @@ void main() async {
   if (restoredUser != null) {
     await DatabaseService.instance.switchUser(restoredUser.id);
   }
+
+  // ── 4. Initialise 3-Layer Encryption (generate/load RSA + AES-256 keys) ────────
+  // Keys are persisted in platform Keystore/Keychain via flutter_secure_storage.
+  // Subsequent calls are instant (keys are cached in memory after first load).
+  await ThreeLayerEncryptionService.instance.init();
 
   runApp(
     const ProviderScope(
@@ -91,6 +98,7 @@ class TaraApp extends StatelessWidget {
           '/activity':     (_) => const ActivityLogScreen(),
           '/chat':         (_) => const ChatScreen(),
           '/trips':        (_) => const TripsScreen(),
+          '/friends':      (_) => const FriendsScreen(),
         },
       ),
     );

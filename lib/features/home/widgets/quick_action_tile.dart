@@ -45,97 +45,116 @@ class _QuickActionTileState extends State<QuickActionTile>
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: (_) => _scaleCtrl.forward(),
-      onTapUp: (_) {
-        _scaleCtrl.reverse();
-        widget.onTap();
-      },
-      onTapCancel: () => _scaleCtrl.reverse(),
-      child: AnimatedBuilder(
-        animation: _scaleCtrl,
-        builder: (context, child) {
-          return Transform.scale(
-            scale: 1.0 - _scaleCtrl.value,
-            child: child,
-          );
+    return Tooltip(
+      message: widget.label,
+      child: GestureDetector(
+        onTapDown: (_) => _scaleCtrl.forward(),
+        onTapUp: (_) {
+          _scaleCtrl.reverse();
+          widget.onTap();
         },
-        child: Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            gradient: widget.orange
-                ? const LinearGradient(
-                    colors: [AppColors.primary, Color(0xFFE87040)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  )
-                : null,
-            color: widget.orange ? null : Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: widget.orange
-                ? null
-                : Border.all(color: AppColors.cardBorder, width: 0.5),
-            boxShadow: widget.orange
-                ? [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.25),
-                      blurRadius: 16,
-                      offset: const Offset(0, 6),
+        onTapCancel: () => _scaleCtrl.reverse(),
+        child: AnimatedBuilder(
+          animation: _scaleCtrl,
+          builder: (context, child) {
+            return Transform.scale(
+              scale: 1.0 - _scaleCtrl.value,
+              child: child,
+            );
+          },
+          child: Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              gradient: widget.orange
+                  ? const LinearGradient(
+                      colors: [AppColors.primary, Color(0xFFEA7A52)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     )
-                  ]
-                : [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.03),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    )
-                  ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: widget.orange
-                      ? Colors.white.withValues(alpha: 0.2)
-                      : AppColors.sand,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  widget.icon,
-                  size: 18,
-                  color: widget.orange ? Colors.white : AppColors.primary,
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.label,
-                    style: TextStyle(
-                      fontFamily: 'DM Sans',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: widget.orange ? Colors.white : AppColors.textPrimary,
+                  : const LinearGradient(
+                      colors: [Colors.white, Color(0xFFFDFDFD)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
+              borderRadius: BorderRadius.circular(24),
+              border: widget.orange
+                  ? Border.all(
+                      color: const Color(0xFFE87040).withValues(alpha: 0.5))
+                  : Border.all(color: AppColors.cardBorder, width: 0.8),
+              boxShadow: widget.orange
+                  ? [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.30),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.10),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
+                      ),
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.02),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: widget.orange
+                        ? Colors.white.withValues(alpha: 0.22)
+                        : AppColors.sand,
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  if (widget.sublabel != null)
+                  child: Icon(
+                    widget.icon,
+                    size: 18,
+                    color: widget.orange ? Colors.white : AppColors.primary,
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text(
-                      widget.sublabel!,
+                      widget.label,
                       style: TextStyle(
                         fontFamily: 'DM Sans',
-                        fontSize: 11,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
                         color: widget.orange
-                            ? Colors.white.withValues(alpha: 0.6)
-                            : AppColors.textSecondary,
+                            ? Colors.white
+                            : AppColors.textPrimary,
                       ),
                     ),
-                ],
-              ),
-            ],
+                    if (widget.sublabel != null)
+                      Text(
+                        widget.sublabel!,
+                        style: TextStyle(
+                          fontFamily: 'DM Sans',
+                          fontSize: 11,
+                          color: widget.orange
+                              ? Colors.white.withValues(alpha: 0.6)
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

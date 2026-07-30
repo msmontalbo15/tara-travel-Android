@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
@@ -69,13 +70,20 @@ class _PackingScreenState extends ConsumerState<PackingScreen> with SingleTicker
                           if (Navigator.canPop(context))
                             GestureDetector(
                               onTap: () => Navigator.pop(context),
-                              child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.08),
-                                  borderRadius: BorderRadius.circular(10),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: BackdropFilter(
+                                  filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.10),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                                    ),
+                                    child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 16),
+                                  ),
                                 ),
-                                child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 16),
                               ),
                             ),
                           const Expanded(
@@ -91,14 +99,27 @@ class _PackingScreenState extends ConsumerState<PackingScreen> with SingleTicker
 
                       const SizedBox(height: 14),
                     ],
-                    TabBar(
-                      controller: _tabCtrl,
-                      indicatorColor: AppColors.primary,
-                      indicatorWeight: 2,
-                      labelColor: Colors.white,
-                      unselectedLabelColor: Colors.white38,
-                      labelStyle: const TextStyle(fontFamily: 'DM Sans', fontSize: 13, fontWeight: FontWeight.w600),
-                      tabs: const [Tab(text: 'Packing List'), Tab(text: 'Reminders')],
+                    Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.07),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                      ),
+                      child: TabBar(
+                        controller: _tabCtrl,
+                        indicator: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(11),
+                        ),
+                        indicatorSize: TabBarIndicatorSize.tab,
+                        dividerColor: Colors.transparent,
+                        labelColor: Colors.white,
+                        unselectedLabelColor: Colors.white54,
+                        labelStyle: const TextStyle(fontFamily: 'DM Sans', fontSize: 13, fontWeight: FontWeight.w700),
+                        unselectedLabelStyle: const TextStyle(fontFamily: 'DM Sans', fontSize: 13, fontWeight: FontWeight.w500),
+                        tabs: const [Tab(text: 'Packing List'), Tab(text: 'Reminders')],
+                      ),
                     ),
                   ],
                 ),
@@ -129,51 +150,69 @@ class _PackingScreenState extends ConsumerState<PackingScreen> with SingleTicker
     final percent = (packing.overallProgress * 100).round();
     final allPacked = packing.allPacked;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  allPacked ? '🎉 All packed!' : 'Pack Progress',
-                  style: const TextStyle(fontFamily: 'DM Sans', fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  allPacked ? 'Tara na! Ready to go!' : '${packing.packedItems} of ${packing.totalItems} items packed',
-                  style: const TextStyle(fontFamily: 'DM Sans', fontSize: 12, color: Colors.white54),
-                ),
-                const SizedBox(height: 10),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: packing.overallProgress,
-                    backgroundColor: Colors.white.withValues(alpha: 0.15),
-                    valueColor: AlwaysStoppedAnimation<Color>(allPacked ? AppColors.green : AppColors.primary),
-                    minHeight: 6,
-                  ),
-                ),
-              ],
-            ),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(22),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
           ),
-          const SizedBox(width: 16),
-          Text(
-            '$percent%',
-            style: TextStyle(
-              fontFamily: 'Playfair Display',
-              fontSize: 36,
-              fontWeight: FontWeight.w700,
-              color: allPacked ? AppColors.green : Colors.white,
-            ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      allPacked ? '🎉 All packed!' : 'Pack Progress',
+                      style: const TextStyle(fontFamily: 'DM Sans', fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      allPacked ? 'Tara na! Ready to go!' : '${packing.packedItems} of ${packing.totalItems} items packed',
+                      style: const TextStyle(fontFamily: 'DM Sans', fontSize: 12, color: Colors.white54),
+                    ),
+                    const SizedBox(height: 10),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: TweenAnimationBuilder<double>(
+                        tween: Tween(begin: 0, end: packing.overallProgress),
+                        duration: const Duration(milliseconds: 800),
+                        curve: Curves.easeOutCubic,
+                        builder: (_, val, __) => LinearProgressIndicator(
+                          value: val,
+                          backgroundColor: Colors.white.withValues(alpha: 0.15),
+                          valueColor: AlwaysStoppedAnimation<Color>(allPacked ? AppColors.green : AppColors.primary),
+                          minHeight: 7,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              Text(
+                '$percent%',
+                style: TextStyle(
+                  fontFamily: 'Playfair Display',
+                  fontSize: 40,
+                  fontWeight: FontWeight.w700,
+                  color: allPacked ? AppColors.green : Colors.white,
+                  shadows: [
+                    Shadow(
+                      color: (allPacked ? AppColors.green : AppColors.primary).withValues(alpha: 0.30),
+                      blurRadius: 16,
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -358,7 +397,14 @@ class _PackingCategoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6)]),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFE5E5EA), width: 0.7),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 14, offset: const Offset(0, 5)),
+        ],
+      ),
       child: Column(
         children: [
           GestureDetector(
@@ -496,7 +542,8 @@ class _SmartSuggestionBanner extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: const LinearGradient(colors: [Color(0xFF1A0A04), Color(0xFF2C1A14)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
