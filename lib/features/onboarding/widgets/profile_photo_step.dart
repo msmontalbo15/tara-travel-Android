@@ -213,10 +213,23 @@ class _ProfilePhotoStepState extends State<ProfilePhotoStep>
                                   ),
                                   child: ClipOval(
                                     child: _imagePath != null
-                                        ? Image.file(
-                                            File(_imagePath!),
-                                            fit: BoxFit.cover,
-                                          )
+                                        ? (_imagePath!.startsWith('http')
+                                            ? Image.network(
+                                                _imagePath!,
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (_, __, ___) => Container(
+                                                  color: AppColors.sand,
+                                                  child: const Icon(
+                                                    Icons.person_rounded,
+                                                    size: 80,
+                                                    color: AppColors.warmMuted,
+                                                  ),
+                                                ),
+                                              )
+                                            : Image.file(
+                                                File(_imagePath!),
+                                                fit: BoxFit.cover,
+                                              ))
                                         : Container(
                                             color: AppColors.sand,
                                             child: const Icon(

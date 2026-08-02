@@ -85,14 +85,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildBottomNav() {
+    final bottomInset = MediaQuery.of(context).padding.bottom;
+    final bottomMargin = bottomInset > 0 ? bottomInset : 12.0;
+
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      margin: EdgeInsets.fromLTRB(16, 0, 16, bottomMargin),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(32),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.82),
               borderRadius: BorderRadius.circular(32),
@@ -143,39 +146,43 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     String label,
   ) {
     final active = _navIndex == index;
-    return GestureDetector(
-      onTap: () => setState(() => _navIndex = index),
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: active ? AppColors.sand : Colors.transparent,
-                borderRadius: BorderRadius.circular(12),
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _navIndex = index),
+        behavior: HitTestBehavior.opaque,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: active ? AppColors.sand : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  active ? activeIcon : inactiveIcon,
+                  size: 22,
+                  color: active ? AppColors.primary : AppColors.warmMuted,
+                ),
               ),
-              child: Icon(
-                active ? activeIcon : inactiveIcon,
-                size: 22,
-                color: active ? AppColors.primary : AppColors.warmMuted,
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: TextStyle(
+                  fontFamily: 'DM Sans',
+                  fontSize: 10,
+                  fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+                  color: active ? AppColors.primary : AppColors.warmMuted,
+                  letterSpacing: 0.2,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                fontFamily: 'DM Sans',
-                fontSize: 10,
-                fontWeight: active ? FontWeight.w600 : FontWeight.w500,
-                color: active ? AppColors.primary : AppColors.warmMuted,
-                letterSpacing: 0.2,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -264,6 +271,9 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
       packedPct = '0';
     }
 
+    final topInset = MediaQuery.of(context).padding.top;
+    final topPadding = topInset > 0 ? topInset + 16.0 : 48.0;
+
     return Scaffold(
       backgroundColor: AppColors.deepEarth,
       body: Stack(
@@ -271,7 +281,7 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
           Column(
             children: [
               Container(
-                padding: const EdgeInsets.fromLTRB(24, 60, 24, 28),
+                padding: EdgeInsets.fromLTRB(24, topPadding, 24, 24),
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
                     colors: [Color(0xFF1A0A04), Color(0xFF2C1A14)],
@@ -288,34 +298,39 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _greeting(),
-                                style: TextStyle(
-                                  fontFamily: 'DM Sans',
-                                  fontSize: 13,
-                                  color: Colors.white.withValues(alpha: 0.6),
-                                ),
-                              ),
-                              AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 300),
-                                child: Text(
-                                  profile.firstName,
-                                  key: ValueKey(profile.firstName),
-                                  style: const TextStyle(
-                                    fontFamily: 'Playfair Display',
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.white,
-                                    height: 1.1,
-                                    letterSpacing: -0.5,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _greeting(),
+                                  style: TextStyle(
+                                    fontFamily: 'DM Sans',
+                                    fontSize: 13,
+                                    color: Colors.white.withValues(alpha: 0.6),
                                   ),
                                 ),
-                              ),
-                            ],
+                                AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 300),
+                                  child: Text(
+                                    profile.displayNameForHome,
+                                    key: ValueKey(profile.displayNameForHome),
+                                    style: const TextStyle(
+                                      fontFamily: 'Playfair Display',
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                      height: 1.1,
+                                      letterSpacing: -0.5,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
+                          const SizedBox(width: 8),
                           Row(
                             children: [
                               Tooltip(

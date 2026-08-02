@@ -14,6 +14,8 @@ class ProfileState {
   final String homeBarangay;
   final String homeCountry;
   final String preferredCurrency;
+  final String? nickname;
+  final String? dateOfBirth;
   final String? profilePhotoUrl;
   final String? contactNumber;
   final String? gcashNumber;
@@ -35,6 +37,8 @@ class ProfileState {
     this.homeBarangay = '',
     this.homeCountry = 'Philippines',
     this.preferredCurrency = 'PHP',
+    this.nickname,
+    this.dateOfBirth,
     this.profilePhotoUrl,
     this.contactNumber,
     this.gcashNumber,
@@ -60,11 +64,28 @@ class ProfileState {
   /// Backwards-compatible alias used across the UI.
   bool get isGoogleConnected => isCloudConnected;
 
+  /// Returns the preferred display name: nickname if available, else displayName/firstName.
+  String get effectiveName {
+    if (nickname != null && nickname!.trim().isNotEmpty) {
+      return nickname!.trim();
+    }
+    return displayName.isNotEmpty && displayName != 'User' ? displayName : firstName;
+  }
+
+  /// Returns the nickname for homepage display (falls back to effectiveName if nickname is not set).
+  String get displayNameForHome {
+    if (nickname != null && nickname!.trim().isNotEmpty) {
+      return nickname!.trim();
+    }
+    return effectiveName;
+  }
+
   String get initials {
-    if (displayName.isEmpty) return 'U';
-    final parts = displayName.trim().split(' ');
+    final nameToUse = effectiveName;
+    if (nameToUse.isEmpty) return 'U';
+    final parts = nameToUse.trim().split(' ');
     if (parts.length >= 2) return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-    return displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U';
+    return nameToUse.isNotEmpty ? nameToUse[0].toUpperCase() : 'U';
   }
 
   Color get avatarColor => const Color(0xFFD85A30);
@@ -77,6 +98,8 @@ class ProfileState {
     String? homeBarangay,
     String? homeCountry,
     String? preferredCurrency,
+    String? nickname,
+    String? dateOfBirth,
     String? profilePhotoUrl,
     String? contactNumber,
     String? gcashNumber,
@@ -99,6 +122,8 @@ class ProfileState {
       homeBarangay: homeBarangay ?? this.homeBarangay,
       homeCountry: homeCountry ?? this.homeCountry,
       preferredCurrency: preferredCurrency ?? this.preferredCurrency,
+      nickname: nickname ?? this.nickname,
+      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
       profilePhotoUrl: profilePhotoUrl ?? this.profilePhotoUrl,
       contactNumber: contactNumber ?? this.contactNumber,
       gcashNumber: gcashNumber ?? this.gcashNumber,
@@ -126,6 +151,8 @@ class ProfileState {
       'homeBarangay': homeBarangay,
       'homeCountry': homeCountry,
       'preferredCurrency': preferredCurrency,
+      'nickname': nickname,
+      'dateOfBirth': dateOfBirth,
       'profilePhotoUrl': profilePhotoUrl,
       'contactNumber': contactNumber,
       'gcashNumber': gcashNumber,
@@ -150,6 +177,8 @@ class ProfileState {
       homeBarangay: json['homeBarangay'] as String? ?? '',
       homeCountry: json['homeCountry'] as String? ?? 'Philippines',
       preferredCurrency: json['preferredCurrency'] as String? ?? 'PHP',
+      nickname: json['nickname'] as String?,
+      dateOfBirth: json['dateOfBirth'] as String?,
       profilePhotoUrl: json['profilePhotoUrl'] as String?,
       contactNumber: json['contactNumber'] as String?,
       gcashNumber: json['gcashNumber'] as String?,
@@ -335,6 +364,16 @@ class ProfileNotifier extends Notifier<ProfileState> {
 
   void updateContactNumber(String number) {
     state = state.copyWith(contactNumber: number);
+    _persist();
+  }
+
+  void updateNickname(String nickname) {
+    state = state.copyWith(nickname: nickname.trim());
+    _persist();
+  }
+
+  void updateDateOfBirth(String dob) {
+    state = state.copyWith(dateOfBirth: dob);
     _persist();
   }
 

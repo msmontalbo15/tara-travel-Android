@@ -21,6 +21,26 @@ import '../auth/presentation/auth_notifier.dart';
 import '../providers/profile_provider.dart';
 import '../services/database_service.dart';
 
+class _RouteTrackingObserver extends NavigatorObserver {
+  String? currentRoute;
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    super.didPush(route, previousRoute);
+    if (route.settings.name != null) {
+      currentRoute = route.settings.name;
+    }
+  }
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
+    super.didReplace(newRoute: newRoute, oldRoute: oldRoute);
+    if (newRoute?.settings.name != null) {
+      currentRoute = newRoute!.settings.name;
+    }
+  }
+}
+
 class AuthGate extends ConsumerStatefulWidget {
   final Widget child;
 
@@ -32,6 +52,7 @@ class AuthGate extends ConsumerStatefulWidget {
 
 class _AuthGateState extends ConsumerState<AuthGate> {
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+  final _RouteTrackingObserver _routeObserver = _RouteTrackingObserver();
 
   @override
   void initState() {
@@ -68,8 +89,12 @@ class _AuthGateState extends ConsumerState<AuthGate> {
         _navigatorKey.currentState
             ?.pushNamedAndRemoveUntil('/home', (route) => false);
       } else {
-        _navigatorKey.currentState
-            ?.pushNamedAndRemoveUntil('/onboarding', (route) => false);
+        // Only navigate to /onboarding if not already on the onboarding route.
+        // If already on /onboarding, avoid resetting the PageView state.
+        if (_routeObserver.currentRoute != '/onboarding') {
+          _navigatorKey.currentState
+              ?.pushNamedAndRemoveUntil('/onboarding', (route) => false);
+        }
       }
       return;
     }
@@ -90,6 +115,8 @@ class _AuthGateState extends ConsumerState<AuthGate> {
   Widget build(BuildContext context) {
     if (widget.child is MaterialApp) {
       final materialApp = widget.child as MaterialApp;
+      final existingObservers = materialApp.navigatorObservers ?? const <NavigatorObserver>[];
+
       return MaterialApp(
         key:                      materialApp.key,
         navigatorKey:             _navigatorKey,
@@ -99,7 +126,7 @@ class _AuthGateState extends ConsumerState<AuthGate> {
         initialRoute:             materialApp.initialRoute,
         onGenerateRoute:          materialApp.onGenerateRoute,
         onUnknownRoute:           materialApp.onUnknownRoute,
-        navigatorObservers:       materialApp.navigatorObservers ?? const [],
+        navigatorObservers:       [...existingObservers, _routeObserver],
         builder:                  materialApp.builder,
         title:                    materialApp.title,
         onGenerateTitle:          materialApp.onGenerateTitle,

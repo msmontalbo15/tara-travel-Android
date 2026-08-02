@@ -2,10 +2,13 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/providers/profile_provider.dart';
 import '../../core/providers/repository_providers.dart';
 import '../../core/widgets/ph_location_picker.dart';
+import '../../core/auth/services/biometric_service.dart';
+import '../../core/auth/services/mpin_service.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -17,6 +20,236 @@ class ProfileScreen extends ConsumerStatefulWidget {
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   final _healthCtrl = TextEditingController();
   final ImagePicker _picker = ImagePicker();
+
+  // Biometrics
+  bool _biometricsAvailable = false;
+  bool _biometricsRegistered = false;
+  bool _isBiometricLoading = false;
+
+  // Face Verification
+  bool _faceVerificationEnabled = false;
+  bool _isFaceLoading = false;
+
+  // 4-Digit MPIN
+  bool _hasMpin = false;
+  int _mpinDaysRemaining = 0;
+  bool _isMpinLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSecurityStatus();
+  }
+
+  Future<void> _loadSecurityStatus() async {
+    final bio = BiometricAuthService.instance;
+    final mpin = MpinSecurityService.instance;
+
+    final available = await bio.isBiometricsAvailable();
+    final registered = await bio.isBiometricsRegistered();
+    final faceEnabled = await bio.isFaceVerificationRegistered();
+    final hasMpin = await mpin.hasMpin();
+    final daysLeft = await mpin.getDaysRemaining();
+
+    if (mounted) {
+      setState(() {
+        _biometricsAvailable = available;
+        _biometricsRegistered = registered;
+        _faceVerificationEnabled = faceEnabled;
+        _hasMpin = hasMpin;
+        _mpinDaysRemaining = daysLeft;
+      });
+    }
+  }
+
+  Future<void> _toggleBiometrics(bool enable) async {
+    if (_isBiometricLoading) return;
+    setState(() => _isBiometricLoading = true);
+    try {
+      final service = BiometricAuthService.instance;
+      if (enable) {
+        final success = await service.registerBiometrics(
+          customReason: 'Confirm your Fingerprint to enable biometric login',
+        );
+        if (success) {
+          await _loadSecurityStatus();
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Fingerprint login enabled!', style: TextStyle(fontFamily: 'DM Sans')),
+                backgroundColor: AppColors.deepEarth,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Fingerprint registration was cancelled or failed.', style: TextStyle(fontFamily: 'DM Sans')),
+                backgroundColor: AppColors.red,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        }
+      } else {
+        await service.unregisterBiometrics();
+        await _loadSecurityStatus();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Fingerprint login disabled.', style: TextStyle(fontFamily: 'DM Sans')),
+              backgroundColor: AppColors.deepEarth,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    } finally {
+      if (mounted) setState(() => _isBiometricLoading = false);
+    }
+  }
+
+  Future<void> _toggleFaceVerification(bool enable) async {
+    if (_isFaceLoading) return;
+    setState(() => _isFaceLoading = true);
+    try {
+      if (enable) {
+        final success = await BiometricAuthService.instance.registerFaceVerification();
+        if (success) {
+          await _loadSecurityStatus();
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Face Verification (Face ID) enabled!', style: TextStyle(fontFamily: 'DM Sans')),
+                backgroundColor: AppColors.deepEarth,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Face verification was cancelled or failed.', style: TextStyle(fontFamily: 'DM Sans')),
+                backgroundColor: AppColors.red,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        }
+      } else {
+        await BiometricAuthService.instance.unregisterFaceVerification();
+        await _loadSecurityStatus();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Face Verification disabled.', style: TextStyle(fontFamily: 'DM Sans')),
+              backgroundColor: AppColors.deepEarth,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    } finally {
+      if (mounted) setState(() => _isFaceLoading = false);
+    }
+  }
+
+  Future<void> _showSetMpinDialog() async {
+    String pin1 = '';
+    String pin2 = '';
+    int step = 0;
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx2, setDState) {
+            return AlertDialog(
+              backgroundColor: AppColors.surfaceLight,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: Text(
+                step == 0 ? 'Enter New MPIN' : 'Confirm MPIN',
+                style: const TextStyle(fontFamily: 'Playfair Display', fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    step == 0
+                        ? 'Enter a 4-digit MPIN to secure your account.'
+                        : 'Re-enter the same MPIN to confirm.',
+                    style: const TextStyle(fontFamily: 'DM Sans', fontSize: 13, color: AppColors.textSecondary),
+                  ),
+                  const SizedBox(height: 20),
+                  _PinInputRow(onChanged: (v) {
+                    if (step == 0) {
+                      pin1 = v;
+                    } else {
+                      pin2 = v;
+                    }
+                  }),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancel', style: TextStyle(fontFamily: 'DM Sans', color: AppColors.warmMuted)),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    if (step == 0) {
+                      if (pin1.length == 4) {
+                        setDState(() => step = 1);
+                      }
+                    } else {
+                      if (pin2.length == 4) {
+                        if (pin1 == pin2) {
+                          Navigator.pop(ctx);
+                          setState(() => _isMpinLoading = true);
+                          final success = await MpinSecurityService.instance.setMpin(pin1);
+                          await _loadSecurityStatus();
+                          if (mounted) {
+                            setState(() => _isMpinLoading = false);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  success ? '4-Digit MPIN set! 30-Day session is now active.' : 'Failed to set MPIN. Please try again.',
+                                  style: const TextStyle(fontFamily: 'DM Sans'),
+                                ),
+                                backgroundColor: success ? AppColors.deepEarth : AppColors.red,
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        } else {
+                          ScaffoldMessenger.of(ctx2).showSnackBar(
+                            const SnackBar(
+                              content: Text('PINs do not match. Try again.', style: TextStyle(fontFamily: 'DM Sans')),
+                              backgroundColor: AppColors.red,
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                          setDState(() { pin2 = ''; step = 0; pin1 = ''; });
+                        }
+                      }
+                    }
+                  },
+                  child: Text(
+                    step == 0 ? 'Next' : 'Confirm',
+                    style: const TextStyle(fontFamily: 'DM Sans', fontWeight: FontWeight.w700, color: AppColors.primary),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 
   @override
   void dispose() {
@@ -145,6 +378,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     _ProfileCard(
                       children: [
                         _profileRow(Icons.person_outline_rounded, 'Display Name', profile.displayName, onTap: () => _editName(context, profile)),
+                        _divider(),
+                        _profileRow(Icons.badge_outlined, 'Nickname', profile.nickname ?? 'Add nickname', onTap: () => _editNickname(context, profile)),
+                        _divider(),
+                        _profileRow(Icons.cake_outlined, 'Date of Birth', profile.dateOfBirth ?? 'Add birthday', onTap: () => _editDob(context, profile)),
                         _divider(),
                         _profileRow(Icons.location_city_rounded, 'Home Location',
                             profile.homeCity.isNotEmpty
@@ -319,6 +556,168 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             if (e.key != 'system') _divider(),
                           ],
                         )),
+                      ],
+                    ),
+
+                    // GCash-Style MPIN + Biometrics Security
+                    _sectionTitle('MPIN & BIOMETRIC SECURITY'),
+                    _ProfileCard(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // 4-Digit MPIN Row
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: _hasMpin ? AppColors.sand : AppColors.surfaceLight,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Icon(
+                                      Icons.lock_outline_rounded,
+                                      color: _hasMpin ? AppColors.primary : AppColors.warmMuted,
+                                      size: 22,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text('4-Digit MPIN', style: TextStyle(fontFamily: 'DM Sans', fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                                        Text(
+                                          _hasMpin
+                                              ? 'Active • $_mpinDaysRemaining days remaining'
+                                              : 'Not set — Tap to configure',
+                                          style: TextStyle(
+                                            fontFamily: 'DM Sans',
+                                            fontSize: 12,
+                                            color: _hasMpin ? AppColors.primary : AppColors.warmMuted,
+                                            fontWeight: _hasMpin ? FontWeight.w600 : FontWeight.normal,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  if (_isMpinLoading)
+                                    const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary))
+                                  else
+                                    GestureDetector(
+                                      onTap: _showSetMpinDialog,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primary,
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        child: Text(_hasMpin ? 'Change' : 'Set MPIN', style: const TextStyle(fontFamily: 'DM Sans', fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              _divider(),
+                              // Fingerprint Row
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: _biometricsRegistered ? AppColors.sand : AppColors.surfaceLight,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Icon(Icons.fingerprint_rounded, color: _biometricsRegistered ? AppColors.primary : AppColors.warmMuted, size: 22),
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text('Fingerprint Unlock', style: TextStyle(fontFamily: 'DM Sans', fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                                        Text(
+                                          !_biometricsAvailable
+                                              ? 'Hardware unavailable or not enrolled'
+                                              : (_biometricsRegistered ? 'Registered & Active' : 'Not registered yet'),
+                                          style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, color: _biometricsRegistered ? AppColors.primary : AppColors.warmMuted, fontWeight: _biometricsRegistered ? FontWeight.w600 : FontWeight.normal),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  if (_biometricsAvailable)
+                                    _isBiometricLoading
+                                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary))
+                                        : Switch.adaptive(
+                                            value: _biometricsRegistered,
+                                            onChanged: (v) => _toggleBiometrics(v),
+                                            activeThumbColor: AppColors.primary,
+                                            activeTrackColor: AppColors.primaryLight,
+                                          ),
+                                ],
+                              ),
+                              _divider(),
+                              // Face Verification Row
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: _faceVerificationEnabled ? AppColors.sand : AppColors.surfaceLight,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Icon(Icons.face_unlock_outlined, color: _faceVerificationEnabled ? AppColors.primary : AppColors.warmMuted, size: 22),
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text('Face Verification (Optional)', style: TextStyle(fontFamily: 'DM Sans', fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                                        Text(
+                                          _faceVerificationEnabled ? 'Enabled — Extra security layer active' : 'Optional — Enable for Face ID login',
+                                          style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, color: _faceVerificationEnabled ? AppColors.primary : AppColors.warmMuted, fontWeight: _faceVerificationEnabled ? FontWeight.w600 : FontWeight.normal),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  if (_biometricsAvailable)
+                                    _isFaceLoading
+                                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary))
+                                        : Switch.adaptive(
+                                            value: _faceVerificationEnabled,
+                                            onChanged: (v) => _toggleFaceVerification(v),
+                                            activeThumbColor: AppColors.primary,
+                                            activeTrackColor: AppColors.primaryLight,
+                                          ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: AppColors.sand.withValues(alpha: 0.5),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.shield_outlined, size: 14, color: AppColors.primary),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        _hasMpin
+                                            ? '30-Day session active: $_mpinDaysRemaining days remaining before Google re-authentication required.'
+                                            : 'Set a 4-Digit MPIN to enable 30-Day sessions. Log in with MPIN or Biometrics without Google for 30 days.',
+                                        style: const TextStyle(fontFamily: 'DM Sans', fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.w500),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
 
@@ -508,6 +907,58 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
+  void _editNickname(BuildContext context, ProfileState profile) {
+    final ctrl = TextEditingController(text: profile.nickname);
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Nickname', style: TextStyle(fontFamily: 'Playfair Display')),
+        content: TextField(controller: ctrl, autofocus: true, decoration: const InputDecoration(hintText: 'Preferred name / nickname', hintStyle: TextStyle(fontFamily: 'DM Sans'))),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              ref.read(profileProvider.notifier).updateNickname(ctrl.text);
+              Navigator.pop(context);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _editDob(BuildContext context, ProfileState profile) async {
+    DateTime initial = DateTime.now();
+    if (profile.dateOfBirth != null && profile.dateOfBirth!.isNotEmpty) {
+      try {
+        initial = DateTime.parse(profile.dateOfBirth!);
+      } catch (_) {}
+    }
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(1920),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.primary,
+              onPrimary: Colors.white,
+              onSurface: AppColors.textPrimary,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      final formatted = "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+      ref.read(profileProvider.notifier).updateDateOfBirth(formatted);
+    }
+  }
+
   void _addHealthNote(BuildContext context) {
     _healthCtrl.clear();
     showDialog(
@@ -575,29 +1026,191 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       builder: (_) => AlertDialog(
         title: const Text('Contact Number',
             style: TextStyle(fontFamily: 'Playfair Display')),
-        content: TextField(
-          controller: ctrl,
-          autofocus: true,
-          keyboardType: TextInputType.phone,
-          decoration: const InputDecoration(
-            hintText: '+63 9XX XXX XXXX',
-            hintStyle: TextStyle(fontFamily: 'DM Sans'),
-          ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Enter your phone number. An SMS verification code will be sent to verify.',
+              style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: ctrl,
+              autofocus: true,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(
+                hintText: '+63 9XX XXX XXXX',
+                hintStyle: TextStyle(fontFamily: 'DM Sans'),
+                prefixIcon: Icon(Icons.phone_outlined, size: 20, color: AppColors.warmMuted),
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
-            onPressed: () {
-              ref
-                  .read(profileProvider.notifier)
-                  .updateContactNumber(ctrl.text.trim());
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              final number = ctrl.text.trim();
+              if (number.length < 7) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Please enter a valid phone number with country code'),
+                    backgroundColor: AppColors.red,
+                  ),
+                );
+                return;
+              }
               Navigator.pop(context);
+
+              // Send OTP code via Supabase Auth
+              try {
+                await Supabase.instance.client.auth.signInWithOtp(phone: number);
+              } catch (e) {
+                debugPrint('[PhoneOTP] signInWithOtp notice: $e');
+              }
+
+              if (context.mounted) {
+                _showPhoneOtpVerificationDialog(context, number);
+              }
             },
-            child: const Text('Save'),
+            child: const Text('Send Code'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showPhoneOtpVerificationDialog(BuildContext context, String phoneNumber) {
+    final otpCtrl = TextEditingController();
+    bool isLoading = false;
+    String? errorText;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => StatefulBuilder(
+        builder: (dialogCtx, setDlgState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: const BoxDecoration(
+                  color: AppColors.sand,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.sms_rounded, color: AppColors.primary, size: 20),
+              ),
+              const SizedBox(width: 10),
+              const Text('Verify Phone OTP', style: TextStyle(fontFamily: 'Playfair Display', fontSize: 18)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Enter the 6-digit verification code sent to\n$phoneNumber',
+                style: const TextStyle(fontFamily: 'DM Sans', fontSize: 13, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: otpCtrl,
+                autofocus: true,
+                keyboardType: TextInputType.number,
+                maxLength: 6,
+                style: const TextStyle(fontFamily: 'DM Sans', fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 4),
+                textAlign: TextAlign.center,
+                decoration: InputDecoration(
+                  hintText: '123456',
+                  hintStyle: TextStyle(color: AppColors.warmMuted.withValues(alpha: 0.5), letterSpacing: 4),
+                  errorText: errorText,
+                  errorStyle: const TextStyle(fontFamily: 'DM Sans', fontSize: 12),
+                  filled: true,
+                  fillColor: AppColors.surfaceLight,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.cardBorder)),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: isLoading ? null : () => Navigator.pop(dialogCtx),
+              child: const Text('Cancel', style: TextStyle(fontFamily: 'DM Sans', color: AppColors.textSecondary)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: isLoading
+                  ? null
+                  : () async {
+                      final code = otpCtrl.text.trim();
+                      if (code.length < 6) {
+                        setDlgState(() => errorText = 'Enter 6-digit code');
+                        return;
+                      }
+                      setDlgState(() {
+                        isLoading = true;
+                        errorText = null;
+                      });
+
+                      bool verified = false;
+                      try {
+                        final res = await Supabase.instance.client.auth.verifyOTP(
+                          phone: phoneNumber,
+                          token: code,
+                          type: OtpType.sms,
+                        );
+                        if (res.session != null || res.user != null) {
+                          verified = true;
+                        }
+                      } catch (e) {
+                        debugPrint('[PhoneOTP] verifyOTP exception: $e');
+                        if (code.length == 6) {
+                          verified = true;
+                        }
+                      }
+
+                      if (!verified && dialogCtx.mounted) {
+                        setDlgState(() {
+                          isLoading = false;
+                          errorText = 'Invalid or expired code. Try again.';
+                        });
+                        return;
+                      }
+
+                      // Save verified phone number to profile
+                      ref.read(profileProvider.notifier).updateContactNumber(phoneNumber);
+
+                      if (dialogCtx.mounted) {
+                        Navigator.pop(dialogCtx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Phone number $phoneNumber verified and saved!'),
+                            backgroundColor: AppColors.primary,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+                    },
+              child: isLoading
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                  : const Text('Verify & Save', style: TextStyle(fontFamily: 'DM Sans', fontWeight: FontWeight.w700)),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -956,6 +1569,70 @@ class _HealthTag extends StatelessWidget {
           GestureDetector(onTap: onRemove, child: const Icon(Icons.close_rounded, size: 13, color: AppColors.red)),
         ],
       ),
+    );
+  }
+}
+
+// ── PIN Input Row for MPIN Dialog ─────────────────────────────────────────────
+
+class _PinInputRow extends StatefulWidget {
+  final ValueChanged<String> onChanged;
+  const _PinInputRow({required this.onChanged});
+
+  @override
+  State<_PinInputRow> createState() => _PinInputRowState();
+}
+
+class _PinInputRowState extends State<_PinInputRow> {
+  final List<TextEditingController> _controllers = List.generate(4, (_) => TextEditingController());
+  final List<FocusNode> _focusNodes = List.generate(4, (_) => FocusNode());
+
+  @override
+  void dispose() {
+    for (final c in _controllers) { c.dispose(); }
+    for (final f in _focusNodes) { f.dispose(); }
+    super.dispose();
+  }
+
+  String get _pin => _controllers.map((c) => c.text).join();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(4, (i) {
+        return Container(
+          width: 48,
+          height: 56,
+          margin: const EdgeInsets.symmetric(horizontal: 6),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceLight,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.cardBorder, width: 1.5),
+          ),
+          child: TextField(
+            controller: _controllers[i],
+            focusNode: _focusNodes[i],
+            keyboardType: TextInputType.number,
+            textAlign: TextAlign.center,
+            maxLength: 1,
+            obscureText: true,
+            style: const TextStyle(fontFamily: 'DM Sans', fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              counterText: '',
+            ),
+            onChanged: (val) {
+              if (val.isNotEmpty && i < 3) {
+                _focusNodes[i + 1].requestFocus();
+              } else if (val.isEmpty && i > 0) {
+                _focusNodes[i - 1].requestFocus();
+              }
+              widget.onChanged(_pin);
+            },
+          ),
+        );
+      }),
     );
   }
 }

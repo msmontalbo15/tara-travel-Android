@@ -90,30 +90,15 @@ class SecureSessionRepository {
       final values = await Future.wait([
         _storage.read(key: _kAccessToken),
         _storage.read(key: _kRefreshToken),
-        _storage.read(key: _kExpiryEpoch),
       ]);
 
       final accessToken  = values[0];
       final refreshToken = values[1];
-      final expiryStr    = values[2];
 
       if (accessToken == null || refreshToken == null) return null;
 
-      // Local expiry pre-check — avoids unnecessary Supabase network call.
-      if (expiryStr != null) {
-        final expiryEpoch = int.tryParse(expiryStr) ?? 0;
-        final expiresAt =
-            DateTime.fromMillisecondsSinceEpoch(expiryEpoch * 1000);
-        if (DateTime.now().isAfter(expiresAt)) {
-          debugPrint('[SecureSessionRepository] Session expired locally — clearing.');
-          await clearSession();
-          return null;
-        }
-      }
-
-      // Rehydrate the Supabase client session — this may trigger a token
-      // refresh if the access token is close to expiry (Supabase SDK handles
-      // the refresh automatically via the refresh token).
+      // Rehydrate the Supabase client session — Supabase SDK handles
+      // token refresh automatically via the refresh token.
       final response = await Supabase.instance.client.auth.setSession(
         base64.encode(utf8.encode(jsonEncode({
           'access_token':  accessToken,
@@ -142,15 +127,19 @@ class SecureSessionRepository {
 
   /// Atomically wipes all persisted session tokens.
   /// Called on sign-out, session expiry, and Keystore key loss.
+  /// Note: Keeps biometric registration settings intact.
   Future<void> clearSession() async {
     try {
-      await _storage.deleteAll();
+      await Future.wait([
+        _storage.delete(key: _kAccessToken),
+        _storage.delete(key: _kRefreshToken),
+        _storage.delete(key: _kUserId),
+        _storage.delete(key: _kExpiryEpoch),
+      ]);
     } on PlatformException catch (e) {
       debugPrint('[SecureSessionRepository] clearSession error: $e');
-      // Best-effort: individual key deletes as fallback.
-      for (final key in [_kAccessToken, _kRefreshToken, _kUserId, _kExpiryEpoch]) {
-        try { await _storage.delete(key: key); } catch (_) {}
-      }
+    } catch (e) {
+      debugPrint('[SecureSessionRepository] clearSession unexpected error: $e');
     }
   }
 

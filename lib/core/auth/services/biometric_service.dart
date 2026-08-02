@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:local_auth/error_codes.dart' as auth_error;
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../data/secure_session_repository.dart';
 
 /// Manages device Biometric Authentication (Face ID, Face Unlock, Fingerprint/Touch ID).
 ///
@@ -131,6 +133,91 @@ class BiometricAuthService {
       debugPrint('[BiometricAuthService] authenticate unexpected: $e');
       return false;
     }
+  }
+
+  // ── Registration & Status Management ────────────────────────────────────────
+
+  /// Whether biometrics is registered and enabled on this device.
+  Future<bool> isBiometricsRegistered() async {
+    return await isBiometricsEnabled();
+  }
+
+  /// Registers biometric authentication by prompting the user for Face ID / Fingerprint
+  /// scan. If authenticated successfully, persists enabled status.
+  Future<bool> registerBiometrics({String? customReason}) async {
+    final type = await getStrongestAvailableType();
+    final typeName = type == BiometricType.face ? 'Face ID' : 'Biometrics';
+    final reason = customReason ?? 'Scan your $typeName to register biometric login for Tara Travel';
+
+    final success = await authenticate(reason: reason);
+    if (success) {
+      await setBiometricsEnabled(true);
+      final session = Supabase.instance.client.auth.currentSession;
+      if (session != null) {
+        await SecureSessionRepository.instance.persistSession(session);
+      }
+      debugPrint('[BiometricAuthService] Biometrics registered successfully.');
+    } else {
+      debugPrint('[BiometricAuthService] Biometric registration failed or cancelled.');
+    }
+    return success;
+  }
+
+  /// Unregisters/disables biometric authentication for this device.
+  Future<void> unregisterBiometrics() async {
+    await setBiometricsEnabled(false);
+    debugPrint('[BiometricAuthService] Biometrics unregistered.');
+  }
+
+  /// Returns a human-readable status string for UI display.
+  Future<String> getBiometricStatusLabel() async {
+    final available = await isBiometricsAvailable();
+    if (!available) return 'Hardware Unavailable / Not Enrolled';
+
+    final registered = await isBiometricsRegistered();
+    final type = await getStrongestAvailableType();
+    final name = type == BiometricType.face ? 'Face ID' : 'Fingerprint';
+
+    if (registered) {
+      return '$name Registered & Active';
+    } else {
+      return '$name Available (Not Registered)';
+    }
+  }
+
+  // ── Face Verification Management ──────────────────────────────────────────
+
+  /// Registers Face Verification (Face ID) by prompting for a face scan.
+  Future<bool> registerFaceVerification() async {
+    final hasFace = await hasFaceIdSupport();
+    final reason = hasFace
+        ? 'Scan your face to enable Face Verification for Tara Travel'
+        : 'Scan your biometric credential to enable Face Verification';
+
+    final success = await authenticate(reason: reason);
+    if (success) {
+      await setBiometricsEnabled(true);
+      await _storage.write(key: 'face_verification_enabled_flag', value: 'true');
+      final session = Supabase.instance.client.auth.currentSession;
+      if (session != null) {
+        await SecureSessionRepository.instance.persistSession(session);
+      }
+      debugPrint('[BiometricAuthService] Face Verification registered successfully.');
+    }
+    return success;
+  }
+
+  /// Whether Face Verification is registered and enabled on this device.
+  Future<bool> isFaceVerificationRegistered() async {
+    final flag = await _storage.read(key: 'face_verification_enabled_flag');
+    final enabled = await isBiometricsEnabled();
+    return flag == 'true' || enabled;
+  }
+
+  /// Disables Face Verification.
+  Future<void> unregisterFaceVerification() async {
+    await _storage.write(key: 'face_verification_enabled_flag', value: 'false');
+    debugPrint('[BiometricAuthService] Face Verification disabled.');
   }
 
   // ── User Preference ─────────────────────────────────────────────────────────
