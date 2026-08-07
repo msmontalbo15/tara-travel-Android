@@ -1,16 +1,25 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 
+/// The 9 ABO/Rh blood type options available in the dropdown.
+const List<String> kBloodTypes = [
+  'A+', 'A−', 'B+', 'B−', 'AB+', 'AB−', 'O+', 'O−', 'Unknown',
+];
+
 class HealthSafetyStep extends StatefulWidget {
   final List<String> initialHealthNotes;
+  final String? initialBloodType;
   final Function(List<String> notes) onNotesChanged;
+  final Function(String? bloodType) onBloodTypeSelected;
   final VoidCallback onNext;
   final VoidCallback onSkip;
 
   const HealthSafetyStep({
     super.key,
     required this.initialHealthNotes,
+    this.initialBloodType,
     required this.onNotesChanged,
+    required this.onBloodTypeSelected,
     required this.onNext,
     required this.onSkip,
   });
@@ -27,6 +36,9 @@ class _HealthSafetyStepState extends State<HealthSafetyStep>
   late AnimationController _animCtrl;
   late Animation<Offset> _slideAnim;
 
+  /// Currently selected blood type from dropdown.
+  String? _selectedBloodType;
+
   final Map<String, bool> _genericOptions = {
     'None': false,
     'Allergies': false,
@@ -38,13 +50,14 @@ class _HealthSafetyStepState extends State<HealthSafetyStep>
   @override
   void initState() {
     super.initState();
+    _selectedBloodType = widget.initialBloodType;
     _selectedNotes.addAll(widget.initialHealthNotes);
     for (var note in _selectedNotes) {
       if (_genericOptions.containsKey(note)) {
         _genericOptions[note] = true;
       }
     }
-    
+
     _animCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
     _slideAnim = Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero)
         .animate(CurvedAnimation(parent: _animCtrl, curve: Curves.easeOutCubic));
@@ -80,6 +93,18 @@ class _HealthSafetyStepState extends State<HealthSafetyStep>
     }
     widget.onNotesChanged(notes);
   }
+
+  void _onBloodTypeDropdownChanged(String? newValue) {
+    setState(() {
+      _selectedBloodType = newValue;
+    });
+    widget.onBloodTypeSelected(_selectedBloodType);
+  }
+
+  bool get _hasAnySelection =>
+      _genericOptions.values.any((v) => v) ||
+      _customController.text.trim().isNotEmpty ||
+      _selectedBloodType != null;
 
   @override
   Widget build(BuildContext context) {
@@ -138,6 +163,45 @@ class _HealthSafetyStepState extends State<HealthSafetyStep>
                         ),
                         const SizedBox(height: 32),
 
+                        // ── Blood Type Dropdown ─────────────────────────────
+                        const Text(
+                          'Blood Type',
+                          style: TextStyle(
+                            fontFamily: 'DM Sans',
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Select your ABO/Rh blood type.',
+                          style: TextStyle(
+                            fontFamily: 'DM Sans',
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        BloodTypeDropdown(
+                          value: _selectedBloodType,
+                          onChanged: _onBloodTypeDropdownChanged,
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // ── Health / Medical Checkboxes ──────────────────────
+                        const Text(
+                          'Health & Medical Info',
+                          style: TextStyle(
+                            fontFamily: 'DM Sans',
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+
                         // Checkboxes
                         ..._genericOptions.keys.map((option) {
                           return Padding(
@@ -186,7 +250,7 @@ class _HealthSafetyStepState extends State<HealthSafetyStep>
                             ),
                           );
                         }),
-                        
+
                         const SizedBox(height: 16),
                         const Text(
                           'Specific details',
@@ -203,7 +267,7 @@ class _HealthSafetyStepState extends State<HealthSafetyStep>
                           maxLines: 3,
                           enabled: _genericOptions[_noneOption] != true,
                           decoration: InputDecoration(
-                            hintText: 'e.g. Peanuts allergy, Blood type O+, etc.',
+                            hintText: 'e.g. Peanuts allergy, asthma, medical notes...',
                             filled: true,
                             fillColor: Colors.white,
                             border: OutlineInputBorder(
@@ -213,7 +277,7 @@ class _HealthSafetyStepState extends State<HealthSafetyStep>
                             contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
                           ),
                         ),
-                        
+
                         const SizedBox(height: 24),
                         Container(
                           padding: const EdgeInsets.all(16),
@@ -254,9 +318,7 @@ class _HealthSafetyStepState extends State<HealthSafetyStep>
                         width: double.infinity,
                         height: 56,
                         child: ElevatedButton(
-                          onPressed: (_genericOptions.values.any((v) => v) || _customController.text.trim().isNotEmpty)
-                              ? widget.onNext
-                              : null,
+                          onPressed: _hasAnySelection ? widget.onNext : null,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             foregroundColor: Colors.white,
@@ -301,3 +363,101 @@ class _HealthSafetyStepState extends State<HealthSafetyStep>
   }
 }
 
+// ── Blood Type Dropdown Widget ────────────────────────────────────────────────
+
+class BloodTypeDropdown extends StatelessWidget {
+  final String? value;
+  final ValueChanged<String?> onChanged;
+
+  const BloodTypeDropdown({
+    super.key,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final effectiveValue = (value != null && kBloodTypes.contains(value)) ? value : null;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: effectiveValue != null ? AppColors.primary : AppColors.cardBorder,
+          width: effectiveValue != null ? 1.5 : 1.0,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: effectiveValue,
+          hint: const Row(
+            children: [
+              Icon(Icons.bloodtype_outlined, color: AppColors.warmMuted, size: 20),
+              SizedBox(width: 10),
+              Text(
+                'Select blood type...',
+                style: TextStyle(
+                  fontFamily: 'DM Sans',
+                  fontSize: 14,
+                  color: AppColors.warmMuted,
+                ),
+              ),
+            ],
+          ),
+          icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.warmMuted, size: 24),
+          isExpanded: true,
+          borderRadius: BorderRadius.circular(16),
+          dropdownColor: Colors.white,
+          elevation: 4,
+          style: const TextStyle(
+            fontFamily: 'DM Sans',
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+          items: kBloodTypes.map((type) {
+            return DropdownMenuItem<String>(
+              value: type,
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFEBEB),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Icon(
+                      Icons.favorite_border_rounded,
+                      size: 14,
+                      color: Color(0xFFE53935),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    type,
+                    style: const TextStyle(
+                      fontFamily: 'DM Sans',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+          onChanged: onChanged,
+        ),
+      ),
+    );
+  }
+}

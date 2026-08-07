@@ -177,6 +177,42 @@ class ItineraryNotifier extends AsyncNotifier<ItineraryState> {
     state = AsyncData(currentState.copyWith(days: updatedDays));
     await repo.saveItineraryDay(_tripId, updatedDay);
   }
+
+  // ── Add a new Day to the itinerary ──────────────────────────────
+  Future<void> addDay() async {
+    final currentState = state.value;
+    if (currentState == null) return;
+
+    final repo = ref.read(itineraryRepositoryProvider);
+    final nextDayNum = currentState.days.length + 1;
+    final lastDate = currentState.days.isNotEmpty
+        ? currentState.days.last.date
+        : DateTime.now();
+    final newDay = ItineraryDay(
+      dayNumber: nextDayNum,
+      date: lastDate.add(const Duration(days: 1)),
+      stops: const [],
+    );
+
+    final updatedDays = List<ItineraryDay>.from(currentState.days)..add(newDay);
+    state = AsyncData(currentState.copyWith(days: updatedDays, activeDay: nextDayNum - 1));
+    await repo.saveItineraryDay(_tripId, newDay);
+  }
+
+  // ── Clear all stops in a Day ──────────────────────────────────────
+  Future<void> clearDay(int dayIndex) async {
+    final currentState = state.value;
+    if (currentState == null) return;
+
+    final repo = ref.read(itineraryRepositoryProvider);
+    final day = currentState.days[dayIndex];
+    final updatedDay = day.copyWith(stops: const []);
+    final updatedDays = List<ItineraryDay>.from(currentState.days);
+    updatedDays[dayIndex] = updatedDay;
+
+    state = AsyncData(currentState.copyWith(days: updatedDays));
+    await repo.saveItineraryDay(_tripId, updatedDay);
+  }
 }
 
 // ── Provider ──────────────────────────────────────────────────────────────────

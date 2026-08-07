@@ -8,8 +8,8 @@ import '../../../core/theme/app_colors.dart';
 /// user's **current GPS position** through every [stops] waypoint in order,
 /// ending at the last stop.
 ///
-/// Only stops that have valid [ItineraryStop.lat] / [ItineraryStop.lng] are
-/// included. If fewer than one stop has coordinates the button is disabled.
+/// Uses both location strings and titles (along with lat/lng coordinates when present)
+/// to build precise multi-stop Google Maps navigation.
 class NavigateRouteButton extends StatefulWidget {
   final List<ItineraryStop> stops;
 
@@ -22,58 +22,50 @@ class NavigateRouteButton extends StatefulWidget {
 class _NavigateRouteButtonState extends State<NavigateRouteButton> {
   bool _loading = false;
 
-  List<ItineraryStop> get _stopsWithLocation =>
-      widget.stops.where((s) => s.lat != null && s.lng != null).toList();
+  /// Returns stops that have location, title, or coordinates for navigation.
+  List<ItineraryStop> get _navigableStops => widget.stops
+      .where((s) =>
+          (s.lat != null && s.lng != null && s.lat != 0.0 && s.lng != 0.0) ||
+          (s.location != null && s.location!.trim().isNotEmpty) ||
+          s.title.trim().isNotEmpty)
+      .toList();
 
-  /// Requests location permission if needed and returns the current position.
-  /// Returns null and shows a snack if permission is denied.
-  Future<Position?> _getCurrentPosition() async {
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
+  /// Formats a stop target for Google Maps (combines Title + Location string).
+  static String _formatStopTarget(ItineraryStop s) {
+    if (s.lat != null && s.lng != null && s.lat != 0.0 && s.lng != 0.0) {
+      return '${s.lat},${s.lng}';
     }
-    if (permission == LocationPermission.deniedForever ||
-        permission == LocationPermission.denied) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              '📍 Location permission required to navigate.',
-              style: TextStyle(fontFamily: 'DM Sans'),
-            ),
-            backgroundColor: Colors.redAccent,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+    if (s.location != null && s.location!.trim().isNotEmpty) {
+      if (s.title.trim().isNotEmpty &&
+          !s.location!.toLowerCase().contains(s.title.toLowerCase())) {
+        return '${s.title}, ${s.location!}';
       }
-      return null;
+      return s.location!;
     }
-    return Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-        timeLimit: Duration(seconds: 10),
-      ),
-    );
+    return s.title;
   }
 
   /// Builds the Google Maps directions deep-link URL.
+  /// No `origin` is set — Google Maps defaults to the user's live GPS.
   ///
   /// Format:
   ///   https://www.google.com/maps/dir/?api=1
-  ///     &origin=<lat>,<lng>           ← current GPS
-  ///     &destination=<lat>,<lng>      ← last stop
-  ///     &waypoints=<lat>,<lng>|...    ← intermediate stops (up to 8)
+  ///     &destination=<lat>,<lng> or <encoded name>  ← last stop
+  ///     &waypoints=<lat>,<lng>|...                  ← intermediate stops
   ///     &travelmode=driving
-  String _buildMapsUrl(Position origin, List<ItineraryStop> stops) {
+  String _buildMapsUrl(List<ItineraryStop> stops) {
     final destination = stops.last;
-    final waypoints = stops.length > 1 ? stops.sublist(0, stops.length - 1) : <ItineraryStop>[];
+    final waypoints = stops.length > 1
+        ? stops.sublist(0, stops.length - 1)
+        : <ItineraryStop>[];
+
+    final destString = _formatStopTarget(destination);
+    final waypointsString = waypoints.map(_formatStopTarget).join('|');
 
     final params = <String, String>{
       'api': '1',
-      'origin': '${origin.latitude},${origin.longitude}',
-      'destination': '${destination.lat},${destination.lng}',
-      if (waypoints.isNotEmpty)
-        'waypoints': waypoints.map((s) => '${s.lat},${s.lng}').join('|'),
+      'destination': destString,
+      if (waypointsString.isNotEmpty) 'waypoints': waypointsString,
       'travelmode': 'driving',
     };
 
@@ -84,17 +76,38 @@ class _NavigateRouteButtonState extends State<NavigateRouteButton> {
     return 'https://www.google.com/maps/dir/?$query';
   }
 
+  /// Builds Google Maps URL including optional origin (current location).
+  String _buildMapsUrlWithOrigin(List<ItineraryStop> stops, Position? origin) {
+    final baseUrl = _buildMapsUrl(stops);
+    if (origin == null) return baseUrl;
+    final uri = Uri.parse(baseUrl);
+    final queryParams = Map<String, String>.from(uri.queryParameters);
+    queryParams['origin'] = '${origin.latitude},${origin.longitude}';
+    return uri.replace(queryParameters: queryParams).toString();
+  }
+
   Future<void> _navigate() async {
-    final stops = _stopsWithLocation;
+    final stops = _navigableStops;
     if (stops.isEmpty) return;
 
     setState(() => _loading = true);
 
+    Position? currentPosition;
     try {
-      final position = await _getCurrentPosition();
-      if (position == null) return;
+      // Request location permission if not granted
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.always || permission == LocationPermission.whileInUse) {
+        currentPosition = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+      }
+    } catch (_) {
+      // Ignore location errors; continue without origin
+    }
 
-      final url = _buildMapsUrl(position, stops);
+    try {
+      final url = _buildMapsUrlWithOrigin(stops, currentPosition);
       final uri = Uri.parse(url);
 
       final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -125,7 +138,7 @@ class _NavigateRouteButtonState extends State<NavigateRouteButton> {
 
   @override
   Widget build(BuildContext context) {
-    final stops = _stopsWithLocation;
+    final stops = _navigableStops;
     final canNavigate = stops.isNotEmpty;
 
     return SizedBox(
@@ -138,7 +151,8 @@ class _NavigateRouteButtonState extends State<NavigateRouteButton> {
           disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.35),
           foregroundColor: Colors.white,
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
         icon: _loading
             ? const SizedBox(
@@ -154,8 +168,8 @@ class _NavigateRouteButtonState extends State<NavigateRouteButton> {
           _loading
               ? 'Getting location…'
               : canNavigate
-                  ? 'Navigate Route in Google Maps  (${stops.length} stop${stops.length == 1 ? '' : 's'})'
-                  : 'No stops with location',
+                  ? 'Navigate Route in Google Maps (${stops.length} stop${stops.length == 1 ? '' : 's'})'
+                  : 'No stops to navigate',
           style: const TextStyle(
             fontFamily: 'DM Sans',
             fontSize: 14,
@@ -164,5 +178,84 @@ class _NavigateRouteButtonState extends State<NavigateRouteButton> {
         ),
       ),
     );
+  }
+}
+
+/// Opens Google Maps in **turn-by-turn navigation mode** from the user's
+/// current GPS position to the stop's location.
+///
+/// Priority:
+///   1. `google.navigation:q=lat,lng&mode=d`  — native Android nav intent (exact coords)
+///   2. `google.navigation:q=Title, Location&mode=d` — native Android nav intent (address)
+///   3. `https://www.google.com/maps/dir/...`  — universal web fallback
+Future<void> openGoogleMapsForStop(
+    BuildContext context, ItineraryStop stop) async {
+  // Build the human-readable destination label (used both as label + text fallback)
+  String destinationLabel;
+  if (stop.location != null && stop.location!.trim().isNotEmpty) {
+    if (stop.title.trim().isNotEmpty &&
+        !stop.location!.toLowerCase().contains(stop.title.toLowerCase())) {
+      destinationLabel = '${stop.title}, ${stop.location!}';
+    } else {
+      destinationLabel = stop.location!;
+    }
+  } else {
+    destinationLabel = stop.title;
+  }
+
+  final bool hasCoords = stop.lat != null &&
+      stop.lng != null &&
+      stop.lat != 0.0 &&
+      stop.lng != 0.0;
+
+  // ── 1. Try native Android navigation intent (opens directly in nav mode) ──
+  final String navIntentQuery = hasCoords
+      ? '${stop.lat},${stop.lng}'
+      : Uri.encodeComponent(destinationLabel);
+
+  final Uri navIntent = Uri.parse('google.navigation:q=$navIntentQuery&mode=d');
+
+  bool launched = false;
+  try {
+    if (await canLaunchUrl(navIntent)) {
+      launched =
+          await launchUrl(navIntent, mode: LaunchMode.externalApplication);
+    }
+  } catch (_) {
+    launched = false;
+  }
+
+  if (launched) return;
+
+  // ── 2. Fallback: Google Maps directions URL (no origin = uses current GPS) ──
+  final String destination = hasCoords
+      ? '${stop.lat},${stop.lng}'
+      : Uri.encodeComponent(destinationLabel);
+
+  final Uri webUrl = Uri.parse(
+    'https://www.google.com/maps/dir/?api=1'
+    '&destination=$destination'
+    '&travelmode=driving',
+  );
+
+  try {
+    launched = await launchUrl(webUrl, mode: LaunchMode.externalApplication);
+    if (!launched && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('📍 Could not open Google Maps.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  } catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error opening maps: $e'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 }

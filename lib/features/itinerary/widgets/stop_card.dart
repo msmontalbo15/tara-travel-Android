@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/models/itinerary_model.dart';
 import '../../../core/models/member_model.dart';
+import 'navigate_route_button.dart';
 
 class StopCard extends StatelessWidget {
   final ItineraryStop stop;
@@ -186,12 +187,41 @@ class StopCard extends StatelessWidget {
                           Text('₱${stop.estimatedCost!.toInt()}', style: const TextStyle(fontFamily: 'DM Sans', fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.deepEarth)),
                         ],
                         const Spacer(),
-                        if (onEdit != null)
+                        // 1-tap Google Maps Navigation button for every stop
+                        GestureDetector(
+                          onTap: () => openGoogleMapsForStop(context, stop),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.directions_rounded, size: 13, color: AppColors.primary),
+                                SizedBox(width: 3),
+                                Text(
+                                  'Maps',
+                                  style: TextStyle(
+                                    fontFamily: 'DM Sans',
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        if (onEdit != null) ...[
                           GestureDetector(
                             onTap: onEdit,
-                            child: const Icon(Icons.edit_rounded, size: 14, color: AppColors.muted),
+                            child: const Icon(Icons.edit_rounded, size: 15, color: AppColors.muted),
                           ),
-                        const SizedBox(width: 4),
+                          const SizedBox(width: 6),
+                        ],
                         if (_assignedMember != null)
                           Row(
                             children: [

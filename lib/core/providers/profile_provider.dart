@@ -21,6 +21,7 @@ class ProfileState {
   final String? gcashNumber;
   final String? gcashQrUrl;
   final List<String> healthNotes;
+  final String? bloodType;
   final bool shareHealthWithOrganizer;
   final Map<String, bool> notificationPrefs;
   final bool isCloudConnected;
@@ -44,6 +45,7 @@ class ProfileState {
     this.gcashNumber,
     this.gcashQrUrl,
     this.healthNotes = const [],
+    this.bloodType,
     this.shareHealthWithOrganizer = false,
     this.notificationPrefs = const {
       'expenses': true,
@@ -105,6 +107,7 @@ class ProfileState {
     String? gcashNumber,
     String? gcashQrUrl,
     List<String>? healthNotes,
+    String? bloodType,
     bool? shareHealthWithOrganizer,
     Map<String, bool>? notificationPrefs,
     bool? isCloudConnected,
@@ -129,6 +132,7 @@ class ProfileState {
       gcashNumber: gcashNumber ?? this.gcashNumber,
       gcashQrUrl: gcashQrUrl ?? this.gcashQrUrl,
       healthNotes: healthNotes ?? this.healthNotes,
+      bloodType: bloodType ?? this.bloodType,
       shareHealthWithOrganizer:
           shareHealthWithOrganizer ?? this.shareHealthWithOrganizer,
       notificationPrefs: notificationPrefs ?? this.notificationPrefs,
@@ -158,6 +162,7 @@ class ProfileState {
       'gcashNumber': gcashNumber,
       'gcashQrUrl': gcashQrUrl,
       'healthNotes': healthNotes,
+      'bloodType': bloodType,
       'shareHealthWithOrganizer': shareHealthWithOrganizer,
       'notificationPrefs': notificationPrefs,
       'isCloudConnected': isCloudConnected,
@@ -187,6 +192,7 @@ class ProfileState {
               ?.map((e) => e as String)
               .toList() ??
           [],
+      bloodType: json['bloodType'] as String?,
       shareHealthWithOrganizer:
           json['shareHealthWithOrganizer'] as bool? ?? false,
       notificationPrefs: (json['notificationPrefs'] as Map<String, dynamic>?)
@@ -379,6 +385,11 @@ class ProfileNotifier extends Notifier<ProfileState> {
 
   void updateProfile(ProfileState newState) {
     state = newState;
+    _persist();
+  }
+
+  void updateBloodType(String? type) {
+    state = state.copyWith(bloodType: type);
     _persist();
   }
 

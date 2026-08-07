@@ -409,7 +409,66 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text('Private by default. Share with Organizer when needed.', style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, color: AppColors.textSecondary)),
+                              const SizedBox(height: 14),
+
+                              // ── Blood Type Row ──────────────────────────────
+                              GestureDetector(
+                                onTap: () => _editBloodType(context, profile),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.surfaceLight,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: AppColors.cardBorder, width: 0.8),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(6),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFFFEBEB),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: const Icon(
+                                          Icons.favorite_border_rounded,
+                                          size: 14,
+                                          color: Color(0xFFE53935),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            const Text('Blood Type', style: TextStyle(fontFamily: 'DM Sans', fontSize: 11, color: AppColors.warmMuted)),
+                                            Text(
+                                              profile.bloodType ?? 'Tap to select',
+                                              style: TextStyle(
+                                                fontFamily: 'DM Sans',
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w600,
+                                                color: profile.bloodType != null
+                                                    ? const Color(0xFFE53935)
+                                                    : AppColors.warmMuted,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Icon(
+                                        Icons.chevron_right_rounded,
+                                        size: 16,
+                                        color: AppColors.warmMuted.withValues(alpha: 0.6),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(height: 14),
+                              _divider(),
                               const SizedBox(height: 12),
+
                               if (profile.healthNotes.isEmpty)
                                 const Text('No health notes added', style: TextStyle(fontFamily: 'DM Sans', fontSize: 13, color: AppColors.warmMuted))
                               else
@@ -957,6 +1016,185 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       final formatted = "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
       ref.read(profileProvider.notifier).updateDateOfBirth(formatted);
     }
+  }
+
+  void _editBloodType(BuildContext context, ProfileState profile) {
+    const List<String> bloodTypes = [
+      'A+', 'A−', 'B+', 'B−', 'AB+', 'AB−', 'O+', 'O−', 'Unknown',
+    ];
+    String? selected = profile.bloodType;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setBS) => Container(
+          decoration: const BoxDecoration(
+            color: AppColors.surfaceLight,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.cardBorder,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFEBEB),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.favorite_border_rounded,
+                        size: 18, color: Color(0xFFE53935)),
+                  ),
+                  const SizedBox(width: 10),
+                  const Text(
+                    'Select Blood Type',
+                    style: TextStyle(
+                      fontFamily: 'Playfair Display',
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Choose your blood type from the dropdown below.',
+                style: TextStyle(
+                  fontFamily: 'DM Sans',
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 20),
+              DropdownButtonFormField<String>(
+                initialValue: (selected != null && bloodTypes.contains(selected))
+                    ? selected
+                    : null,
+                decoration: InputDecoration(
+                  hintText: 'Select blood type...',
+                  hintStyle: const TextStyle(
+                    fontFamily: 'DM Sans',
+                    fontSize: 14,
+                    color: AppColors.warmMuted,
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(color: AppColors.cardBorder),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(color: AppColors.cardBorder),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide:
+                        const BorderSide(color: AppColors.primary, width: 1.5),
+                  ),
+                ),
+                icon: const Icon(Icons.keyboard_arrow_down_rounded,
+                    color: AppColors.textSecondary),
+                dropdownColor: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                style: const TextStyle(
+                  fontFamily: 'DM Sans',
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+                items: bloodTypes.map((type) {
+                  return DropdownMenuItem<String>(
+                    value: type,
+                    child: Text(
+                      type,
+                      style: const TextStyle(
+                        fontFamily: 'DM Sans',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (val) {
+                  setBS(() {
+                    selected = val;
+                  });
+                },
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
+                        ref.read(profileProvider.notifier).updateBloodType(null);
+                        Navigator.pop(context);
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.textSecondary,
+                        side: const BorderSide(color: AppColors.cardBorder),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14)),
+                      ),
+                      child: const Text('Clear',
+                          style: TextStyle(
+                              fontFamily: 'DM Sans',
+                              fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        ref.read(profileProvider.notifier).updateBloodType(selected);
+                        Navigator.pop(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14)),
+                      ),
+                      child: const Text(
+                        'Save',
+                        style: TextStyle(
+                            fontFamily: 'DM Sans',
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _addHealthNote(BuildContext context) {

@@ -38,6 +38,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   String _homeCountry = 'Philippines';
   String _preferredCurrency = 'PHP';
   List<String> _healthNotes = [];
+  String? _bloodType;
+
 
   /// Steps in onboarding (page index → name)
   /// 0: ChooseMode, 1: Permissions, 2: ProfilePhoto,
@@ -108,6 +110,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           _homeCountry = current.homeCountry.isNotEmpty ? current.homeCountry : 'Philippines';
           _preferredCurrency = current.preferredCurrency.isNotEmpty ? current.preferredCurrency : 'PHP';
           _healthNotes = current.healthNotes;
+          _bloodType = current.bloodType;
         });
         _goToStep(resumeStep);
         return;
@@ -202,6 +205,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     notifier.updateProfile(currentState.copyWith(healthNotes: notes));
   }
 
+  void _onBloodTypeSelected(String? type) {
+    setState(() => _bloodType = type);
+    ref.read(profileProvider.notifier).updateBloodType(type);
+  }
+
   void _onLetsGo() {
     ref.read(profileProvider.notifier).completeOnboarding();
     Navigator.of(context).pushReplacementNamed(
@@ -246,6 +254,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               _homeCountry = profile.homeCountry.isNotEmpty ? profile.homeCountry : 'Philippines';
               _preferredCurrency = profile.preferredCurrency.isNotEmpty ? profile.preferredCurrency : 'PHP';
               _healthNotes = profile.healthNotes;
+              _bloodType = profile.bloodType;
             });
             _goToStep(resumeStep);
           }
@@ -313,7 +322,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         // Step 5 — Health & Safety
         HealthSafetyStep(
           initialHealthNotes: _healthNotes,
+          initialBloodType: _bloodType,
           onNotesChanged: _onHealthNotesChanged,
+          onBloodTypeSelected: _onBloodTypeSelected,
           onNext: () => _goToStep(6),
           onSkip: () => _goToStep(6),
         ),

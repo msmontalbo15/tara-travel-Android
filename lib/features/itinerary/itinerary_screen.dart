@@ -38,7 +38,14 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
   // Track which stop is being edited (null = none)
   String? _editingStopId;
 
-  void _openAddForm(BuildContext context, int dayIndex, List<MemberModel> members, ItineraryNotifier notifier) {
+  void _openAddForm(
+    BuildContext context,
+    int dayIndex,
+    List<MemberModel> members,
+    ItineraryNotifier notifier, {
+    StopType? initialType,
+    String? initialTitle,
+  }) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -52,10 +59,45 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
             margin: const EdgeInsets.all(12),
             child: AddStopForm(
               members: members,
+              initialType: initialType,
+              initialTitle: initialTitle,
               onAdd: (stop) {
                 notifier.addStop(dayIndex, stop);
                 Navigator.pop(ctx);
               },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openEditForm(
+    BuildContext context,
+    int dayIndex,
+    ItineraryStop stop,
+    List<MemberModel> members,
+    ItineraryNotifier notifier,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(ctx).viewInsets.bottom,
+        ),
+        child: SingleChildScrollView(
+          child: Container(
+            margin: const EdgeInsets.all(12),
+            child: EditStopForm(
+              stop: stop,
+              members: members,
+              onSave: (updated) {
+                notifier.updateStop(dayIndex, updated);
+                Navigator.pop(ctx);
+              },
+              onCancel: () => Navigator.pop(ctx),
             ),
           ),
         ),
@@ -172,6 +214,7 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                             activeIndex: activeDay,
                             weather: weatherList,
                             onTap: (i) => ref.read(ref.read(itineraryProvider(trip.id)).notifier).setActiveDay(i),
+                            onAddDay: () => ref.read(ref.read(itineraryProvider(trip.id)).notifier).addDay(),
                           ),
                       ],
                     ),
@@ -240,6 +283,15 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
           if (day.transport != null) ...[
             const SizedBox(height: 8),
             TransportBadge(transport: day.transport!),
+          ],
+
+          // Google Maps Directions bar for the entire day itinerary
+          if (day.stops.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: NavigateRouteButton(stops: day.stops),
+            ),
           ],
 
           // Stop count header
@@ -348,11 +400,11 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
               },
             ),
 
-          // Feature 10 — Smart suggestion chips
+          // Feature 10 — Smart suggestion chips (Quick Add Templates)
           SmartSuggestionChips(
             day: day,
             onSuggest: (type, title) {
-              _openAddForm(context, dayIndex, members, notifier);
+              _openAddForm(context, dayIndex, members, notifier, initialType: type, initialTitle: title);
             },
           ),
 
@@ -376,6 +428,10 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
         members: members,
         onStatusChange: (s) => ref.read(ref.read(itineraryProvider(tripId)).notifier).updateStopStatus(dayIndex, stop.id, s),
         onVote: (memberId, upvote) => ref.read(ref.read(itineraryProvider(tripId)).notifier).voteOnStop(dayIndex, stop.id, memberId, upvote),
+        onEdit: () {
+          Navigator.pop(context);
+          _openEditForm(context, dayIndex, stop, members, ref.read(ref.read(itineraryProvider(tripId)).notifier));
+        },
       ),
     );
   }
@@ -513,12 +569,14 @@ class _StopDetailSheet extends StatelessWidget {
   final List<MemberModel> members;
   final void Function(StopStatus) onStatusChange;
   final void Function(String memberId, bool upvote) onVote;
+  final VoidCallback onEdit;
 
   const _StopDetailSheet({
     required this.stop,
     required this.members,
     required this.onStatusChange,
     required this.onVote,
+    required this.onEdit,
   });
 
   @override
@@ -581,12 +639,60 @@ class _StopDetailSheet extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Expanded(child: Text(stop.title, style: const TextStyle(fontFamily: 'Playfair Display', fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.deepEarth))),
+              GestureDetector(
+                onTap: onEdit,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.sand,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.edit_rounded, size: 14, color: AppColors.primary),
+                      SizedBox(width: 4),
+                      Text(
+                        'Edit',
+                        style: TextStyle(
+                          fontFamily: 'DM Sans',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 16),
           if (stop.location != null) _infoRow(Icons.place_outlined, stop.location!),
           if (stop.estimatedCost != null) _infoRow(Icons.attach_money_rounded, '₱${stop.estimatedCost!.toInt()} estimated'),
           if (stop.confirmationNumber != null) _infoRow(Icons.confirmation_number_outlined, 'Ref: ${stop.confirmationNumber}'),
+
+          // 1-Tap Google Maps Navigation Button
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton.icon(
+              onPressed: () => openGoogleMapsForStop(context, stop),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+              icon: const Icon(Icons.directions_rounded, size: 20),
+              label: const Text(
+                'Navigate in Google Maps',
+                style: TextStyle(fontFamily: 'DM Sans', fontSize: 14, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
           if (stop.notes != null && stop.notes!.isNotEmpty) ...[
             const SizedBox(height: 12),
             const Text('Notes', style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.muted)),

@@ -324,25 +324,83 @@ class _DetailsStepState extends ConsumerState<DetailsStep> {
                           return Align(
                             alignment: Alignment.topLeft,
                             child: Material(
-                              elevation: 4.0,
+                              elevation: 6.0,
                               borderRadius: BorderRadius.circular(16),
+                              shadowColor: Colors.black.withValues(alpha: 0.15),
                               child: Container(
                                 width: MediaQuery.of(context).size.width - 40,
                                 decoration: BoxDecoration(
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: AppColors.cardBorder),
                                 ),
-                                child: ListView.builder(
-                                  padding: EdgeInsets.zero,
-                                  shrinkWrap: true,
-                                  itemCount: options.length,
-                                  itemBuilder: (BuildContext context, int index) {
-                                    final option = options.elementAt(index);
-                                    return ListTile(
-                                      title: Text(option, style: const TextStyle(fontFamily: 'DM Sans')),
-                                      onTap: () => onSelected(option),
-                                    );
-                                  },
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFFF8F9FA),
+                                        borderRadius: BorderRadius.only(
+                                          topLeft: Radius.circular(16),
+                                          topRight: Radius.circular(16),
+                                        ),
+                                      ),
+                                      child: const Row(
+                                        children: [
+                                          Icon(Icons.map_rounded, size: 14, color: Color(0xFFEA4335)),
+                                          SizedBox(width: 6),
+                                          Text(
+                                            'Recommended by Google Maps',
+                                            style: TextStyle(
+                                              fontFamily: 'DM Sans',
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w700,
+                                              color: Color(0xFF5F6368),
+                                              letterSpacing: 0.2,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const Divider(height: 1, color: AppColors.cardBorder),
+                                    Flexible(
+                                      child: ListView.separated(
+                                        padding: EdgeInsets.zero,
+                                        shrinkWrap: true,
+                                        itemCount: options.length,
+                                        separatorBuilder: (_, __) => const Divider(height: 1, color: AppColors.cardBorder),
+                                        itemBuilder: (BuildContext context, int index) {
+                                          final option = options.elementAt(index);
+                                          return ListTile(
+                                            dense: true,
+                                            leading: Container(
+                                              padding: const EdgeInsets.all(6),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFFEA4335).withValues(alpha: 0.1),
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: const Icon(
+                                                Icons.location_on_rounded,
+                                                color: Color(0xFFEA4335),
+                                                size: 16,
+                                              ),
+                                            ),
+                                            title: Text(
+                                              option,
+                                              style: const TextStyle(
+                                                fontFamily: 'DM Sans',
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w600,
+                                                color: AppColors.textPrimary,
+                                              ),
+                                            ),
+                                            onTap: () => onSelected(option),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),

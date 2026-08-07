@@ -9,25 +9,40 @@ import '../../../core/widgets/inputs/location_picker.dart';
 class AddStopForm extends StatefulWidget {
   final List<MemberModel> members;
   final void Function(ItineraryStop stop) onAdd;
+  final StopType? initialType;
+  final String? initialTitle;
 
-  const AddStopForm({super.key, required this.members, required this.onAdd});
+  const AddStopForm({
+    super.key,
+    required this.members,
+    required this.onAdd,
+    this.initialType,
+    this.initialTitle,
+  });
 
   @override
   State<AddStopForm> createState() => _AddStopFormState();
 }
 
 class _AddStopFormState extends State<AddStopForm> {
-  final _titleCtrl = TextEditingController();
+  late final TextEditingController _titleCtrl;
   final _notesCtrl = TextEditingController();
   final _costCtrl = TextEditingController();
   final _confirmCtrl = TextEditingController();
-  StopType _selectedType = StopType.activity;
+  late StopType _selectedType;
   TransportMode _selectedTransportMode = TransportMode.car;
   TimeOfDay? _startTime;
   TimeOfDay? _endTime;
   String? _assignedMemberId;
   String? _titleError;
   LocationResult? _selectedLocation;
+
+  @override
+  void initState() {
+    super.initState();
+    _titleCtrl = TextEditingController(text: widget.initialTitle ?? '');
+    _selectedType = widget.initialType ?? StopType.activity;
+  }
 
   @override
   void dispose() {

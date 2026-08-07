@@ -7,6 +7,7 @@ class DayStrip extends StatelessWidget {
   final int activeIndex;
   final List<DayForecast>? weather;
   final void Function(int) onTap;
+  final VoidCallback? onAddDay;
 
   const DayStrip({
     super.key,
@@ -14,17 +15,51 @@ class DayStrip extends StatelessWidget {
     required this.activeIndex,
     this.weather,
     required this.onTap,
+    this.onAddDay,
   });
 
   @override
   Widget build(BuildContext context) {
+    final totalCount = dayLabels.length + (onAddDay != null ? 1 : 0);
+
     return SizedBox(
       height: 72,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 24),
-        itemCount: dayLabels.length,
+        itemCount: totalCount,
         itemBuilder: (context, i) {
+          if (i == dayLabels.length && onAddDay != null) {
+            return GestureDetector(
+              onTap: onAddDay,
+              child: Container(
+                margin: const EdgeInsets.only(right: 8, top: 4, bottom: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 1),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.add_rounded, size: 16, color: Colors.white),
+                    SizedBox(width: 4),
+                    Text(
+                      'Day',
+                      style: TextStyle(
+                        fontFamily: 'DM Sans',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
           final active = i == activeIndex;
           final DayForecast? dayWeather = (weather != null && i < weather!.length) ? weather![i] : null;
 

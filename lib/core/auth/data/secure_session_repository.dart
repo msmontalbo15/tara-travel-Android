@@ -16,7 +16,6 @@
 /// ─────────────────────────────────────────────────────────────────────────────
 library;
 
-import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -97,13 +96,13 @@ class SecureSessionRepository {
 
       if (accessToken == null || refreshToken == null) return null;
 
-      // Rehydrate the Supabase client session — Supabase SDK handles
-      // token refresh automatically via the refresh token.
-      final response = await Supabase.instance.client.auth.setSession(
-        base64.encode(utf8.encode(jsonEncode({
-          'access_token':  accessToken,
-          'refresh_token': refreshToken,
-        }))),
+      // Use recoverSession() with the refresh token.
+      // setSession() expects only a raw JWT access-token string; passing
+      // anything else causes an AuthException and silently clears the session.
+      // recoverSession() uses the refresh token to obtain a fresh session
+      // even when the stored access token has expired.
+      final response = await Supabase.instance.client.auth.recoverSession(
+        refreshToken,
       );
 
       return response.user;
