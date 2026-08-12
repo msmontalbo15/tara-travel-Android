@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'auth_provider.dart';
 import 'repository_providers.dart';
+import '../services/session_cache_service.dart';
 
 // ── Profile State ─────────────────────────────────────────────────────────────
 
@@ -425,7 +426,7 @@ class ProfileNotifier extends Notifier<ProfileState> {
     _persist();
   }
 
-  /// Signs the user out: clears remote auth, local DB, and resets state.
+  /// Signs the user out: clears remote auth, local DB, cache stamps and resets state.
   Future<void> signOut() async {
     try {
       // 1. Sign out from Supabase
@@ -434,11 +435,14 @@ class ProfileNotifier extends Notifier<ProfileState> {
       debugPrint('[ProfileProvider] signOut error: $e');
     }
 
-    // 2. Clear local profile from Sembast
+    // 2. Invalidate all session cache TTL stamps
+    await SessionCacheService.instance.invalidateAll();
+
+    // 3. Clear local profile from Sembast
     final repo = ref.read(profileRepositoryProvider);
     await repo.clearProfile();
 
-    // 3. Reset in-memory state to defaults
+    // 4. Reset in-memory state to defaults
     state = const ProfileState(isLoaded: true);
   }
 }

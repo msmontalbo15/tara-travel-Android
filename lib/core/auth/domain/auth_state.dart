@@ -22,7 +22,7 @@ final class AuthUnauthenticated extends AuthState {
   const AuthUnauthenticated();
 }
 
-/// An async operation is in-flight (sign-in, sign-up, OTP send, etc.).
+/// An async operation is in-flight (sign-in, session restore, etc.).
 final class AuthLoading extends AuthState {
   const AuthLoading();
 }
@@ -32,18 +32,6 @@ final class AuthAuthenticated extends AuthState {
   final User user;
 
   const AuthAuthenticated(this.user);
-}
-
-/// Sign-up succeeded but email OTP confirmation is pending.
-final class AuthOtpPending extends AuthState {
-  /// The email address that the OTP was sent to.
-  final String email;
-
-  /// The display name entered during registration (preserved across the
-  /// OTP screen so it can be forwarded to the profile after verification).
-  final String? pendingName;
-
-  const AuthOtpPending({required this.email, this.pendingName});
 }
 
 /// A non-fatal error occurred. The user may retry if [isRetryable] is true.
@@ -63,28 +51,6 @@ sealed class AuthFailure implements Exception {
 
   /// Returns a localised, user-friendly message safe for display in the UI.
   String get userMessage;
-}
-
-final class InvalidCredentials extends AuthFailure {
-  const InvalidCredentials();
-
-  @override
-  String get userMessage => 'Incorrect email or password.';
-}
-
-final class EmailAlreadyTaken extends AuthFailure {
-  const EmailAlreadyTaken();
-
-  @override
-  String get userMessage =>
-      'This email is already registered. Try signing in instead.';
-}
-
-final class InvalidOrExpiredOtp extends AuthFailure {
-  const InvalidOrExpiredOtp();
-
-  @override
-  String get userMessage => 'Invalid or expired verification code. Request a new one.';
 }
 
 final class NetworkFailure extends AuthFailure {
@@ -109,13 +75,20 @@ final class SessionExpired extends AuthFailure {
       'Your session has expired. Please sign in again.';
 }
 
-final class WeakPassword extends AuthFailure {
-  final String detail;
-
-  const WeakPassword(this.detail);
+final class BiometricFailed extends AuthFailure {
+  const BiometricFailed();
 
   @override
-  String get userMessage => detail;
+  String get userMessage =>
+      'Biometric authentication failed. Please try again or sign in with Google.';
+}
+
+final class OfflineSessionExpired extends AuthFailure {
+  const OfflineSessionExpired();
+
+  @override
+  String get userMessage =>
+      'Your offline session has expired. Please connect to the internet and sign in with Google.';
 }
 
 final class UnknownAuthFailure extends AuthFailure {
@@ -128,46 +101,13 @@ final class UnknownAuthFailure extends AuthFailure {
       raw.length > 80 ? 'Authentication failed. Please try again.' : raw;
 }
 
-/// Supabase DB trigger error during signup — profile row creation failed
-/// but the auth user was created. Login can still proceed.
-final class DatabaseSaveFailure extends AuthFailure {
-  const DatabaseSaveFailure();
-
-  @override
-  String get userMessage =>
-      'Account created — profile sync will complete on next sign in.';
-}
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 /// Maps a raw [AuthException] message to a strongly-typed [AuthFailure].
-/// Call site: `AuthFailure.fromAuthException(e)`
 extension AuthFailureMapper on AuthFailure {
   static AuthFailure fromAuthException(AuthException e) {
-    final code = (e.code ?? '').toLowerCase();
     final msg = e.message.toLowerCase();
 
-    // ── Supabase trigger error: DB couldn't insert profile row during signup.
-    // The auth user was already created — treat as non-fatal: allow login flow.
-    if (code.contains('unexpected_failure') ||
-        msg.contains('database error saving new user') ||
-        msg.contains('database error') && msg.contains('saving') ||
-        msg.contains('unexpected_failure')) {
-      return const DatabaseSaveFailure();
-    }
-
-    if (msg.contains('invalid') && msg.contains('credential')) {
-      return const InvalidCredentials();
-    }
-    if (msg.contains('already registered') || msg.contains('already exists')) {
-      return const EmailAlreadyTaken();
-    }
-    if (msg.contains('invalid otp') ||
-        msg.contains('otp expired') ||
-        msg.contains('token') ||
-        msg.contains('expired')) {
-      return const InvalidOrExpiredOtp();
-    }
     if (msg.contains('network') || msg.contains('socket')) {
       return const NetworkFailure();
     }
@@ -177,10 +117,6 @@ extension AuthFailureMapper on AuthFailure {
   static AuthFailure fromException(Object e) {
     if (e is AuthException) return fromAuthException(e);
     final msg = e.toString().toLowerCase();
-    if (msg.contains('database error saving new user') ||
-        msg.contains('unexpected_failure')) {
-      return const DatabaseSaveFailure();
-    }
     if (msg.contains('network') || msg.contains('socket')) {
       return const NetworkFailure();
     }

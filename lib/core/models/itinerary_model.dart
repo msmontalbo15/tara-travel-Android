@@ -82,11 +82,13 @@ extension StopStatusX on StopStatus {
 enum TransportMode {
   car,
   motorcycle,
-  bus,
-  plane,
-  ferry,
+  commute,
   jeepney,
+  tricycle,
+  bus,
   vanHire,
+  ferry,
+  plane,
   bike,
   other,
 }
@@ -95,21 +97,25 @@ extension TransportModeX on TransportMode {
   String get label {
     switch (this) {
       case TransportMode.car:
-        return 'Car';
+        return 'Private Vehicle';
       case TransportMode.motorcycle:
         return 'Motorcycle';
+      case TransportMode.commute:
+        return 'Public Commute';
+      case TransportMode.jeepney:
+        return 'Jeepney / E-Jeep';
+      case TransportMode.tricycle:
+        return 'Tricycle';
       case TransportMode.bus:
         return 'Bus';
-      case TransportMode.plane:
-        return 'Plane';
-      case TransportMode.ferry:
-        return 'Ferry';
-      case TransportMode.jeepney:
-        return 'Jeepney';
       case TransportMode.vanHire:
-        return 'Van Hire';
+        return 'Van Rental';
+      case TransportMode.ferry:
+        return 'Ferry / Fastcraft';
+      case TransportMode.plane:
+        return 'Flight / Plane';
       case TransportMode.bike:
-        return 'Bike';
+        return 'Bicycle';
       case TransportMode.other:
         return 'Other';
     }
@@ -121,20 +127,24 @@ extension TransportModeX on TransportMode {
         return '🚗';
       case TransportMode.motorcycle:
         return '🏍️';
-      case TransportMode.bus:
+      case TransportMode.commute:
         return '🚌';
-      case TransportMode.plane:
-        return '✈️';
-      case TransportMode.ferry:
-        return '⛴️';
       case TransportMode.jeepney:
         return '🚐';
+      case TransportMode.tricycle:
+        return '🛺';
+      case TransportMode.bus:
+        return '🚌';
       case TransportMode.vanHire:
         return '🚐';
+      case TransportMode.ferry:
+        return '⛴️';
+      case TransportMode.plane:
+        return '✈️';
       case TransportMode.bike:
         return '🚲';
       case TransportMode.other:
-        return '🛺';
+        return '🚘';
     }
   }
 }

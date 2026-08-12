@@ -139,9 +139,9 @@ class _LocationPickerState extends State<LocationPicker> {
 
     try {
       if (apiKey != null && apiKey.isNotEmpty) {
-        // ── 1. Official Google Places Autocomplete API ────────────────────
+        // ── 1. Official Google Places Autocomplete API (Philippines restricted) ────────────────────
         final url =
-            'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${Uri.encodeComponent(query)}&key=$apiKey';
+            'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${Uri.encodeComponent(query)}&components=country:ph&key=$apiKey';
         final response = await _dio.get(url);
         if (response.statusCode == 200 && response.data['status'] == 'OK') {
           final List predictions = response.data['predictions'] ?? [];
@@ -160,7 +160,7 @@ class _LocationPickerState extends State<LocationPicker> {
         }
       }
 
-      // ── 2. Fallback Google Maps Geocoding & Place Recommendations ───────
+      // ── 2. Fallback Nominatim Search (Philippines restricted) ───────
       final response = await _dio.get(
         'https://nominatim.openstreetmap.org/search',
         queryParameters: {
@@ -168,6 +168,7 @@ class _LocationPickerState extends State<LocationPicker> {
           'format': 'json',
           'limit': 6,
           'addressdetails': 1,
+          'countrycodes': 'ph',
         },
         options: Options(
           headers: {

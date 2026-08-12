@@ -3,6 +3,8 @@ import '../../../core/models/itinerary_model.dart';
 class NewTripModel {
   String tripName;
   String destination;
+  double? destinationLat;
+  double? destinationLng;
   DateTime? fromDate;
   DateTime? toDate;
   String tripType;
@@ -19,6 +21,8 @@ class NewTripModel {
   NewTripModel({
     this.tripName = '',
     this.destination = '',
+    this.destinationLat,
+    this.destinationLng,
     this.fromDate,
     this.toDate,
     this.tripType = 'Beach',

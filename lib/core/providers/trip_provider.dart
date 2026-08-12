@@ -1,5 +1,7 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/trip_model.dart';
+import '../models/member_model.dart';
 import '../providers/repository_providers.dart';
 import '../providers/selected_trip_provider.dart';
 
@@ -29,3 +31,52 @@ final activeTripProvider = FutureProvider<TripModel?>((ref) async {
   if (trips.isEmpty) return null;
   return trips.first;
 });
+
+// ── Current Member ─────────────────────────────────────────────────────────────
+//
+// Resolves the MemberModel of the logged-in user in the active trip.
+// Falls back to an Organizer role if user is trip creator or default member.
+
+final currentMemberProvider = Provider.family<MemberModel?, TripModel?>((ref, trip) {
+  if (trip == null) return null;
+  final authRepo = ref.watch(authRepositoryProvider);
+  final currentUserId = authRepo.currentUser?.id;
+
+  if (currentUserId == null) {
+    return trip.members.firstWhere(
+      (m) => m.roles.contains(MemberRole.organizer),
+      orElse: () => trip.members.isNotEmpty
+          ? trip.members.first
+          : const MemberModel(
+              id: 'local_organizer',
+              name: 'Organizer',
+              initials: 'ORG',
+              color: Color(0xFFD85A30),
+              roles: [MemberRole.organizer],
+            ),
+    );
+  }
+
+  return trip.members.firstWhere(
+    (m) => m.id == currentUserId,
+    orElse: () {
+      if (trip.ownerId == currentUserId || trip.members.isEmpty) {
+        return MemberModel(
+          id: currentUserId,
+          name: 'Organizer',
+          initials: 'ME',
+          color: const Color(0xFFD85A30),
+          roles: const [MemberRole.organizer],
+        );
+      }
+      return MemberModel(
+        id: currentUserId,
+        name: 'Member',
+        initials: 'ME',
+        color: const Color(0xFF6B7280),
+        roles: const [MemberRole.member],
+      );
+    },
+  );
+});
+

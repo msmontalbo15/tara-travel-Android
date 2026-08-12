@@ -15,6 +15,7 @@ class TripModel {
   final bool isArchived;
   final String? coverEmoji;
   final String inviteCode;
+  final String? ownerId;
   // New metadata fields
   final String? coverColor;
   final String? departurePoint;
@@ -35,6 +36,7 @@ class TripModel {
     this.isArchived = false,
     this.coverEmoji,
     this.inviteCode = '',
+    this.ownerId,
     this.coverColor,
     this.departurePoint,
     this.departureMapUrl,
@@ -61,6 +63,7 @@ class TripModel {
     bool? isArchived,
     String? coverEmoji,
     String? inviteCode,
+    String? ownerId,
     String? coverColor,
     String? departurePoint,
     String? departureMapUrl,
@@ -80,6 +83,7 @@ class TripModel {
       isArchived: isArchived ?? this.isArchived,
       coverEmoji: coverEmoji ?? this.coverEmoji,
       inviteCode: inviteCode ?? this.inviteCode,
+      ownerId: ownerId ?? this.ownerId,
       coverColor: coverColor ?? this.coverColor,
       departurePoint: departurePoint ?? this.departurePoint,
       departureMapUrl: departureMapUrl ?? this.departureMapUrl,
@@ -119,6 +123,7 @@ class TripModel {
           status == 'completed',
       coverEmoji: map['cover_emoji']?.toString(),
       inviteCode: map['invite_code']?.toString() ?? '',
+      ownerId: map['owner_id']?.toString() ?? map['ownerId']?.toString(),
       coverColor: map['cover_color']?.toString(),
       departurePoint: map['departure_point']?.toString(),
       departureMapUrl: map['departure_map_url']?.toString(),
@@ -145,6 +150,7 @@ class TripModel {
       'is_archived': isArchived,
       'cover_emoji': coverEmoji,
       'invite_code': inviteCode,
+      'owner_id': ownerId,
       'cover_color': coverColor,
       'departure_point': departurePoint,
       'departure_map_url': departureMapUrl,

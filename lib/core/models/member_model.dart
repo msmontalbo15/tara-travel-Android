@@ -159,3 +159,92 @@ class MemberModel {
     };
   }
 }
+
+extension MemberRoleDetails on MemberRole {
+  String get displayName {
+    switch (this) {
+      case MemberRole.organizer:
+        return 'Organizer';
+      case MemberRole.treasurer:
+        return 'Treasurer';
+      case MemberRole.navigator:
+        return 'Navigator';
+      case MemberRole.buyer:
+        return 'Buyer';
+      case MemberRole.documenter:
+        return 'Documenter';
+      case MemberRole.member:
+        return 'Member';
+    }
+  }
+
+  String get description {
+    switch (this) {
+      case MemberRole.organizer:
+        return 'Full control — manages trip settings, invites/removes members, approves all changes';
+      case MemberRole.treasurer:
+        return 'Approves and rejects expenses, manages GCash QR, confirms payments, views full payment history';
+      case MemberRole.navigator:
+        return 'Owns the itinerary — adds, edits, and reorders stops. Plans routes';
+      case MemberRole.buyer:
+        return 'Logs expenses and purchases, submits receipts for Treasurer approval';
+      case MemberRole.documenter:
+        return 'Uploads photos, receipts, and trip journal entries. Manages media';
+      case MemberRole.member:
+        return 'Read-only access to all trip data. Can check own packing list and log personal expenses';
+    }
+  }
+
+  Color get color {
+    switch (this) {
+      case MemberRole.organizer:
+        return const Color(0xFFD85A30);
+      case MemberRole.treasurer:
+        return const Color(0xFFD97706);
+      case MemberRole.navigator:
+        return const Color(0xFF2563EB);
+      case MemberRole.buyer:
+        return const Color(0xFF059669);
+      case MemberRole.documenter:
+        return const Color(0xFF7C3AED);
+      case MemberRole.member:
+        return const Color(0xFF6B7280);
+    }
+  }
+}
+
+extension MemberRolePermissions on MemberModel {
+  bool get isOrganizer => roles.contains(MemberRole.organizer);
+  bool get isTreasurer => roles.contains(MemberRole.treasurer);
+  bool get isNavigator => roles.contains(MemberRole.navigator);
+  bool get isBuyer => roles.contains(MemberRole.buyer);
+  bool get isDocumenter => roles.contains(MemberRole.documenter);
+  bool get isStandardMember => roles.contains(MemberRole.member);
+
+  /// Checks if this member is the trip creator/owner
+  bool isTripCreator(String? ownerId) {
+    if (ownerId == null || ownerId.isEmpty) return isOrganizer;
+    return id == ownerId;
+  }
+
+  /// Granular Permissions
+  bool get canManageTripSettings => isOrganizer;
+  bool get canManageMembers => isOrganizer;
+  bool get canApproveTripChanges => isOrganizer;
+
+  bool get canApproveExpenses => isOrganizer || isTreasurer;
+  bool get canManageGCashQr => isOrganizer || isTreasurer;
+  bool get canConfirmPayments => isOrganizer || isTreasurer;
+  bool get canViewFullPaymentHistory => isOrganizer || isTreasurer;
+
+  bool get canManageItinerary => isOrganizer || isNavigator;
+
+  bool get canLogExpenses => isOrganizer || isTreasurer || isBuyer;
+
+  bool get canManageMediaAndJournal => isOrganizer || isDocumenter;
+
+  bool get canViewTripData => true;
+  bool get canManageOwnPackingList => true;
+  bool get canLogPersonalExpense => true;
+}
+

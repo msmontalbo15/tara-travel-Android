@@ -1,13 +1,16 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/trip_model.dart';
+import '../models/member_model.dart';
 import '../services/database_service.dart';
+import '../services/session_cache_service.dart';
 import '../utils/invite_code_generator.dart';
 import 'package:sembast/sembast.dart';
 
 class TripRepository {
   final SupabaseClient _supabase = Supabase.instance.client;
   final DatabaseService _db = DatabaseService.instance;
+  final SessionCacheService _cache = SessionCacheService.instance;
 
   StoreRef<String, Map<String, dynamic>> get _tripStore =>
       _db.getStore(DatabaseService.tripStore);
@@ -42,6 +45,7 @@ class TripRepository {
           await _tripStore.record(trip.id).put(txn, trip.toMap());
         }
       });
+      await _cache.stamp(DatabaseService.tripStore);
 
       return trips;
     } catch (e) {
@@ -275,6 +279,118 @@ class TripRepository {
 
     // Fetch the full trip from remote/local and refresh cache
     await _fetchAndCacheRemoteTrip(tripId);
+  }
+
+  /// Updates roles for a member in a trip.
+  /// Persists locally to Sembast and remotely to Supabase.
+  Future<void> updateMemberRoles(
+    String tripId,
+    String memberId,
+    List<MemberRole> newRoles,
+  ) async {
+    final db = await _db.database;
+
+    // Ensure member has at least one role (default to member if empty)
+    final rolesToAssign = newRoles.isEmpty ? [MemberRole.member] : newRoles;
+    final roleNames = rolesToAssign.map((r) => r.name).toList();
+
+    // 1. Update local cache
+    final localRecord = await _tripStore.record(tripId).get(db);
+    if (localRecord != null) {
+      final tripMap = Map<String, dynamic>.from(localRecord);
+      final membersList = (tripMap['members'] as List?)
+              ?.map((m) => Map<String, dynamic>.from(m as Map))
+              .toList() ??
+          [];
+      final memberIndex = membersList.indexWhere(
+        (m) => m['id'] == memberId || m['user_id'] == memberId,
+      );
+      if (memberIndex != -1) {
+        membersList[memberIndex]['roles'] = roleNames;
+        tripMap['members'] = membersList;
+        await _tripStore.record(tripId).put(db, tripMap);
+      }
+    }
+
+    // 2. Sync to Supabase
+    try {
+      await _supabase
+          .from('trip_members')
+          .update({'roles': roleNames})
+          .eq('trip_id', tripId)
+          .or('user_id.eq.$memberId,id.eq.$memberId');
+
+      // 3. Add activity log entry
+      final roleLabels = rolesToAssign.map((r) => r.displayName).join(', ');
+      await _supabase.from('activity_log').insert({
+        'trip_id': tripId,
+        'user_id': _supabase.auth.currentUser?.id,
+        'action_type': 'member_role_changed',
+        'description': 'Updated member roles to: $roleLabels',
+        'created_at': DateTime.now().toIso8601String(),
+      });
+    } catch (e) {
+      debugPrint('[TripRepository] updateMemberRoles sync error: $e');
+    }
+  }
+
+  /// Approves a pending trip member
+  Future<void> approveMember(String tripId, String memberId) async {
+    final db = await _db.database;
+    final localRecord = await _tripStore.record(tripId).get(db);
+    if (localRecord != null) {
+      final tripMap = Map<String, dynamic>.from(localRecord);
+      final membersList = (tripMap['members'] as List?)
+              ?.map((m) => Map<String, dynamic>.from(m as Map))
+              .toList() ??
+          [];
+      final memberIndex = membersList.indexWhere(
+        (m) => m['id'] == memberId || m['user_id'] == memberId,
+      );
+      if (memberIndex != -1) {
+        membersList[memberIndex]['status'] = 'approved';
+        tripMap['members'] = membersList;
+        await _tripStore.record(tripId).put(db, tripMap);
+      }
+    }
+
+    try {
+      await _supabase
+          .from('trip_members')
+          .update({'status': 'approved'})
+          .eq('trip_id', tripId)
+          .or('user_id.eq.$memberId,id.eq.$memberId');
+    } catch (e) {
+      debugPrint('[TripRepository] approveMember sync error: $e');
+    }
+  }
+
+  /// Rejects a pending trip member
+  Future<void> rejectMember(String tripId, String memberId) async {
+    final db = await _db.database;
+    final localRecord = await _tripStore.record(tripId).get(db);
+    if (localRecord != null) {
+      final tripMap = Map<String, dynamic>.from(localRecord);
+      final membersList = (tripMap['members'] as List?)
+              ?.map((m) => Map<String, dynamic>.from(m as Map))
+              .toList() ??
+          [];
+      membersList.removeWhere(
+        (m) => m['id'] == memberId || m['user_id'] == memberId,
+      );
+      tripMap['members'] = membersList;
+      await _tripStore.record(tripId).put(db, tripMap);
+    }
+
+    try {
+      await _supabase
+          .from('trip_members')
+          .delete()
+          .eq('trip_id', tripId)
+          .or('user_id.eq.$memberId,id.eq.$memberId');
+    } catch (e) {
+      debugPrint('[TripRepository] rejectMember sync error: $e');
+    }
   }
 
   Future<TripModel?> _fetchAndCacheRemoteTrip(String tripId) async {

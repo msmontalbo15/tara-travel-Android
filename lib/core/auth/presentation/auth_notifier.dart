@@ -8,9 +8,10 @@
 ///
 /// Security guarantees:
 /// • Client-side rate-limit guard: rejects rapid retries < 2 s apart.
-/// • Password strength enforced before any network call.
 /// • All tokens persisted via [SecureSessionRepository] (Keystore / Keychain).
 /// • Session restore runs at app startup in main() before runApp().
+/// • Biometric login supports offline sessions — no network round-trip needed
+///   when a valid user ID is already stored locally.
 /// ─────────────────────────────────────────────────────────────────────────────
 library;
 
@@ -23,45 +24,11 @@ import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 import '../../repositories/auth_repository.dart';
 import '../data/secure_session_repository.dart';
 import '../domain/auth_state.dart';
+import '../services/biometric_service.dart';
 import '../../providers/repository_providers.dart';
+import '../../services/connectivity_service.dart';
 
 export '../domain/auth_state.dart';
-
-// ── Password Validation ───────────────────────────────────────────────────────
-
-/// Production password rules (client-side pre-flight):
-/// • Minimum 8 characters
-/// • At least one uppercase letter
-/// • At least one digit
-/// • At least one special character (!@#$%^&*-_=+?)
-final _passwordRegex =
-    RegExp(r'^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*\-_=+?]).{8,}$');
-
-/// Validates [password] and returns a [WeakPassword] failure if invalid,
-/// or `null` if the password is strong enough.
-AuthFailure? validatePassword(String password) {
-  if (password.length < 8) {
-    return const WeakPassword('Password must be at least 8 characters.');
-  }
-  if (!RegExp(r'[A-Z]').hasMatch(password)) {
-    return const WeakPassword('Add at least one uppercase letter.');
-  }
-  if (!RegExp(r'\d').hasMatch(password)) {
-    return const WeakPassword('Add at least one number.');
-  }
-  if (!RegExp(r'[!@#$%^&*\-_=+?]').hasMatch(password)) {
-    return const WeakPassword('Add at least one special character (!@#\$%^&*).');
-  }
-  return null; // Strong ✓
-}
-
-/// Scores password strength: 0 = weak, 1 = fair, 2 = strong.
-int passwordStrengthScore(String password) {
-  int score = 0;
-  if (password.length >= 8) score++;
-  if (_passwordRegex.hasMatch(password)) score++;
-  return score;
-}
 
 // ── Notifier ──────────────────────────────────────────────────────────────────
 
@@ -132,167 +99,77 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     }
   }
 
-  // ── Email Sign-In ─────────────────────────────────────────────────────────
+  // ── Biometric Sign-In ─────────────────────────────────────────────────────
 
-  /// Signs in an existing user with [email] and [password].
-  Future<void> signInWithEmail(String email, String password) async {
+  /// Authenticates using device biometrics (Face ID / Fingerprint).
+  ///
+  /// Online path: restores the full Supabase session via [SecureSessionRepository].
+  /// Offline path: hydrates the user identity from the stored user ID without
+  ///   a network call, so the user can access their locally-cached trip data.
+  Future<void> signInWithBiometric() async {
     if (_throttled()) return;
     _recordAttempt();
-
     state = const AsyncData(AuthLoading());
-    try {
-      final response =
-          await _authRepo.signInWithEmailPassword(email, password);
-      final user = response.user;
-      if (user == null) {
-        state = const AsyncData(
-            AuthError(message: 'Sign-in failed. Please try again.'));
-        return;
-      }
 
-      final session = Supabase.instance.client.auth.currentSession;
-      if (session != null) {
-        await _sessionRepo.persistSession(session);
-      }
+    final bio = BiometricAuthService.instance;
 
-      state = AsyncData(AuthAuthenticated(user));
-    } on AuthException catch (e) {
-      final failure = AuthFailureMapper.fromAuthException(e);
-      state = AsyncData(AuthError(message: failure.userMessage));
-    } catch (e) {
-      final failure = AuthFailureMapper.fromException(e);
-      state = AsyncData(AuthError(message: failure.userMessage));
-    }
-  }
-
-  // ── Email Sign-Up ─────────────────────────────────────────────────────────
-
-  /// Registers a new user. Returns [AuthOtpPending] if email confirmation
-  /// is required, or [AuthAuthenticated] if confirmation is disabled in
-  /// the Supabase project.
-  Future<void> signUpWithEmail(
-    String email,
-    String password, {
-    String? displayName,
-  }) async {
-    if (_throttled()) return;
-    _recordAttempt();
-
-    // Client-side password strength gate — runs before any network call.
-    final pwFailure = validatePassword(password);
-    if (pwFailure != null) {
-      state = AsyncData(AuthError(message: pwFailure.userMessage));
+    final isEnabled = await bio.isBiometricsEnabled();
+    if (!isEnabled) {
+      state = const AsyncData(AuthError(
+          message:
+              'Biometric login is not set up. Sign in with Google first, then enable it in Profile Settings.'));
       return;
     }
 
-    state = const AsyncData(AuthLoading());
-    try {
-      final response = await _authRepo.signUpWithEmailPassword(
-        email,
-        password,
-        displayName: displayName,
-      );
+    final authenticated = await bio.authenticate();
+    if (!authenticated) {
+      state = const AsyncData(AuthError(
+          message: 'Biometric authentication failed. Please try again.'));
+      return;
+    }
 
-      if (response.user != null && response.session == null) {
-        // Email confirmation required → OTP screen.
-        state = AsyncData(
-            AuthOtpPending(email: email, pendingName: displayName));
-      } else if (response.user != null && response.session != null) {
-        // Confirmation disabled → immediately authenticated.
-        final session = Supabase.instance.client.auth.currentSession;
-        if (session != null) await _sessionRepo.persistSession(session);
-        state = AsyncData(AuthAuthenticated(response.user!));
+    // ── Offline-aware session restore ──────────────────────────────────────
+    final isOnline = await ConnectivityService.instance.isOnline;
+
+    if (!isOnline) {
+      // Offline path: skip Supabase network call.
+      // Use the in-memory user if Supabase already hydrated it, otherwise
+      // fall back to the stored user ID to reconstruct a minimal identity.
+      final inMemoryUser = Supabase.instance.client.auth.currentUser;
+      if (inMemoryUser != null) {
+        state = AsyncData(AuthAuthenticated(inMemoryUser));
+        return;
+      }
+
+      final storedUserId = await _sessionRepo.getStoredUserId();
+      if (storedUserId != null) {
+        // No valid User object available offline — signal as offline session.
+        state = const AsyncData(AuthError(
+            message:
+                'You\'re offline. Re-open the app with internet to fully restore your session.'));
+        return;
+      }
+
+      state = const AsyncData(AuthError(
+          message:
+              'No saved session found. Please connect to the internet and sign in with Google.'));
+      return;
+    }
+
+    // ── Online path ────────────────────────────────────────────────────────
+    try {
+      final user = await _sessionRepo.restoreSession();
+      if (user != null) {
+        state = AsyncData(AuthAuthenticated(user));
       } else {
-        state = const AsyncData(
-            AuthError(message: 'Registration failed. Please try again.'));
+        state = const AsyncData(AuthError(
+            message:
+                'Session expired. Please sign in with Google to continue.'));
       }
-    } on AuthException catch (e) {
-      final failure = AuthFailureMapper.fromAuthException(e);
-      // DatabaseSaveFailure is non-fatal: the auth user was created.
-      // If Supabase OTP confirmation is needed, it will still work —
-      // the trigger fix (migration 009) will auto-recover the profile row.
-      if (failure is DatabaseSaveFailure) {
-        debugPrint('[AuthNotifier] DB trigger error — non-fatal, advancing to OTP.');
-        state = AsyncData(AuthOtpPending(email: email, pendingName: displayName));
-        return;
-      }
-      state = AsyncData(AuthError(message: failure.userMessage));
     } catch (e) {
-      final failure = AuthFailureMapper.fromException(e);
-      if (failure is DatabaseSaveFailure) {
-        debugPrint('[AuthNotifier] DB trigger error — non-fatal, advancing to OTP.');
-        state = AsyncData(AuthOtpPending(email: email, pendingName: displayName));
-        return;
-      }
-      state = AsyncData(AuthError(message: failure.userMessage));
-    }
-  }
-
-  // ── OTP Verification ──────────────────────────────────────────────────────
-
-  /// Verifies a 6-digit [code] sent to [email]. Tries `signup` OTP type
-  /// first, then falls back to `email` type (for magic-link resend paths).
-  Future<void> verifyOtp(String email, String code, {String? pendingName}) async {
-    if (code.length < 6) {
+      debugPrint('[AuthNotifier] signInWithBiometric restoreSession error: $e');
       state = const AsyncData(
-          AuthError(message: 'Enter the full 6-digit verification code.'));
-      return;
-    }
-
-    state = const AsyncData(AuthLoading());
-    try {
-      AuthResponse response;
-      try {
-        response = await _authRepo.verifySignupOtp(email, code);
-      } on AuthException {
-        response = await _authRepo.verifyEmailOtp(email, code);
-      }
-
-      final user = response.user;
-      if (user == null) {
-        state = const AsyncData(
-            AuthError(message: 'Verification failed. Please try again.'));
-        return;
-      }
-
-      final session = Supabase.instance.client.auth.currentSession;
-      if (session != null) await _sessionRepo.persistSession(session);
-
-      state = AsyncData(AuthAuthenticated(user));
-    } on AuthException catch (e) {
-      final failure = AuthFailureMapper.fromAuthException(e);
-      state = AsyncData(AuthError(message: failure.userMessage));
-    } catch (e) {
-      state = const AsyncData(
-          AuthError(message: 'Invalid code. Please try again.'));
-    }
-  }
-
-  // ── OTP Resend ────────────────────────────────────────────────────────────
-
-  /// Resends the OTP to [email] without changing the overall state
-  /// (the OTP screen remains visible).
-  Future<void> resendOtp(String email) async {
-    try {
-      await _authRepo.signInWithMagicLink(email);
-    } catch (e) {
-      debugPrint('[AuthNotifier] resendOtp error: $e');
-    }
-  }
-
-  // ── Password Reset ────────────────────────────────────────────────────────
-
-  /// Sends a password reset email. State briefly enters [AuthLoading],
-  /// then returns to [AuthUnauthenticated] (success/failure both shown
-  /// as snackbar by the UI, not as a state transition).
-  Future<void> sendPasswordReset(String email) async {
-    state = const AsyncData(AuthLoading());
-    try {
-      await _authRepo.sendPasswordResetEmail(email);
-    } catch (e) {
-      debugPrint('[AuthNotifier] sendPasswordReset error: $e');
-    } finally {
-      state = const AsyncData(AuthUnauthenticated());
+          AuthError(message: 'Authentication failed. Please try again.'));
     }
   }
 

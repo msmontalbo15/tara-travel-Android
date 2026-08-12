@@ -109,4 +109,5 @@ class DatabaseService {
   static const String itineraryStore = 'itinerary';
   static const String packingStore   = 'packing_items';
   static const String userStore      = 'user_profile';
+  static const String chatStore      = 'chat_messages';
 }

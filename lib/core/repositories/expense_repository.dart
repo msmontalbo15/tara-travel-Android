@@ -2,11 +2,13 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/expense_model.dart';
 import '../services/database_service.dart';
+import '../services/session_cache_service.dart';
 import 'package:sembast/sembast.dart';
 
 class ExpenseRepository {
   final SupabaseClient _supabase = Supabase.instance.client;
   final DatabaseService _db = DatabaseService.instance;
+  final SessionCacheService _cache = SessionCacheService.instance;
 
   StoreRef<String, Map<String, dynamic>> get _expenseStore =>
       _db.getStore(DatabaseService.expenseStore);
@@ -40,6 +42,7 @@ class ExpenseRepository {
           });
         }
       });
+      await _cache.stamp(DatabaseService.expenseStore);
 
       return expenses;
     } catch (e) {

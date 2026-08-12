@@ -27,7 +27,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   bool _didRestoreProgress = false;
 
   // State carried across steps
-  String _selectedMode = 'google'; // 'google' or 'offline'
   String _userName = 'User';
   String? _profilePhotoPath;
   String _nickname = '';
@@ -57,7 +56,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   void _onChooseModeSelected(String mode, String? name) async {
     setState(() {
-      _selectedMode = mode;
       if (name != null && name.isNotEmpty) _userName = name;
     });
 
@@ -67,54 +65,52 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     // Update name immediately so it's visible in subsequent steps
     notifier.updateDisplayName(_userName);
 
-    // Set cloud/Google flags and seed profile photo from Google metadata
-    final isCloud  = mode == 'google' || mode == 'email';
-    final isGoogle = mode == 'google';
+    // All sign-in modes are cloud-connected (Google only)
     final googlePhotoUrl = supaUser?.userMetadata?['avatar_url'] as String? ??
         supaUser?.userMetadata?['picture'] as String?;
 
     notifier.updateProfile(ref.read(profileProvider).copyWith(
-      isGoogleConnected: isGoogle,
-      isCloudConnected: isCloud,
-      accountEmail: isCloud ? (supaUser?.email) : null,
-      profilePhotoUrl: googlePhotoUrl ?? ref.read(profileProvider).profilePhotoUrl,
+      isGoogleConnected: true,
+      isCloudConnected: true,
+      accountEmail: supaUser?.email,
+      profilePhotoUrl:
+          googlePhotoUrl ?? ref.read(profileProvider).profilePhotoUrl,
     ));
 
-    // For cloud modes: if the user has already completed onboarding
-    // (returning sign-in), skip straight to home.
-    if (isCloud) {
-      if (supaUser != null) {
-        await DatabaseService.instance.switchUser(supaUser.id);
-      }
-      await ref.read(profileProvider.notifier).refreshProfile();
-      if (!mounted) return;
-      final current = ref.read(profileProvider);
-      if (current.hasCompletedOnboarding) {
-        Navigator.of(context).pushReplacementNamed('/home');
-        return;
-      }
+    // Switch local DB to the authenticated user's partition
+    if (supaUser != null) {
+      await DatabaseService.instance.switchUser(supaUser.id);
+    }
+    await ref.read(profileProvider.notifier).refreshProfile();
+    if (!mounted) return;
 
-      // Resume from where they left off based on saved profile data.
-      // Only jump ahead if the user actually progressed past step 1 in a
-      // previous session — a brand-new user should always see step 1.
-      if (!_isTrulyNewUser(current)) {
-        final resumeStep = _computeResumeStep(current);
-        // Pre-fill local state from saved profile
-        setState(() {
-          _profilePhotoPath = current.profilePhotoUrl;
-          _nickname = current.nickname ?? '';
-          _dateOfBirth = current.dateOfBirth ?? '';
-          _homeRegion = current.homeRegion;
-          _homeCity = current.homeCity;
-          _homeBarangay = current.homeBarangay;
-          _homeCountry = current.homeCountry.isNotEmpty ? current.homeCountry : 'Philippines';
-          _preferredCurrency = current.preferredCurrency.isNotEmpty ? current.preferredCurrency : 'PHP';
-          _healthNotes = current.healthNotes;
-          _bloodType = current.bloodType;
-        });
-        _goToStep(resumeStep);
-        return;
-      }
+    final current = ref.read(profileProvider);
+    // Returning user who already finished onboarding → skip straight to home
+    if (current.hasCompletedOnboarding) {
+      Navigator.of(context).pushReplacementNamed('/home');
+      return;
+    }
+
+    // Resume from where they left off based on saved profile data.
+    // Only jump ahead if the user actually progressed past step 1 in a
+    // previous session — a brand-new user should always see step 1.
+    if (!_isTrulyNewUser(current)) {
+      final resumeStep = _computeResumeStep(current);
+      // Pre-fill local state from saved profile
+      setState(() {
+        _profilePhotoPath = current.profilePhotoUrl;
+        _nickname = current.nickname ?? '';
+        _dateOfBirth = current.dateOfBirth ?? '';
+        _homeRegion = current.homeRegion;
+        _homeCity = current.homeCity;
+        _homeBarangay = current.homeBarangay;
+        _homeCountry = current.homeCountry.isNotEmpty ? current.homeCountry : 'Philippines';
+        _preferredCurrency = current.preferredCurrency.isNotEmpty ? current.preferredCurrency : 'PHP';
+        _healthNotes = current.healthNotes;
+        _bloodType = current.bloodType;
+      });
+      _goToStep(resumeStep);
+      return;
     }
 
     _goToStep(1);
@@ -124,9 +120,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   /// A new Google user has auto-seeded name + avatar but hasn't touched
   /// any onboarding step beyond step 0 (ChooseMode).
   bool _isTrulyNewUser(ProfileState profile) {
-    final noNickname  = (profile.nickname ?? '').isEmpty;
-    final noCity      = profile.homeCity.isEmpty;
-    final noHealth    = profile.healthNotes.isEmpty;
+    final noNickname = (profile.nickname ?? '').isEmpty;
+    final noCity = profile.homeCity.isEmpty;
+    final noHealth = profile.healthNotes.isEmpty;
     return noNickname && noCity && noHealth;
   }
 
@@ -237,13 +233,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         if (!mounted) return;
         final profile = ref.read(profileProvider);
         final supaUser = supa.Supabase.instance.client.auth.currentUser;
-        if (supaUser != null && !profile.hasCompletedOnboarding && profile.isLoaded) {
+        if (supaUser != null &&
+            !profile.hasCompletedOnboarding &&
+            profile.isLoaded) {
           // Only restore progress if the user genuinely started onboarding
           // in a prior session. A brand-new user should stay on step 0.
           if (!_isTrulyNewUser(profile)) {
             final resumeStep = _computeResumeStep(profile);
             setState(() {
-              _selectedMode = 'google';
               _userName = profile.displayName;
               _profilePhotoPath = profile.profilePhotoUrl;
               _nickname = profile.nickname ?? '';
@@ -251,8 +248,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               _homeRegion = profile.homeRegion;
               _homeCity = profile.homeCity;
               _homeBarangay = profile.homeBarangay;
-              _homeCountry = profile.homeCountry.isNotEmpty ? profile.homeCountry : 'Philippines';
-              _preferredCurrency = profile.preferredCurrency.isNotEmpty ? profile.preferredCurrency : 'PHP';
+              _homeCountry = profile.homeCountry.isNotEmpty
+                  ? profile.homeCountry
+                  : 'Philippines';
+              _preferredCurrency = profile.preferredCurrency.isNotEmpty
+                  ? profile.preferredCurrency
+                  : 'PHP';
               _healthNotes = profile.healthNotes;
               _bloodType = profile.bloodType;
             });
@@ -272,13 +273,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(profileProvider);
-    final displayUserName = profile.effectiveName == 'User' ? _userName : profile.effectiveName;
+    final displayUserName =
+        profile.effectiveName == 'User' ? _userName : profile.effectiveName;
 
     return PageView(
       controller: _pageController,
       physics: const NeverScrollableScrollPhysics(),
       children: [
-        // Step 0 — Choose mode
+        // Step 0 — Choose mode (Google sign-in)
         ChooseModeStep(
           onModeSelected: _onChooseModeSelected,
           autoGoogleSignIn: _autoGoogleSignIn,
@@ -298,7 +300,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           onSkip: () => _goToStep(3),
         ),
 
-        // Step 3 — Nickname & Birthday (NEW)
+        // Step 3 — Nickname & Birthday
         NicknameBirthdayStep(
           initialNickname: _nickname,
           initialDateOfBirth: _dateOfBirth,
@@ -332,10 +334,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         // Step 6 — All Set
         AllSetStep(
           userName: displayUserName,
-          accountEmail: _selectedMode == 'google'
-              ? (profile.accountEmail ?? '')
-              : 'Not connected',
-          isGoogleConnected: _selectedMode == 'google',
+          accountEmail: profile.accountEmail ?? '',
           homeCity: _homeBarangay.isNotEmpty
               ? '$_homeBarangay, $_homeCity'
               : _homeCity,

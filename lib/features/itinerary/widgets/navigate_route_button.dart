@@ -46,7 +46,7 @@ class _NavigateRouteButtonState extends State<NavigateRouteButton> {
   }
 
   /// Builds the Google Maps directions deep-link URL.
-  /// No `origin` is set — Google Maps defaults to the user's live GPS.
+  /// No `origin` parameter is set — Google Maps defaults to the user's live GPS ("Your Location").
   ///
   /// Format:
   ///   https://www.google.com/maps/dir/?api=1
@@ -76,38 +76,25 @@ class _NavigateRouteButtonState extends State<NavigateRouteButton> {
     return 'https://www.google.com/maps/dir/?$query';
   }
 
-  /// Builds Google Maps URL including optional origin (current location).
-  String _buildMapsUrlWithOrigin(List<ItineraryStop> stops, Position? origin) {
-    final baseUrl = _buildMapsUrl(stops);
-    if (origin == null) return baseUrl;
-    final uri = Uri.parse(baseUrl);
-    final queryParams = Map<String, String>.from(uri.queryParameters);
-    queryParams['origin'] = '${origin.latitude},${origin.longitude}';
-    return uri.replace(queryParameters: queryParams).toString();
-  }
-
   Future<void> _navigate() async {
     final stops = _navigableStops;
     if (stops.isEmpty) return;
 
     setState(() => _loading = true);
 
-    Position? currentPosition;
     try {
-      // Request location permission if not granted
+      // Request location permission if needed to ensure device GPS is active
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
       }
-      if (permission == LocationPermission.always || permission == LocationPermission.whileInUse) {
-        currentPosition = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
-      }
     } catch (_) {
-      // Ignore location errors; continue without origin
+      // Ignore permission errors; proceed to open maps
     }
 
     try {
-      final url = _buildMapsUrlWithOrigin(stops, currentPosition);
+      // Omit static origin so Google Maps tracks the user's live GPS location dynamically
+      final url = _buildMapsUrl(stops);
       final uri = Uri.parse(url);
 
       final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -166,7 +153,7 @@ class _NavigateRouteButtonState extends State<NavigateRouteButton> {
             : const Icon(Icons.directions_rounded, size: 20),
         label: Text(
           _loading
-              ? 'Getting location…'
+              ? 'Opening live navigation…'
               : canNavigate
                   ? 'Navigate Route in Google Maps (${stops.length} stop${stops.length == 1 ? '' : 's'})'
                   : 'No stops to navigate',

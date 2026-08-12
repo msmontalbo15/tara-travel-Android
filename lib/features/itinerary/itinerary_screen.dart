@@ -121,20 +121,22 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
         final itineraryAsync = ref.watch(ref.watch(itineraryProvider(trip.id)));
         final weatherAsync = ref.watch(tripWeatherProvider(trip.id));
         final weatherList = weatherAsync.value;
+        final currentMember = ref.watch(currentMemberProvider(trip));
+        final canManageItinerary = currentMember?.canManageItinerary ?? true;
 
         return itineraryAsync.when(
-          data: (itinerary) {
-            final days = itinerary.days;
-            final activeDay = itinerary.activeDay;
-            final currentDay = days.isNotEmpty ? days[activeDay] : null;
+          data: (itineraryState) {
+            final days = itineraryState.days;
+            final activeDay = itineraryState.activeDay;
+            final currentDay = (days.isNotEmpty && activeDay < days.length) ? days[activeDay] : null;
 
             return Scaffold(
               backgroundColor: AppColors.deepEarth,
               body: Column(
                 children: [
-                  // ── Header ────────────────────────────────────────────────
+                  // ── Header Section ──────────────────────────────────────────
                   Container(
-                    padding: EdgeInsets.fromLTRB(0, widget.showHeader ? 56 : 12, 0, 0),
+                    padding: const EdgeInsets.fromLTRB(20, 52, 20, 16),
                     decoration: const BoxDecoration(
                       gradient: LinearGradient(
                         colors: [Color(0xFF1A0A04), AppColors.deepEarth],
@@ -146,8 +148,8 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         if (widget.showHeader) ...[
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
                             child: Row(
                               children: [
                                 if (Navigator.canPop(context))
@@ -155,14 +157,12 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                                     padding: EdgeInsets.only(right: 12),
                                     child: AppBackButton(),
                                   ),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(trip.name, style: const TextStyle(fontFamily: 'Playfair Display', fontSize: 22, fontWeight: FontWeight.w700, color: Colors.white)),
-                                      Text(trip.destination, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 13, color: Colors.white54)),
-                                    ],
-                                  ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(trip.name, style: const TextStyle(fontFamily: 'Playfair Display', fontSize: 22, fontWeight: FontWeight.w700, color: Colors.white)),
+                                    Text(trip.destination, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 13, color: Colors.white54)),
+                                  ],
                                 ),
                                 // Feature 8 — Live indicator dot
                                 _LiveDot(),
@@ -214,7 +214,7 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                             activeIndex: activeDay,
                             weather: weatherList,
                             onTap: (i) => ref.read(ref.read(itineraryProvider(trip.id)).notifier).setActiveDay(i),
-                            onAddDay: () => ref.read(ref.read(itineraryProvider(trip.id)).notifier).addDay(),
+                            onAddDay: canManageItinerary ? () => ref.read(ref.read(itineraryProvider(trip.id)).notifier).addDay() : null,
                           ),
                       ],
                     ),
@@ -240,7 +240,7 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                 ],
               ),
 
-              floatingActionButton: currentDay == null ? null : FloatingActionButton.extended(
+              floatingActionButton: (currentDay == null || !canManageItinerary) ? null : FloatingActionButton.extended(
                 onPressed: () {
                   final notifier = ref.read(ref.read(itineraryProvider(trip.id)).notifier);
                   _openAddForm(context, activeDay, trip.members, notifier);

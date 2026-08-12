@@ -129,6 +129,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
             padding: const EdgeInsets.symmetric(horizontal: 28.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const Spacer(flex: 3),
 
@@ -138,6 +139,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   child: ScaleTransition(
                     scale: _logoScale,
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Image.asset(
                           'assets/logo.png',
@@ -212,6 +214,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   child: FadeTransition(
                     opacity: _textOpacity,
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         if (!profile.isLoaded || (_hasActiveSession && !_isNavigating)) ...[
                           // Show shimmer while loading, or when returning user

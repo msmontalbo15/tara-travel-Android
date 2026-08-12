@@ -347,7 +347,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                 Text(member.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.deepEarth)),
                 Text(
                   member.roles.isNotEmpty
-                    ? _capitalizeRole(member.roles.first)
+                    ? member.roles.map((r) => r.displayName).join(' · ')
                     : 'Member',
                   style: const TextStyle(fontSize: 10, color: AppColors.muted),
                 ),
@@ -471,16 +471,5 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
         ],
       ),
     );
-  }
-
-  String _capitalizeRole(MemberRole role) {
-    switch (role) {
-      case MemberRole.organizer:  return 'Organizer';
-      case MemberRole.treasurer:  return 'Treasurer';
-      case MemberRole.navigator:  return 'Navigator';
-      case MemberRole.buyer:      return 'Buyer';
-      case MemberRole.documenter: return 'Documenter';
-      case MemberRole.member:     return 'Member';
-    }
   }
 }

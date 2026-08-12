@@ -7,7 +7,6 @@
 /// • All network calls isolated to async methods — never blocks the main thread.
 /// • Typed [AuthFailure] propagated upward; raw exceptions never cross the
 ///   repository boundary into the presentation layer.
-/// • Password strength validation exposed via [validatePassword] for UI reuse.
 /// • Network-related failures explicitly typed as [NetworkFailure] for upstream
 ///   circuit-breaker / retry logic.
 /// ─────────────────────────────────────────────────────────────────────────────
@@ -20,15 +19,6 @@ import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase show AuthState;
 
 import '../auth/domain/auth_state.dart';
-
-// ── Email validation ──────────────────────────────────────────────────────────
-
-/// RFC 5321-aligned email regex for client-side UX pre-validation.
-/// NOTE: Must NOT be used as a server-side security gate.
-final _emailRegex =
-    RegExp(r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$');
-
-bool isValidEmail(String email) => _emailRegex.hasMatch(email.trim());
 
 // ── Repository ────────────────────────────────────────────────────────────────
 
@@ -44,81 +34,6 @@ class AuthRepository {
       scopes: const ['email', 'profile', 'openid'],
     );
     return _googleSignInInstance!;
-  }
-
-  // ── OTP / Magic Link ───────────────────────────────────────────────────────
-
-  /// Sends a magic link + OTP to [email].
-  Future<void> signInWithMagicLink(String email) async {
-    await _supabase.auth.signInWithOtp(
-      email: email.trim(),
-      emailRedirectTo: 'taratravel://callback',
-    );
-  }
-
-  /// Sends a 6-digit OTP to [email] for passwordless sign-in.
-  Future<void> sendEmailOtp(String email) async {
-    await _supabase.auth.signInWithOtp(
-      email: email.trim(),
-      shouldCreateUser: true,
-    );
-  }
-
-  /// Verifies an OTP for generic email authentication.
-  Future<AuthResponse> verifyEmailOtp(String email, String token) async {
-    return _supabase.auth.verifyOTP(
-      email: email.trim(),
-      token: token,
-      type: OtpType.email,
-    );
-  }
-
-  /// Verifies an OTP sent during the sign-up confirmation flow.
-  Future<AuthResponse> verifySignupOtp(String email, String token) async {
-    return _supabase.auth.verifyOTP(
-      email: email.trim(),
-      token: token,
-      type: OtpType.signup,
-    );
-  }
-
-  // ── Email + Password ───────────────────────────────────────────────────────
-
-  /// Signs in an existing user with [email] and [password].
-  /// Throws a typed [AuthFailure] on failure.
-  Future<AuthResponse> signInWithEmailPassword(
-    String email,
-    String password,
-  ) async {
-    return _supabase.auth.signInWithPassword(
-      email: email.trim(),
-      password: password,
-    );
-  }
-
-  /// Creates a new account with [email] and [password].
-  Future<AuthResponse> signUpWithEmailPassword(
-    String email,
-    String password, {
-    String? displayName,
-  }) async {
-    return _supabase.auth.signUp(
-      email: email.trim(),
-      password: password,
-      data: (displayName != null && displayName.isNotEmpty)
-          ? {'full_name': displayName, 'name': displayName}
-          : null,
-    );
-  }
-
-  // ── Password Reset ─────────────────────────────────────────────────────────
-
-  /// Sends a password-reset email to [email].
-  Future<void> sendPasswordResetEmail(String email) async {
-    await _supabase.auth.resetPasswordForEmail(
-      email.trim(),
-      redirectTo: 'taratravel://reset',
-    );
   }
 
   // ── Google Sign-In ─────────────────────────────────────────────────────────
@@ -154,7 +69,6 @@ class AuthRepository {
 
       // If user deliberately cancelled native account picker, return null
       if (googleUser == null && await _googleSignIn.isSignedIn() == false) {
-        // User cancelled picker
         return null;
       }
 

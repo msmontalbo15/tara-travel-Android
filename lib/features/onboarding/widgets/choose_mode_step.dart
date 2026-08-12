@@ -11,9 +11,8 @@ import '../../../core/services/database_service.dart';
 import '../../../core/providers/profile_provider.dart';
 import 'gcash_mpin_view.dart';
 
-// ── Auth modes ────────────────────────────────────────────────────────────────
-const _kModeGoogle  = 'google';
-const _kModeOffline = 'offline';
+// ── Auth mode constant ────────────────────────────────────────────────────────
+const _kModeGoogle = 'google';
 
 class ChooseModeStep extends ConsumerStatefulWidget {
   final void Function(String mode, String? name) onModeSelected;
@@ -34,7 +33,6 @@ class ChooseModeStep extends ConsumerStatefulWidget {
 class _ChooseModeStepState extends ConsumerState<ChooseModeStep>
     with SingleTickerProviderStateMixin {
   // ── State ──────────────────────────────────────────────────────────────────
-  String _selectedMode = _kModeGoogle;
   bool _autoSignInTriggered = false;
 
   // MPIN / Biometric quick login
@@ -45,12 +43,7 @@ class _ChooseModeStepState extends ConsumerState<ChooseModeStep>
   bool _biometricsRegistered = false;
   BiometricType? _biometricType; // strongest enrolled type
 
-  // Offline mode name input
-  final _nameFocus = FocusNode();
-  final _nameCtrl  = TextEditingController();
-
-  // Validation errors
-  String? _nameError;
+  // Error display
   String? _generalError;
 
   // Animation
@@ -60,14 +53,11 @@ class _ChooseModeStepState extends ConsumerState<ChooseModeStep>
   @override
   void initState() {
     super.initState();
-    _selectedMode = widget.initialMode == _kModeOffline ? _kModeOffline : _kModeGoogle;
     _animCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 600));
     _slideAnim = Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero)
         .animate(CurvedAnimation(parent: _animCtrl, curve: Curves.easeOutCubic));
     _animCtrl.forward();
-
-    _nameCtrl.addListener(_clearErrors);
 
     _checkBiometrics();
     _checkMpinSession();
@@ -83,7 +73,7 @@ class _ChooseModeStepState extends ConsumerState<ChooseModeStep>
       setState(() => _showMpinView = true);
     } else {
       // Only auto sign-in after MPIN check is complete
-      if (widget.autoGoogleSignIn && _selectedMode == _kModeGoogle) {
+      if (widget.autoGoogleSignIn) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted || _autoSignInTriggered) return;
           _autoSignInTriggered = true;
@@ -110,23 +100,12 @@ class _ChooseModeStepState extends ConsumerState<ChooseModeStep>
   @override
   void dispose() {
     _animCtrl.dispose();
-    _nameFocus.dispose();
-    _nameCtrl.dispose();
     super.dispose();
-  }
-
-  void _clearErrors() {
-    if (_nameError != null || _generalError != null) {
-      setState(() {
-        _nameError = null;
-        _generalError = null;
-      });
-    }
   }
 
   // ── Google (PRIMARY HERO ACTION) ────────────────────────────────────────────
   Future<void> _handleGoogle() async {
-    setState(() { _generalError = null; });
+    setState(() => _generalError = null);
     await ref.read(authNotifierProvider.notifier).signInWithGoogle();
   }
 
@@ -176,16 +155,6 @@ class _ChooseModeStepState extends ConsumerState<ChooseModeStep>
             'Session expired or missing. Please sign in with Google first to reactivate $title login.';
       });
     }
-  }
-
-  // ── Offline mode handler ───────────────────────────────────────────────────
-  void _handleOffline() {
-    final name = _nameCtrl.text.trim();
-    if (name.isEmpty) {
-      setState(() => _nameError = 'Please enter your name');
-      return;
-    }
-    widget.onModeSelected(_kModeOffline, name);
   }
 
   @override
@@ -257,14 +226,8 @@ class _ChooseModeStepState extends ConsumerState<ChooseModeStep>
 
                         // ── 1. PRIMARY GOOGLE ACCOUNT BUTTON (REGISTER & LOGIN) ──
                         _PrimaryGoogleButton(
-                          selected: _selectedMode == _kModeGoogle,
-                          isLoading: isLoading && _selectedMode == _kModeGoogle,
-                          onTap: () async {
-                            setState(() {
-                              _selectedMode = _kModeGoogle;
-                            });
-                            await _handleGoogle();
-                          },
+                          isLoading: isLoading,
+                          onTap: _handleGoogle,
                         ),
                         const SizedBox(height: 14),
 
@@ -278,86 +241,9 @@ class _ChooseModeStepState extends ConsumerState<ChooseModeStep>
                           const SizedBox(height: 14),
                         ],
 
-                        // ── DIVIDER ───────────────────────────────────────────
-                        Row(
-                          children: [
-                            Expanded(child: Container(height: 1, color: AppColors.cardBorder)),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
-                              child: Text(
-                                'OR',
-                                style: TextStyle(
-                                  fontFamily: 'DM Sans',
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 1.1,
-                                  color: AppColors.warmMuted.withValues(alpha: 0.8),
-                                ),
-                              ),
-                            ),
-                            Expanded(child: Container(height: 1, color: AppColors.cardBorder)),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-
-                        // ── 3. OFFLINE MODE OPTION ────────────────────────────
-                        _ModeCard(
-                          selected: _selectedMode == _kModeOffline,
-                          onTap: () => setState(() {
-                            _selectedMode = _kModeOffline;
-                          }),
-                          leadingWidget: _iconBox(Icons.phone_android_rounded, AppColors.warmMuted),
-                          title: 'Use offline only',
-                          subtitle: 'Saved locally on this device',
-                          bullets: const [
-                            'No cloud account required',
-                            'Full offline privacy',
-                            'Upgrade to Google sync anytime',
-                          ],
-                          dimmed: _selectedMode != _kModeOffline,
-                        ),
-
-                        // ── Contextual Name Input for Offline Mode ────────────
-                        AnimatedCrossFade(
-                          crossFadeState: _selectedMode == _kModeOffline
-                              ? CrossFadeState.showSecond
-                              : CrossFadeState.showFirst,
-                          duration: const Duration(milliseconds: 300),
-                          firstChild: const SizedBox(height: 0, width: double.infinity),
-                          secondChild: Padding(
-                            padding: const EdgeInsets.only(top: 16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'What should we call you?',
-                                  style: TextStyle(
-                                    fontFamily: 'DM Sans',
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                _field(
-                                  _nameCtrl,
-                                  'Enter your name',
-                                  Icons.person_outline_rounded,
-                                  _nameError,
-                                  focusNode: _nameFocus,
-                                  autofillHints: const [AutofillHints.name],
-                                  textInputAction: TextInputAction.done,
-                                  onSubmitted: (_) => _handleOffline(),
-                                  textCapitalization: TextCapitalization.words,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-
                         // General Error Box
                         if (_generalError != null) ...[
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 4),
                           _errorBox(_generalError!),
                         ],
 
@@ -378,38 +264,6 @@ class _ChooseModeStepState extends ConsumerState<ChooseModeStep>
                     ),
                   ),
                 ),
-
-                // CTA Button for Offline Mode
-                if (_selectedMode == _kModeOffline) ...[
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                    child: SizedBox(
-                      width: double.infinity,
-                      height: 54,
-                      child: Semantics(
-                        label: 'Continue offline',
-                        button: true,
-                        child: ElevatedButton(
-                          onPressed: _handleOffline,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14)),
-                          ),
-                          child: const Text(
-                            'Continue offline',
-                            style: TextStyle(
-                                fontFamily: 'DM Sans',
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
               ],
             ),
           ),
@@ -430,50 +284,6 @@ class _ChooseModeStepState extends ConsumerState<ChooseModeStep>
                 color: AppColors.primary)),
       );
 
-  Widget _field(
-    TextEditingController ctrl,
-    String hint,
-    IconData icon,
-    String? error, {
-    FocusNode? focusNode,
-    TextCapitalization textCapitalization = TextCapitalization.none,
-    Iterable<String>? autofillHints,
-    TextInputAction? textInputAction,
-    ValueChanged<String>? onSubmitted,
-  }) =>
-      TextField(
-        controller: ctrl,
-        focusNode: focusNode,
-        textCapitalization: textCapitalization,
-        autofillHints: autofillHints,
-        textInputAction: textInputAction,
-        onSubmitted: onSubmitted,
-        style: const TextStyle(fontFamily: 'DM Sans', fontSize: 15),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: TextStyle(
-              color: AppColors.warmMuted.withValues(alpha: 0.5), fontSize: 14),
-          errorText: error,
-          errorStyle: const TextStyle(fontFamily: 'DM Sans', fontSize: 12),
-          prefixIcon: Icon(icon, size: 20, color: AppColors.warmMuted),
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.cardBorder)),
-          enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.cardBorder, width: 0.8)),
-          focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
-          errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.5)),
-        ),
-      );
-
   Widget _errorBox(String msg) => Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
@@ -484,7 +294,8 @@ class _ChooseModeStepState extends ConsumerState<ChooseModeStep>
         ),
         child: Row(
           children: [
-            const Icon(Icons.error_outline_rounded, color: Color(0xFFEF4444), size: 18),
+            const Icon(Icons.error_outline_rounded,
+                color: Color(0xFFEF4444), size: 18),
             const SizedBox(width: 10),
             Expanded(
               child: Text(msg,
@@ -496,27 +307,15 @@ class _ChooseModeStepState extends ConsumerState<ChooseModeStep>
           ],
         ),
       );
-
-  Widget _iconBox(IconData icon, Color color) => Container(
-        width: 28,
-        height: 28,
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(icon, size: 18, color: color),
-      );
 }
 
 // ── Hero Google Primary Button ─────────────────────────────────────────────────
 
 class _PrimaryGoogleButton extends StatelessWidget {
-  final bool selected;
   final bool isLoading;
   final VoidCallback onTap;
 
   const _PrimaryGoogleButton({
-    required this.selected,
     required this.isLoading,
     required this.onTap,
   });
@@ -591,7 +390,8 @@ class _PrimaryGoogleButton extends StatelessWidget {
                             ),
                           ),
                           SizedBox(width: 6),
-                          Icon(Icons.star_rounded, color: Color(0xFFFFD700), size: 16),
+                          Icon(Icons.star_rounded,
+                              color: Color(0xFFFFD700), size: 16),
                         ],
                       ),
                       SizedBox(height: 2),
@@ -610,10 +410,12 @@ class _PrimaryGoogleButton extends StatelessWidget {
                   const SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                    child: CircularProgressIndicator(
+                        color: Colors.white, strokeWidth: 2),
                   )
                 else
-                  const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 20),
+                  const Icon(Icons.arrow_forward_rounded,
+                      color: Colors.white, size: 20),
               ],
             ),
           ),
@@ -639,9 +441,9 @@ class _BiometricQuickTile extends StatelessWidget {
   bool get _isFace => biometricType == BiometricType.face;
 
   String get _title => _isFace ? 'Unlock with Face ID' : 'Unlock with Fingerprint';
-  IconData get _icon  => _isFace ? Icons.face_unlock_outlined : Icons.fingerprint_rounded;
+  IconData get _icon => _isFace ? Icons.face_unlock_outlined : Icons.fingerprint_rounded;
   String get _subtitle => isRegistered
-      ? (_isFace ? 'Registered & ready for 1-tap unlock' : 'Registered & ready for 1-tap unlock')
+      ? 'Registered & ready for 1-tap unlock'
       : 'Not registered yet (Tap for info)';
 
   @override
@@ -707,9 +509,12 @@ class _BiometricQuickTile extends StatelessWidget {
                           ),
                           const SizedBox(width: 6),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: isRegistered ? AppColors.sand : AppColors.surfaceLight,
+                              color: isRegistered
+                                  ? AppColors.sand
+                                  : AppColors.surfaceLight,
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
@@ -718,7 +523,9 @@ class _BiometricQuickTile extends StatelessWidget {
                                 fontFamily: 'DM Sans',
                                 fontSize: 10,
                                 fontWeight: FontWeight.w600,
-                                color: isRegistered ? AppColors.primary : AppColors.warmMuted,
+                                color: isRegistered
+                                    ? AppColors.primary
+                                    : AppColors.warmMuted,
                               ),
                             ),
                           ),
@@ -730,147 +537,19 @@ class _BiometricQuickTile extends StatelessWidget {
                         style: TextStyle(
                           fontFamily: 'DM Sans',
                           fontSize: 11,
-                          color: isRegistered ? AppColors.textSecondary : AppColors.warmMuted,
+                          color: isRegistered
+                              ? AppColors.textSecondary
+                              : AppColors.warmMuted,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right_rounded, color: AppColors.warmMuted, size: 20),
+                const Icon(Icons.chevron_right_rounded,
+                    color: AppColors.warmMuted, size: 20),
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-// ── Mode Card ──────────────────────────────────────────────────────────────────
-
-class _ModeCard extends StatelessWidget {
-  final bool selected;
-  final VoidCallback onTap;
-  final Widget leadingWidget;
-  final String title;
-  final String subtitle;
-  final List<String> bullets;
-  final bool dimmed;
-
-  const _ModeCard({
-    required this.selected,
-    required this.onTap,
-    required this.leadingWidget,
-    required this.title,
-    required this.subtitle,
-    required this.bullets,
-    this.dimmed = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 210),
-        curve: Curves.easeOut,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: selected ? AppColors.primary : AppColors.cardBorder,
-            width: selected ? 2 : 0.5,
-          ),
-          boxShadow: selected
-              ? [BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.12),
-                  blurRadius: 14,
-                  offset: const Offset(0, 5))]
-              : [BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2))],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                leadingWidget,
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(title,
-                          style: TextStyle(
-                              fontFamily: 'DM Sans',
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: dimmed
-                                  ? AppColors.warmMuted
-                                  : AppColors.textPrimary)),
-                      Text(subtitle,
-                          style: TextStyle(
-                              fontFamily: 'DM Sans',
-                              fontSize: 11,
-                              color: dimmed
-                                  ? AppColors.cardBorder
-                                  : AppColors.textSecondary)),
-                    ],
-                  ),
-                ),
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  width: 22,
-                  height: 22,
-                  decoration: BoxDecoration(
-                    color: selected ? AppColors.primary : Colors.transparent,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                        color: selected
-                            ? AppColors.primary
-                            : AppColors.cardBorder,
-                        width: 2),
-                  ),
-                  child: selected
-                      ? const Icon(Icons.check, color: Colors.white, size: 13)
-                      : null,
-                ),
-              ],
-            ),
-            if (selected) ...[
-              const SizedBox(height: 10),
-              ...bullets.map((b) => Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(top: 5),
-                          child: Container(
-                            width: 5,
-                            height: 5,
-                            decoration: const BoxDecoration(
-                                color: AppColors.primary,
-                                shape: BoxShape.circle),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(b,
-                              style: TextStyle(
-                                  fontFamily: 'DM Sans',
-                                  fontSize: 12,
-                                  color: AppColors.deepEarth
-                                      .withValues(alpha: 0.7))),
-                        ),
-                      ],
-                    ),
-                  )),
-            ],
-          ],
         ),
       ),
     );

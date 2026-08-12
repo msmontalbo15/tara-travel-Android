@@ -1,3 +1,7 @@
+// Export gateway Dio provider — re-exported for convenience so consumers
+// only need to import repository_providers.dart.
+export '../middleware/gateway_dio_client.dart' show gatewayDioProvider;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../repositories/auth_repository.dart';
 import '../repositories/trip_repository.dart';
@@ -6,11 +10,31 @@ import '../repositories/itinerary_repository.dart';
 import '../repositories/profile_repository.dart';
 import '../repositories/packing_repository.dart';
 import '../services/database_service.dart';
+import '../services/connectivity_service.dart';
+import '../offline/offline_sync_queue.dart';
+import '../offline/sync_manager.dart';
 
 // ── SERVICES ─────────────────────────────────────────────────────────────────
 
 final databaseServiceProvider = Provider<DatabaseService>((ref) {
   return DatabaseService.instance;
+});
+
+final connectivityServiceProvider = Provider<ConnectivityService>((ref) {
+  return ConnectivityService.instance;
+});
+
+// ── OFFLINE ───────────────────────────────────────────────────────────────────
+
+final offlineSyncQueueProvider = Provider<OfflineSyncQueue>((ref) {
+  return OfflineSyncQueue.instance;
+});
+
+final syncManagerProvider = Provider<SyncManager>((ref) {
+  final manager = syncManagerInstance;
+  manager.start();
+  ref.onDispose(manager.dispose);
+  return manager;
 });
 
 // ── REPOSITORIES ─────────────────────────────────────────────────────────────

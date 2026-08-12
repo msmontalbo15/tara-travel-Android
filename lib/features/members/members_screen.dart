@@ -36,7 +36,10 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
         final allMembers = trip.members;
         final pendingMembers = allMembers.where((m) => m.status == MemberStatus.pending).toList();
         final approvedMembers = allMembers.where((m) => m.status == MemberStatus.approved).toList();
-        
+
+        final currentMember = ref.watch(currentMemberProvider(trip));
+        final canManageMembers = currentMember?.canManageMembers ?? true;
+
         return Scaffold(
           backgroundColor: AppColors.deepEarth,
           body: Column(
@@ -88,13 +91,15 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                         const SizedBox(height: 12),
                         ...pendingMembers.map((m) => _PendingMemberCard(
                           member: m,
-                          onApprove: () {
-                            // Stub: wire to MemberRepository.approveMember(m.id)
-                            debugPrint('Approve member: ${m.id}');
+                          onApprove: () async {
+                            await ref.read(tripRepositoryProvider).approveMember(trip.id, m.id);
+                            ref.invalidate(selectedTripProvider);
+                            ref.invalidate(allTripsProvider);
                           },
-                          onReject: () {
-                            // Stub: wire to MemberRepository.rejectMember(m.id)
-                            debugPrint('Reject member: ${m.id}');
+                          onReject: () async {
+                            await ref.read(tripRepositoryProvider).rejectMember(trip.id, m.id);
+                            ref.invalidate(selectedTripProvider);
+                            ref.invalidate(allTripsProvider);
                           },
                         )),
                         const SizedBox(height: 20),
@@ -104,7 +109,9 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                       const SizedBox(height: 12),
                       ...approvedMembers.map((m) => _MemberCard(
                         member: m,
-                        onEditRoles: () => _showRoleEditor(context, m, allMembers),
+                        isCreator: m.isTripCreator(trip.ownerId),
+                        canEditRoles: canManageMembers,
+                        onEditRoles: () => _showRoleEditor(context, trip.id, m),
                         onContact: () => _showContactSheet(context, m),
                       )),
                     ],
@@ -277,12 +284,12 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
     );
   }
 
-  void _showRoleEditor(BuildContext context, MemberModel member, List<MemberModel> allMembers) {
+  void _showRoleEditor(BuildContext context, String tripId, MemberModel member) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _RoleEditorSheet(member: member),
+      builder: (_) => _RoleEditorSheet(tripId: tripId, member: member),
     );
   }
 
@@ -360,10 +367,18 @@ class _PendingMemberCard extends StatelessWidget {
 
 class _MemberCard extends StatelessWidget {
   final MemberModel member;
+  final bool isCreator;
+  final bool canEditRoles;
   final VoidCallback onEditRoles;
   final VoidCallback onContact;
 
-  const _MemberCard({required this.member, required this.onEditRoles, required this.onContact});
+  const _MemberCard({
+    required this.member,
+    required this.isCreator,
+    required this.canEditRoles,
+    required this.onEditRoles,
+    required this.onContact,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -375,8 +390,14 @@ class _MemberCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: const Color(0xFFE5E5EA), width: 0.7),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 14, offset: const Offset(0, 5)),
-          BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 4, offset: const Offset(0, 1)),
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 14,
+              offset: const Offset(0, 5)),
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 4,
+              offset: const Offset(0, 1)),
         ],
       ),
       child: Row(
@@ -388,8 +409,18 @@ class _MemberCard extends StatelessWidget {
               Container(
                 width: 48,
                 height: 48,
-                decoration: BoxDecoration(color: member.color, shape: BoxShape.circle),
-                child: Center(child: Text(member.initials, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white))),
+                decoration:
+                    BoxDecoration(color: member.color, shape: BoxShape.circle),
+                child: Center(
+                  child: Text(
+                    member.initials,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
               ),
               // Online dot
               Positioned(
@@ -413,8 +444,54 @@ class _MemberCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(member.name, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.deepEarth)),
-                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        member.name,
+                        style: const TextStyle(
+                          fontFamily: 'DM Sans',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.deepEarth,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (isCreator) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 7, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                              color: AppColors.primary.withValues(alpha: 0.35),
+                              width: 0.8),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.star_rounded,
+                                size: 10, color: AppColors.primary),
+                            SizedBox(width: 2),
+                            Text(
+                              'Creator',
+                              style: TextStyle(
+                                fontFamily: 'DM Sans',
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 6),
                 // Role badges
                 Wrap(
                   spacing: 4,
@@ -423,7 +500,13 @@ class _MemberCard extends StatelessWidget {
                 ),
                 if (member.gcashNumber != null) ...[
                   const SizedBox(height: 6),
-                  Text(member.gcashNumber!, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 11, color: AppColors.muted)),
+                  Text(
+                    member.gcashNumber!,
+                    style: const TextStyle(
+                        fontFamily: 'DM Sans',
+                        fontSize: 11,
+                        color: AppColors.muted),
+                  ),
                 ],
               ],
             ),
@@ -437,20 +520,30 @@ class _MemberCard extends StatelessWidget {
                 child: Container(
                   width: 32,
                   height: 32,
-                  decoration: BoxDecoration(color: AppColors.blueLight, borderRadius: BorderRadius.circular(10)),
-                  child: const Icon(Icons.call_outlined, size: 16, color: AppColors.blue),
+                  decoration: BoxDecoration(
+                    color: AppColors.blueLight,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.call_outlined,
+                      size: 16, color: AppColors.blue),
                 ),
               ),
-              const SizedBox(height: 6),
-              GestureDetector(
-                onTap: onEditRoles,
-                child: Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(color: AppColors.chipBackground, borderRadius: BorderRadius.circular(10)),
-                  child: const Icon(Icons.edit_outlined, size: 16, color: AppColors.primary),
+              if (canEditRoles) ...[
+                const SizedBox(height: 6),
+                GestureDetector(
+                  onTap: onEditRoles,
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: AppColors.chipBackground,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.edit_outlined,
+                        size: 16, color: AppColors.primary),
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ],
@@ -459,34 +552,37 @@ class _MemberCard extends StatelessWidget {
   }
 
   Widget _roleBadge(MemberRole role) {
-    Color color;
-    String label;
-    switch (role) {
-      case MemberRole.organizer: color = AppColors.primary; label = 'Organizer'; break;
-      case MemberRole.treasurer: color = AppColors.amber; label = 'Treasurer'; break;
-      case MemberRole.navigator: color = AppColors.blue; label = 'Navigator'; break;
-      case MemberRole.buyer: color = AppColors.green; label = 'Buyer'; break;
-      case MemberRole.documenter: color = AppColors.purple; label = 'Documenter'; break;
-      case MemberRole.member: color = AppColors.muted; label = 'Member'; break;
-    }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(8)),
-      child: Text(label, style: TextStyle(fontFamily: 'DM Sans', fontSize: 10, fontWeight: FontWeight.w700, color: color)),
+      decoration: BoxDecoration(
+        color: role.color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        role.displayName,
+        style: TextStyle(
+          fontFamily: 'DM Sans',
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          color: role.color,
+        ),
+      ),
     );
   }
 }
 
-class _RoleEditorSheet extends StatefulWidget {
+class _RoleEditorSheet extends ConsumerStatefulWidget {
+  final String tripId;
   final MemberModel member;
-  const _RoleEditorSheet({required this.member});
+  const _RoleEditorSheet({required this.tripId, required this.member});
 
   @override
-  State<_RoleEditorSheet> createState() => _RoleEditorSheetState();
+  ConsumerState<_RoleEditorSheet> createState() => _RoleEditorSheetState();
 }
 
-class _RoleEditorSheetState extends State<_RoleEditorSheet> {
+class _RoleEditorSheetState extends ConsumerState<_RoleEditorSheet> {
   late Set<MemberRole> _selectedRoles;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -500,17 +596,32 @@ class _RoleEditorSheetState extends State<_RoleEditorSheet> {
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 48),
       decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.only(topLeft: Radius.circular(32), topRight: Radius.circular(32)),
+        borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(32), topRight: Radius.circular(32)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Center(child: Container(width: 36, height: 4, decoration: BoxDecoration(color: AppColors.dividerLight, borderRadius: BorderRadius.circular(2)))),
+          Center(
+              child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                      color: AppColors.dividerLight,
+                      borderRadius: BorderRadius.circular(2)))),
           const SizedBox(height: 20),
-          Text('Edit Roles — ${widget.member.name}', style: const TextStyle(fontFamily: 'Playfair Display', fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.deepEarth)),
+          Text('Edit Roles — ${widget.member.name}',
+              style: const TextStyle(
+                  fontFamily: 'Playfair Display',
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.deepEarth)),
           const SizedBox(height: 6),
-          const Text('Members can have multiple roles. Changes take effect immediately.', style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, color: AppColors.muted)),
+          const Text(
+              'Members can have multiple roles simultaneously. Permissions update in real-time.',
+              style: TextStyle(
+                  fontFamily: 'DM Sans', fontSize: 12, color: AppColors.muted)),
           const SizedBox(height: 20),
           ...MemberRole.values.map((role) => _roleCheckbox(role)),
           const SizedBox(height: 20),
@@ -518,9 +629,64 @@ class _RoleEditorSheetState extends State<_RoleEditorSheet> {
             width: double.infinity,
             height: 48,
             child: ElevatedButton(
-              onPressed: () => Navigator.pop(context),
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
-              child: const Text('Save Changes', style: TextStyle(fontFamily: 'DM Sans', fontSize: 15, fontWeight: FontWeight.w600)),
+              onPressed: _isSaving
+                  ? null
+                  : () async {
+                      setState(() => _isSaving = true);
+                      try {
+                        final repo = ref.read(tripRepositoryProvider);
+                        final rolesList = _selectedRoles.isEmpty
+                            ? [MemberRole.member]
+                            : _selectedRoles.toList();
+                        await repo.updateMemberRoles(
+                            widget.tripId, widget.member.id, rolesList);
+                        ref.invalidate(selectedTripProvider);
+                        ref.invalidate(allTripsProvider);
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                  'Updated roles for ${widget.member.name}!',
+                                  style:
+                                      const TextStyle(fontFamily: 'DM Sans')),
+                              backgroundColor: AppColors.green,
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          setState(() => _isSaving = false);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Failed to update roles: $e',
+                                  style:
+                                      const TextStyle(fontFamily: 'DM Sans')),
+                              backgroundColor: AppColors.red,
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      }
+                    },
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14))),
+              child: _isSaving
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                          color: Colors.white, strokeWidth: 2))
+                  : const Text('Save Changes',
+                      style: TextStyle(
+                          fontFamily: 'DM Sans',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600)),
             ),
           ),
         ],
@@ -529,20 +695,29 @@ class _RoleEditorSheetState extends State<_RoleEditorSheet> {
   }
 
   Widget _roleCheckbox(MemberRole role) {
-    final descriptions = {
-      MemberRole.organizer: 'Full control — manages trip, invites, approvals',
-      MemberRole.treasurer: 'Approves expenses, manages GCash QR, confirms payments',
-      MemberRole.navigator: 'Owns itinerary — adds, edits stops, plans routes',
-      MemberRole.buyer: 'Logs expenses and purchases, submits receipts',
-      MemberRole.documenter: 'Uploads photos, receipts, journal entries',
-      MemberRole.member: 'Read-only access. Can check own packing list',
-    };
     return CheckboxListTile(
       value: _selectedRoles.contains(role),
-      onChanged: (v) => setState(() => v == true ? _selectedRoles.add(role) : _selectedRoles.remove(role)),
-      title: Text(role.name[0].toUpperCase() + role.name.substring(1), style: const TextStyle(fontFamily: 'DM Sans', fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.deepEarth)),
-      subtitle: Text(descriptions[role] ?? '', style: const TextStyle(fontFamily: 'DM Sans', fontSize: 11, color: AppColors.muted)),
-      activeColor: AppColors.primary,
+      onChanged: (v) {
+        setState(() {
+          if (v == true) {
+            _selectedRoles.add(role);
+          } else {
+            if (_selectedRoles.length > 1) {
+              _selectedRoles.remove(role);
+            }
+          }
+        });
+      },
+      title: Text(role.displayName,
+          style: const TextStyle(
+              fontFamily: 'DM Sans',
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.deepEarth)),
+      subtitle: Text(role.description,
+          style: const TextStyle(
+              fontFamily: 'DM Sans', fontSize: 11, color: AppColors.muted)),
+      activeColor: role.color,
       contentPadding: const EdgeInsets.symmetric(horizontal: 0),
     );
   }

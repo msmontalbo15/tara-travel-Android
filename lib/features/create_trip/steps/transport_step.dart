@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/models/itinerary_model.dart';
+import '../../../core/widgets/inputs/map_pin_picker_modal.dart';
 
 class TransportStep extends StatefulWidget {
   final TransportDetail? initial;
@@ -21,19 +22,27 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
   final _pierCtrl = TextEditingController();
   final _durationCtrl = TextEditingController();
   bool _splitGas = true;
+
   late AnimationController _fadeCtrl;
   late Animation<double> _fadeAnim;
 
+  // Infinite Carousel controller & state
+  late PageController _pageController;
+  double _currentPage = 5000.0;
+  static const int _virtualItemCount = 10000;
+
+  // Common Philippine transportation modes (removed 'other')
   static const _modes = [
     TransportMode.car,
     TransportMode.motorcycle,
-    TransportMode.bus,
-    TransportMode.plane,
-    TransportMode.ferry,
+    TransportMode.commute,
     TransportMode.jeepney,
+    TransportMode.tricycle,
+    TransportMode.bus,
     TransportMode.vanHire,
+    TransportMode.ferry,
+    TransportMode.plane,
     TransportMode.bike,
-    TransportMode.other,
   ];
 
   @override
@@ -48,6 +57,26 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
       _durationCtrl.text = widget.initial!.estimatedDuration;
       _splitGas = widget.initial!.splitGas;
     }
+
+    int initialIndex = _modes.indexOf(_selected);
+    if (initialIndex < 0) initialIndex = 0;
+
+    // Start in the middle of virtual scroll range to allow infinite left/right swiping
+    final initialVirtualIndex = (_virtualItemCount ~/ 2) - ((_virtualItemCount ~/ 2) % _modes.length) + initialIndex;
+    _currentPage = initialVirtualIndex.toDouble();
+    _pageController = PageController(
+      initialPage: initialVirtualIndex,
+      viewportFraction: 0.52,
+    );
+
+    _pageController.addListener(() {
+      if (_pageController.hasClients) {
+        setState(() {
+          _currentPage = _pageController.page ?? _currentPage;
+        });
+      }
+    });
+
     _fadeCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 300));
     _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeInOut);
     _fadeCtrl.forward();
@@ -55,6 +84,7 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
 
   @override
   void dispose() {
+    _pageController.dispose();
     _fadeCtrl.dispose();
     _departureCtrl.dispose();
     _flightCtrl.dispose();
@@ -67,6 +97,19 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
     setState(() => _selected = m);
     _fadeCtrl.reset();
     _fadeCtrl.forward();
+  }
+
+  Future<void> _pickDepartureOnMap() async {
+    final result = await MapPinPickerModal.show(
+      context,
+      initialAddress: _departureCtrl.text.trim(),
+    );
+
+    if (result != null) {
+      setState(() {
+        _departureCtrl.text = result.displayName;
+      });
+    }
   }
 
   void _submit() {
@@ -157,23 +200,26 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('How are you getting there?', style: TextStyle(fontFamily: 'DM Sans', fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.deepEarth)),
+                    const Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'How are you getting there?',
+                          style: TextStyle(fontFamily: 'DM Sans', fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.deepEarth),
+                        ),
+                        Row(
+                          children: [
+                            Icon(Icons.swap_horiz_rounded, size: 16, color: AppColors.muted),
+                            SizedBox(width: 4),
+                            Text('Swipe', style: TextStyle(fontFamily: 'DM Sans', fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.muted)),
+                          ],
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 16),
 
-                    // 3×3 Transport Grid
-                    GridView.count(
-                      crossAxisCount: 3,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisSpacing: 10,
-                      mainAxisSpacing: 10,
-                      childAspectRatio: 1.1,
-                      children: _modes.map((m) => _TransportModeCard(
-                        mode: m,
-                        selected: _selected == m,
-                        onTap: () => _onSelectMode(m),
-                      )).toList(),
-                    ),
+                    // Infinite Loop Animated Carousel Card
+                    _buildInfiniteCarousel(),
 
                     const SizedBox(height: 24),
 
@@ -210,6 +256,107 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
     );
   }
 
+  Widget _buildInfiniteCarousel() {
+    return SizedBox(
+      height: 145,
+      child: PageView.builder(
+        controller: _pageController,
+        itemCount: _virtualItemCount,
+        onPageChanged: (index) {
+          final m = _modes[index % _modes.length];
+          if (_selected != m) {
+            _onSelectMode(m);
+          }
+        },
+        itemBuilder: (context, index) {
+          final m = _modes[index % _modes.length];
+          final isSelected = _selected == m;
+
+          double pageDelta = (index - _currentPage).abs();
+          double scale = (1.0 - (pageDelta * 0.15)).clamp(0.85, 1.0);
+          double opacity = (1.0 - (pageDelta * 0.35)).clamp(0.6, 1.0);
+
+          return Transform.scale(
+            scale: scale,
+            child: Opacity(
+              opacity: opacity,
+              child: GestureDetector(
+                onTap: () {
+                  _pageController.animateToPage(
+                    index,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeOutCubic,
+                  );
+                  _onSelectMode(m);
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isSelected ? AppColors.chipBackground : Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isSelected ? AppColors.primary : AppColors.dividerLight,
+                      width: isSelected ? 2.5 : 1,
+                    ),
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: AppColors.primary.withValues(alpha: 0.25),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            )
+                          ]
+                        : [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.04),
+                              blurRadius: 6,
+                            )
+                          ],
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        m.emoji,
+                        style: TextStyle(fontSize: isSelected ? 36 : 28),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        m.label,
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontFamily: 'DM Sans',
+                          fontSize: isSelected ? 13 : 11,
+                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                          color: isSelected ? AppColors.primary : AppColors.deepEarth,
+                        ),
+                      ),
+                      if (isSelected) ...[
+                        const SizedBox(height: 6),
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(
+                            color: AppColors.primary,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildSubFields() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -229,7 +376,7 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
             ],
           ),
           const SizedBox(height: 16),
-          _buildDepartureField('Departure Point', 'e.g. EDSA Cubao or Google Maps link', _departureCtrl),
+          _buildDepartureField('Departure Point (MapLibre)', 'Tap map pin or type departure point...', _departureCtrl),
           if (_selected == TransportMode.car || _selected == TransportMode.vanHire || _selected == TransportMode.motorcycle) ...[
             const SizedBox(height: 12),
             _buildVehicleCountStepper(),
@@ -269,8 +416,17 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
             fillColor: AppColors.surfaceLight,
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            suffixIcon: const Icon(Icons.map_outlined, color: AppColors.textSecondary, size: 20),
+            suffixIcon: IconButton(
+              icon: const Icon(Icons.map_rounded, color: AppColors.primary, size: 22),
+              tooltip: 'Select on MapLibre Map',
+              onPressed: _pickDepartureOnMap,
+            ),
           ),
+          onTap: () {
+            if (ctrl.text.trim().isEmpty) {
+              _pickDepartureOnMap();
+            }
+          },
         ),
       ],
     );
@@ -354,51 +510,6 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
           activeTrackColor: AppColors.primary.withValues(alpha: 0.4),
         ),
       ],
-    );
-  }
-}
-
-class _TransportModeCard extends StatelessWidget {
-  final TransportMode mode;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _TransportModeCard({required this.mode, required this.selected, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.chipBackground : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: selected ? AppColors.primary : AppColors.dividerLight,
-            width: selected ? 2 : 1,
-          ),
-          boxShadow: selected
-              ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.2), blurRadius: 8, offset: const Offset(0, 2))]
-              : [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 4)],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(mode.emoji, style: const TextStyle(fontSize: 28)),
-            const SizedBox(height: 4),
-            Text(
-              mode.label,
-              style: TextStyle(
-                fontFamily: 'DM Sans',
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: selected ? AppColors.primary : AppColors.deepEarth,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

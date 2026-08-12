@@ -276,7 +276,7 @@ class _AddStopFormState extends State<AddStopForm> {
   // _field() kept for backward compatibility — used only by _buildTransportModePicker.
   // New inputs use AppTextField/AppNumericField directly.
 
-  static const _transportModes = TransportMode.values;
+  static final _transportModes = TransportMode.values.where((m) => m != TransportMode.other).toList();
 
   Widget _buildTransportModePicker() {
     return Wrap(

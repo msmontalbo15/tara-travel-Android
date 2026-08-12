@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/packing_model.dart';
 import '../services/database_service.dart';
+import '../services/session_cache_service.dart';
 import 'package:sembast/sembast.dart';
 
 /// Default packing categories seeded for every new trip.
@@ -26,6 +27,7 @@ const Map<String, List<String>> _kDefaultItems = {
 class PackingRepository {
   final SupabaseClient _supabase = Supabase.instance.client;
   final DatabaseService _db = DatabaseService.instance;
+  final SessionCacheService _cache = SessionCacheService.instance;
 
   StoreRef<String, Map<String, dynamic>> get _store =>
       _db.getStore(DatabaseService.packingStore);
@@ -56,6 +58,7 @@ class PackingRepository {
           await _store.record('${row['id']}').put(txn, {...row});
         }
       });
+      await _cache.stamp(DatabaseService.packingStore);
 
       return _buildCategories(rows, tripId);
     } catch (e) {

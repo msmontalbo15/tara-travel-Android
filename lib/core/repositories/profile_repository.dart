@@ -3,12 +3,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:sembast/sembast.dart';
 import '../security/three_layer_encryption_service.dart';
 import '../services/database_service.dart';
+import '../services/session_cache_service.dart';
 
 class ProfileRepository {
   final DatabaseService _dbService = DatabaseService.instance;
   final SupabaseClient _supabase = Supabase.instance.client;
   final ThreeLayerEncryptionService _encryption =
       ThreeLayerEncryptionService.instance;
+  final SessionCacheService _cache = SessionCacheService.instance;
 
   /// Synchronous store reference — no need for async here.
   StoreRef<String, Map<String, dynamic>> get _store =>
@@ -23,7 +25,11 @@ class ProfileRepository {
 
   Future<void> saveProfile(Map<String, dynamic> data) async {
     final db = await _dbService.database;
-    await _store.record('current_user').put(db, data);
+    // Attach a refreshed-at timestamp so callers can detect stale local data
+    await _store.record('current_user').put(db, {
+      ...data,
+      'refreshedAt': DateTime.now().toUtc().toIso8601String(),
+    });
   }
 
   Future<void> clearProfile() async {
@@ -38,7 +44,10 @@ class ProfileRepository {
       final response =
           await _supabase.from('users').select().eq('id', userId).maybeSingle();
       if (response == null) return null;
-      return await _fromRemoteJson(response);
+      final result = await _fromRemoteJson(response);
+      // Stamp profile cache freshness on successful remote load
+      await _cache.stamp(DatabaseService.userStore);
+      return result;
     } catch (e) {
       debugPrint('[ProfileRepository] getRemoteProfile error: $e');
       return null;

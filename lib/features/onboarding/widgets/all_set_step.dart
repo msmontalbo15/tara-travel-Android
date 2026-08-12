@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 
+/// Final onboarding confirmation screen.
+///
+/// Always displays the "Google connected + local cache" state since
+/// offline-only mode has been removed. All data is synced via Supabase
+/// and transparently cached locally in Sembast for session persistence.
 class AllSetStep extends StatefulWidget {
   final String userName;
   final String accountEmail;
-  final bool isGoogleConnected;
   final String homeCity;
   final String homeCountry;
   final String currency;
@@ -14,7 +18,6 @@ class AllSetStep extends StatefulWidget {
     super.key,
     required this.userName,
     required this.accountEmail,
-    required this.isGoogleConnected,
     required this.homeCity,
     required this.homeCountry,
     required this.currency,
@@ -33,7 +36,8 @@ class _AllSetStepState extends State<AllSetStep>
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 800));
+    _ctrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 800));
     _scaleAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _ctrl, curve: Curves.elasticOut),
     );
@@ -73,7 +77,8 @@ class _AllSetStepState extends State<AllSetStep>
 
               // Step pill
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(20),
@@ -110,9 +115,7 @@ class _AllSetStepState extends State<AllSetStep>
               FadeTransition(
                 opacity: _ctrl,
                 child: Text(
-                  widget.isGoogleConnected
-                      ? 'Connected with Google. Your first adventure is\nwaiting to be planned.'
-                      : 'You\'re set up offline. Your first adventure is\nwaiting to be planned.',
+                  'Connected with Google. Your first adventure is\nwaiting to be planned.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontFamily: 'DM Sans',
@@ -132,7 +135,8 @@ class _AllSetStepState extends State<AllSetStep>
                   decoration: BoxDecoration(
                     color: AppColors.deepEarth,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                    border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.06)),
                   ),
                   child: Column(
                     children: [
@@ -149,16 +153,16 @@ class _AllSetStepState extends State<AllSetStep>
                       _divider(),
                       _SetupRow(
                         label: 'Sync',
-                        value: widget.isGoogleConnected ? 'Google connected' : 'Offline only',
-                        valueColor: widget.isGoogleConnected
-                            ? const Color(0xFF4CAF50)
-                            : Colors.white54,
-                        showDot: widget.isGoogleConnected,
+                        value: widget.accountEmail.isNotEmpty
+                            ? widget.accountEmail
+                            : 'Google connected',
+                        valueColor: const Color(0xFF4CAF50),
+                        showDot: true,
                       ),
                       _divider(),
-                      _SetupRow(
+                      const _SetupRow(
                         label: 'Mode',
-                        value: widget.isGoogleConnected ? 'Online + offline' : 'Offline',
+                        value: 'Online + local cache',
                         isLast: true,
                       ),
                     ],
@@ -183,7 +187,7 @@ class _AllSetStepState extends State<AllSetStep>
                     ),
                   ),
                   child: const Text(
-                    'Tara na! Let\'s go',
+                    "Tara na! Let's go",
                     style: TextStyle(
                       fontFamily: 'DM Sans',
                       fontSize: 16,
@@ -193,8 +197,6 @@ class _AllSetStepState extends State<AllSetStep>
                 ),
               ),
               const SizedBox(height: 12),
-
-
 
               const SizedBox(height: 32),
             ],
