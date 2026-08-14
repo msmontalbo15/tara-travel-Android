@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/models/expense_model.dart';
 import '../../../core/models/member_model.dart';
+import '../../../core/models/expense_model.dart';
+import '../../../core/utils/currency_utils.dart';
 
 class MemberContributionCard extends StatelessWidget {
   final List<MemberModel> members;
@@ -91,7 +92,7 @@ class MemberContributionCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          '₱${contributed.toStringAsFixed(0)}',
+                          '₱${CurrencyUtils.formatAmount(contributed)}',
                           style: const TextStyle(
                             fontFamily: 'DM Sans',
                             fontSize: 15,

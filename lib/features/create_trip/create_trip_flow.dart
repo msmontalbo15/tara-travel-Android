@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
@@ -12,6 +13,7 @@ import 'steps/details_step.dart';
 import 'steps/transport_step.dart';
 import 'steps/budget_step.dart';
 import 'steps/confirm_step.dart';
+import 'widgets/trip_creation_loading_overlay.dart';
 
 class CreateTripFlow extends ConsumerStatefulWidget {
   const CreateTripFlow({super.key});
@@ -23,7 +25,12 @@ class CreateTripFlow extends ConsumerStatefulWidget {
 class _CreateTripFlowState extends ConsumerState<CreateTripFlow> {
   final PageController _controller = PageController();
   final NewTripModel _draft = NewTripModel();
+  
   bool _saving = false;
+  TripCreationLoadingMode _loadingMode = TripCreationLoadingMode.create;
+  double _loadingProgress = 0.0;
+  bool _isCompleted = false;
+  String? _errorMessage;
 
   void _goTo(int step) {
     _controller.animateToPage(
@@ -40,8 +47,15 @@ class _CreateTripFlowState extends ConsumerState<CreateTripFlow> {
   }
 
   Future<void> _handleConfirm() async {
-    if (_saving) return;
-    setState(() => _saving = true);
+    if (_saving && _errorMessage == null) return;
+    
+    setState(() {
+      _saving = true;
+      _loadingMode = TripCreationLoadingMode.create;
+      _loadingProgress = 0.2;
+      _isCompleted = false;
+      _errorMessage = null;
+    });
 
     try {
       final tripId = const Uuid().v4();
@@ -75,9 +89,11 @@ class _CreateTripFlowState extends ConsumerState<CreateTripFlow> {
             .toList(),
       );
 
-      // Save to repository (local + Supabase)
+      // Save trip to repository (local + Supabase)
       final tripRepo = ref.read(tripRepositoryProvider);
       await tripRepo.createTrip(trip);
+
+      if (mounted) setState(() => _loadingProgress = 0.65);
 
       // Seed default packing items for this trip
       try {
@@ -87,9 +103,18 @@ class _CreateTripFlowState extends ConsumerState<CreateTripFlow> {
         debugPrint('[CreateTripFlow] packing seed error: $e');
       }
 
-      // Set as the selected trip and refresh the trip list
+      // Set as selected trip and refresh providers
       ref.read(selectedTripIdProvider.notifier).select(tripId);
       ref.invalidate(allTripsProvider);
+
+      if (mounted) {
+        setState(() {
+          _loadingProgress = 1.0;
+          _isCompleted = true;
+        });
+      }
+
+      await Future.delayed(const Duration(milliseconds: 300));
 
       if (mounted) {
         Navigator.of(context).pushReplacementNamed('/trip-detail');
@@ -97,21 +122,23 @@ class _CreateTripFlowState extends ConsumerState<CreateTripFlow> {
     } catch (e) {
       debugPrint('[CreateTripFlow] confirm error: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Could not create trip: $e'),
-            backgroundColor: const Color(0xFFEF4444),
-          ),
-        );
+        setState(() {
+          _errorMessage = 'Could not create trip: ${e.toString().replaceAll('Exception: ', '')}';
+        });
       }
-    } finally {
-      if (mounted) setState(() => _saving = false);
     }
   }
 
   Future<void> _handleSaveDraft() async {
-    if (_saving) return;
-    setState(() => _saving = true);
+    if (_saving && _errorMessage == null) return;
+    
+    setState(() {
+      _saving = true;
+      _loadingMode = TripCreationLoadingMode.draft;
+      _loadingProgress = 0.3;
+      _isCompleted = false;
+      _errorMessage = null;
+    });
 
     try {
       final tripId = const Uuid().v4();
@@ -138,12 +165,24 @@ class _CreateTripFlowState extends ConsumerState<CreateTripFlow> {
       ref.invalidate(allTripsProvider);
 
       if (mounted) {
+        setState(() {
+          _loadingProgress = 1.0;
+          _isCompleted = true;
+        });
+      }
+
+      await Future.delayed(const Duration(milliseconds: 250));
+
+      if (mounted) {
         Navigator.of(context).pushReplacementNamed('/home');
       }
     } catch (e) {
       debugPrint('[CreateTripFlow] saveDraft error: $e');
-    } finally {
-      if (mounted) setState(() => _saving = false);
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Could not save draft: ${e.toString().replaceAll('Exception: ', '')}';
+        });
+      }
     }
   }
 
@@ -164,6 +203,7 @@ class _CreateTripFlowState extends ConsumerState<CreateTripFlow> {
 
             // Step 2 — Transport
             TransportStep(
+              trip: _draft,
               initial: _draft.transportDetail,
               onNext: (detail) {
                 _draft.transportDetail = detail;
@@ -183,32 +223,32 @@ class _CreateTripFlowState extends ConsumerState<CreateTripFlow> {
             ConfirmStep(
               trip: _draft,
               onBack: () => _goTo(2),
+              onEditStep: (stepIndex) => _goTo(stepIndex),
               onConfirm: _handleConfirm,
               onSaveDraft: _handleSaveDraft,
             ),
           ],
         ),
 
-        // Saving overlay
+        // Enhanced Glassmorphic Saving Overlay
         if (_saving)
-          Container(
-            color: Colors.black54,
-            child: const Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircularProgressIndicator(color: Color(0xFFD85A30)),
-                  SizedBox(height: 16),
-                  Text(
-                    'Creating your trip…',
-                    style: TextStyle(
-                        fontFamily: 'DM Sans',
-                        color: Colors.white,
-                        fontSize: 15),
-                  ),
-                ],
-              ),
-            ),
+          TripCreationLoadingOverlay(
+            trip: _draft,
+            mode: _loadingMode,
+            progress: _loadingProgress,
+            isCompleted: _isCompleted,
+            errorMessage: _errorMessage,
+            onRetry: _loadingMode == TripCreationLoadingMode.create
+                ? _handleConfirm
+                : _handleSaveDraft,
+            onCancel: () {
+              if (mounted) {
+                setState(() {
+                  _saving = false;
+                  _errorMessage = null;
+                });
+              }
+            },
           ),
       ],
     );

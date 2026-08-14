@@ -45,13 +45,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   /// 3: NicknameBirthday, 4: Preferences, 5: HealthSafety, 6: AllSet
   static const int _kTotalSteps = 7;
 
-  void _goToStep(int step) {
+  void _goToStep(int step, {bool animate = true}) {
     if (step >= _kTotalSteps) return;
-    _pageController.animateToPage(
-      step,
-      duration: const Duration(milliseconds: 350),
-      curve: Curves.easeInOut,
-    );
+    if (animate && _pageController.hasClients) {
+      _pageController.animateToPage(
+        step,
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeInOut,
+      );
+    } else if (_pageController.hasClients) {
+      _pageController.jumpToPage(step);
+    }
   }
 
   void _onChooseModeSelected(String mode, String? name) async {
@@ -226,7 +230,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     }
 
     // If user is already authenticated when landing on onboarding
-    // (e.g. app reopened mid-onboarding), restore partial progress.
+    // (e.g. finishing setup post-login), skip step 0 (Google sign-in) and proceed.
     if (!_didRestoreProgress) {
       _didRestoreProgress = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -236,29 +240,26 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         if (supaUser != null &&
             !profile.hasCompletedOnboarding &&
             profile.isLoaded) {
-          // Only restore progress if the user genuinely started onboarding
-          // in a prior session. A brand-new user should stay on step 0.
-          if (!_isTrulyNewUser(profile)) {
-            final resumeStep = _computeResumeStep(profile);
-            setState(() {
-              _userName = profile.displayName;
-              _profilePhotoPath = profile.profilePhotoUrl;
-              _nickname = profile.nickname ?? '';
-              _dateOfBirth = profile.dateOfBirth ?? '';
-              _homeRegion = profile.homeRegion;
-              _homeCity = profile.homeCity;
-              _homeBarangay = profile.homeBarangay;
-              _homeCountry = profile.homeCountry.isNotEmpty
-                  ? profile.homeCountry
-                  : 'Philippines';
-              _preferredCurrency = profile.preferredCurrency.isNotEmpty
-                  ? profile.preferredCurrency
-                  : 'PHP';
-              _healthNotes = profile.healthNotes;
-              _bloodType = profile.bloodType;
-            });
-            _goToStep(resumeStep);
-          }
+          final startStep =
+              _isTrulyNewUser(profile) ? 1 : _computeResumeStep(profile);
+          setState(() {
+            _userName = profile.displayName;
+            _profilePhotoPath = profile.profilePhotoUrl;
+            _nickname = profile.nickname ?? '';
+            _dateOfBirth = profile.dateOfBirth ?? '';
+            _homeRegion = profile.homeRegion;
+            _homeCity = profile.homeCity;
+            _homeBarangay = profile.homeBarangay;
+            _homeCountry = profile.homeCountry.isNotEmpty
+                ? profile.homeCountry
+                : 'Philippines';
+            _preferredCurrency = profile.preferredCurrency.isNotEmpty
+                ? profile.preferredCurrency
+                : 'PHP';
+            _healthNotes = profile.healthNotes;
+            _bloodType = profile.bloodType;
+          });
+          _goToStep(startStep, animate: false);
         }
       });
     }

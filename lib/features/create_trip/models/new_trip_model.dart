@@ -12,10 +12,13 @@ class NewTripModel {
   double? totalBudget;
   String currency;
   bool splitEqually;
+  String splitMode; // 'equal', 'fixed', 'percentage', 'treat'
   List<BudgetCategory> budgetBreakdown;
   TransportDetail? transportDetail;
   int? coverColor;
   String? departurePoint;
+  double? departureLat;
+  double? departureLng;
   String? departureMapUrl;
 
   NewTripModel({
@@ -30,18 +33,21 @@ class NewTripModel {
     this.totalBudget,
     this.currency = 'Philippine Peso (₱)',
     this.splitEqually = true,
+    this.splitMode = 'equal',
     List<BudgetCategory>? budgetBreakdown,
     this.transportDetail,
     this.coverColor,
     this.departurePoint,
+    this.departureLat,
+    this.departureLng,
     this.departureMapUrl,
-  })  : travelers = travelers ??
-            [],
+  })  : travelers = travelers ?? [],
         budgetBreakdown = budgetBreakdown ??
             [
-              BudgetCategory(name: 'Accommodation', amount: 0, color: 0xFFD85A30),
-              BudgetCategory(name: 'Food', amount: 0, color: 0xFFF59E0B),
-              BudgetCategory(name: 'Activities', amount: 0, color: 0xFF10B981),
+              BudgetCategory(name: 'Accommodation', amount: 0, color: 0xFFD85A30, icon: '🏨'),
+              BudgetCategory(name: 'Food & Dining', amount: 0, color: 0xFFF59E0B, icon: '🍽️'),
+              BudgetCategory(name: 'Activities & Tours', amount: 0, color: 0xFF10B981, icon: '🏝️'),
+              BudgetCategory(name: 'Transportation', amount: 0, color: 0xFF3B82F6, icon: '🚐'),
             ];
 }
 
@@ -65,6 +71,13 @@ class BudgetCategory {
   final String name;
   double amount;
   final int color;
-  BudgetCategory({required this.name, required this.amount, required this.color});
+  final String icon;
+
+  BudgetCategory({
+    required this.name,
+    required this.amount,
+    required this.color,
+    this.icon = '📦',
+  });
 }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/currency_utils.dart';
 
 class CategoryBudgetChart extends StatelessWidget {
   final Map<String, double> categoryTotals;
@@ -74,7 +75,7 @@ class CategoryBudgetChart extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      '₱${entry.value.toStringAsFixed(0)} (${pct.toStringAsFixed(0)}%)',
+                      '₱${CurrencyUtils.formatAmount(entry.value)} (${pct.toStringAsFixed(0)}%)',
                       style: const TextStyle(
                         fontFamily: 'DM Sans',
                         fontSize: 13,

@@ -6,6 +6,8 @@ import '../../core/providers/packing_provider.dart';
 import '../../core/providers/trip_provider.dart';
 import '../../core/providers/selected_trip_provider.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/profile_completion_banner.dart';
+import '../../core/utils/jit_guard.dart';
 
 import '../budget/budget_screen.dart';
 import '../explore/explore_screen.dart';
@@ -507,6 +509,7 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            const ProfileCompletionBanner(),
                             _TourFocus(
                               highlight: _tourVisible && _tourStep == 1,
                               borderRadius: 22,
@@ -566,6 +569,9 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
                                                     .inDays +
                                                 1,
                                             people: trip.members.length,
+                                            tripType: trip.tripType,
+                      coverColor: AppColors.parseTripColor(trip.coverColor),
+                                            coverEmoji: trip.coverEmoji,
                                             travelers: trip.members
                                                 .map(
                                                   (member) => TravelerInfo(
@@ -673,7 +679,9 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
                                   child: _PulsingGuide(
                                     active: profile.isFirstRun ||
                                         (_tourVisible && _tourStep == 3),
-                                    onTap: () {
+                                    onTap: () async {
+                                      final canProceed = await JitGuard.checkCreateTripGuard(context, ref);
+                                      if (!canProceed || !context.mounted) return;
                                       ref
                                           .read(profileProvider.notifier)
                                           .setFirstRunCompleted();
@@ -687,7 +695,9 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
                                       label: 'New trip',
                                       sublabel: 'Start planning',
                                       orange: true,
-                                      onTap: () {
+                                      onTap: () async {
+                                        final canProceed = await JitGuard.checkCreateTripGuard(context, ref);
+                                        if (!canProceed || !context.mounted) return;
                                         ref
                                             .read(profileProvider.notifier)
                                             .setFirstRunCompleted();
@@ -721,6 +731,8 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
                                   label: 'Split bill',
                                   sublabel: 'Settle fast',
                                   onTap: () async {
+                                    final canProceed = await JitGuard.checkExpensePaymentGuard(context, ref);
+                                    if (!canProceed || !context.mounted) return;
                                     final activeTrip = await ref
                                         .read(activeTripProvider.future);
                                     if (activeTrip != null) {

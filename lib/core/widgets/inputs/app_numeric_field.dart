@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../theme/app_colors.dart';
+import '../../utils/currency_input_formatter.dart';
 
 class AppNumericField extends StatelessWidget {
   final TextEditingController? controller;
@@ -51,11 +51,7 @@ class AppNumericField extends StatelessWidget {
             keyboardType: TextInputType.numberWithOptions(decimal: decimal),
             textInputAction: textInputAction,
             inputFormatters: [
-              FilteringTextInputFormatter.allow(
-                decimal
-                    ? RegExp(r'^\d*\.?\d{0,2}')
-                    : RegExp(r'^\d*'),
-              ),
+              CurrencyInputFormatter(allowDecimal: decimal),
             ],
             onChanged: onChanged,
             validator: validator,

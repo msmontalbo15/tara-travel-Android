@@ -308,6 +308,11 @@ class ProfileNotifier extends Notifier<ProfileState> {
 
 
   Future<void> _persist() async {
+    // Automatically complete onboarding state if essential info (e.g. home location) is set
+    if (!state.hasCompletedOnboarding && state.homeCity.isNotEmpty) {
+      state = state.copyWith(hasCompletedOnboarding: true);
+    }
+
     final repo = ref.read(profileRepositoryProvider);
     final json = state.toJson();
 

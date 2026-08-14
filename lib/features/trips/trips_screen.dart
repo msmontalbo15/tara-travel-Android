@@ -6,6 +6,8 @@ import '../../core/providers/trip_provider.dart';
 import '../../core/providers/selected_trip_provider.dart';
 import '../../core/providers/repository_providers.dart';
 import '../../core/models/trip_model.dart';
+import '../../core/utils/jit_guard.dart';
+import '../../core/constants/trip_types.dart';
 
 class TripsScreen extends ConsumerWidget {
   const TripsScreen({super.key});
@@ -63,7 +65,11 @@ class TripsScreen extends ConsumerWidget {
                 ),
                 const SizedBox(width: 8),
                 GestureDetector(
-                  onTap: () => Navigator.pushNamed(context, '/create-trip'),
+                  onTap: () async {
+                    final canProceed = await JitGuard.checkCreateTripGuard(context, ref);
+                    if (!canProceed || !context.mounted) return;
+                    Navigator.pushNamed(context, '/create-trip');
+                  },
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 10),
@@ -137,8 +143,11 @@ class TripsScreen extends ConsumerWidget {
                                   color: AppColors.muted)),
                           const SizedBox(height: 24),
                           GestureDetector(
-                            onTap: () =>
-                                Navigator.pushNamed(context, '/create-trip'),
+                            onTap: () async {
+                              final canProceed = await JitGuard.checkCreateTripGuard(context, ref);
+                              if (!canProceed || !context.mounted) return;
+                              Navigator.pushNamed(context, '/create-trip');
+                            },
                             child: Container(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 24, vertical: 14),
@@ -395,27 +404,20 @@ class _TripListCard extends StatelessWidget {
   const _TripListCard(
       {required this.trip, this.isArchived = false, required this.onTap});
 
-  static const _typeEmoji = {
-    'beach': '🏖️',
-    'city': '🏙️',
-    'adventure': '🏔️',
-    'nature': '🌿',
-    'cultural': '🏛️',
-    // Capitalised keys for backwards compat
-    'Beach': '🏖️',
-    'City': '🏙️',
-    'Adventure': '🏔️',
-    'Nature': '🌿',
-    'Cultural': '🏛️',
-  };
-
   @override
   Widget build(BuildContext context) {
     final daysLeft = trip.fromDate.difference(DateTime.now()).inDays;
-    final emoji = trip.coverEmoji ??
-        _typeEmoji[trip.tripType.toLowerCase()] ??
-        _typeEmoji[trip.tripType] ??
-        '🌏';
+    final emoji = trip.coverEmoji ?? AppTripTypes.getEmoji(trip.tripType);
+    final typeOpt = AppTripTypes.getOption(trip.tripType);
+
+    final themeColor = AppColors.parseTripColor(trip.coverColor);
+    final hsl = HSLColor.fromColor(themeColor);
+    final darkGrad = hsl.withLightness((hsl.lightness - 0.12).clamp(0.0, 1.0)).toColor();
+    final lightGrad = hsl.withLightness((hsl.lightness + 0.10).clamp(0.0, 1.0)).toColor();
+
+    final imageUrl = trip.destinationDetails?['image'] ??
+        trip.destinationDetails?['cover_image'] ??
+        trip.destinationDetails?['image_url'];
 
     return GestureDetector(
       onTap: onTap,
@@ -432,88 +434,164 @@ class _TripListCard extends StatelessWidget {
                 offset: const Offset(0, 3))
           ],
         ),
-        child: Row(
-          children: [
-            // Emoji panel
-            Container(
-              width: 72,
-              height: 82,
-              decoration: BoxDecoration(
-                gradient: isArchived
-                    ? null
-                    : const LinearGradient(
-                        colors: [Color(0xFF1A0A04), AppColors.deepEarth],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Stack(
+            children: [
+              // ── Background Low-Opacity Image Overlay (if available) ────
+              if (imageUrl != null && imageUrl.toString().isNotEmpty)
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: Opacity(
+                      opacity: 0.08,
+                      child: Image.network(
+                        imageUrl.toString(),
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                       ),
-                color: isArchived ? AppColors.surfaceLight : null,
-                borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    bottomLeft: Radius.circular(20)),
-              ),
-              child: Center(
-                  child: Text(emoji, style: const TextStyle(fontSize: 30))),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(trip.name,
-                              style: TextStyle(
-                                  fontFamily: 'DM Sans',
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  color: isArchived
-                                      ? AppColors.textSecondary
-                                      : AppColors.textPrimary)),
-                        ),
-                        if (isArchived)
-                          _badge('Past', AppColors.surfaceLight,
-                              AppColors.warmMuted)
-                        else if (daysLeft == 0)
-                          _badge(
-                              'Today!', AppColors.greenBg, AppColors.green)
-                        else if (daysLeft > 0)
-                          _badge('$daysLeft days', AppColors.sand,
-                              AppColors.primary),
-                      ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(trip.destination,
+                  ),
+                ),
+
+              // ── Background Low-Opacity Large Emoji Watermark Overlay ───
+              Positioned(
+                right: -12,
+                bottom: -22,
+                child: IgnorePointer(
+                  child: Opacity(
+                    opacity: 0.08,
+                    child: Transform.rotate(
+                      angle: -0.15,
+                      child: Text(
+                        emoji,
                         style: const TextStyle(
-                            fontFamily: 'DM Sans',
-                            fontSize: 12,
-                            color: AppColors.textSecondary)),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${DateFormat('MMM d').format(trip.fromDate)} – ${DateFormat('MMM d, yyyy').format(trip.toDate)}',
-                      style: const TextStyle(
-                          fontFamily: 'DM Sans',
-                          fontSize: 11,
-                          color: AppColors.warmMuted),
+                          fontSize: 110,
+                          height: 1.0,
+                        ),
+                      ),
                     ),
-                  ],
+                  ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(right: 14),
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceLight,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: const Icon(Icons.chevron_right_rounded,
-                    color: AppColors.warmMuted, size: 18),
+
+              // ── Foreground Card Content ───────────────────────────
+              Row(
+                children: [
+                  // Emoji panel with dynamic theme color gradient
+                  Container(
+                    width: 72,
+                    height: 82,
+                    decoration: BoxDecoration(
+                      gradient: isArchived
+                          ? null
+                          : LinearGradient(
+                              colors: [darkGrad, lightGrad],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                      color: isArchived ? AppColors.surfaceLight : null,
+                      borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(20),
+                          bottomLeft: Radius.circular(20)),
+                    ),
+                    child: Center(
+                        child: Text(emoji, style: const TextStyle(fontSize: 30))),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(trip.name,
+                                    style: TextStyle(
+                                        fontFamily: 'DM Sans',
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w700,
+                                        color: isArchived
+                                            ? AppColors.textSecondary
+                                            : AppColors.textPrimary)),
+                              ),
+                              if (isArchived)
+                                _badge('Past', AppColors.surfaceLight,
+                                    AppColors.warmMuted)
+                              else if (daysLeft == 0)
+                                _badge(
+                                    'Today!', AppColors.greenBg, AppColors.green)
+                              else if (daysLeft > 0)
+                                _badge('$daysLeft days', AppColors.sand,
+                                    AppColors.primary),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(trip.destination,
+                                    style: const TextStyle(
+                                        fontFamily: 'DM Sans',
+                                        fontSize: 12,
+                                        color: AppColors.textSecondary),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis),
+                              ),
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: typeOpt.accentColor.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(typeOpt.emoji, style: const TextStyle(fontSize: 10)),
+                                    const SizedBox(width: 3),
+                                    Text(
+                                      typeOpt.label,
+                                      style: TextStyle(
+                                        fontFamily: 'DM Sans',
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                        color: typeOpt.accentColor,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${DateFormat('MMM d').format(trip.fromDate)} – ${DateFormat('MMM d, yyyy').format(trip.toDate)}',
+                            style: const TextStyle(
+                                fontFamily: 'DM Sans',
+                                fontSize: 11,
+                                color: AppColors.warmMuted),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 14),
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceLight,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Icon(Icons.chevron_right_rounded,
+                          color: AppColors.warmMuted, size: 18),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

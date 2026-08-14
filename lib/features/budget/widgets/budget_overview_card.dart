@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/currency_utils.dart';
 import 'budget_ring_chart.dart';
 
 class BudgetOverviewCard extends StatelessWidget {
@@ -116,10 +117,7 @@ class BudgetOverviewCard extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          totalBudget.toStringAsFixed(0).replaceAllMapped(
-                            RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), 
-                            (Match m) => '${m[1]},'
-                          ),
+                          CurrencyUtils.formatAmount(totalBudget),
                           style: const TextStyle(
                             fontFamily: 'Playfair Display',
                             fontSize: 30,
@@ -141,7 +139,7 @@ class BudgetOverviewCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      '₱${remaining.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')} remaining',
+                      '₱${CurrencyUtils.formatAmount(remaining)} remaining',
                       style: TextStyle(
                         fontFamily: 'DM Sans',
                         fontSize: 13,
@@ -153,7 +151,7 @@ class BudgetOverviewCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '₱${totalSpent.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')} spent by $memberCount members',
+                      '₱${CurrencyUtils.formatAmount(totalSpent)} spent by $memberCount members',
                       style: TextStyle(
                         fontFamily: 'DM Sans',
                         fontSize: 11,

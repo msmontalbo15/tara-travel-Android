@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/constants/trip_types.dart';
 
 /// A trip list card — used for both "Upcoming" and "Draft" states.
 /// Brand-aligned with premium card styling and animations.
@@ -16,6 +17,8 @@ class TripCard extends StatelessWidget {
   // New metadata
   final String? tripId;
   final Color? coverColor;
+  final String? tripType;
+  final String? coverEmoji;
   final VoidCallback? onItinerary;
   final VoidCallback? onPacking;
   final VoidCallback? onMembers;
@@ -34,6 +37,8 @@ class TripCard extends StatelessWidget {
     this.onTap,
     this.tripId,
     this.coverColor,
+    this.tripType,
+    this.coverEmoji,
     this.onItinerary,
     this.onPacking,
     this.onMembers,
@@ -54,6 +59,8 @@ class TripCard extends StatelessWidget {
         travelers = null,
         tripId = null,
         coverColor = null,
+        tripType = null,
+        coverEmoji = null,
         onItinerary = null,
         onPacking = null,
         onMembers = null,
@@ -93,6 +100,11 @@ class TripCard extends StatelessWidget {
 
   Widget _buildUpcoming() {
     final accent = coverColor ?? AppColors.primary;
+    final HSLColor hsl = HSLColor.fromColor(accent);
+    final darkGrad = hsl.withLightness((hsl.lightness - 0.15).clamp(0.0, 1.0)).toColor();
+    final lightGrad = hsl.withLightness((hsl.lightness + 0.08).clamp(0.0, 1.0)).toColor();
+    final emojiDisplay = coverEmoji ?? AppTripTypes.getEmoji(tripType);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -102,74 +114,107 @@ class TripCard extends StatelessWidget {
           height: 5,
           color: accent,
         ),
-        // Trip hero section with gradient
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(18),
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF1A0A04), AppColors.deepEarth],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        // Trip hero section with dynamic theme gradient + emoji watermark
+        ClipRect(
+          child: Stack(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                width: double.infinity,
+                padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Text(
-                  'Upcoming',
-                  style: TextStyle(
-                    fontFamily: 'DM Sans',
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                    letterSpacing: 0.2,
+                  gradient: LinearGradient(
+                    colors: [darkGrad, lightGrad],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                name,
-                style: const TextStyle(
-                  fontFamily: 'Playfair Display',
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                  letterSpacing: -0.3,
-                  height: 1.2,
-                ),
-              ),
-              if (destination != null) ...[
-                const SizedBox(height: 4),
-                Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.location_on, color: Colors.white70, size: 14),
-                    const SizedBox(width: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.22),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
+                      ),
+                      child: const Text(
+                        'Upcoming',
+                        style: TextStyle(
+                          fontFamily: 'DM Sans',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     Text(
-                      destination!,
+                      name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
+                        fontFamily: 'Playfair Display',
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        letterSpacing: -0.3,
+                        height: 1.2,
+                      ),
+                    ),
+                    if (destination != null) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(Icons.location_on, color: Colors.white70, size: 14),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              destination!,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontFamily: 'DM Sans',
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white70,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                    const SizedBox(height: 4),
+                    Text(
+                      dateRange,
+                      style: TextStyle(
                         fontFamily: 'DM Sans',
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white70,
+                        fontSize: 12,
+                        color: Colors.white.withValues(alpha: 0.4),
                       ),
                     ),
                   ],
                 ),
-              ],
-              const SizedBox(height: 4),
-              Text(
-                dateRange,
-                style: TextStyle(
-                  fontFamily: 'DM Sans',
-                  fontSize: 12,
-                  color: Colors.white.withValues(alpha: 0.4),
+              ),
+              // Low-opacity emoji watermark — bottom-right of hero
+              Positioned(
+                right: -16,
+                bottom: -28,
+                child: IgnorePointer(
+                  child: Opacity(
+                    opacity: 0.10,
+                    child: Transform.rotate(
+                      angle: -0.12,
+                      child: Text(
+                        emojiDisplay,
+                        style: const TextStyle(
+                          fontSize: 130,
+                          height: 1.0,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -340,6 +385,8 @@ class TripCard extends StatelessWidget {
                 children: [
                   Text(
                     name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontFamily: 'DM Sans',
                       fontSize: 14,
@@ -350,6 +397,8 @@ class TripCard extends StatelessWidget {
                   if (destination != null)
                     Text(
                       destination!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontFamily: 'DM Sans',
                         fontSize: 12,

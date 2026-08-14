@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/models/trip_model.dart';
-import '../../core/models/member_model.dart';
 import '../../core/models/expense_model.dart';
 import '../../core/providers/realtime_provider.dart';
 import '../../core/providers/repository_providers.dart';
@@ -12,8 +11,11 @@ import 'widgets/expense_log.dart';
 import 'widgets/alert_banner.dart';
 import 'widgets/member_contribution_card.dart';
 import 'widgets/add_expense_form.dart';
+import 'widgets/split_bill_panel.dart';
 import 'widgets/category_budget_chart.dart';
+import '../../core/constants/trip_types.dart';
 import '../../core/widgets/buttons/app_back_button.dart';
+import '../../core/utils/currency_utils.dart';
 
 class BudgetScreen extends ConsumerStatefulWidget {
   final bool showHeader;
@@ -25,7 +27,6 @@ class BudgetScreen extends ConsumerStatefulWidget {
 
 class _BudgetScreenState extends ConsumerState<BudgetScreen> {
   int _activeTabIndex = 0; // 0: Overview, 1: Expenses, 2: Split
-  String _activeSplitMode = 'equal'; // equal, fixed, bigger, treat
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +72,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                         totalBudget: trip.totalBudget,
                         totalSpent: trip.totalSpent,
                         memberCount: trip.members.length,
-                        tripSubtitle: '${trip.destination} · ${trip.tripType}',
+                        tripSubtitle: '${trip.destination} · ${AppTripTypes.getEmoji(trip.tripType)} ${AppTripTypes.getLabel(trip.tripType)}',
                       ),
                       if (trip.totalBudget > 0 && (trip.totalSpent / trip.totalBudget) >= 0.9)
                         AlertBanner(
@@ -232,16 +233,9 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
   }
 
   Widget _buildSplitTab(TripModel trip) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _sectionTitle('Split Method'),
-        _buildSplitMethodCard(trip),
-        const SizedBox(height: 18),
-        _sectionTitle('Settlement Plan'),
-        _buildSettlementCard(trip),
-        const SizedBox(height: 40),
-      ],
+    return SplitBillPanel(
+      members: trip.members,
+      expenses: trip.expenses,
     );
   }
 
@@ -261,215 +255,109 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
     );
   }
 
-  Widget _buildSplitMethodCard(TripModel trip) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 3))],
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              _splitModeBtn('⚖️', 'Equal', 'equal'),
-              const SizedBox(width: 8),
-              _splitModeBtn('🎯', 'Fixed', 'fixed'),
-              const SizedBox(width: 8),
-              _splitModeBtn('💰', 'Bigger', 'bigger'),
-              const SizedBox(width: 8),
-              _splitModeBtn('🎁', 'Treat', 'treat'),
-            ],
-          ),
-          const SizedBox(height: 20),
-          ...trip.members.map((m) => _buildSplitMemberRow(m, trip)),
-        ],
-      ),
-    );
-  }
-
-  Widget _splitModeBtn(String icon, String label, String mode) {
-    final active = _activeSplitMode == mode;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _activeSplitMode = mode),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: active ? AppColors.chipBackground : Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: active ? AppColors.primary : const Color(0xFFE5E5EA), width: 1.5),
-          ),
-          child: Column(
-            children: [
-              Text(icon, style: const TextStyle(fontSize: 20)),
-              const SizedBox(height: 3),
-              Text(
-                label,
-                style: TextStyle(
-                  fontFamily: 'DM Sans',
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: active ? AppColors.primary : AppColors.deepEarth,
-                ),
-              ),
-            ],
+  Widget _buildDistributionCard(Map<String, double> categoryTotals, double totalSpent) {
+    if (totalSpent <= 0) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18)),
+        child: const Center(
+          child: Text(
+            'No approved spending yet.',
+            style: TextStyle(fontFamily: 'DM Sans', fontSize: 13, color: AppColors.warmMuted),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildSplitMemberRow(MemberModel member, TripModel trip) {
-    final approvedExpenses = trip.expenses
-        .where((e) => e.status == ExpenseStatus.approved && e.paidById == member.id)
-        .fold<double>(0, (sum, e) => sum + e.amount);
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xFFE5E5EA), width: 0.5)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(color: member.color, shape: BoxShape.circle),
-            child: Center(child: Text(member.initials, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white))),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(member.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.deepEarth)),
-                Text(
-                  member.roles.isNotEmpty
-                    ? member.roles.map((r) => r.displayName).join(' · ')
-                    : 'Member',
-                  style: const TextStyle(fontSize: 10, color: AppColors.muted),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            '₱${approvedExpenses.toStringAsFixed(0)}',
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.deepEarth),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSettlementCard(TripModel trip) {
-    final approved = trip.expenses.where((e) => e.status == ExpenseStatus.approved).toList();
-    final totalApproved = approved.fold<double>(0, (s, e) => s + e.amount);
-    final members = trip.members;
-    final settlements = <({String from, String to, double amount})>[];
-    if (members.isNotEmpty && totalApproved > 0) {
-      final share = totalApproved / members.length;
-      final paidByMember = <String, double>{};
-      for (final m in members) {
-        paidByMember[m.id] = approved
-            .where((e) => e.paidById == m.id)
-            .fold<double>(0, (s, e) => s + e.amount);
-      }
-      final creditor = members.reduce((a, b) => (paidByMember[a.id] ?? 0) > (paidByMember[b.id] ?? 0) ? a : b);
-      for (final m in members) {
-        if (m.id == creditor.id) continue;
-        final paid = paidByMember[m.id] ?? 0;
-        final due = share - paid;
-        if (due > 0) {
-          settlements.add((from: m.name, to: creditor.name, amount: due));
-        }
-      }
+      );
     }
-
     return Container(
       width: double.infinity,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 3))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: const BoxDecoration(
-              color: AppColors.deepEarth,
-              borderRadius: BorderRadius.only(topLeft: Radius.circular(18), topRight: Radius.circular(18)),
-            ),
-            child: const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('💸 Minimum Transactions', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
-                Text('Computed from approved expenses', style: TextStyle(fontSize: 11, color: Colors.white60)),
-              ],
-            ),
-          ),
-          if (settlements.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text(
-                'No settlements yet.',
-                style: TextStyle(fontFamily: 'DM Sans', color: AppColors.warmMuted),
+          ...categoryTotals.entries.map((entry) {
+            final pct = entry.value / totalSpent;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(_categoryEmoji(entry.key), style: const TextStyle(fontSize: 14)),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          _categoryLabel(entry.key),
+                          style: const TextStyle(fontFamily: 'DM Sans', fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.deepEarth),
+                        ),
+                      ),
+                      Text(
+                        '₱${CurrencyUtils.formatAmount(entry.value)}',
+                        style: const TextStyle(fontFamily: 'DM Sans', fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.deepEarth),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '${(pct * 100).round()}%',
+                        style: const TextStyle(fontFamily: 'DM Sans', fontSize: 11, color: AppColors.warmMuted),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0, end: pct.clamp(0.0, 1.0)),
+                    duration: const Duration(milliseconds: 700),
+                    curve: Curves.easeOutCubic,
+                    builder: (_, v, __) => LayoutBuilder(
+                      builder: (_, constraints) => Stack(
+                        children: [
+                          Container(height: 5, decoration: BoxDecoration(color: const Color(0xFFE5E5EA), borderRadius: BorderRadius.circular(4))),
+                          Container(height: 5, width: constraints.maxWidth * v, decoration: BoxDecoration(color: _categoryColor(entry.key), borderRadius: BorderRadius.circular(4))),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            )
-          else
-            ...settlements.map((s) => _buildSettlementRow(s.from, s.to, s.amount)),
+            );
+          }),
         ],
       ),
     );
   }
 
-
-
-  Widget _buildDistributionCard(Map<String, double> categoryTotals, double totalSpent) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18)),
-      child: Text(
-        totalSpent <= 0
-            ? 'No spending distribution yet.'
-            : 'Approved spending: ₱${totalSpent.toStringAsFixed(0)} across ${categoryTotals.length} categories.',
-        style: const TextStyle(fontFamily: 'DM Sans', color: AppColors.textPrimary),
-      ),
-    );
+  String _categoryEmoji(String cat) {
+    switch (cat) {
+      case 'hotel': return '🏨';
+      case 'food': return '🍽️';
+      case 'transport': return '🚐';
+      case 'activities': return '🏝️';
+      default: return '📦';
+    }
   }
 
-  Widget _buildSettlementRow(String from, String to, double amount) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xFFE5E5EA), width: 0.5)),
-      ),
-      child: Row(
-        children: [
-          Text(from, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 13, fontWeight: FontWeight.w600)),
-          const SizedBox(width: 8),
-          const Icon(Icons.arrow_forward, size: 16, color: AppColors.primary),
-          const SizedBox(width: 8),
-          Text(to, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 13, fontWeight: FontWeight.w600)),
-          const Spacer(),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text('₱${amount.toInt()}', style: const TextStyle(fontFamily: 'DM Sans', fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.primary)),
-              const SizedBox(height: 4),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(color: const Color(0xFF0066CC), borderRadius: BorderRadius.circular(8)),
-                child: const Text('💙 GCash', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white)),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
+  String _categoryLabel(String cat) {
+    switch (cat) {
+      case 'hotel': return 'Accommodation';
+      case 'food': return 'Food';
+      case 'transport': return 'Transport';
+      case 'activities': return 'Activities';
+      default: return 'Other';
+    }
+  }
+
+  Color _categoryColor(String cat) {
+    switch (cat) {
+      case 'hotel': return AppColors.catAccommodation;
+      case 'food': return AppColors.catFood;
+      case 'transport': return AppColors.catTransport;
+      case 'activities': return AppColors.catActivities;
+      default: return AppColors.warmMuted;
+    }
   }
 }

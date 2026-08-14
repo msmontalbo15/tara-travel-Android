@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/models/expense_model.dart';
 import '../../../core/models/member_model.dart';
+import '../../../core/utils/currency_utils.dart';
 import 'package:intl/intl.dart';
 
 class ExpenseLog extends StatelessWidget {
@@ -117,7 +118,7 @@ class ExpenseLog extends StatelessWidget {
             ),
           ),
           Text(
-            '₱${expense.amount.toStringAsFixed(0)}',
+            '₱${CurrencyUtils.formatAmount(expense.amount)}',
             style: const TextStyle(
               fontFamily: 'DM Sans',
               fontSize: 16,

@@ -33,6 +33,8 @@ class _NextTripCardState extends State<NextTripCard>
 
   @override
   Widget build(BuildContext context) {
+    final themeColor = AppColors.parseTripColor(widget.trip.coverColor);
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
       child: BackdropFilter(
@@ -42,14 +44,14 @@ class _NextTripCardState extends State<NextTripCard>
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                Colors.white.withValues(alpha: 0.10),
+                themeColor.withValues(alpha: 0.18),
                 Colors.white.withValues(alpha: 0.05),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+            border: Border.all(color: themeColor.withValues(alpha: 0.35)),
           ),
           child: Stack(
             children: [
@@ -58,11 +60,11 @@ class _NextTripCardState extends State<NextTripCard>
                 right: -24,
                 top: -24,
                 child: Container(
-                  width: 120,
-                  height: 120,
+                  width: 130,
+                  height: 130,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: AppColors.primary.withValues(alpha: 0.18),
+                    color: themeColor.withValues(alpha: 0.28),
                   ),
                 ),
               ),
@@ -75,9 +77,9 @@ class _NextTripCardState extends State<NextTripCard>
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.20),
+                        color: themeColor.withValues(alpha: 0.25),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.25)),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.30)),
                       ),
                       child: const Text(
                         'NEXT TRIP',
@@ -85,7 +87,7 @@ class _NextTripCardState extends State<NextTripCard>
                           fontFamily: 'DM Sans',
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.primaryLight,
+                          color: Colors.white,
                           letterSpacing: 1.4,
                         ),
                       ),
@@ -116,7 +118,7 @@ class _NextTripCardState extends State<NextTripCard>
                                 height: 1,
                                 shadows: [
                                   Shadow(
-                                    color: AppColors.primary.withValues(alpha: glow),
+                                    color: themeColor.withValues(alpha: glow),
                                     blurRadius: 24,
                                   ),
                                 ],

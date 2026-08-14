@@ -112,16 +112,8 @@ class _AuthGateState extends ConsumerState<AuthGate> {
     await ref.read(profileProvider.notifier).refreshProfile();
     if (!mounted) return;
 
-    final profile = ref.read(profileProvider);
-    if (profile.hasCompletedOnboarding) {
-      _navigatorKey.currentState
-          ?.pushNamedAndRemoveUntil('/home', (route) => false);
-    } else {
-      if (_routeObserver.currentRoute != '/onboarding') {
-        _navigatorKey.currentState
-            ?.pushNamedAndRemoveUntil('/onboarding', (route) => false);
-      }
-    }
+    _navigatorKey.currentState
+        ?.pushNamedAndRemoveUntil('/home', (route) => false);
   }
 
   // ── Supabase Auth Stream Handler ───────────────────────────────────────────
@@ -140,21 +132,12 @@ class _AuthGateState extends ConsumerState<AuthGate> {
     if (event == AuthChangeEvent.signedIn && session != null) {
       // Switch the local database to the authenticated user's partition.
       await DatabaseService.instance.switchUser(session.user.id);
-      // Refresh profile from remote to detect returning users with completed
-      // onboarding so we can skip the onboarding flow.
+      // Refresh profile from remote.
       await ref.read(profileProvider.notifier).refreshProfile();
       if (!mounted) return;
 
-      final profile = ref.read(profileProvider);
-      if (profile.hasCompletedOnboarding) {
-        _navigatorKey.currentState
-            ?.pushNamedAndRemoveUntil('/home', (route) => false);
-      } else {
-        if (_routeObserver.currentRoute != '/onboarding') {
-          _navigatorKey.currentState
-              ?.pushNamedAndRemoveUntil('/onboarding', (route) => false);
-        }
-      }
+      _navigatorKey.currentState
+          ?.pushNamedAndRemoveUntil('/home', (route) => false);
       return;
     }
 

@@ -6,12 +6,15 @@ import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/providers/selected_trip_provider.dart';
+import '../../core/providers/trip_provider.dart';
+import '../../core/providers/repository_providers.dart';
 import '../../core/providers/expense_provider.dart';
 import '../../core/providers/packing_provider.dart';
 import '../../core/providers/itinerary_provider.dart';
 import '../../core/models/trip_model.dart';
 import '../../core/models/expense_model.dart';
 import '../../core/widgets/buttons/app_back_button.dart';
+import '../../core/constants/trip_types.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TripDetailScreen — dashboard UI (glassmorphic iOS 17/18 layout)
@@ -61,14 +64,9 @@ class _TripDashboard extends ConsumerStatefulWidget {
 class _TripDashboardState extends ConsumerState<_TripDashboard> {
   int _activeNavIndex = -1;
 
-  /// Parse a CSS hex string like '#D85A30' or '0xFFD85A30'
-  Color _parseCoverColor(String? raw) {
-    if (raw == null || raw.isEmpty) return const Color(0xFF2C1A14);
-    final s = raw.replaceAll('#', '').replaceAll('0x', '').replaceAll('0X', '');
-    if (s.length == 6) return Color(int.parse('FF$s', radix: 16));
-    if (s.length == 8) return Color(int.parse(s, radix: 16));
-    return const Color(0xFF2C1A14);
-  }
+  /// Parse cover color string/int with AppColors.parseTripColor
+  Color _parseCoverColor(String? raw) =>
+      AppColors.parseTripColor(raw, defaultColor: const Color(0xFF2C1A14));
 
   static const _navItems = [
     _FloatingNavItem(
@@ -269,7 +267,7 @@ class _TripDashboardState extends ConsumerState<_TripDashboard> {
 // Hero Header — ambient gradient mesh + frosted status pill
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _HeroHeader extends StatelessWidget {
+class _HeroHeader extends ConsumerWidget {
   final TripModel trip;
   final Color coverColor;
   final int nights;
@@ -282,8 +280,39 @@ class _HeroHeader extends StatelessWidget {
     required this.isActive,
   });
 
+  Future<void> _confirmDeleteTrip(BuildContext context, WidgetRef ref) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Trip'),
+        content: Text('Are you sure you want to delete "${trip.name}"? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && context.mounted) {
+      final repo = ref.read(tripRepositoryProvider);
+      await repo.deleteTrip(trip.id);
+      ref.read(selectedTripIdProvider.notifier).clear();
+      ref.invalidate(allTripsProvider);
+      if (context.mounted) {
+        Navigator.pop(context);
+      }
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final topPad = MediaQuery.of(context).padding.top;
 
     // Derived ambient accent — slightly lighter tone for mesh
@@ -291,102 +320,163 @@ class _HeroHeader extends StatelessWidget {
         .withLightness((HSLColor.fromColor(coverColor).lightness + 0.18).clamp(0.0, 1.0))
         .toColor();
 
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            HSLColor.fromColor(coverColor)
-                .withLightness(
-                    (HSLColor.fromColor(coverColor).lightness - 0.12).clamp(0.0, 1.0))
-                .toColor(),
-            coverColor,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+    final emoji = trip.coverEmoji ?? AppTripTypes.getEmoji(trip.tripType);
+    final imageUrl = trip.destinationDetails?['image'] ??
+        trip.destinationDetails?['cover_image'] ??
+        trip.destinationDetails?['image_url'];
+
+    return ClipRect(
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              HSLColor.fromColor(coverColor)
+                  .withLightness(
+                      (HSLColor.fromColor(coverColor).lightness - 0.12).clamp(0.0, 1.0))
+                  .toColor(),
+              coverColor,
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
         ),
-      ),
-      child: Stack(
-        children: [
-          // Ambient mesh blobs
-          Positioned(
-            top: -40,
-            right: -30,
-            child: Container(
-              width: 180,
-              height: 180,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: accentLight.withValues(alpha: 0.22),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -20,
-            left: -40,
-            child: Container(
-              width: 130,
-              height: 130,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.07),
-              ),
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(20, topPad + 12, 20, 28),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const AppBackButton(),
-                const SizedBox(height: 20),
-
-                _StatusBadge(isActive: isActive, isArchived: trip.isArchived),
-                const SizedBox(height: 10),
-
-                Text(
-                  trip.name,
-                  style: const TextStyle(
-                    fontFamily: 'Playfair Display',
-                    fontSize: 32,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                    height: 1.12,
-                    letterSpacing: -0.5,
+        child: Stack(
+          children: [
+            // ── Background cover image watermark (if available) ──────
+            if (imageUrl != null && imageUrl.toString().isNotEmpty)
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: Opacity(
+                    opacity: 0.12,
+                    child: Image.network(
+                      imageUrl.toString(),
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 8),
+              ),
 
-                Row(
-                  children: [
-                    Icon(Icons.place_rounded,
-                        color: Colors.white.withValues(alpha: 0.60), size: 14),
-                    const SizedBox(width: 4),
-                    Text(
-                      trip.destination,
-                      style: TextStyle(
-                        fontFamily: 'DM Sans',
-                        fontSize: 13,
-                        color: Colors.white.withValues(alpha: 0.60),
-                        fontWeight: FontWeight.w500,
+            // ── Large emoji watermark — bottom right ─────────────────
+            Positioned(
+              right: -20,
+              bottom: -30,
+              child: IgnorePointer(
+                child: Opacity(
+                  opacity: 0.10,
+                  child: Transform.rotate(
+                    angle: -0.10,
+                    child: Text(
+                      emoji,
+                      style: const TextStyle(
+                        fontSize: 160,
+                        height: 1.0,
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-
-                Text(
-                  '${DateFormat('MMM d').format(trip.fromDate)}–'
-                  '${DateFormat('MMM d, yyyy').format(trip.toDate)} · $nights nights',
-                  style: TextStyle(
-                    fontFamily: 'DM Sans',
-                    fontSize: 12,
-                    color: Colors.white.withValues(alpha: 0.38),
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
-        ],
+
+            // Ambient mesh blobs
+            Positioned(
+              top: -40,
+              right: -30,
+              child: Container(
+                width: 180,
+                height: 180,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: accentLight.withValues(alpha: 0.22),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: -20,
+              left: -40,
+              child: Container(
+                width: 130,
+                height: 130,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.07),
+                ),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(20, topPad + 12, 20, 28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const AppBackButton(),
+                      IconButton(
+                        onPressed: () => _confirmDeleteTrip(context, ref),
+                        icon: const Icon(Icons.delete_outline_rounded, color: Colors.white70),
+                        tooltip: 'Delete Trip',
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  _StatusBadge(isActive: isActive, isArchived: trip.isArchived),
+                  const SizedBox(height: 10),
+
+                  Text(
+                    trip.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontFamily: 'Playfair Display',
+                      fontSize: 28,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      height: 1.12,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  Row(
+                    children: [
+                      Icon(Icons.place_rounded,
+                          color: Colors.white.withValues(alpha: 0.60), size: 12),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          trip.destination,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: 'DM Sans',
+                            fontSize: 12,
+                            color: Colors.white.withValues(alpha: 0.60),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+
+                  Text(
+                    '${DateFormat('MMM d').format(trip.fromDate)}–'
+                    '${DateFormat('MMM d, yyyy').format(trip.toDate)} · $nights nights',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontFamily: 'DM Sans',
+                      fontSize: 11,
+                      color: Colors.white.withValues(alpha: 0.38),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -547,6 +637,8 @@ class _StatCell extends StatelessWidget {
               color: Color(0xFF1A1A1A),
               height: 1.0,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 2),
           Text(

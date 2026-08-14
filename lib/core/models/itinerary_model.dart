@@ -79,6 +79,8 @@ extension StopStatusX on StopStatus {
   }
 }
 
+enum TransportCategory { land, air, sea, eco }
+
 enum TransportMode {
   car,
   motorcycle,
@@ -145,6 +147,51 @@ extension TransportModeX on TransportMode {
         return '🚲';
       case TransportMode.other:
         return '🚘';
+    }
+  }
+
+  TransportCategory get category {
+    switch (this) {
+      case TransportMode.plane:
+        return TransportCategory.air;
+      case TransportMode.ferry:
+        return TransportCategory.sea;
+      case TransportMode.bike:
+        return TransportCategory.eco;
+      case TransportMode.car:
+      case TransportMode.motorcycle:
+      case TransportMode.commute:
+      case TransportMode.jeepney:
+      case TransportMode.tricycle:
+      case TransportMode.bus:
+      case TransportMode.vanHire:
+      case TransportMode.other:
+        return TransportCategory.land;
+    }
+  }
+
+  /// Average cruising speed in km/h for smart estimate calculations
+  double get averageSpeedKmh {
+    switch (this) {
+      case TransportMode.plane:
+        return 500.0;
+      case TransportMode.ferry:
+        return 35.0;
+      case TransportMode.bike:
+        return 18.0;
+      case TransportMode.motorcycle:
+        return 45.0;
+      case TransportMode.car:
+      case TransportMode.vanHire:
+        return 55.0;
+      case TransportMode.bus:
+      case TransportMode.commute:
+        return 40.0;
+      case TransportMode.jeepney:
+      case TransportMode.tricycle:
+        return 25.0;
+      case TransportMode.other:
+        return 40.0;
     }
   }
 }
@@ -252,21 +299,33 @@ class TransportDetail {
   final TransportMode mode;
   final int? vehicleCount;
   final String? departurePoint;
+  final double? departureLat;
+  final double? departureLng;
   final String? flightNumber;
   final String? pierName;
+  final String? operatorName;
+  final String? bookingReference;
   final String estimatedDuration;
   final double? gasCostShare;
+  final double? estimatedCost;
   final bool splitGas;
+  final String? notes;
 
   const TransportDetail({
     required this.mode,
     this.vehicleCount,
     this.departurePoint,
+    this.departureLat,
+    this.departureLng,
     this.flightNumber,
     this.pierName,
+    this.operatorName,
+    this.bookingReference,
     this.estimatedDuration = '',
     this.gasCostShare,
+    this.estimatedCost,
     this.splitGas = false,
+    this.notes,
   });
 }
 

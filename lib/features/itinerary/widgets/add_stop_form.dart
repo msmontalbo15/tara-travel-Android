@@ -338,7 +338,14 @@ class _AddStopFormState extends State<AddStopForm> {
           children: [
             const Icon(Icons.access_time_rounded, size: 16, color: AppColors.muted),
             const SizedBox(width: 6),
-            Text(display, style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, color: time != null ? AppColors.deepEarth : AppColors.muted)),
+            Expanded(
+              child: Text(
+                display,
+                style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, color: time != null ? AppColors.deepEarth : AppColors.muted),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
       ),

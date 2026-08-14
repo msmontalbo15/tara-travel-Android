@@ -64,4 +64,22 @@ class AppColors {
   static const Color catFood = Color(0xFFEF9F27);
   static const Color catActivities = Color(0xFF10B981);
   static const Color catTransport = Color(0xFFD85A30);
+
+  // ── Helpers ─────────────────────────────────────────────────
+  static Color parseTripColor(dynamic raw, {Color defaultColor = primary}) {
+    if (raw == null) return defaultColor;
+    if (raw is int) return Color(raw);
+    final str = raw.toString().trim();
+    if (str.isEmpty) return defaultColor;
+    final s = str.replaceAll('#', '').replaceAll('0x', '').replaceAll('0X', '');
+    if (s.length == 6) {
+      final parsed = int.tryParse('FF$s', radix: 16);
+      if (parsed != null) return Color(parsed);
+    }
+    if (s.length == 8) {
+      final parsed = int.tryParse(s, radix: 16);
+      if (parsed != null) return Color(parsed);
+    }
+    return defaultColor;
+  }
 }

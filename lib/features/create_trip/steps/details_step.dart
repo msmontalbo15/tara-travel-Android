@@ -10,6 +10,8 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/inputs/app_text_field.dart';
 import '../../../core/widgets/inputs/location_picker.dart';
 import '../../../core/widgets/inputs/map_pin_picker_modal.dart';
+
+import '../../../core/constants/trip_types.dart';
 import '../models/new_trip_model.dart';
 import '../widgets/step_indicator.dart';
 
@@ -42,22 +44,7 @@ class _DetailsStepState extends ConsumerState<DetailsStep> {
   bool _isLoadingPlaces = false;
   Timer? _debounceTimer;
 
-  static const _tripTypes = [
-    ('Beach', '🏖️'),
-    ('City', '🏙️'),
-    ('Adventure', '🏕️'),
-    ('Nature', '🌿'),
-    ('Cultural', '🏛️'),
-  ];
 
-  static const _coverColors = [
-    0xFFD85A30, // primary
-    0xFF2C1A14, // deepEarth
-    0xFF10B981, // green
-    0xFF3B82F6, // blue
-    0xFF8B5CF6, // purple
-    0xFFF59E0B, // amber
-  ];
 
   @override
   void initState() {
@@ -65,10 +52,8 @@ class _DetailsStepState extends ConsumerState<DetailsStep> {
     _nameController = TextEditingController(text: widget.trip.tripName);
     _destController = TextEditingController(text: widget.trip.destination);
     
-    // Default cover color
-    if (widget.trip.coverColor == null) {
-      widget.trip.coverColor = _coverColors[0];
-    }
+    // Default cover color derived from trip type accent
+    widget.trip.coverColor ??= AppTripTypes.getOption(widget.trip.tripType).accentColor.toARGB32();
   }
 
   @override
@@ -257,7 +242,7 @@ class _DetailsStepState extends ConsumerState<DetailsStep> {
                 padding: EdgeInsets.symmetric(horizontal: 20),
                 child: StepIndicator(
                   currentStep: 1,
-                  totalSteps: 3,
+                  totalSteps: 4,
                   label: 'Trip details',
                 ),
               ),
@@ -368,9 +353,13 @@ class _DetailsStepState extends ConsumerState<DetailsStep> {
                                 children: [
                                   if (_isLoadingPlaces)
                                     Container(
-                                      width: 16, height: 16,
-                                      margin: const EdgeInsets.only(right: 8),
-                                      child: const CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                                      width: 18,
+                                      height: 18,
+                                      margin: const EdgeInsets.only(right: 10),
+                                      child: const CircularProgressIndicator(
+                                        strokeWidth: 2.2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                                      ),
                                     ),
                                   IconButton(
                                     icon: const Icon(Icons.map_rounded, color: Color(0xFFEA4335), size: 20),
@@ -518,16 +507,20 @@ class _DetailsStepState extends ConsumerState<DetailsStep> {
                             children: [
                               const Icon(Icons.calendar_month_rounded, color: AppColors.textSecondary, size: 20),
                               const SizedBox(width: 12),
-                              Text(
-                                (widget.trip.fromDate != null && widget.trip.toDate != null)
-                                    ? '${widget.trip.fromDate!.month}/${widget.trip.fromDate!.day}/${widget.trip.fromDate!.year} - ${widget.trip.toDate!.month}/${widget.trip.toDate!.day}/${widget.trip.toDate!.year}'
-                                    : 'Select date range',
-                                style: TextStyle(
-                                  fontFamily: 'DM Sans',
-                                  fontSize: 15,
-                                  color: (widget.trip.fromDate != null && widget.trip.toDate != null) 
-                                      ? AppColors.textPrimary 
-                                      : AppColors.muted,
+                              Expanded(
+                                child: Text(
+                                  (widget.trip.fromDate != null && widget.trip.toDate != null)
+                                      ? '${widget.trip.fromDate!.month}/${widget.trip.fromDate!.day}/${widget.trip.fromDate!.year} - ${widget.trip.toDate!.month}/${widget.trip.toDate!.day}/${widget.trip.toDate!.year}'
+                                      : 'Select date range',
+                                  style: TextStyle(
+                                    fontFamily: 'DM Sans',
+                                    fontSize: 15,
+                                    color: (widget.trip.fromDate != null && widget.trip.toDate != null) 
+                                        ? AppColors.textPrimary 
+                                        : AppColors.muted,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],
@@ -549,44 +542,8 @@ class _DetailsStepState extends ConsumerState<DetailsStep> {
                         ),
                       ],
                       const SizedBox(height: 22),
-                      
-                      // Trip Cover Color selector
-                      const Text(
-                        'Trip Cover Color',
-                        style: TextStyle(
-                          fontFamily: 'DM Sans',
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.deepEarth,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: _coverColors.map((colorValue) {
-                          final isSelected = widget.trip.coverColor == colorValue;
-                          return GestureDetector(
-                            onTap: () {
-                              setState(() => widget.trip.coverColor = colorValue);
-                            },
-                            child: Container(
-                              margin: const EdgeInsets.only(right: 12),
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: Color(colorValue),
-                                shape: BoxShape.circle,
-                                border: isSelected ? Border.all(color: AppColors.textPrimary, width: 3) : null,
-                              ),
-                              child: isSelected 
-                                  ? const Icon(Icons.check, color: Colors.white, size: 20)
-                                  : null,
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                      const SizedBox(height: 22),
 
-                      // Trip type chips
+                      // Trip type section
                       const Text(
                         'Trip type',
                         style: TextStyle(
@@ -597,53 +554,16 @@ class _DetailsStepState extends ConsumerState<DetailsStep> {
                         ),
                       ),
                       const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: _tripTypes.map((entry) {
-                          final type  = entry.$1;
-                          final emoji = entry.$2;
-                          final sel   = widget.trip.tripType == type;
-                          return GestureDetector(
-                            onTap: () => setState(() => widget.trip.tripType = type),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 180),
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 14, vertical: 9),
-                              decoration: BoxDecoration(
-                                color: sel ? AppColors.primary : Colors.white,
-                                border: Border.all(
-                                  color: sel ? AppColors.primary : AppColors.cardBorder,
-                                  width: sel ? 1.5 : 0.8,
-                                ),
-                                borderRadius: BorderRadius.circular(20),
-                                boxShadow: sel
-                                    ? [BoxShadow(
-                                        color: AppColors.primary.withValues(alpha: 0.18),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 3),
-                                      )]
-                                    : [],
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(emoji, style: const TextStyle(fontSize: 15)),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    type,
-                                    style: TextStyle(
-                                      fontFamily: 'DM Sans',
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: sel ? Colors.white : AppColors.textSecondary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        }).toList(),
+
+                      // Trip type carousel (also sets cover color)
+                      _TripTypeCarousel(
+                        selectedTripType: widget.trip.tripType,
+                        onTypeSelected: (option) {
+                          setState(() {
+                            widget.trip.tripType = option.label;
+                            widget.trip.coverColor = option.accentColor.toARGB32();
+                          });
+                        },
                       ),
                       const SizedBox(height: 22),
 
@@ -1019,10 +939,57 @@ class _DetailsStepState extends ConsumerState<DetailsStep> {
                           },
                         );
                       },
-                      loading: () => const SizedBox(
-                        height: 180,
-                        child: Center(
-                          child: CircularProgressIndicator(color: AppColors.primary),
+                      loading: () => Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        child: Column(
+                          children: List.generate(3, (index) => Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 44,
+                                  height: 44,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: AppColors.primary.withValues(alpha: 0.12),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Container(
+                                        height: 14,
+                                        width: 120,
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withValues(alpha: 0.08),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Container(
+                                        height: 10,
+                                        width: 70,
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withValues(alpha: 0.04),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  width: 24,
+                                  height: 24,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.black.withValues(alpha: 0.05),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )),
                         ),
                       ),
                       error: (err, stack) => Padding(
@@ -1075,4 +1042,355 @@ class _DetailsStepState extends ConsumerState<DetailsStep> {
       },
     );
   }
+
+
+
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Trip Type Carousel — same visual style as TripColorCarousel
+// Selecting a type also auto-sets the cover color from its accentColor.
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _TripTypeCarousel extends StatefulWidget {
+  final String selectedTripType;
+  final ValueChanged<TripTypeOption> onTypeSelected;
+
+  const _TripTypeCarousel({
+    required this.selectedTripType,
+    required this.onTypeSelected,
+  });
+
+  @override
+  State<_TripTypeCarousel> createState() => _TripTypeCarouselState();
+}
+
+class _TripTypeCarouselState extends State<_TripTypeCarousel> {
+  static const int _kCenter = 1000;
+  late PageController _pageController;
+  int _currentRealIndex = 0;
+
+  int get _count => AppTripTypes.all.length;
+
+  @override
+  void initState() {
+    super.initState();
+    final activeOpt = AppTripTypes.getOption(widget.selectedTripType);
+    final idx = AppTripTypes.all.indexWhere((o) => o.id == activeOpt.id);
+    _currentRealIndex = idx >= 0 ? idx : 0;
+    _pageController = PageController(
+      initialPage: (_kCenter * _count) + _currentRealIndex,
+      viewportFraction: 0.76,
+    );
+  }
+
+  @override
+  void didUpdateWidget(_TripTypeCarousel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectedTripType != widget.selectedTripType) {
+      final activeOpt = AppTripTypes.getOption(widget.selectedTripType);
+      final targetIdx = AppTripTypes.all.indexWhere((o) => o.id == activeOpt.id);
+      if (targetIdx >= 0 &&
+          targetIdx != _currentRealIndex &&
+          _pageController.hasClients) {
+        final curPage = _pageController.page?.round() ?? _pageController.initialPage;
+        final curOffset = curPage % _count;
+        final diff = targetIdx - curOffset;
+        _currentRealIndex = targetIdx;
+        _pageController.animateToPage(
+          curPage + diff,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOutCubic,
+        );
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _onPageChanged(int index) {
+    final realIdx = index % _count;
+    if (realIdx != _currentRealIndex) {
+      setState(() => _currentRealIndex = realIdx);
+      widget.onTypeSelected(AppTripTypes.all[realIdx]);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        SizedBox(
+          height: 175,
+          child: PageView.builder(
+            controller: _pageController,
+            onPageChanged: _onPageChanged,
+            itemBuilder: (context, index) {
+              final realIndex = index % _count;
+              final option = AppTripTypes.all[realIndex];
+              final isSelected = realIndex == _currentRealIndex;
+
+              // Derive a lighter accent for the gradient end
+              final accentLight = HSLColor.fromColor(option.accentColor)
+                  .withLightness(
+                    (HSLColor.fromColor(option.accentColor).lightness + 0.18)
+                        .clamp(0.0, 1.0),
+                  )
+                  .toColor();
+
+              return AnimatedBuilder(
+                animation: _pageController,
+                builder: (context, child) {
+                  double value = 1.0;
+                  if (_pageController.position.haveDimensions) {
+                    value = (_pageController.page! - index).abs();
+                    value = (1 - (value * 0.15)).clamp(0.85, 1.0);
+                  } else {
+                    value = isSelected ? 1.0 : 0.88;
+                  }
+
+                  return Transform.scale(
+                    scale: value,
+                    child: GestureDetector(
+                      onTap: () {
+                        if (_pageController.hasClients) {
+                          final curPage =
+                              _pageController.page?.round() ?? index;
+                          if (curPage != index) {
+                            _pageController.animateToPage(
+                              index,
+                              duration: const Duration(milliseconds: 350),
+                              curve: Curves.easeInOutCubic,
+                            );
+                          }
+                        }
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 8),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(22),
+                          gradient: LinearGradient(
+                            colors: [option.accentColor, accentLight],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: option.accentColor.withValues(
+                                  alpha: isSelected ? 0.38 : 0.15),
+                              blurRadius: isSelected ? 16 : 8,
+                              spreadRadius: isSelected ? 2 : 0,
+                              offset: Offset(0, isSelected ? 8 : 4),
+                            ),
+                          ],
+                          border: Border.all(
+                            color: isSelected
+                                ? Colors.white
+                                : Colors.transparent,
+                            width: isSelected ? 2.5 : 0,
+                          ),
+                        ),
+                        child: Stack(
+                          children: [
+                            // Ambient shine blob
+                            Positioned(
+                              top: -20,
+                              right: -20,
+                              child: Container(
+                                width: 90,
+                                height: 90,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.white.withValues(alpha: 0.15),
+                                ),
+                              ),
+                            ),
+                            // Eye-catching large emoji watermark/accent in card corner
+                            Positioned(
+                              right: 12,
+                              bottom: 6,
+                              child: IgnorePointer(
+                                child: Opacity(
+                                  opacity: 0.28,
+                                  child: Transform.rotate(
+                                    angle: -0.12,
+                                    child: Text(
+                                      option.emoji,
+                                      style: const TextStyle(
+                                        fontSize: 64,
+                                        height: 1.0,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      // Eye-catching glassmorphic Icon / Category badge
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 12, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withValues(alpha: 0.25),
+                                          borderRadius:
+                                              BorderRadius.circular(16),
+                                          border: Border.all(
+                                            color: Colors.white.withValues(alpha: 0.35),
+                                            width: 1,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withValues(alpha: 0.08),
+                                              blurRadius: 6,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Container(
+                                              padding: const EdgeInsets.all(4),
+                                              decoration: BoxDecoration(
+                                                color: Colors.white.withValues(alpha: 0.3),
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: Text(
+                                                option.emoji,
+                                                style: const TextStyle(fontSize: 18),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              option.category,
+                                              style: const TextStyle(
+                                                fontFamily: 'DM Sans',
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w700,
+                                                color: Colors.white,
+                                                letterSpacing: 0.3,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      // Check circle
+                                      AnimatedContainer(
+                                        duration:
+                                            const Duration(milliseconds: 200),
+                                        width: 32,
+                                        height: 32,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: isSelected
+                                              ? Colors.white
+                                              : Colors.black
+                                                  .withValues(alpha: 0.20),
+                                          boxShadow: isSelected
+                                              ? [
+                                                  BoxShadow(
+                                                    color: Colors.black.withValues(alpha: 0.15),
+                                                    blurRadius: 6,
+                                                  ),
+                                                ]
+                                              : null,
+                                        ),
+                                        child: isSelected
+                                            ? Icon(Icons.check_rounded,
+                                                size: 20,
+                                                color: option.accentColor)
+                                            : null,
+                                      ),
+                                    ],
+                                  ),
+                                  // Label & subtitle
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        option.label,
+                                        style: const TextStyle(
+                                          fontFamily: 'Playfair Display',
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.w700,
+                                          color: Colors.white,
+                                          height: 1.1,
+                                          shadows: [
+                                            Shadow(
+                                              color: Colors.black26,
+                                              offset: Offset(0, 1),
+                                              blurRadius: 3,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        option.subtitle,
+                                        style: TextStyle(
+                                          fontFamily: 'DM Sans',
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.white
+                                              .withValues(alpha: 0.90),
+                                          letterSpacing: 0.2,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 10),
+        // Dots indicator
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(
+            _count,
+            (i) => AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              width: i == _currentRealIndex ? 18 : 6,
+              height: 6,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(3),
+                color: i == _currentRealIndex
+                    ? AppTripTypes.all[i].accentColor
+                    : AppColors.cardBorder,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+

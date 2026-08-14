@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -161,6 +162,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     String pin1 = '';
     String pin2 = '';
     int step = 0;
+    String? errorText;
 
     await showDialog(
       context: context,
@@ -168,12 +170,62 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       builder: (ctx) {
         return StatefulBuilder(
           builder: (ctx2, setDState) {
+            void processPinSubmit() async {
+              if (step == 0) {
+                if (pin1.length == 4) {
+                  setDState(() {
+                    step = 1;
+                    errorText = null;
+                  });
+                }
+              } else {
+                if (pin2.length == 4) {
+                  if (pin1 == pin2) {
+                    Navigator.pop(ctx);
+                    setState(() => _isMpinLoading = true);
+                    final success =
+                        await MpinSecurityService.instance.setMpin(pin1);
+                    await _loadSecurityStatus();
+                    if (mounted) {
+                      setState(() => _isMpinLoading = false);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            success
+                                ? '4-Digit MPIN set! 30-Day session is now active.'
+                                : 'Failed to set MPIN. Please try again.',
+                            style: const TextStyle(fontFamily: 'DM Sans'),
+                          ),
+                          backgroundColor:
+                              success ? AppColors.deepEarth : AppColors.red,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  } else {
+                    HapticFeedback.vibrate();
+                    setDState(() {
+                      errorText = 'PINs do not match. Please enter again.';
+                      pin1 = '';
+                      pin2 = '';
+                      step = 0;
+                    });
+                  }
+                }
+              }
+            }
+
             return AlertDialog(
               backgroundColor: AppColors.surfaceLight,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20)),
               title: Text(
                 step == 0 ? 'Enter New MPIN' : 'Confirm MPIN',
-                style: const TextStyle(fontFamily: 'Playfair Display', fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                style: const TextStyle(
+                    fontFamily: 'Playfair Display',
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary),
               ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -181,66 +233,57 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   Text(
                     step == 0
                         ? 'Enter a 4-digit MPIN to secure your account.'
-                        : 'Re-enter the same MPIN to confirm.',
-                    style: const TextStyle(fontFamily: 'DM Sans', fontSize: 13, color: AppColors.textSecondary),
+                        : 'Re-enter the same 4-digit MPIN to confirm.',
+                    style: const TextStyle(
+                        fontFamily: 'DM Sans',
+                        fontSize: 13,
+                        color: AppColors.textSecondary),
                   ),
+                  if (errorText != null) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      errorText!,
+                      style: const TextStyle(
+                          fontFamily: 'DM Sans',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.red),
+                    ),
+                  ],
                   const SizedBox(height: 20),
-                  _PinInputRow(onChanged: (v) {
-                    if (step == 0) {
-                      pin1 = v;
-                    } else {
-                      pin2 = v;
-                    }
-                  }),
+                  _PinInputRow(
+                    key: ValueKey('mpin_step_$step'),
+                    onChanged: (v) {
+                      if (step == 0) {
+                        pin1 = v;
+                        if (v.length == 4) {
+                          processPinSubmit();
+                        }
+                      } else {
+                        pin2 = v;
+                        if (v.length == 4) {
+                          processPinSubmit();
+                        }
+                      }
+                    },
+                  ),
                 ],
               ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Cancel', style: TextStyle(fontFamily: 'DM Sans', color: AppColors.warmMuted)),
+                  child: const Text('Cancel',
+                      style: TextStyle(
+                          fontFamily: 'DM Sans', color: AppColors.warmMuted)),
                 ),
                 TextButton(
-                  onPressed: () async {
-                    if (step == 0) {
-                      if (pin1.length == 4) {
-                        setDState(() => step = 1);
-                      }
-                    } else {
-                      if (pin2.length == 4) {
-                        if (pin1 == pin2) {
-                          Navigator.pop(ctx);
-                          setState(() => _isMpinLoading = true);
-                          final success = await MpinSecurityService.instance.setMpin(pin1);
-                          await _loadSecurityStatus();
-                          if (mounted) {
-                            setState(() => _isMpinLoading = false);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  success ? '4-Digit MPIN set! 30-Day session is now active.' : 'Failed to set MPIN. Please try again.',
-                                  style: const TextStyle(fontFamily: 'DM Sans'),
-                                ),
-                                backgroundColor: success ? AppColors.deepEarth : AppColors.red,
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                          }
-                        } else {
-                          ScaffoldMessenger.of(ctx2).showSnackBar(
-                            const SnackBar(
-                              content: Text('PINs do not match. Try again.', style: TextStyle(fontFamily: 'DM Sans')),
-                              backgroundColor: AppColors.red,
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
-                          setDState(() { pin2 = ''; step = 0; pin1 = ''; });
-                        }
-                      }
-                    }
-                  },
+                  onPressed: processPinSubmit,
                   child: Text(
                     step == 0 ? 'Next' : 'Confirm',
-                    style: const TextStyle(fontFamily: 'DM Sans', fontWeight: FontWeight.w700, color: AppColors.primary),
+                    style: const TextStyle(
+                        fontFamily: 'DM Sans',
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary),
                   ),
                 ),
               ],
@@ -1815,59 +1858,149 @@ class _HealthTag extends StatelessWidget {
 
 class _PinInputRow extends StatefulWidget {
   final ValueChanged<String> onChanged;
-  const _PinInputRow({required this.onChanged});
+  const _PinInputRow({super.key, required this.onChanged});
 
   @override
   State<_PinInputRow> createState() => _PinInputRowState();
 }
 
 class _PinInputRowState extends State<_PinInputRow> {
-  final List<TextEditingController> _controllers = List.generate(4, (_) => TextEditingController());
+  final List<TextEditingController> _controllers =
+      List.generate(4, (_) => TextEditingController());
   final List<FocusNode> _focusNodes = List.generate(4, (_) => FocusNode());
 
   @override
+  void initState() {
+    super.initState();
+    for (final node in _focusNodes) {
+      node.addListener(_onFocusChange);
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _focusNodes[0].requestFocus();
+      }
+    });
+  }
+
+  void _onFocusChange() {
+    if (mounted) setState(() {});
+  }
+
+  @override
   void dispose() {
-    for (final c in _controllers) { c.dispose(); }
-    for (final f in _focusNodes) { f.dispose(); }
+    for (final node in _focusNodes) {
+      node.removeListener(_onFocusChange);
+      node.dispose();
+    }
+    for (final c in _controllers) {
+      c.dispose();
+    }
     super.dispose();
   }
 
   String get _pin => _controllers.map((c) => c.text).join();
+
+  void _onDigitChanged(int index, String value) {
+    final digits = value.replaceAll(RegExp(r'\D'), '');
+
+    if (digits.isEmpty) {
+      _controllers[index].clear();
+      widget.onChanged(_pin);
+      return;
+    }
+
+    HapticFeedback.lightImpact();
+
+    // Multi-digit paste vs single-character replacement
+    if (digits.length >= 4) {
+      for (int i = 0; i < 4; i++) {
+        _controllers[i].text = digits[i];
+      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _focusNodes[3].requestFocus();
+      });
+      widget.onChanged(_pin);
+      return;
+    } else if (digits.length > 1) {
+      // Taking latest character entered when overwriting an existing box
+      final newChar = digits.substring(digits.length - 1);
+      _controllers[index].text = newChar;
+    } else {
+      _controllers[index].text = digits;
+    }
+
+    // Auto-focus to the next input box
+    if (index < 3) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _focusNodes[index + 1].requestFocus();
+        }
+      });
+    }
+
+    widget.onChanged(_pin);
+  }
+
+  void _onKeyEvent(int index, KeyEvent event) {
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.backspace) {
+      if (_controllers[index].text.isEmpty && index > 0) {
+        _controllers[index - 1].clear();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _focusNodes[index - 1].requestFocus();
+        });
+        widget.onChanged(_pin);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(4, (i) {
-        return Container(
-          width: 48,
-          height: 56,
-          margin: const EdgeInsets.symmetric(horizontal: 6),
-          decoration: BoxDecoration(
-            color: AppColors.surfaceLight,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.cardBorder, width: 1.5),
-          ),
-          child: TextField(
-            controller: _controllers[i],
-            focusNode: _focusNodes[i],
-            keyboardType: TextInputType.number,
-            textAlign: TextAlign.center,
-            maxLength: 1,
-            obscureText: true,
-            style: const TextStyle(fontFamily: 'DM Sans', fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
-            decoration: const InputDecoration(
-              border: InputBorder.none,
-              counterText: '',
+        final isFocused = _focusNodes[i].hasFocus;
+        final hasValue = _controllers[i].text.isNotEmpty;
+
+        return KeyboardListener(
+          focusNode: _focusNodes[i],
+          onKeyEvent: (evt) => _onKeyEvent(i, evt),
+          child: Container(
+            width: 48,
+            height: 56,
+            margin: const EdgeInsets.symmetric(horizontal: 6),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceLight,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isFocused
+                    ? AppColors.primary
+                    : (hasValue
+                        ? AppColors.primary.withValues(alpha: 0.5)
+                        : AppColors.cardBorder),
+                width: isFocused ? 2.0 : 1.5,
+              ),
             ),
-            onChanged: (val) {
-              if (val.isNotEmpty && i < 3) {
-                _focusNodes[i + 1].requestFocus();
-              } else if (val.isEmpty && i > 0) {
-                _focusNodes[i - 1].requestFocus();
-              }
-              widget.onChanged(_pin);
-            },
+            child: TextField(
+              controller: _controllers[i],
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              textAlign: TextAlign.center,
+              obscureText: true,
+              obscuringCharacter: '●',
+              style: const TextStyle(
+                fontFamily: 'DM Sans',
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                counterText: '',
+                contentPadding: EdgeInsets.zero,
+              ),
+              onChanged: (val) => _onDigitChanged(i, val),
+            ),
           ),
         );
       }),
