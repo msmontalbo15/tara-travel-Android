@@ -20,6 +20,8 @@ import 'widgets/timeline_view.dart';
 import 'widgets/day_budget_bar.dart';
 import 'widgets/day_summary_card.dart';
 import 'widgets/smart_suggestion_chips.dart';
+import 'widgets/arrival_pill.dart';
+import 'widgets/itinerary_fulfillment_banner.dart';
 import '../../core/widgets/buttons/app_back_button.dart';
 
 // ── View mode toggle ─────────────────────────────────────────────────────────
@@ -35,8 +37,18 @@ class ItineraryScreen extends ConsumerStatefulWidget {
 
 class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
   _StopViewMode _viewMode = _StopViewMode.list;
-  // Track which stop is being edited (null = none)
   String? _editingStopId;
+
+  // ── Arrival Pill state ─────────────────────────────────────────
+  ItineraryStop? _nearbyStop;
+  bool _pillDismissed = false;
+
+  void _showArrivalPill(ItineraryStop stop) {
+    setState(() {
+      _nearbyStop = stop;
+      _pillDismissed = false;
+    });
+  }
 
   void _openAddForm(
     BuildContext context,
@@ -202,6 +214,30 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                                     child: const Icon(Icons.map_outlined, color: Colors.white, size: 20),
                                   ),
                                 ),
+                                const SizedBox(width: 10),
+                                // Arrival demo trigger (simulates GPS proximity)
+                                GestureDetector(
+                                  onTap: () {
+                                    final next = currentDay?.stops.where((s) => !s.isCompleted).firstOrNull;
+                                    if (next != null) _showArrivalPill(next);
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.greenBright.withValues(alpha: 0.2),
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(color: AppColors.greenBright.withValues(alpha: 0.4)),
+                                    ),
+                                    child: const Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.location_on_rounded, color: AppColors.greenBright, size: 14),
+                                        SizedBox(width: 4),
+                                        Text('Arrive', style: TextStyle(fontFamily: 'DM Sans', fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.greenBright)),
+                                      ],
+                                    ),
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -250,6 +286,9 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                 icon: const Icon(Icons.add_rounded),
                 label: const Text('Add Stop', style: TextStyle(fontFamily: 'DM Sans', fontWeight: FontWeight.w600)),
               ),
+
+              // ── Arrival Pill Overlay ─────────────────────────────
+              floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
             );
           },
           loading: () => const Scaffold(backgroundColor: AppColors.deepEarth, body: Center(child: CircularProgressIndicator())),
@@ -264,67 +303,73 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
   // ── Feature 1+2+3+10 — List content with drag-reorder ───────────────────
   Widget _buildListContent(ItineraryDay day, int dayIndex, List<MemberModel> members, String tripId, double tripBudget) {
     final notifier = ref.read(ref.read(itineraryProvider(tripId)).notifier);
-    // Rough daily budget: split trip budget evenly across trip days (fallback to 0)
     final dailyBudget = tripBudget > 0 ? tripBudget / 7 : 0.0;
+    // Current user member (first for demo; in production use auth)
+    final currentMemberId = members.isNotEmpty ? members.first.id : 'me';
 
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.only(bottom: 80),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Feature 3 — Budget bar
-          if (day.totalDayCost > 0 || dailyBudget > 0) ...[
+    return Stack(
+      children: [
+        SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.only(bottom: 80),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Fulfillment Banner
+              const SizedBox(height: 14),
+              ItineraryFulfillmentBanner(day: day, allMembers: members),
+              // Feature 3 — Budget bar
+              if (day.totalDayCost > 0 || dailyBudget > 0) ...[
             const SizedBox(height: 12),
             DayBudgetBar(spent: day.totalDayCost, dailyBudget: dailyBudget),
-          ],
+              ],
 
-          // Transport badge
-          if (day.transport != null) ...[
+              // Transport badge
+              if (day.transport != null) ...[
             const SizedBox(height: 8),
             TransportBadge(transport: day.transport!),
-          ],
+              ],
 
-          // Google Maps Directions bar for the entire day itinerary
-          if (day.stops.isNotEmpty) ...[
+              // Google Maps Directions bar for the entire day itinerary
+              if (day.stops.isNotEmpty) ...[
             const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: NavigateRouteButton(stops: day.stops),
             ),
-          ],
+              ],
 
-          // Stop count header
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-            child: Text(
-              '${day.stops.length} stop${day.stops.length == 1 ? '' : 's'} · Day ${day.dayNumber}',
-              style: const TextStyle(fontFamily: 'DM Sans', fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.warmMuted, letterSpacing: 1.5),
-            ),
-          ),
+              // Stop count header
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                child: Text(
+                  '${day.stops.length} stop${day.stops.length == 1 ? '' : 's'} · Day ${day.dayNumber}',
+                  style: const TextStyle(fontFamily: 'DM Sans', fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.warmMuted, letterSpacing: 1.5),
+                ),
+              ),
 
-          // Feature 1 — Drag & drop reorderable stop list
-          if (day.stops.isNotEmpty)
-            ReorderableListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              buildDefaultDragHandles: false,
-              onReorder: (oldIdx, newIdx) => notifier.reorderStop(dayIndex, oldIdx, newIdx),
-              itemCount: day.stops.length,
-              itemBuilder: (context, i) {
-                final stop = day.stops[i];
-                final isEditing = _editingStopId == stop.id;
+              // Feature 1 — Drag & drop reorderable stop list
+              if (day.stops.isNotEmpty)
+                ReorderableListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  buildDefaultDragHandles: false,
+                  onReorder: (oldIdx, newIdx) => notifier.reorderStop(dayIndex, oldIdx, newIdx),
+                  itemCount: day.stops.length,
+                  itemBuilder: (context, i) {
+                    final stop = day.stops[i];
+                    final isEditing = _editingStopId == stop.id;
 
-                return KeyedSubtree(
-                  key: ValueKey(stop.id),
-                  child: Column(
-                    key: ValueKey('col_${stop.id}'),
-                    children: [
-                      // Feature 2 — Dismissible for swipe-to-delete
-                      Dismissible(
-                        key: ValueKey('dis_${stop.id}'),
-                        direction: DismissDirection.endToStart,
+                    return KeyedSubtree(
+                      key: ValueKey(stop.id),
+                      child: Column(
+                        key: ValueKey('col_${stop.id}'),
+                        children: [
+                          // Feature 2 — Dismissible for swipe-to-delete
+                          Dismissible(
+                            key: ValueKey('dis_${stop.id}'),
+                            direction: DismissDirection.endToStart,
                         background: Container(
                           margin: const EdgeInsets.only(bottom: 4),
                           alignment: Alignment.centerRight,
@@ -374,6 +419,7 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                                   onStatusChange: (s) => notifier.updateStopStatus(dayIndex, stop.id, s),
                                   // Feature 2 — edit button
                                   onEdit: () => setState(() => _editingStopId = isEditing ? null : stop.id),
+                                  onCheckIn: () => notifier.toggleStopVisited(dayIndex, stop.id, currentMemberId),
                                 ),
                               ),
                             ],
@@ -400,21 +446,48 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
               },
             ),
 
-          // Feature 10 — Smart suggestion chips (Quick Add Templates)
-          SmartSuggestionChips(
-            day: day,
-            onSuggest: (type, title) {
-              _openAddForm(context, dayIndex, members, notifier, initialType: type, initialTitle: title);
-            },
-          ),
+              // Feature 10 — Smart suggestion chips (Quick Add Templates)
+              SmartSuggestionChips(
+                day: day,
+                onSuggest: (type, title) {
+                  _openAddForm(context, dayIndex, members, notifier, initialType: type, initialTitle: title);
+                },
+              ),
 
-          // Feature 10 — Day summary card
-          if (day.stops.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            DaySummaryCard(day: day),
-          ],
-        ],
-      ),
+              // Feature 10 — Day summary card
+              if (day.stops.isNotEmpty) ...[  
+                const SizedBox(height: 16),
+                DaySummaryCard(day: day),
+              ],
+            ],
+          ),
+        ),
+
+        // ── Arrival Pill Overlay ───────────────────────────────────
+        if (_nearbyStop != null && !_pillDismissed)
+          Positioned(
+            top: 12,
+            left: 16,
+            right: 16,
+            child: SafeArea(
+              child: ArrivalPill(
+                stop: _nearbyStop!,
+                checkedInMembers: members
+                    .where((m) => _nearbyStop!.checkedInMemberIds.contains(m.id))
+                    .toList(),
+                onCheckIn: () {
+                  notifier.toggleStopVisited(
+                    dayIndex,
+                    _nearbyStop!.id,
+                    currentMemberId,
+                  );
+                  setState(() => _pillDismissed = true);
+                },
+                onDismiss: () => setState(() => _pillDismissed = true),
+              ),
+            ),
+          ),
+      ],
     );
   }
 

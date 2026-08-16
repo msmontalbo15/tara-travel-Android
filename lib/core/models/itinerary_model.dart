@@ -217,6 +217,10 @@ class ItineraryStop {
   final List<String> photoUrls;
   // Feature 7 — booking attachments
   final List<String> attachmentUrls;
+  // Member presence & fulfillment
+  final List<String> checkedInMemberIds;
+  final DateTime? visitedAt;
+  final List<String> checkInPhotoUrls;
 
   ItineraryStop({
     required this.id,
@@ -236,7 +240,26 @@ class ItineraryStop {
     this.votes = const {},
     this.photoUrls = const [],
     this.attachmentUrls = const [],
+    this.checkedInMemberIds = const [],
+    this.visitedAt,
+    this.checkInPhotoUrls = const [],
   });
+
+  /// Whether this stop is fully fulfilled (at least one member arrived).
+  bool get isCompleted => status == StopStatus.arrived || visitedAt != null;
+
+  /// Whether this stop has any member currently checked in.
+  bool get hasArrived => checkedInMemberIds.isNotEmpty;
+
+  /// Formatted arrival timestamp (e.g. "Arrived 3:42 PM").
+  String? get arrivedAtLabel {
+    if (visitedAt == null) return null;
+    final h = visitedAt!.hour;
+    final m = visitedAt!.minute.toString().padLeft(2, '0');
+    final period = h >= 12 ? 'PM' : 'AM';
+    final displayHour = h % 12 == 0 ? 12 : h % 12;
+    return 'Arrived $displayHour:$m $period';
+  }
 
   /// Net vote score (upvotes minus downvotes).
   int get voteScore => votes.values.fold(0, (sum, up) => sum + (up ? 1 : -1));
@@ -272,6 +295,9 @@ class ItineraryStop {
     Map<String, bool>? votes,
     List<String>? photoUrls,
     List<String>? attachmentUrls,
+    List<String>? checkedInMemberIds,
+    DateTime? visitedAt,
+    List<String>? checkInPhotoUrls,
   }) {
     return ItineraryStop(
       id: id ?? this.id,
@@ -291,6 +317,9 @@ class ItineraryStop {
       votes: votes ?? this.votes,
       photoUrls: photoUrls ?? this.photoUrls,
       attachmentUrls: attachmentUrls ?? this.attachmentUrls,
+      checkedInMemberIds: checkedInMemberIds ?? this.checkedInMemberIds,
+      visitedAt: visitedAt ?? this.visitedAt,
+      checkInPhotoUrls: checkInPhotoUrls ?? this.checkInPhotoUrls,
     );
   }
 }

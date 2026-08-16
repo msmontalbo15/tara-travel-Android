@@ -78,6 +78,7 @@ class _CreateTripFlowState extends ConsumerState<CreateTripFlow> {
         inviteCode: InviteCodeGenerator.generate(),
         coverColor: coverColorHex,
         departurePoint: _draft.transportDetail?.departurePoint,
+        isDraft: false,
         members: _draft.travelers
             .map((t) => MemberModel(
                   id: t.id.isNotEmpty ? t.id : 'new_${t.name.hashCode}',
@@ -159,6 +160,7 @@ class _CreateTripFlowState extends ConsumerState<CreateTripFlow> {
         inviteCode: InviteCodeGenerator.generate(),
         coverColor: coverColorHex,
         departurePoint: _draft.transportDetail?.departurePoint,
+        isDraft: true,
       );
 
       await ref.read(tripRepositoryProvider).createTrip(trip);

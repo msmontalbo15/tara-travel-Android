@@ -13,6 +13,7 @@ class TripModel {
   final List<MemberModel> members;
   final List<ExpenseModel> expenses;
   final bool isArchived;
+  final bool isDraft;
   final String? coverEmoji;
   final String inviteCode;
   final String? ownerId;
@@ -34,6 +35,7 @@ class TripModel {
     this.members = const [],
     this.expenses = const [],
     this.isArchived = false,
+    this.isDraft = false,
     this.coverEmoji,
     this.inviteCode = '',
     this.ownerId,
@@ -61,6 +63,7 @@ class TripModel {
     List<MemberModel>? members,
     List<ExpenseModel>? expenses,
     bool? isArchived,
+    bool? isDraft,
     String? coverEmoji,
     String? inviteCode,
     String? ownerId,
@@ -81,6 +84,7 @@ class TripModel {
       members: members ?? this.members,
       expenses: expenses ?? this.expenses,
       isArchived: isArchived ?? this.isArchived,
+      isDraft: isDraft ?? this.isDraft,
       coverEmoji: coverEmoji ?? this.coverEmoji,
       inviteCode: inviteCode ?? this.inviteCode,
       ownerId: ownerId ?? this.ownerId,
@@ -101,6 +105,7 @@ class TripModel {
     final expensesRaw = (map['expenses'] as List?) ?? const [];
 
     final status = '${map['status'] ?? ''}'.toLowerCase();
+    final isDraft = map['is_draft'] == true || status == 'draft';
     return TripModel(
       id: '${map['id']}',
       name: map['name']?.toString() ?? 'Untitled Trip',
@@ -121,6 +126,7 @@ class TripModel {
       isArchived: map['is_archived'] == true ||
           status == 'archived' ||
           status == 'completed',
+      isDraft: isDraft,
       coverEmoji: map['cover_emoji']?.toString(),
       inviteCode: map['invite_code']?.toString() ?? '',
       ownerId: map['owner_id']?.toString() ?? map['ownerId']?.toString(),
@@ -148,6 +154,8 @@ class TripModel {
       'members': members.map((m) => m.toMap()).toList(),
       'expenses': expenses.map((e) => e.toMap()).toList(),
       'is_archived': isArchived,
+      'is_draft': isDraft,
+      'status': isDraft ? 'draft' : (isArchived ? 'archived' : 'planned'),
       'cover_emoji': coverEmoji,
       'invite_code': inviteCode,
       'owner_id': ownerId,
@@ -170,7 +178,7 @@ class TripModel {
       'budget': totalBudget,
       'split_method': splitEqually ? 'equal' : 'fixed',
       'owner_id': ownerId,
-      'status': isArchived ? 'archived' : 'planned',
+      'status': isDraft ? 'draft' : (isArchived ? 'archived' : 'planned'),
       if (inviteCode.isNotEmpty) 'invite_code': inviteCode,
       if (coverColor != null) 'cover_color': coverColor,
       if (departurePoint != null) 'departure_point': departurePoint,

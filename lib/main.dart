@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -28,6 +29,19 @@ import 'core/security/three_layer_encryption_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // ── 0. Full-screen edge-to-edge ──────────────────────────────────────────
+  // Render content behind status bar and system navigation bar.
+  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+      systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarDividerColor: Colors.transparent,
+      systemNavigationBarIconBrightness: Brightness.dark,
+    ),
+  );
 
   // ── 1. Load environment variables ────────────────────────────────────────
   // All secrets (Supabase keys, Google client IDs) are loaded from .env at

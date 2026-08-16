@@ -14,6 +14,7 @@ import '../../core/providers/itinerary_provider.dart';
 import '../../core/models/trip_model.dart';
 import '../../core/models/expense_model.dart';
 import '../../core/widgets/buttons/app_back_button.dart';
+import '../../core/widgets/navigation/floating_nav_bar.dart';
 import '../../core/constants/trip_types.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -62,44 +63,9 @@ class _TripDashboard extends ConsumerStatefulWidget {
 }
 
 class _TripDashboardState extends ConsumerState<_TripDashboard> {
-  int _activeNavIndex = -1;
-
   /// Parse cover color string/int with AppColors.parseTripColor
   Color _parseCoverColor(String? raw) =>
       AppColors.parseTripColor(raw, defaultColor: const Color(0xFF2C1A14));
-
-  static const _navItems = [
-    _FloatingNavItem(
-      icon: Icons.calendar_month_rounded,
-      label: 'Itinerary',
-      color: Color(0xFF5B8DEF),
-      route: '/itinerary',
-    ),
-    _FloatingNavItem(
-      icon: Icons.luggage_rounded,
-      label: 'Packing',
-      color: Color(0xFFC07C2A),
-      route: '/packing',
-    ),
-    _FloatingNavItem(
-      icon: Icons.group_rounded,
-      label: 'Members',
-      color: Color(0xFF4CAF50),
-      route: '/members',
-    ),
-    _FloatingNavItem(
-      icon: Icons.attach_money_rounded,
-      label: 'Expenses',
-      color: Color(0xFF43A047),
-      route: '/budget',
-    ),
-    _FloatingNavItem(
-      icon: Icons.chat_bubble_outline_rounded,
-      label: 'Chat',
-      color: Color(0xFF7E57C2),
-      route: '/chat',
-    ),
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -237,20 +203,13 @@ class _TripDashboardState extends ConsumerState<_TripDashboard> {
             ],
           ),
 
-          // ── Floating bottom nav ──────────────────────────────────
-          Positioned(
-            left: 20,
-            right: 20,
-            bottom: MediaQuery.of(context).padding.bottom + 16,
-            child: _FloatingTripNav(
-              items: _navItems,
-              activeIndex: _activeNavIndex,
-              onTap: (index) {
-                setState(() => _activeNavIndex = index);
-                Navigator.pushNamed(context, _navItems[index].route).then((_) {
-                  if (mounted) setState(() => _activeNavIndex = -1);
-                });
-              },
+          // ── Bottom navigation bar ────────────────────────────────
+          const Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: FloatingNavBar(
+              currentIndex: 1,
             ),
           ),
         ],
@@ -850,150 +809,7 @@ class _BudgetStat extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Floating Trip Navigation — full glassmorphic backdrop blur
-// ─────────────────────────────────────────────────────────────────────────────
 
-class _FloatingNavItem {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final String route;
-
-  const _FloatingNavItem({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.route,
-  });
-}
-
-class _FloatingTripNav extends StatelessWidget {
-  final List<_FloatingNavItem> items;
-  final int activeIndex;
-  final ValueChanged<int> onTap;
-
-  const _FloatingTripNav({
-    required this.items,
-    required this.activeIndex,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(32),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.78),
-            borderRadius: BorderRadius.circular(32),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.85),
-              width: 1.2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.10),
-                blurRadius: 30,
-                offset: const Offset(0, 10),
-              ),
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: List.generate(items.length, (i) {
-              final item = items[i];
-              final isActive = i == activeIndex;
-              return _FloatingNavItemWidget(
-                icon: item.icon,
-                label: item.label,
-                iconColor: item.color,
-                isActive: isActive,
-                onTap: () => onTap(i),
-              );
-            }),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _FloatingNavItemWidget extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color iconColor;
-  final bool isActive;
-  final VoidCallback onTap;
-
-  const _FloatingNavItemWidget({
-    required this.icon,
-    required this.label,
-    required this.iconColor,
-    required this.isActive,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOut,
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOut,
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: isActive
-                    ? AppColors.primary.withValues(alpha: 0.12)
-                    : iconColor.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(14),
-                border: isActive
-                    ? Border.all(
-                        color: AppColors.primary.withValues(alpha: 0.25),
-                        width: 1.5,
-                      )
-                    : null,
-              ),
-              child: Icon(
-                icon,
-                size: 20,
-                color: isActive ? AppColors.primary : iconColor,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontFamily: 'DM Sans',
-                fontSize: 10,
-                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                color: isActive ? AppColors.primary : const Color(0xFF8E8E93),
-                letterSpacing: 0.1,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Section Links — glass card container

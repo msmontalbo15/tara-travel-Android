@@ -26,9 +26,11 @@ final activeTripProvider = FutureProvider<TripModel?>((ref) async {
   final selected = await ref.watch(selectedTripProvider.future);
   if (selected != null) return selected;
 
-  // Fallback: use the first upcoming trip from the list.
+  // Fallback: use the first upcoming (non-draft, non-archived) trip from the list.
   final trips = await ref.watch(allTripsProvider.future);
   if (trips.isEmpty) return null;
+  final activeUpcoming = trips.where((t) => !t.isDraft && !t.isArchived).toList();
+  if (activeUpcoming.isNotEmpty) return activeUpcoming.first;
   return trips.first;
 });
 

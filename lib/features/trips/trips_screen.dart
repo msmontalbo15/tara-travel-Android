@@ -113,12 +113,13 @@ class TripsScreen extends ConsumerWidget {
               ),
               child: allTripsAsync.when(
                 data: (trips) {
-                  // Split on real date, not just isArchived flag
+                  // Split into drafts, upcoming, and past trips
+                  final drafts = trips.where((t) => t.isDraft && !t.isArchived).toList();
                   final upcoming = trips
-                      .where((t) => !t.isArchived && !t.toDate.isBefore(now))
+                      .where((t) => !t.isDraft && !t.isArchived && !t.toDate.isBefore(now))
                       .toList();
                   final past = trips
-                      .where((t) => t.isArchived || t.toDate.isBefore(now))
+                      .where((t) => !t.isDraft && (t.isArchived || t.toDate.isBefore(now)))
                       .toList();
 
                   if (trips.isEmpty) {
@@ -171,6 +172,19 @@ class TripsScreen extends ConsumerWidget {
                   return ListView(
                     padding: const EdgeInsets.fromLTRB(20, 22, 20, 80),
                     children: [
+                      if (drafts.isNotEmpty) ...[
+                        _sectionHeader('DRAFTS'),
+                        ...drafts.map((t) => _TripListCard(
+                              trip: t,
+                              onTap: () {
+                                 ref
+                                     .read(selectedTripIdProvider.notifier)
+                                     .select(t.id);
+                                 Navigator.pushNamed(context, '/trip-detail');
+                               },
+                            )),
+                        const SizedBox(height: 8),
+                      ],
                       if (upcoming.isNotEmpty) ...[
                         _sectionHeader('UPCOMING'),
                         ...upcoming.map((t) => _TripListCard(
@@ -515,7 +529,9 @@ class _TripListCard extends StatelessWidget {
                                             ? AppColors.textSecondary
                                             : AppColors.textPrimary)),
                               ),
-                              if (isArchived)
+                              if (trip.isDraft)
+                                _badge('Draft', AppColors.amberBg, AppColors.amberText)
+                              else if (isArchived)
                                 _badge('Past', AppColors.surfaceLight,
                                     AppColors.warmMuted)
                               else if (daysLeft == 0)

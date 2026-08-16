@@ -213,6 +213,74 @@ class ItineraryNotifier extends AsyncNotifier<ItineraryState> {
     state = AsyncData(currentState.copyWith(days: updatedDays));
     await repo.saveItineraryDay(_tripId, updatedDay);
   }
+
+  // ── Member Check-In: toggle a member's presence on a stop ────
+  Future<void> checkInMember(int dayIndex, String stopId, String memberId) async {
+    final currentState = state.value;
+    if (currentState == null) return;
+
+    final repo = ref.read(itineraryRepositoryProvider);
+    final day = currentState.days[dayIndex];
+    final updatedStops = day.stops.map((s) {
+      if (s.id != stopId) return s;
+      final ids = List<String>.from(s.checkedInMemberIds);
+      if (ids.contains(memberId)) {
+        ids.remove(memberId);
+      } else {
+        ids.add(memberId);
+      }
+      // If no one is checked in, remove arrived timestamp
+      final nowVisited = ids.isNotEmpty ? (s.visitedAt ?? DateTime.now()) : null;
+      final newStatus = ids.isNotEmpty ? StopStatus.arrived : StopStatus.approved;
+      return s.copyWith(
+        checkedInMemberIds: ids,
+        visitedAt: nowVisited,
+        status: newStatus,
+      );
+    }).toList();
+
+    final updatedDay = day.copyWith(stops: updatedStops);
+    final updatedDays = List<ItineraryDay>.from(currentState.days);
+    updatedDays[dayIndex] = updatedDay;
+
+    state = AsyncData(currentState.copyWith(days: updatedDays));
+    await repo.saveItineraryDay(_tripId, updatedDay);
+  }
+
+  // ── Toggle entire stop as visited (own account check-in) ─────
+  Future<void> toggleStopVisited(
+    int dayIndex,
+    String stopId,
+    String memberId,
+  ) async {
+    final currentState = state.value;
+    if (currentState == null) return;
+
+    final repo = ref.read(itineraryRepositoryProvider);
+    final day = currentState.days[dayIndex];
+    final updatedStops = day.stops.map((s) {
+      if (s.id != stopId) return s;
+      final isNowVisited = !s.isCompleted;
+      final ids = List<String>.from(s.checkedInMemberIds);
+      if (isNowVisited && !ids.contains(memberId)) {
+        ids.add(memberId);
+      } else if (!isNowVisited) {
+        ids.remove(memberId);
+      }
+      return s.copyWith(
+        status: isNowVisited ? StopStatus.arrived : StopStatus.approved,
+        visitedAt: isNowVisited ? DateTime.now() : null,
+        checkedInMemberIds: ids,
+      );
+    }).toList();
+
+    final updatedDay = day.copyWith(stops: updatedStops);
+    final updatedDays = List<ItineraryDay>.from(currentState.days);
+    updatedDays[dayIndex] = updatedDay;
+
+    state = AsyncData(currentState.copyWith(days: updatedDays));
+    await repo.saveItineraryDay(_tripId, updatedDay);
+  }
 }
 
 // ── Provider ──────────────────────────────────────────────────────────────────

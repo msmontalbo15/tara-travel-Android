@@ -902,11 +902,13 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
           const SizedBox(height: 16),
 
           // Departure Hub / Point
-          _buildDepartureField('Departure Point', 'Tap pin on map or select preset hub…', _departureCtrl),
-          const SizedBox(height: 10),
+          _buildDepartureField('Departure Point', 'Tap pin on map or enter location…', _departureCtrl),
 
-          // Preset Quick Hubs Chips
-          _buildPresetHubsList(),
+          // Preset Quick Hubs Chips (Commuters only)
+          if (_selected == TransportMode.commute) ...[
+            const SizedBox(height: 10),
+            _buildPresetHubsList(),
+          ],
 
           const SizedBox(height: 14),
 

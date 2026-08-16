@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/profile_provider.dart';
@@ -7,6 +6,7 @@ import '../../core/providers/trip_provider.dart';
 import '../../core/providers/selected_trip_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/profile_completion_banner.dart';
+import '../../core/widgets/navigation/floating_nav_bar.dart';
 import '../../core/utils/jit_guard.dart';
 
 import '../budget/budget_screen.dart';
@@ -53,6 +53,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final args = ModalRoute.of(context)?.settings.arguments;
     if (args is HomeRouteArgs) {
       _startTour = args.startTour;
+      if (args.initialIndex != 0) {
+        _navIndex = args.initialIndex;
+      }
     }
   }
 
@@ -67,124 +70,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       },
       child: Scaffold(
         backgroundColor: AppColors.surfaceLight,
-        body: IndexedStack(
-          index: _navIndex,
+        body: Stack(
           children: [
-            _HomeBody(
-              startTour: _startTour,
-              onTourConsumed: () {
-                if (_startTour) {
-                  setState(() => _startTour = false);
-                }
-              },
-            ),
-            ..._pages.skip(1),
-          ],
-        ),
-        bottomNavigationBar: _buildBottomNav(),
-      ),
-    );
-  }
-
-  Widget _buildBottomNav() {
-    final bottomInset = MediaQuery.of(context).padding.bottom;
-    final bottomMargin = bottomInset > 0 ? bottomInset : 12.0;
-
-    return Container(
-      margin: EdgeInsets.fromLTRB(16, 0, 16, bottomMargin),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(32),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.82),
-              borderRadius: BorderRadius.circular(32),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.8),
-                width: 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.10),
-                  blurRadius: 24,
-                  spreadRadius: 2,
-                  offset: const Offset(0, 8),
+            IndexedStack(
+              index: _navIndex,
+              children: [
+                _HomeBody(
+                  startTour: _startTour,
+                  onTourConsumed: () {
+                    if (_startTour) {
+                      setState(() => _startTour = false);
+                    }
+                  },
                 ),
+                ..._pages.skip(1),
               ],
             ),
-            child: SafeArea(
-              top: false,
-              bottom: false,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _navItem(0, Icons.home_outlined, Icons.home_rounded, 'Home'),
-                  _navItem(1, Icons.luggage_outlined, Icons.luggage_rounded, 'Trips'),
-                  _navItem(
-                    2,
-                    Icons.account_balance_wallet_outlined,
-                    Icons.account_balance_wallet_rounded,
-                    'Budget',
-                  ),
-                  _navItem(
-                      3, Icons.explore_outlined, Icons.explore_rounded, 'Explore'),
-                  _navItem(4, Icons.person_outline_rounded, Icons.person_rounded,
-                      'Profile'),
-                ],
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: FloatingNavBar(
+                currentIndex: _navIndex,
+                onItemSelected: (index) => setState(() => _navIndex = index),
               ),
             ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _navItem(
-    int index,
-    IconData inactiveIcon,
-    IconData activeIcon,
-    String label,
-  ) {
-    final active = _navIndex == index;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _navIndex = index),
-        behavior: HitTestBehavior.opaque,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: active ? AppColors.sand : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  active ? activeIcon : inactiveIcon,
-                  size: 22,
-                  color: active ? AppColors.primary : AppColors.warmMuted,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                label,
-                style: TextStyle(
-                  fontFamily: 'DM Sans',
-                  fontSize: 10,
-                  fontWeight: active ? FontWeight.w600 : FontWeight.w500,
-                  color: active ? AppColors.primary : AppColors.warmMuted,
-                  letterSpacing: 0.2,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
+          ],
         ),
       ),
     );
@@ -208,6 +119,8 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
   bool _tourVisible = false;
   bool _tourScheduled = false;
   int _tourStep = 0;
+  final ScrollController _scrollCtrl = ScrollController();
+  bool _cardCollapsed = false;
 
   String _greeting() {
     final hour = DateTime.now().hour;
@@ -222,6 +135,12 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
     if (widget.startTour) {
       _scheduleTour();
     }
+    _scrollCtrl.addListener(() {
+      final collapsed = _scrollCtrl.offset > 60;
+      if (collapsed != _cardCollapsed) {
+        setState(() => _cardCollapsed = collapsed);
+      }
+    });
   }
 
   @override
@@ -256,6 +175,12 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
       return;
     }
     setState(() => _tourStep += 1);
+  }
+
+  @override
+  void dispose() {
+    _scrollCtrl.dispose();
+    super.dispose();
   }
 
   @override
@@ -473,7 +398,10 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
                     const SizedBox(height: 22),
                     ref.watch(activeTripProvider).when(
                           data: (trip) => trip != null
-                              ? NextTripCard(trip: trip)
+                              ? NextTripCard(
+                                  trip: trip,
+                                  collapsed: _cardCollapsed,
+                                )
                               : const SizedBox.shrink(),
                           loading: () => const Center(
                             child: CircularProgressIndicator(),
@@ -500,6 +428,7 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
                       ),
                     ),
                     child: SingleChildScrollView(
+                      controller: _scrollCtrl,
                       physics: const BouncingScrollPhysics(),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
@@ -510,147 +439,168 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const ProfileCompletionBanner(),
-                            _TourFocus(
-                              highlight: _tourVisible && _tourStep == 1,
-                              borderRadius: 22,
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text(
-                                    'Your trips',
-                                    style: TextStyle(
-                                      fontFamily: 'DM Sans',
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  ),
-                                  GestureDetector(
-                                    onTap: () =>
-                                        Navigator.pushNamed(context, '/trips'),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 5,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.sand,
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                      child: const Text(
-                                        'See all',
-                                        style: TextStyle(
-                                          fontFamily: 'DM Sans',
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                          color: AppColors.primary,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+
                             ref.watch(allTripsProvider).when(
-                                  data: (trips) => Column(
-                                    children: trips
-                                        .map(
-                                          (trip) => TripCard.upcoming(
-                                            name: trip.name,
-                                            destination: trip.destination,
-                                            tripId: trip.id,
-                                            dateRange:
-                                                '${trip.fromDate.month}/${trip.fromDate.day}-${trip.toDate.day}, ${trip.toDate.year}',
-                                            budget:
-                                                'P${(trip.totalBudget / 1000).toStringAsFixed(0)}k',
-                                            days: trip.toDate
-                                                    .difference(trip.fromDate)
-                                                    .inDays +
-                                                1,
-                                            people: trip.members.length,
-                                            tripType: trip.tripType,
-                      coverColor: AppColors.parseTripColor(trip.coverColor),
-                                            coverEmoji: trip.coverEmoji,
-                                            travelers: trip.members
-                                                .map(
-                                                  (member) => TravelerInfo(
-                                                    member.initials,
-                                                    member.color.toARGB32(),
+                                  data: (trips) {
+                                    if (trips.isEmpty) {
+                                      return const SizedBox.shrink();
+                                    }
+                                    return Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        _TourFocus(
+                                          highlight:
+                                              _tourVisible && _tourStep == 1,
+                                          borderRadius: 22,
+                                          child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            const Text(
+                                              'Your trips',
+                                              style: TextStyle(
+                                                fontFamily: 'DM Sans',
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w700,
+                                                color: AppColors.textPrimary,
+                                              ),
+                                            ),
+                                            GestureDetector(
+                                              onTap: () => Navigator.pushNamed(
+                                                  context, '/trips'),
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                  horizontal: 12,
+                                                  vertical: 5,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: AppColors.sand,
+                                                  borderRadius:
+                                                      BorderRadius.circular(20),
+                                                ),
+                                                child: const Text(
+                                                  'See all',
+                                                  style: TextStyle(
+                                                    fontFamily: 'DM Sans',
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: AppColors.primary,
                                                   ),
-                                                )
-                                                .toList(),
-                                            onTap: () {
-                                              // Set selected trip before navigating
-                                              ref
-                                                  .read(selectedTripIdProvider
-                                                      .notifier)
-                                                  .select(trip.id);
-                                              Navigator.pushNamed(
-                                                context,
-                                                '/trip-detail',
-                                              );
-                                            },
-                                            onItinerary: () {
-                                              ref
-                                                  .read(selectedTripIdProvider
-                                                      .notifier)
-                                                  .select(trip.id);
-                                              Navigator.pushNamed(
-                                                context,
-                                                '/itinerary',
-                                              );
-                                            },
-                                            onPacking: () {
-                                              ref
-                                                  .read(selectedTripIdProvider
-                                                      .notifier)
-                                                  .select(trip.id);
-                                              Navigator.pushNamed(
-                                                context,
-                                                '/packing',
-                                              );
-                                            },
-                                            onMembers: () {
-                                              ref
-                                                  .read(selectedTripIdProvider
-                                                      .notifier)
-                                                  .select(trip.id);
-                                              Navigator.pushNamed(
-                                                context,
-                                                '/members',
-                                              );
-                                            },
-                                            onExpenses: () {
-                                              ref
-                                                  .read(selectedTripIdProvider
-                                                      .notifier)
-                                                  .select(trip.id);
-                                              Navigator.pushNamed(
-                                                context,
-                                                '/budget',
-                                              );
-                                            },
-                                            onChat: () {
-                                              ref
-                                                  .read(selectedTripIdProvider
-                                                      .notifier)
-                                                  .select(trip.id);
-                                              Navigator.pushNamed(
-                                                context,
-                                                '/chat',
-                                              );
-                                            },
-                                          ),
-                                        )
-                                        .toList(),
-                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        ),
+                                        Column(
+                                          children: trips
+                                              .map(
+                                                (trip) => trip.isDraft
+                                                    ? TripCard.draft(
+                                                        name: trip.name,
+                                                        destination: trip.destination.isNotEmpty ? trip.destination : null,
+                                                        dateRange:
+                                                            '${trip.fromDate.month}/${trip.fromDate.day}-${trip.toDate.day}, ${trip.toDate.year}',
+                                                        onTap: () {
+                                                          ref
+                                                              .read(selectedTripIdProvider
+                                                                  .notifier)
+                                                              .select(trip.id);
+                                                          Navigator.pushNamed(
+                                                              context, '/trip-detail');
+                                                        },
+                                                      )
+                                                    : TripCard.upcoming(
+                                                        name: trip.name,
+                                                        destination: trip.destination,
+                                                        tripId: trip.id,
+                                                        dateRange:
+                                                            '${trip.fromDate.month}/${trip.fromDate.day}-${trip.toDate.day}, ${trip.toDate.year}',
+                                                        budget:
+                                                            'P${(trip.totalBudget / 1000).toStringAsFixed(0)}k',
+                                                        days: trip.toDate
+                                                                .difference(
+                                                                    trip.fromDate)
+                                                                .inDays +
+                                                            1,
+                                                        people: trip.members.length,
+                                                        tripType: trip.tripType,
+                                                        coverColor:
+                                                            AppColors.parseTripColor(
+                                                                trip.coverColor),
+                                                        coverEmoji: trip.coverEmoji,
+                                                        travelers: trip.members
+                                                            .map(
+                                                              (member) => TravelerInfo(
+                                                                member.initials,
+                                                                member.color
+                                                                    .toARGB32(),
+                                                              ),
+                                                            )
+                                                            .toList(),
+                                                        onTap: () {
+                                                          ref
+                                                              .read(selectedTripIdProvider
+                                                                  .notifier)
+                                                              .select(trip.id);
+                                                          Navigator.pushNamed(
+                                                              context, '/trip-detail');
+                                                        },
+                                                        onItinerary: () {
+                                                          ref
+                                                              .read(selectedTripIdProvider
+                                                                  .notifier)
+                                                              .select(trip.id);
+                                                          Navigator.pushNamed(
+                                                              context, '/itinerary');
+                                                        },
+                                                        onPacking: () {
+                                                          ref
+                                                              .read(selectedTripIdProvider
+                                                                  .notifier)
+                                                              .select(trip.id);
+                                                          Navigator.pushNamed(
+                                                              context, '/packing');
+                                                        },
+                                                        onMembers: () {
+                                                          ref
+                                                              .read(selectedTripIdProvider
+                                                                  .notifier)
+                                                              .select(trip.id);
+                                                          Navigator.pushNamed(
+                                                              context, '/members');
+                                                        },
+                                                        onExpenses: () {
+                                                          ref
+                                                              .read(selectedTripIdProvider
+                                                                  .notifier)
+                                                              .select(trip.id);
+                                                          Navigator.pushNamed(
+                                                              context, '/budget');
+                                                        },
+                                                        onChat: () {
+                                                          ref
+                                                              .read(selectedTripIdProvider
+                                                                  .notifier)
+                                                              .select(trip.id);
+                                                          Navigator.pushNamed(
+                                                              context, '/chat');
+                                                        },
+                                                      ),
+                                              )
+                                              .toList(),
+                                        ),
+                                        const SizedBox(height: 20),
+                                      ],
+                                    );
+                                  },
                                   loading: () =>
                                       const CircularProgressIndicator(),
                                   error: (error, _) =>
                                       Text('Error loading trips: $error'),
                                 ),
-                            const SizedBox(height: 20),
                             _TourFocus(
                               highlight: _tourVisible && _tourStep == 2,
                               borderRadius: 22,
@@ -764,7 +714,7 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 100),
+                            const SizedBox(height: 140),
                           ],
                         ),
                       ),

@@ -50,12 +50,18 @@ class PackingNotifier extends Notifier<PackingState> {
 
   @override
   PackingState build() {
-    _loadFromRepo(_tripId);
+    // Defer load so the provider is fully mounted before we touch `state`.
+    Future.microtask(() => _loadFromRepo(_tripId));
     return const PackingState(categories: [], suggestions: []);
   }
 
   Future<void> _loadFromRepo(String tripId) async {
-    state = state.copyWith(isLoading: true, tripId: tripId);
+    try {
+      state = state.copyWith(isLoading: true, tripId: tripId);
+    } catch (e) {
+      debugPrint('[PackingNotifier] state not ready yet: $e');
+      return;
+    }
     try {
       final repo = ref.read(packingRepositoryProvider);
       final categories = await repo.getCategories(tripId);
@@ -66,7 +72,7 @@ class PackingNotifier extends Notifier<PackingState> {
       );
     } catch (e) {
       debugPrint('[PackingNotifier] load error: $e');
-      state = state.copyWith(isLoading: false);
+      try { state = state.copyWith(isLoading: false); } catch (_) {}
     }
   }
 
