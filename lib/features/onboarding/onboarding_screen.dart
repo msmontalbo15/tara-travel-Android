@@ -27,7 +27,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   bool _didRestoreProgress = false;
 
   // State carried across steps
-  String _userName = 'User';
+  String _userName = '';
   String? _profilePhotoPath;
   String _nickname = '';
   String _dateOfBirth = '';
@@ -275,7 +275,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   Widget build(BuildContext context) {
     final profile = ref.watch(profileProvider);
     final displayUserName =
-        profile.effectiveName == 'User' ? _userName : profile.effectiveName;
+        profile.effectiveName.isNotEmpty ? profile.effectiveName : _userName;
 
     return PageView(
       controller: _pageController,

@@ -103,11 +103,12 @@ class DatabaseService {
 
   // ── Store Name Constants ───────────────────────────────────────────────────
 
-  static const String tripStore      = 'trips';
-  static const String memberStore    = 'members';
-  static const String expenseStore   = 'expenses';
-  static const String itineraryStore = 'itinerary';
-  static const String packingStore   = 'packing_items';
-  static const String userStore      = 'user_profile';
-  static const String chatStore      = 'chat_messages';
+  static const String tripStore            = 'trips';
+  static const String memberStore          = 'members';
+  static const String expenseStore         = 'expenses';
+  static const String itineraryStore       = 'itinerary';
+  static const String packingStore         = 'packing_items';
+  static const String packingTemplateStore = 'packing_templates';
+  static const String userStore            = 'user_profile';
+  static const String chatStore            = 'chat_messages';
 }

@@ -112,8 +112,11 @@ class _AuthGateState extends ConsumerState<AuthGate> {
     await ref.read(profileProvider.notifier).refreshProfile();
     if (!mounted) return;
 
+    final profile = ref.read(profileProvider);
+    final destination =
+        profile.hasCompletedOnboarding ? '/home' : '/onboarding';
     _navigatorKey.currentState
-        ?.pushNamedAndRemoveUntil('/home', (route) => false);
+        ?.pushNamedAndRemoveUntil(destination, (route) => false);
   }
 
   // ── Supabase Auth Stream Handler ───────────────────────────────────────────
@@ -136,8 +139,21 @@ class _AuthGateState extends ConsumerState<AuthGate> {
       await ref.read(profileProvider.notifier).refreshProfile();
       if (!mounted) return;
 
+      // Only intercept signedIn events that fire outside of onboarding.
+      // When the user is already on /onboarding (step 0 ChooseModeStep),
+      // let onboarding's own AuthAuthenticated listener drive navigation
+      // so the full multi-step setup flow is preserved.
+      final currentRoute = _routeObserver.currentRoute;
+      final onOnboarding =
+          currentRoute == '/onboarding' || currentRoute == null;
+      if (onOnboarding) return;
+
+      // Returning user (outside onboarding) — route based on completion flag.
+      final profile = ref.read(profileProvider);
+      final destination =
+          profile.hasCompletedOnboarding ? '/home' : '/onboarding';
       _navigatorKey.currentState
-          ?.pushNamedAndRemoveUntil('/home', (route) => false);
+          ?.pushNamedAndRemoveUntil(destination, (route) => false);
       return;
     }
 

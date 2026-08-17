@@ -6,6 +6,7 @@ import '../../core/models/expense_model.dart';
 import '../../core/providers/realtime_provider.dart';
 import '../../core/providers/repository_providers.dart';
 import '../../core/providers/trip_provider.dart';
+import '../../core/providers/selected_trip_provider.dart';
 import 'widgets/budget_overview_card.dart';
 import 'widgets/expense_log.dart';
 import 'widgets/alert_banner.dart';
@@ -15,6 +16,7 @@ import 'widgets/split_bill_panel.dart';
 import 'widgets/category_budget_chart.dart';
 import '../../core/constants/trip_types.dart';
 import '../../core/widgets/buttons/app_back_button.dart';
+import '../../core/widgets/shimmer_loading.dart';
 import '../../core/utils/currency_utils.dart';
 
 class BudgetScreen extends ConsumerStatefulWidget {
@@ -115,7 +117,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
           ),
         );
       },
-      loading: () => const Scaffold(backgroundColor: AppColors.deepEarth, body: Center(child: CircularProgressIndicator())),
+      loading: () => const BudgetScreenSkeleton(),
       error: (e, _) => Scaffold(backgroundColor: AppColors.deepEarth, body: Center(child: Text('Error: $e'))),
     );
   }
@@ -215,7 +217,10 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
               await ref
                   .read(expenseRepositoryProvider)
                   .addExpense(trip.id, expense);
-              // Refresh the active trip so the expense list updates instantly
+              // Invalidate all trip providers so totals refresh across every
+              // provider path (selected trip, list fallback, active trip).
+              ref.invalidate(selectedTripProvider);
+              ref.invalidate(allTripsProvider);
               ref.invalidate(activeTripProvider);
             } catch (e) {
               messenger.showSnackBar(

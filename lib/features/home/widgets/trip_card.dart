@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/constants/trip_types.dart';
+import '../../../core/utils/currency_utils.dart';
 
 /// A trip list card — used for both "Upcoming" and "Draft" states.
 /// Brand-aligned with premium card styling and animations.
@@ -9,7 +10,10 @@ class TripCard extends StatelessWidget {
   final String dateRange;
   final String? destination;
   final bool isUpcoming;
+  final bool isIncomplete;
   final String? budget;
+  final double? totalBudget;
+  final double? totalSpent;
   final int? days;
   final int? people;
   final List<TravelerInfo>? travelers;
@@ -24,17 +28,22 @@ class TripCard extends StatelessWidget {
   final VoidCallback? onMembers;
   final VoidCallback? onExpenses;
   final VoidCallback? onChat;
+  final VoidCallback? onMore;
 
   const TripCard.upcoming({
     super.key,
     required this.name,
     required this.dateRange,
     this.destination,
+    this.isIncomplete = false,
     this.budget,
+    this.totalBudget,
+    this.totalSpent,
     this.days,
     this.people,
     this.travelers,
     this.onTap,
+    this.onMore,
     this.tripId,
     this.coverColor,
     this.tripType,
@@ -51,9 +60,13 @@ class TripCard extends StatelessWidget {
     required this.name,
     required this.dateRange,
     this.destination,
+    this.isIncomplete = true,
     this.onTap,
+    this.onMore,
   })  : isUpcoming = false,
         budget = null,
+        totalBudget = null,
+        totalSpent = null,
         days = null,
         people = null,
         travelers = null,
@@ -99,10 +112,16 @@ class TripCard extends StatelessWidget {
   }
 
   Widget _buildUpcoming() {
-    final accent = coverColor ?? AppColors.primary;
+    final accent = isIncomplete
+        ? AppColors.warmMuted
+        : (coverColor ?? AppColors.primary);
     final HSLColor hsl = HSLColor.fromColor(accent);
-    final darkGrad = hsl.withLightness((hsl.lightness - 0.15).clamp(0.0, 1.0)).toColor();
-    final lightGrad = hsl.withLightness((hsl.lightness + 0.08).clamp(0.0, 1.0)).toColor();
+    final darkGrad = isIncomplete
+        ? const Color(0xFF6E6A67)
+        : hsl.withLightness((hsl.lightness - 0.15).clamp(0.0, 1.0)).toColor();
+    final lightGrad = isIncomplete
+        ? const Color(0xFF9E9A96)
+        : hsl.withLightness((hsl.lightness + 0.08).clamp(0.0, 1.0)).toColor();
     final emojiDisplay = coverEmoji ?? AppTripTypes.getEmoji(tripType);
 
     return Column(
@@ -131,23 +150,46 @@ class TripCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.22),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
-                      ),
-                      child: const Text(
-                        'Upcoming',
-                        style: TextStyle(
-                          fontFamily: 'DM Sans',
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                          letterSpacing: 0.2,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.22),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
+                          ),
+                          child: const Text(
+                            'Upcoming',
+                            style: TextStyle(
+                              fontFamily: 'DM Sans',
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
                         ),
-                      ),
+                        if (onMore != null)
+                          GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: onMore,
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.20),
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white.withValues(alpha: 0.30)),
+                              ),
+                              child: const Icon(
+                                Icons.more_horiz_rounded,
+                                color: Colors.white,
+                                size: 18,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 12),
                     Text(
@@ -240,48 +282,70 @@ class TripCard extends StatelessWidget {
               const SizedBox(height: 14),
 
               // Budget bar
-              const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                   Text(
-                    'Budget used',
-                    style: TextStyle(
-                      fontFamily: 'DM Sans',
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  Text(
-                    '₱46,400 / ₱50,000',
-                    style: TextStyle(
-                      fontFamily: 'DM Sans',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Container(
-                height: 5,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceLight,
-                  borderRadius: BorderRadius.circular(3),
-                ),
-                child: FractionallySizedBox(
-                  alignment: Alignment.centerLeft,
-                  widthFactor: 0.93,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [AppColors.primary, AppColors.primaryLight],
+              Builder(
+                builder: (context) {
+                  final budgetVal = totalBudget ?? 0.0;
+                  final spentVal = totalSpent ?? 0.0;
+                  final hasBudget = budgetVal > 0;
+                  final pct = hasBudget ? (spentVal / budgetVal).clamp(0.0, 1.0) : 0.0;
+                  final pctText = hasBudget ? '${(pct * 100).round()}% used' : 'No budget set';
+                  final budgetText = hasBudget
+                      ? '₱${CurrencyUtils.formatAmount(spentVal)} / ₱${CurrencyUtils.formatAmount(budgetVal)}'
+                      : (spentVal > 0 ? '₱${CurrencyUtils.formatAmount(spentVal)} spent' : '₱0 / ₱0');
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            hasBudget ? 'Budget used ($pctText)' : 'Budget used',
+                            style: const TextStyle(
+                              fontFamily: 'DM Sans',
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          Text(
+                            budgetText,
+                            style: const TextStyle(
+                              fontFamily: 'DM Sans',
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ],
                       ),
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                  ),
-                ),
+                      const SizedBox(height: 6),
+                      Container(
+                        height: 5,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceLight,
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                        child: FractionallySizedBox(
+                          alignment: Alignment.centerLeft,
+                          widthFactor: pct,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: pct >= 0.9
+                                    ? const [Color(0xFFEF4444), Color(0xFFDC2626)]
+                                    : pct > 0.7
+                                        ? const [AppColors.amber, Color(0xFFF59E0B)]
+                                        : const [AppColors.primary, AppColors.primaryLight],
+                              ),
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: 14),
 
@@ -417,23 +481,48 @@ class TripCard extends StatelessWidget {
                 ],
               ),
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
-              decoration: BoxDecoration(
-                color: AppColors.amberBg,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFFFAC775)),
-              ),
-              child: const Text(
-                'Draft',
-                style: TextStyle(
-                  fontFamily: 'DM Sans',
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.amberText,
-                  letterSpacing: 0.2,
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: AppColors.amberBg,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFFFAC775)),
+                  ),
+                  child: const Text(
+                    'Draft',
+                    style: TextStyle(
+                      fontFamily: 'DM Sans',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.amberText,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
                 ),
-              ),
+                if (onMore != null) ...[
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: onMore,
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceLight,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.cardBorder),
+                      ),
+                      child: const Icon(
+                        Icons.more_horiz_rounded,
+                        color: AppColors.textSecondary,
+                        size: 18,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ],
         ),

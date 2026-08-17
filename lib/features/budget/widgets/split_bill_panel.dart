@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/models/member_model.dart';
 import '../../../core/models/expense_model.dart';
@@ -77,6 +78,15 @@ class _SplitBillPanelState extends State<SplitBillPanel>
     }
 
     _treatHostId ??= members.first.id;
+  }
+
+  @override
+  void didUpdateWidget(SplitBillPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.expenses != widget.expenses ||
+        oldWidget.members != widget.members) {
+      _initModeData();
+    }
   }
 
   @override
@@ -662,9 +672,57 @@ class _SplitBillPanelState extends State<SplitBillPanel>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader(
-          'Settlement Plan',
-          settlements.isEmpty ? 'All settled!' : '₱${CurrencyUtils.formatAmount(totalOwed)} · $pendingCount pending',
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            const Text(
+              'SETTLEMENT PLAN',
+              style: TextStyle(fontFamily: 'DM Sans', fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.warmMuted, letterSpacing: 1.5),
+            ),
+            const Spacer(),
+            Text(
+              settlements.isEmpty ? 'All settled!' : '₱${CurrencyUtils.formatAmount(totalOwed)} · $pendingCount pending',
+              style: const TextStyle(fontFamily: 'DM Sans', fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.primary),
+            ),
+            if (settlements.isNotEmpty) ...[
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () {
+                  final lines = StringBuffer();
+                  lines.writeln('💸 SETTLEMENT PLAN');
+                  lines.writeln('━━━━━━━━━━━━━━━━━━━━━━━━');
+                  for (final s in settlements) {
+                    lines.writeln('  • ${s.from.name} pays ${s.to.name}  →  ${_currency(s.amount)}');
+                  }
+                  lines.writeln();
+                  lines.writeln('Total: ₱${CurrencyUtils.formatAmount(totalOwed)}');
+                  lines.writeln();
+                  lines.writeln('📱 Shared via Tara Travel');
+                  SharePlus.instance.share(
+                    ShareParams(
+                      text: lines.toString(),
+                      subject: 'Trip Settlement Plan',
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.share_rounded, size: 12, color: AppColors.primary),
+                      SizedBox(width: 4),
+                      Text('Share', style: TextStyle(fontFamily: 'DM Sans', fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.primary)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ],
         ),
         const SizedBox(height: 10),
         if (settlements.isEmpty)
@@ -726,6 +784,8 @@ class _SplitBillPanelState extends State<SplitBillPanel>
       ],
     );
   }
+
+  String _currency(double v) => '₱${CurrencyUtils.formatAmount(v)}';
 
   Widget _buildSettlementRow(_Settlement s, bool isLast) {
     final key = _settlementKey(s);

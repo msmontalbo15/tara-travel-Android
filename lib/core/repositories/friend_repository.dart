@@ -2,22 +2,38 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/friend_model.dart';
 
+/// Manages all friend/social graph operations against Supabase.
+///
+/// Schema alignment (000_master_schema.sql):
+///   • public.friends  — reciprocal rows (user_id, friend_id, status)
+///   • public.users    — includes is_online + last_seen for presence
+///
+/// Presence fields (is_online, last_seen) are now queried from users via
+/// a JOIN in getIncomingRequests / getFriends to keep the join efficient.
 class FriendRepository {
   final SupabaseClient _supabase = Supabase.instance.client;
 
   String? get currentUserId => _supabase.auth.currentUser?.id;
 
+  // ── Read ──────────────────────────────────────────────────────────────────
+
+  /// Returns all accepted friends for the current user, with live presence
+  /// data (is_online, last_seen) from public.users.
   Future<List<FriendModel>> getFriends() async {
     final userId = currentUserId;
     if (userId == null) return [];
 
     try {
-      // Assuming a `friends` table with user_id, friend_id, and status
-      // And a foreign key from friend_id to users.id
       final response = await _supabase
           .from('friends')
-          .select('*, friendData:users!friend_id(id, display_name, email, avatar_url, is_online, last_seen)')
-          .eq('user_id', userId);
+          .select(
+            'id, status, '
+            'friendData:users!friend_id('
+            '  id, display_name, email, avatar_url, is_online, last_seen'
+            ')',
+          )
+          .eq('user_id', userId)
+          .eq('status', 'accepted');
 
       return (response as List)
           .map((row) => FriendModel.fromMap(row, userId))
@@ -28,6 +44,34 @@ class FriendRepository {
     }
   }
 
+  /// Returns incoming pending friend requests directed at the current user.
+  Future<List<FriendModel>> getIncomingRequests() async {
+    final userId = currentUserId;
+    if (userId == null) return [];
+
+    try {
+      final response = await _supabase
+          .from('friends')
+          .select(
+            'id, status, '
+            'friendData:users!user_id('
+            '  id, display_name, email, avatar_url, is_online, last_seen'
+            ')',
+          )
+          .eq('friend_id', userId)
+          .eq('status', 'pending');
+
+      return (response as List)
+          .map((row) => FriendModel.fromMap(row, userId))
+          .toList();
+    } catch (e) {
+      debugPrint('[FriendRepository] getIncomingRequests error: $e');
+      return [];
+    }
+  }
+
+  /// Fuzzy search users by display_name or email (excludes current user and
+  /// already-added friends).
   Future<List<FriendModel>> searchUsers(String query) async {
     final userId = currentUserId;
     if (userId == null || query.trim().isEmpty) return [];
@@ -35,62 +79,72 @@ class FriendRepository {
     try {
       final response = await _supabase
           .from('users')
-          .select('id, display_name, email, avatar_url')
-          .or('display_name.ilike.%${query.trim()}%,email.ilike.%${query.trim()}%')
+          .select('id, display_name, email, avatar_url, is_online, last_seen')
+          .or(
+            'display_name.ilike.%${query.trim()}%,'
+            'email.ilike.%${query.trim()}%',
+          )
           .neq('id', userId)
           .limit(20);
 
-      return (response as List).map((row) {
-        return FriendModel.fromMap(row, userId);
-      }).toList();
+      return (response as List)
+          .map((row) => FriendModel.fromMap(row, userId))
+          .toList();
     } catch (e) {
       debugPrint('[FriendRepository] searchUsers error: $e');
       return [];
     }
   }
 
+  // ── Write ─────────────────────────────────────────────────────────────────
+
+  /// Sends a friend request: inserts reciprocal rows (A→B pending, B→A pending).
   Future<void> sendRequest(String friendId) async {
     final userId = currentUserId;
     if (userId == null) return;
+    if (userId == friendId) {
+      throw Exception('You cannot add yourself as a friend.');
+    }
 
     try {
-      await _supabase.from('friends').insert({
-        'user_id': userId,
-        'friend_id': friendId,
-        'status': 'pending',
-      });
-      // Also insert reciprocal request if needed depending on DB design
-      await _supabase.from('friends').insert({
-        'user_id': friendId,
-        'friend_id': userId,
-        'status': 'pending',
-      });
+      // Reciprocal insert; ON CONFLICT DO NOTHING prevents duplicate key errors
+      // if a request already exists in either direction.
+      await _supabase.from('friends').upsert([
+        {'user_id': userId,   'friend_id': friendId, 'status': 'pending'},
+        {'user_id': friendId, 'friend_id': userId,   'status': 'pending'},
+      ], onConflict: 'user_id,friend_id');
     } catch (e) {
       debugPrint('[FriendRepository] sendRequest error: $e');
+      rethrow;
     }
   }
 
-  Future<void> acceptRequest(String friendId) async {
+  /// Accepts a friend request: updates both reciprocal rows to 'accepted'.
+  Future<void> acceptRequest(String requesterId) async {
     final userId = currentUserId;
     if (userId == null) return;
 
     try {
+      // Update the incoming row (requester → current user)
       await _supabase
           .from('friends')
-          .update({'status': 'accepted'})
-          .eq('user_id', userId)
-          .eq('friend_id', friendId);
-          
-      await _supabase
-          .from('friends')
-          .update({'status': 'accepted'})
-          .eq('user_id', friendId)
+          .update({'status': 'accepted', 'updated_at': DateTime.now().toUtc().toIso8601String()})
+          .eq('user_id', requesterId)
           .eq('friend_id', userId);
+
+      // Update the reciprocal row (current user → requester)
+      await _supabase
+          .from('friends')
+          .update({'status': 'accepted', 'updated_at': DateTime.now().toUtc().toIso8601String()})
+          .eq('user_id', userId)
+          .eq('friend_id', requesterId);
     } catch (e) {
       debugPrint('[FriendRepository] acceptRequest error: $e');
+      rethrow;
     }
   }
 
+  /// Rejects / removes a friend: deletes both reciprocal rows.
   Future<void> rejectRequest(String friendId) async {
     final userId = currentUserId;
     if (userId == null) return;
@@ -101,7 +155,7 @@ class FriendRepository {
           .delete()
           .eq('user_id', userId)
           .eq('friend_id', friendId);
-          
+
       await _supabase
           .from('friends')
           .delete()
@@ -109,11 +163,12 @@ class FriendRepository {
           .eq('friend_id', userId);
     } catch (e) {
       debugPrint('[FriendRepository] rejectRequest error: $e');
+      rethrow;
     }
   }
 
-  /// Looks up a user by their UUID or display name and sends a friend request.
-  /// Returns the matched user's name on success, throws on failure.
+  /// Looks up a user by UUID or display_name and sends them a friend request.
+  /// Returns the matched user's display name on success.
   Future<String> addFriendByCode(String codeOrId) async {
     final userId = currentUserId;
     if (userId == null) throw Exception('Must be logged in.');
@@ -123,7 +178,6 @@ class FriendRepository {
     if (input == userId) throw Exception('You cannot add yourself as a friend.');
 
     try {
-      // Try exact UUID match first, then fall back to display_name match
       final List response = await _supabase
           .from('users')
           .select('id, display_name')
@@ -135,7 +189,7 @@ class FriendRepository {
         throw Exception('No user found with that ID or name.');
       }
 
-      final targetId = response.first['id'] as String;
+      final targetId   = response.first['id'] as String;
       final targetName = response.first['display_name'] as String? ?? 'User';
 
       await sendRequest(targetId);
@@ -146,18 +200,17 @@ class FriendRepository {
     }
   }
 
-  /// Returns the current user's profile for display in the QR code modal.
+  /// Returns the current user's public profile for the QR-code share modal.
   Future<Map<String, dynamic>?> getCurrentUserProfile() async {
     final userId = currentUserId;
     if (userId == null) return null;
 
     try {
-      final response = await _supabase
+      return await _supabase
           .from('users')
-          .select('id, display_name, avatar_url')
+          .select('id, display_name, avatar_url, is_online')
           .eq('id', userId)
           .maybeSingle();
-      return response;
     } catch (e) {
       debugPrint('[FriendRepository] getCurrentUserProfile error: $e');
       return null;

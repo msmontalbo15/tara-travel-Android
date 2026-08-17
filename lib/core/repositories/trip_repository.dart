@@ -62,13 +62,11 @@ class TripRepository {
     return snapshots.map((s) => TripModel.fromMap(s.value)).toList();
   }
 
-  /// Fetches a single trip by ID (local cache first, Supabase fallback)
+  /// Fetches a single trip by ID — always fetches fresh from Supabase so
+  /// expense totals and member data are up-to-date after realtime invalidation.
+  /// Falls back to local Sembast cache only when offline or on network error.
   Future<TripModel?> getTripById(String tripId) async {
     final db = await _db.database;
-
-    // Try local first for instant response
-    final local = await _tripStore.record(tripId).get(db);
-    if (local != null) return TripModel.fromMap(local);
 
     try {
       final response = await _supabase
@@ -79,10 +77,14 @@ class TripRepository {
 
       if (response == null) return null;
       final trip = TripModel.fromMap((response as Map).cast<String, dynamic>());
+      // Update local cache with the fresh data
       await _tripStore.record(trip.id).put(db, trip.toMap());
       return trip;
     } catch (e) {
-      debugPrint('[TripRepository] getTripById error: $e');
+      debugPrint('[TripRepository] getTripById error (falling back to cache): $e');
+      // Offline or network error — serve stale local data
+      final local = await _tripStore.record(tripId).get(db);
+      if (local != null) return TripModel.fromMap(local);
       return null;
     }
   }

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:share_plus/share_plus.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/providers/selected_trip_provider.dart';
 import '../../core/providers/trip_provider.dart';
@@ -15,7 +14,10 @@ import '../../core/models/trip_model.dart';
 import '../../core/models/expense_model.dart';
 import '../../core/widgets/buttons/app_back_button.dart';
 import '../../core/widgets/navigation/floating_nav_bar.dart';
+import '../../core/widgets/share/share_trip_modal.dart';
 import '../../core/constants/trip_types.dart';
+import '../../core/widgets/shimmer_loading.dart';
+import 'widgets/edit_trip_sheet.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TripDetailScreen — dashboard UI (glassmorphic iOS 17/18 layout)
@@ -38,12 +40,7 @@ class TripDetailScreen extends ConsumerWidget {
         }
         return _TripDashboard(trip: trip);
       },
-      loading: () => const Scaffold(
-        backgroundColor: AppColors.surfaceLight,
-        body: Center(
-          child: CircularProgressIndicator(color: AppColors.primary),
-        ),
-      ),
+      loading: () => const TripDetailSkeleton(),
       error: (e, _) => Scaffold(
         backgroundColor: AppColors.surfaceLight,
         body: Center(child: Text('Error: $e')),
@@ -63,9 +60,85 @@ class _TripDashboard extends ConsumerStatefulWidget {
 }
 
 class _TripDashboardState extends ConsumerState<_TripDashboard> {
+  bool _isPublishing = false;
+
   /// Parse cover color string/int with AppColors.parseTripColor
   Color _parseCoverColor(String? raw) =>
       AppColors.parseTripColor(raw, defaultColor: const Color(0xFF2C1A14));
+
+  Future<void> _handlePublishTrip(TripModel trip) async {
+    if (_isPublishing) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Publish Trip',
+            style: TextStyle(fontFamily: 'Playfair Display', fontWeight: FontWeight.w700)),
+        content: const Text(
+          'Publishing this trip will make it active, allowing you to track schedules, manage members, and split expenses.',
+          style: TextStyle(fontFamily: 'DM Sans', fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Publish Now'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _isPublishing = true);
+
+    try {
+      final updatedTrip = trip.copyWith(isDraft: false);
+      await ref.read(tripRepositoryProvider).updateTrip(updatedTrip);
+
+      // Seed default packing items if not present
+      try {
+        await ref.read(packingRepositoryProvider).seedDefaultItems(trip.id);
+      } catch (e) {
+        debugPrint('[TripDetail] Packing seed error on publish: $e');
+      }
+
+      ref.invalidate(allTripsProvider);
+      ref.invalidate(selectedTripProvider);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Trip published successfully! 🎉'),
+            backgroundColor: AppColors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to publish trip: $e'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isPublishing = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -162,6 +235,15 @@ class _TripDashboardState extends ConsumerState<_TripDashboard> {
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
+                    // Draft Publish Card
+                    if (trip.isDraft) ...[
+                      _DraftPublishCard(
+                        isLoading: _isPublishing,
+                        onPublish: () => _handlePublishTrip(trip),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+
                     // Stats row
                     _StatsRow(trip: trip, nights: nights),
                     const SizedBox(height: 12),
@@ -193,7 +275,7 @@ class _TripDashboardState extends ConsumerState<_TripDashboard> {
 
                     // Invite code
                     if (trip.inviteCode.isNotEmpty)
-                      _InviteCard(inviteCode: trip.inviteCode),
+                      _InviteCard(trip: trip),
 
                     // Bottom clearance for floating nav
                     const SizedBox(height: 80),
@@ -266,6 +348,62 @@ class _HeroHeader extends ConsumerWidget {
       ref.invalidate(allTripsProvider);
       if (context.mounted) {
         Navigator.pop(context);
+      }
+    }
+  }
+
+  Future<void> _toggleArchiveTrip(BuildContext context, WidgetRef ref) async {
+    final willArchive = !trip.isArchived;
+    final actionLabel = willArchive ? 'Archive' : 'Unarchive';
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('$actionLabel Trip'),
+        content: Text(
+          willArchive
+              ? 'Archiving "${trip.name}" will move it to Past Trips.'
+              : 'Unarchiving "${trip.name}" will restore it to your active/upcoming trips.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(actionLabel),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && context.mounted) {
+      final repo = ref.read(tripRepositoryProvider);
+      final updated = trip.copyWith(isArchived: willArchive);
+      await repo.updateTrip(updated);
+      ref.invalidate(allTripsProvider);
+      ref.invalidate(selectedTripProvider);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(willArchive ? 'Trip archived and closed 📦' : 'Trip unarchived ✨'),
+            backgroundColor: AppColors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+
+        // Automatically close the trip detail screen when archived
+        if (willArchive) {
+          ref.read(selectedTripIdProvider.notifier).clear();
+          Navigator.of(context).pop();
+        }
       }
     }
   }
@@ -371,16 +509,76 @@ class _HeroHeader extends ConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const AppBackButton(),
-                      IconButton(
-                        onPressed: () => _confirmDeleteTrip(context, ref),
-                        icon: const Icon(Icons.delete_outline_rounded, color: Colors.white70),
-                        tooltip: 'Delete Trip',
+                      PopupMenuButton<String>(
+                        icon: const Icon(Icons.more_vert_rounded, color: Colors.white70),
+                        color: const Color(0xFF2C2016),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
+                        onSelected: (value) {
+                          if (value == 'edit') EditTripSheet.show(context, trip);
+                          if (value == 'archive') _toggleArchiveTrip(context, ref);
+                          if (value == 'delete') _confirmDeleteTrip(context, ref);
+                        },
+                        itemBuilder: (_) => [
+                          const PopupMenuItem(
+                            value: 'edit',
+                            child: Row(
+                              children: [
+                                Icon(Icons.edit_outlined,
+                                    size: 18, color: Colors.white70),
+                                SizedBox(width: 12),
+                                Text('Edit Trip',
+                                    style: TextStyle(
+                                        fontFamily: 'DM Sans', color: Colors.white)),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: 'archive',
+                            child: Row(
+                              children: [
+                                Icon(
+                                  trip.isArchived
+                                      ? Icons.unarchive_outlined
+                                      : Icons.archive_outlined,
+                                  size: 18,
+                                  color: Colors.white70,
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  trip.isArchived ? 'Unarchive Trip' : 'Archive Trip',
+                                  style: const TextStyle(
+                                      fontFamily: 'DM Sans', color: Colors.white),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuDivider(),
+                          const PopupMenuItem(
+                            value: 'delete',
+                            child: Row(
+                              children: [
+                                Icon(Icons.delete_outline_rounded,
+                                    size: 18, color: Colors.redAccent),
+                                SizedBox(width: 12),
+                                Text('Delete Trip',
+                                    style: TextStyle(
+                                        fontFamily: 'DM Sans',
+                                        color: Colors.redAccent)),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                   const SizedBox(height: 20),
 
-                  _StatusBadge(isActive: isActive, isArchived: trip.isArchived),
+                  _StatusBadge(
+                    isActive: isActive,
+                    isArchived: trip.isArchived,
+                    isDraft: trip.isDraft,
+                  ),
                   const SizedBox(height: 10),
 
                   Text(
@@ -448,16 +646,29 @@ class _HeroHeader extends ConsumerWidget {
 class _StatusBadge extends StatelessWidget {
   final bool isActive;
   final bool isArchived;
-  const _StatusBadge({required this.isActive, required this.isArchived});
+  final bool isDraft;
+  const _StatusBadge({
+    required this.isActive,
+    required this.isArchived,
+    this.isDraft = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final label = isActive ? 'Active' : isArchived ? 'Completed' : 'Planning';
-    final dot = isActive
-        ? AppColors.greenBright
-        : isArchived
-            ? AppColors.warmMuted
-            : AppColors.amber;
+    final label = isDraft
+        ? 'Draft'
+        : isActive
+            ? 'Active'
+            : isArchived
+                ? 'Completed'
+                : 'Planning';
+    final dot = isDraft
+        ? AppColors.amberText
+        : isActive
+            ? AppColors.greenBright
+            : isArchived
+                ? AppColors.warmMuted
+                : AppColors.amber;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(22),
@@ -1014,19 +1225,19 @@ class _NavButton extends StatelessWidget {
 // Invite Code Card — dark glass with ambient glow
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _InviteCard extends StatefulWidget {
-  final String inviteCode;
-  const _InviteCard({required this.inviteCode});
+class _InviteCard extends ConsumerStatefulWidget {
+  final TripModel trip;
+  const _InviteCard({required this.trip});
 
   @override
-  State<_InviteCard> createState() => _InviteCardState();
+  ConsumerState<_InviteCard> createState() => _InviteCardState();
 }
 
-class _InviteCardState extends State<_InviteCard> {
+class _InviteCardState extends ConsumerState<_InviteCard> {
   bool _copied = false;
 
   void _copy() {
-    Clipboard.setData(ClipboardData(text: widget.inviteCode));
+    Clipboard.setData(ClipboardData(text: widget.trip.inviteCode));
     setState(() => _copied = true);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -1044,11 +1255,11 @@ class _InviteCardState extends State<_InviteCard> {
   }
 
   void _share() {
-    SharePlus.instance.share(
-      ShareParams(
-        text: 'Join my trip on Tara Travel! Enter invite code: ${widget.inviteCode}',
-        subject: 'Tara Travel Trip Invite',
-      ),
+    ShareTripModal.show(
+      context,
+      ref,
+      widget.trip,
+      initialScope: ShareScope.overview,
     );
   }
 
@@ -1103,7 +1314,7 @@ class _InviteCardState extends State<_InviteCard> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          widget.inviteCode,
+                          widget.trip.inviteCode,
                           style: const TextStyle(
                             fontFamily: 'DM Sans',
                             fontSize: 28,
@@ -1177,3 +1388,119 @@ class _InviteIconBtn extends StatelessWidget {
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Draft Publish Card — banner informing user and providing a Publish CTA
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _DraftPublishCard extends StatelessWidget {
+  final bool isLoading;
+  final VoidCallback onPublish;
+
+  const _DraftPublishCard({
+    required this.isLoading,
+    required this.onPublish,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.sand.withValues(alpha: 0.7),
+            Colors.white,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.amber.withValues(alpha: 0.35), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.amber.withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: AppColors.amberBg,
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.amber.withValues(alpha: 0.25)),
+            ),
+            child: const Icon(
+              Icons.edit_note_rounded,
+              color: AppColors.amberText,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 14),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Draft Trip',
+                  style: TextStyle(
+                    fontFamily: 'DM Sans',
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'Publish this trip to activate live tracking, member sharing, and packing lists.',
+                  style: TextStyle(
+                    fontFamily: 'DM Sans',
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          ElevatedButton(
+            onPressed: isLoading ? null : onPublish,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            child: isLoading
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Text(
+                    'Publish',
+                    style: TextStyle(
+                      fontFamily: 'DM Sans',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+

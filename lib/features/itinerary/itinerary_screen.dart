@@ -9,6 +9,8 @@ import '../../core/providers/trip_provider.dart';
 import '../../core/models/itinerary_model.dart';
 import '../../core/models/member_model.dart';
 import '../../core/providers/trip_weather_provider.dart';
+import '../../core/widgets/share/share_trip_modal.dart';
+import '../../core/widgets/shimmer_loading.dart';
 import 'widgets/day_strip.dart';
 import 'widgets/stop_card.dart';
 import 'widgets/add_stop_form.dart';
@@ -215,6 +217,33 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                                   ),
                                 ),
                                 const SizedBox(width: 10),
+                                // Share itinerary button
+                                GestureDetector(
+                                  onTap: () => ShareTripModal.show(
+                                    context,
+                                    ref,
+                                    trip,
+                                    initialScope: days.isNotEmpty ? ShareScope.currentDay : ShareScope.itinerary,
+                                    activeDayIndex: activeDay,
+                                  ),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                                    ),
+                                    child: const Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.share_rounded, color: Colors.white, size: 14),
+                                        SizedBox(width: 4),
+                                        Text('Share', style: TextStyle(fontFamily: 'DM Sans', fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white)),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
                                 // Arrival demo trigger (simulates GPS proximity)
                                 GestureDetector(
                                   onTap: () {
@@ -291,11 +320,11 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
               floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
             );
           },
-          loading: () => const Scaffold(backgroundColor: AppColors.deepEarth, body: Center(child: CircularProgressIndicator())),
+          loading: () => const ItineraryScreenSkeleton(),
           error: (e, _) => Scaffold(backgroundColor: AppColors.deepEarth, body: Center(child: Text('Itinerary Error: $e', style: const TextStyle(color: Colors.white)))),
         );
       },
-      loading: () => const Scaffold(backgroundColor: AppColors.deepEarth, body: Center(child: CircularProgressIndicator())),
+      loading: () => const ItineraryScreenSkeleton(),
       error: (e, _) => Scaffold(backgroundColor: AppColors.deepEarth, body: Center(child: Text('Trip Error: $e', style: const TextStyle(color: Colors.white)))),
     );
   }

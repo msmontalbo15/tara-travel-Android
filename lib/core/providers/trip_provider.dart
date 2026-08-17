@@ -4,6 +4,7 @@ import '../models/trip_model.dart';
 import '../models/member_model.dart';
 import '../providers/repository_providers.dart';
 import '../providers/selected_trip_provider.dart';
+import '../providers/profile_provider.dart';
 
 // ── All Trips ─────────────────────────────────────────────────────────────────
 //
@@ -42,19 +43,22 @@ final activeTripProvider = FutureProvider<TripModel?>((ref) async {
 final currentMemberProvider = Provider.family<MemberModel?, TripModel?>((ref, trip) {
   if (trip == null) return null;
   final authRepo = ref.watch(authRepositoryProvider);
+  final profile = ref.watch(profileProvider);
   final currentUserId = authRepo.currentUser?.id;
+  final effectiveUserName =
+      profile.effectiveName.isNotEmpty ? profile.effectiveName : 'Organizer';
 
   if (currentUserId == null) {
     return trip.members.firstWhere(
       (m) => m.roles.contains(MemberRole.organizer),
       orElse: () => trip.members.isNotEmpty
           ? trip.members.first
-          : const MemberModel(
+          : MemberModel(
               id: 'local_organizer',
-              name: 'Organizer',
-              initials: 'ORG',
-              color: Color(0xFFD85A30),
-              roles: [MemberRole.organizer],
+              name: effectiveUserName,
+              initials: profile.initials.isNotEmpty ? profile.initials : 'ORG',
+              color: profile.avatarColor,
+              roles: const [MemberRole.organizer],
             ),
     );
   }
@@ -65,16 +69,16 @@ final currentMemberProvider = Provider.family<MemberModel?, TripModel?>((ref, tr
       if (trip.ownerId == currentUserId || trip.members.isEmpty) {
         return MemberModel(
           id: currentUserId,
-          name: 'Organizer',
-          initials: 'ME',
-          color: const Color(0xFFD85A30),
+          name: effectiveUserName,
+          initials: profile.initials.isNotEmpty ? profile.initials : 'ME',
+          color: profile.avatarColor,
           roles: const [MemberRole.organizer],
         );
       }
       return MemberModel(
         id: currentUserId,
-        name: 'Member',
-        initials: 'ME',
+        name: profile.effectiveName.isNotEmpty ? profile.effectiveName : 'Member',
+        initials: profile.initials.isNotEmpty ? profile.initials : 'ME',
         color: const Color(0xFF6B7280),
         roles: const [MemberRole.member],
       );

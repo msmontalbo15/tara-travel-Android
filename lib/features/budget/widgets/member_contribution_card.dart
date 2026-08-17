@@ -16,6 +16,23 @@ class MemberContributionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (members.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: const Center(
+          child: Text(
+            'No members in this trip yet.',
+            style: TextStyle(fontFamily: 'DM Sans', fontSize: 13, color: AppColors.warmMuted),
+          ),
+        ),
+      );
+    }
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(

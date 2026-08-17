@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/providers/friend_provider.dart';
 import '../../core/widgets/inputs/app_text_field.dart';
+import '../../core/widgets/shimmer_loading.dart';
 import 'widgets/friend_list_item.dart';
 
 class FriendsScreen extends ConsumerStatefulWidget {
@@ -519,7 +520,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
           },
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+      loading: () => const FriendsListSkeleton(count: 4),
       error: (e, _) => Center(child: Text('Error: $e', style: const TextStyle(fontFamily: 'DM Sans', color: AppColors.red))),
     );
   }
@@ -587,7 +588,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
           },
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+      loading: () => const FriendsListSkeleton(count: 4),
       error: (e, _) => Center(child: Text('Error: $e', style: const TextStyle(fontFamily: 'DM Sans', color: AppColors.red))),
     );
   }

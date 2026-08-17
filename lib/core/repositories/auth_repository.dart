@@ -36,23 +36,78 @@ class AuthRepository {
     return _googleSignInInstance!;
   }
 
+  // ── Registration Check ───────────────────────────────────────────────────
+
+  /// Checks if a user profile already exists with the given email.
+  Future<bool> isUserRegistered(String email) async {
+    try {
+      final res = await _supabase.rpc(
+        'check_user_registered',
+        params: {'p_email': email.trim().toLowerCase()},
+      );
+      if (res is bool) return res;
+    } catch (e) {
+      debugPrint('[AuthRepository] check_user_registered RPC note: $e');
+    }
+
+    // Fallback: direct table query
+    try {
+      final rows = await _supabase
+          .from('users')
+          .select('id')
+          .eq('email', email.trim().toLowerCase())
+          .limit(1);
+      return (rows as List).isNotEmpty;
+    } catch (e) {
+      debugPrint('[AuthRepository] direct users table check error: $e');
+      // If table query fails, default to false so confirmation can be shown safely
+      return false;
+    }
+  }
+
   // ── Google Sign-In ─────────────────────────────────────────────────────────
 
   /// Performs fast native Google Sign-In and exchanges the ID token with Supabase.
-  /// Automatically falls back to OAuth browser flow if native SDK is unconfigured.
-  Future<User?> signInWithGoogle() async {
+  /// If the account is not registered yet and [onConfirmNewAccount] is provided,
+  /// it prompts for confirmation before creating the Supabase user.
+  Future<User?> signInWithGoogle({
+    Future<bool> Function({
+      required String email,
+      required String? displayName,
+      required String? photoUrl,
+    })? onConfirmNewAccount,
+  }) async {
     try {
       GoogleSignInAccount? googleUser;
+      Object? nativeError;
       try {
         if (await _googleSignIn.isSignedIn()) {
           await _googleSignIn.signOut();
         }
         googleUser = await _googleSignIn.signIn();
       } catch (e) {
-        debugPrint('[AuthRepository] Native Google sign-in note: $e');
+        nativeError = e;
+        debugPrint('[AuthRepository] Native Google sign-in error: $e');
       }
 
       if (googleUser != null) {
+        // If confirmation callback is provided, check if the account is already registered
+        if (onConfirmNewAccount != null) {
+          final registered = await isUserRegistered(googleUser.email);
+          if (!registered) {
+            final confirmed = await onConfirmNewAccount(
+              email: googleUser.email,
+              displayName: googleUser.displayName,
+              photoUrl: googleUser.photoUrl,
+            );
+            if (!confirmed) {
+              // User cancelled creating an account
+              await _googleSignIn.signOut();
+              return null;
+            }
+          }
+        }
+
         final googleAuth = await googleUser.authentication;
         final idToken = googleAuth.idToken;
         final accessToken = googleAuth.accessToken;
@@ -67,18 +122,23 @@ class AuthRepository {
         }
       }
 
-      // If user deliberately cancelled native account picker, return null
-      if (googleUser == null && await _googleSignIn.isSignedIn() == false) {
+      // If user deliberately cancelled native account picker without any error
+      if (googleUser == null && nativeError == null) {
         return null;
       }
 
-      // Fallback: Trigger browser OAuth flow if native token wasn't issued
+      // Fallback: Trigger browser OAuth flow if native token wasn't issued or native SDK failed
+      debugPrint('[AuthRepository] Attempting browser OAuth fallback...');
       final launched = await _supabase.auth.signInWithOAuth(
         OAuthProvider.google,
         redirectTo: 'taratravel://callback',
       );
       if (launched) {
         return await waitForSession(timeout: const Duration(seconds: 15));
+      }
+
+      if (nativeError != null) {
+        throw UnknownAuthFailure('Google sign-in error: $nativeError');
       }
       return null;
     } on AuthException catch (e) {

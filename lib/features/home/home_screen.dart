@@ -1,12 +1,17 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../../core/models/trip_model.dart';
 import '../../core/providers/profile_provider.dart';
 import '../../core/providers/packing_provider.dart';
 import '../../core/providers/trip_provider.dart';
 import '../../core/providers/selected_trip_provider.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/app_brand_logo.dart';
 import '../../core/widgets/profile_completion_banner.dart';
 import '../../core/widgets/navigation/floating_nav_bar.dart';
+import '../../core/widgets/shimmer_loading.dart';
 import '../../core/utils/jit_guard.dart';
 
 import '../budget/budget_screen.dart';
@@ -17,6 +22,7 @@ import 'home_route_args.dart';
 import 'widgets/next_trip_card.dart';
 import 'widgets/quick_action_tile.dart';
 import 'widgets/trip_card.dart';
+import 'widgets/trip_action_sheet.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -177,6 +183,70 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
     setState(() => _tourStep += 1);
   }
 
+  Widget _buildAvatar(ProfileState profile) {
+    final photoUrl = profile.profilePhotoUrl;
+    Widget? imageWidget;
+    if (photoUrl != null && photoUrl.isNotEmpty) {
+      if (photoUrl.startsWith('http')) {
+        imageWidget = CachedNetworkImage(
+          imageUrl: photoUrl,
+          fit: BoxFit.cover,
+          width: 42,
+          height: 42,
+          errorWidget: (_, __, ___) => _initialsAvatar(profile),
+        );
+      } else {
+        final file = File(photoUrl);
+        if (file.existsSync()) {
+          imageWidget = Image.file(
+            file,
+            fit: BoxFit.cover,
+            width: 42,
+            height: 42,
+            errorBuilder: (_, __, ___) => _initialsAvatar(profile),
+          );
+        }
+      }
+    }
+
+    return Container(
+      width: 42,
+      height: 42,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.18),
+          width: 2,
+        ),
+      ),
+      child: ClipOval(
+        child: imageWidget ?? _initialsAvatar(profile),
+      ),
+    );
+  }
+
+  Widget _initialsAvatar(ProfileState profile) {
+    return Container(
+      color: profile.avatarColor,
+      alignment: Alignment.center,
+      child: profile.initials.isNotEmpty
+          ? Text(
+              profile.initials,
+              style: const TextStyle(
+                fontFamily: 'DM Sans',
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            )
+          : const Icon(
+              Icons.person_rounded,
+              size: 20,
+              color: Colors.white,
+            ),
+    );
+  }
+
   @override
   void dispose() {
     _scrollCtrl.dispose();
@@ -186,7 +256,9 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(profileProvider);
-    const unreadCount = 0;
+    final isProfileIncomplete =
+        profile.homeCity.isEmpty || (profile.gcashNumber == null || profile.gcashNumber!.isEmpty);
+    final unreadCount = isProfileIncomplete ? 1 : 0;
 
     final activeTripAsync = ref.watch(activeTripProvider);
     final trip = activeTripAsync.value;
@@ -199,225 +271,40 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
     }
 
     final topInset = MediaQuery.of(context).padding.top;
-    final topPadding = topInset > 0 ? topInset + 16.0 : 48.0;
+    final topPadding = topInset > 0 ? topInset : 0.0;
 
     return Scaffold(
       backgroundColor: AppColors.deepEarth,
       body: Stack(
         children: [
-          Column(
-            children: [
-              Container(
-                padding: EdgeInsets.fromLTRB(24, topPadding, 24, 24),
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF1A0A04), Color(0xFF2C1A14)],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
+          RefreshIndicator(
+            onRefresh: () async {
+              ref.invalidate(allTripsProvider);
+              ref.invalidate(activeTripProvider);
+              ref.invalidate(profileProvider);
+            },
+            child: CustomScrollView(
+              controller: _scrollCtrl,
+              physics: const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics(),
+              ),
+              slivers: [
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _HomeHeaderDelegate(
+                    profile: profile,
+                    activeTrip: trip,
+                    isLoadingTrip: activeTripAsync.isLoading,
+                    tripError: activeTripAsync.error?.toString(),
+                    unreadCount: unreadCount,
+                    topPadding: topPadding,
+                    tourVisible: _tourVisible,
+                    tourStep: _tourStep,
+                    greeting: _greeting(),
+                    buildAvatar: _buildAvatar,
                   ),
                 ),
-                child: Column(
-                  children: [
-                    _TourFocus(
-                      highlight: _tourVisible && _tourStep == 0,
-                      borderRadius: 24,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  _greeting(),
-                                  style: TextStyle(
-                                    fontFamily: 'DM Sans',
-                                    fontSize: 13,
-                                    color: Colors.white.withValues(alpha: 0.6),
-                                  ),
-                                ),
-                                AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 300),
-                                  child: Text(
-                                    profile.displayNameForHome,
-                                    key: ValueKey(profile.displayNameForHome),
-                                    style: const TextStyle(
-                                      fontFamily: 'Playfair Display',
-                                      fontSize: 28,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.white,
-                                      height: 1.1,
-                                      letterSpacing: -0.5,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Row(
-                            children: [
-                              Tooltip(
-                                message: 'Friends',
-                                child: Material(
-                                  color: Colors.transparent,
-                                  child: InkWell(
-                                    onTap: () => Navigator.pushNamed(
-                                        context, '/friends'),
-                                    customBorder: const CircleBorder(),
-                                    child: Container(
-                                      width: 44,
-                                      height: 44,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white
-                                            .withValues(alpha: 0.08),
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                            color: Colors.white
-                                                .withValues(alpha: 0.06)),
-                                      ),
-                                      child: const Icon(Icons.people_outline,
-                                          color: Colors.white, size: 22),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Tooltip(
-                                message: 'Notifications',
-                                child: Material(
-                                  color: Colors.transparent,
-                                  child: InkWell(
-                                    onTap: () => Navigator.pushNamed(
-                                        context, '/notifications'),
-                                    customBorder: const CircleBorder(),
-                                    child: Stack(
-                                      clipBehavior: Clip.none,
-                                      children: [
-                                        Container(
-                                          width: 44,
-                                          height: 44,
-                                          decoration: BoxDecoration(
-                                            color: Colors.white
-                                                .withValues(alpha: 0.08),
-                                            shape: BoxShape.circle,
-                                            border: Border.all(
-                                                color: Colors.white
-                                                    .withValues(alpha: 0.06)),
-                                          ),
-                                          child: const Icon(
-                                              Icons.notifications_outlined,
-                                              color: Colors.white,
-                                              size: 22),
-                                        ),
-                                        if (unreadCount > 0)
-                                          Positioned(
-                                            top: -2,
-                                            right: -2,
-                                            child:
-                                                TweenAnimationBuilder<double>(
-                                              tween:
-                                                  Tween(begin: 0.0, end: 1.0),
-                                              duration: const Duration(
-                                                  milliseconds: 300),
-                                              curve: Curves.elasticOut,
-                                              builder: (context, scale, child) {
-                                                return Transform.scale(
-                                                    scale: scale, child: child);
-                                              },
-                                              child: Container(
-                                                width: 18,
-                                                height: 18,
-                                                decoration: BoxDecoration(
-                                                  color: AppColors.primary,
-                                                  shape: BoxShape.circle,
-                                                  border: Border.all(
-                                                      color:
-                                                          AppColors.deepEarth,
-                                                      width: 2),
-                                                ),
-                                                child: const Center(
-                                                  child: Text(
-                                                    '$unreadCount',
-                                                    style: TextStyle(
-                                                      fontFamily: 'DM Sans',
-                                                      fontSize: 9,
-                                                      fontWeight:
-                                                          FontWeight.w700,
-                                                      color: Colors.white,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Tooltip(
-                                message: 'Profile',
-                                child: GestureDetector(
-                                  onTap: () =>
-                                      Navigator.pushNamed(context, '/profile'),
-                                  child: Semantics(
-                                    label: 'User avatar, ${profile.firstName}',
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                            color: Colors.white
-                                                .withValues(alpha: 0.15),
-                                            width: 2),
-                                      ),
-                                      child: CircleAvatar(
-                                        radius: 20,
-                                        backgroundColor: profile.avatarColor,
-                                        foregroundColor: Colors.white,
-                                        child: Text(
-                                          profile.initials,
-                                          style: const TextStyle(
-                                              fontSize: 15,
-                                              fontWeight: FontWeight.w700),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 22),
-                    ref.watch(activeTripProvider).when(
-                          data: (trip) => trip != null
-                              ? NextTripCard(
-                                  trip: trip,
-                                  collapsed: _cardCollapsed,
-                                )
-                              : const SizedBox.shrink(),
-                          loading: () => const Center(
-                            child: CircularProgressIndicator(),
-                          ),
-                          error: (error, _) => Text('Error: $error'),
-                        ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: RefreshIndicator(
-                  onRefresh: () async {
-                    ref.invalidate(allTripsProvider);
-                    ref.invalidate(activeTripProvider);
-                    ref.invalidate(profileProvider);
-                  },
+                SliverToBoxAdapter(
                   child: Container(
                     width: double.infinity,
                     decoration: const BoxDecoration(
@@ -427,33 +314,32 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
                         topRight: Radius.circular(32),
                       ),
                     ),
-                    child: SingleChildScrollView(
-                      controller: _scrollCtrl,
-                      physics: const BouncingScrollPhysics(),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 22,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const ProfileCompletionBanner(),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 22,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const ProfileCompletionBanner(),
 
-                            ref.watch(allTripsProvider).when(
-                                  data: (trips) {
-                                    if (trips.isEmpty) {
-                                      return const SizedBox.shrink();
-                                    }
-                                    return Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        _TourFocus(
-                                          highlight:
-                                              _tourVisible && _tourStep == 1,
-                                          borderRadius: 22,
-                                          child: Row(
+                          ref.watch(allTripsProvider).when(
+                                data: (trips) {
+                                  // Exclude archived trips from the homepage
+                                  final visibleTrips = trips.where((t) => !t.isArchived).toList();
+                                  if (visibleTrips.isEmpty) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  return Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      _TourFocus(
+                                        highlight:
+                                            _tourVisible && _tourStep == 1,
+                                        borderRadius: 22,
+                                        child: Row(
                                           mainAxisAlignment:
                                               MainAxisAlignment.spaceBetween,
                                           children: [
@@ -493,16 +379,18 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
                                             ),
                                           ],
                                         ),
-                                        ),
+                                      ),
                                         Column(
-                                          children: trips
+                                          children: visibleTrips
                                               .map(
                                                 (trip) => trip.isDraft
                                                     ? TripCard.draft(
                                                         name: trip.name,
                                                         destination: trip.destination.isNotEmpty ? trip.destination : null,
+                                                        isIncomplete: trip.isIncomplete,
                                                         dateRange:
                                                             '${trip.fromDate.month}/${trip.fromDate.day}-${trip.toDate.day}, ${trip.toDate.year}',
+                                                        onMore: () => TripActionSheet.show(context, ref, trip),
                                                         onTap: () {
                                                           ref
                                                               .read(selectedTripIdProvider
@@ -516,10 +404,13 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
                                                         name: trip.name,
                                                         destination: trip.destination,
                                                         tripId: trip.id,
+                                                        isIncomplete: trip.isIncomplete,
                                                         dateRange:
                                                             '${trip.fromDate.month}/${trip.fromDate.day}-${trip.toDate.day}, ${trip.toDate.year}',
                                                         budget:
                                                             'P${(trip.totalBudget / 1000).toStringAsFixed(0)}k',
+                                                        totalBudget: trip.totalBudget,
+                                                        totalSpent: trip.totalSpent,
                                                         days: trip.toDate
                                                                 .difference(
                                                                     trip.fromDate)
@@ -531,6 +422,7 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
                                                             AppColors.parseTripColor(
                                                                 trip.coverColor),
                                                         coverEmoji: trip.coverEmoji,
+                                                        onMore: () => TripActionSheet.show(context, ref, trip),
                                                         travelers: trip.members
                                                             .map(
                                                               (member) => TravelerInfo(
@@ -597,7 +489,7 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
                                     );
                                   },
                                   loading: () =>
-                                      const CircularProgressIndicator(),
+                                      const TripsListSkeleton(count: 2),
                                   error: (error, _) =>
                                       Text('Error loading trips: $error'),
                                 ),
@@ -720,10 +612,9 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
                       ),
                     ),
                   ),
-                ),
+                ],
               ),
-            ],
-          ),
+            ),
           if (_tourVisible)
             Positioned.fill(
               child: IgnorePointer(
@@ -1033,3 +924,288 @@ const List<_TourStep> _tourSteps = [
         'When you are ready, tap New trip to create your plan, add travelers, and begin organizing everything in one flow.',
   ),
 ];
+
+// ── Name Loading Shimmer ─────────────────────────────────────────────────────
+// Shown in place of the user's name while the profile is still being fetched.
+
+class _NameLoadingShimmer extends StatelessWidget {
+  const _NameLoadingShimmer({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const ShimmerLoading(
+      isDark: true,
+      child: ShimmerBox(
+        width: 140,
+        height: 26,
+        borderRadius: 6,
+        isDark: true,
+      ),
+    );
+  }
+}
+
+// ── Pinned Collapsible Home Header Delegate ──────────────────────────────────
+
+class _HomeHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final ProfileState profile;
+  final TripModel? activeTrip;
+  final bool isLoadingTrip;
+  final String? tripError;
+  final int unreadCount;
+  final double topPadding;
+  final bool tourVisible;
+  final int tourStep;
+  final String greeting;
+  final Widget Function(ProfileState) buildAvatar;
+
+  const _HomeHeaderDelegate({
+    required this.profile,
+    required this.activeTrip,
+    required this.isLoadingTrip,
+    this.tripError,
+    required this.unreadCount,
+    required this.topPadding,
+    required this.tourVisible,
+    required this.tourStep,
+    required this.greeting,
+    required this.buildAvatar,
+  });
+
+  @override
+  double get minExtent {
+    if (activeTrip == null && !isLoadingTrip) {
+      return topPadding + 100.0;
+    }
+    return topPadding + 215.0;
+  }
+
+  @override
+  double get maxExtent {
+    if (activeTrip == null && !isLoadingTrip) {
+      return topPadding + 100.0;
+    }
+    return topPadding + 375.0;
+  }
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    final t = (shrinkOffset / (maxExtent - minExtent)).clamp(0.0, 1.0);
+    final isCollapsed = t > 0.25;
+
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF1A0A04), Color(0xFF2C1A14)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+      ),
+      padding: EdgeInsets.fromLTRB(20, topPadding, 20, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Brand Bar & Action Buttons ──────────────────────────
+          _TourFocus(
+            highlight: tourVisible && tourStep == 0,
+            borderRadius: 20,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const AppBrandLogo(
+                  size: 32,
+                  showWordmark: true,
+                  isDark: true,
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Tooltip(
+                      message: 'Friends',
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () => Navigator.pushNamed(context, '/friends'),
+                          customBorder: const CircleBorder(),
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.08),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.06),
+                              ),
+                            ),
+                            child: const Icon(Icons.people_outline,
+                                color: Colors.white, size: 20),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Tooltip(
+                      message: 'Notifications',
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () =>
+                              Navigator.pushNamed(context, '/notifications'),
+                          customBorder: const CircleBorder(),
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.08),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.06),
+                                  ),
+                                ),
+                                child: const Icon(
+                                    Icons.notifications_outlined,
+                                    color: Colors.white,
+                                    size: 20),
+                              ),
+                              if (unreadCount > 0)
+                                Positioned(
+                                  top: -2,
+                                  right: -2,
+                                  child: TweenAnimationBuilder<double>(
+                                    tween: Tween(begin: 0.0, end: 1.0),
+                                    duration: const Duration(milliseconds: 300),
+                                    curve: Curves.elasticOut,
+                                    builder: (context, scale, child) {
+                                      return Transform.scale(
+                                          scale: scale, child: child);
+                                    },
+                                    child: Container(
+                                      width: 18,
+                                      height: 18,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primary,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                            color: AppColors.deepEarth,
+                                            width: 2),
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          '$unreadCount',
+                                          style: const TextStyle(
+                                            fontFamily: 'DM Sans',
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.w700,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Tooltip(
+                      message: 'Profile',
+                      child: GestureDetector(
+                        onTap: () => Navigator.pushNamed(context, '/profile'),
+                        child: Semantics(
+                          label: profile.displayNameForHome.isNotEmpty
+                              ? 'User avatar, ${profile.displayNameForHome}'
+                              : 'User avatar',
+                          child: buildAvatar(profile),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          // ── Greeting & Name ────────────────────────────────────
+          Text(
+            greeting,
+            style: TextStyle(
+              fontFamily: 'DM Sans',
+              fontSize: 12,
+              color: Colors.white.withValues(alpha: 0.6),
+            ),
+          ),
+          const SizedBox(height: 2),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            child: profile.displayNameForHome.isEmpty
+                ? const _NameLoadingShimmer(key: ValueKey('shimmer'))
+                : Text(
+                    profile.displayNameForHome,
+                    key: ValueKey(profile.displayNameForHome),
+                    style: const TextStyle(
+                      fontFamily: 'Playfair Display',
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      height: 1.1,
+                      letterSpacing: -0.5,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+          ),
+          // ── Next Trip Section ──────────────────────────────────
+          if (activeTrip != null) ...[
+            const SizedBox(height: 12),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 6.0),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: SingleChildScrollView(
+                    physics: const NeverScrollableScrollPhysics(),
+                    child: NextTripCard(
+                      trip: activeTrip!,
+                      collapsed: isCollapsed,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ] else if (isLoadingTrip) ...[
+            const SizedBox(height: 12),
+            const Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(bottom: 6.0),
+                child: NextTripCardSkeleton(),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _HomeHeaderDelegate oldDelegate) {
+    return oldDelegate.profile != profile ||
+        oldDelegate.activeTrip != activeTrip ||
+        oldDelegate.isLoadingTrip != isLoadingTrip ||
+        oldDelegate.tripError != tripError ||
+        oldDelegate.unreadCount != unreadCount ||
+        oldDelegate.topPadding != topPadding ||
+        oldDelegate.tourVisible != tourVisible ||
+        oldDelegate.tourStep != tourStep ||
+        oldDelegate.greeting != greeting;
+  }
+}

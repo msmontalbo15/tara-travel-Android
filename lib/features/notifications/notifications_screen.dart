@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/providers/profile_provider.dart';
 import 'package:intl/intl.dart';
 import 'models/notification_model.dart';
 
-class NotificationsScreen extends StatefulWidget {
+class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
 
   @override
-  State<NotificationsScreen> createState() => _NotificationsScreenState();
+  ConsumerState<NotificationsScreen> createState() => _NotificationsScreenState();
 }
 
-class _NotificationsScreenState extends State<NotificationsScreen> {
+class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   late List<NotificationItem> _notifications;
   String _selectedFilter = 'All';
 
@@ -118,6 +120,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         return Icons.location_on_outlined;
       case NotificationCategory.weather:
         return Icons.wb_sunny_outlined;
+      case NotificationCategory.packing:
+        return Icons.backpack_rounded;
     }
   }
 
@@ -132,6 +136,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         return AppColors.blue;
       case NotificationCategory.weather:
         return AppColors.amber;
+      case NotificationCategory.packing:
+        return AppColors.primary;
     }
   }
 
@@ -148,10 +154,128 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return DateFormat('MMM d').format(time);
   }
 
+  Widget _buildProfileSetupCard(BuildContext context, List<String> missingTasks) {
+    return GestureDetector(
+      onTap: () => Navigator.pushNamed(context, '/profile'),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: AppColors.primary.withValues(alpha: 0.35),
+            width: 1.2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.08),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.assignment_ind_outlined,
+                color: AppColors.primary,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Flexible(
+                        child: Text(
+                          'Complete your profile setup',
+                          style: TextStyle(
+                            fontFamily: 'DM Sans',
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Text(
+                          'Action Required',
+                          style: TextStyle(
+                            fontFamily: 'DM Sans',
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Add your ${missingTasks.join(' and ')} to easily settle group expenses and unlock all features.',
+                    style: const TextStyle(
+                      fontFamily: 'DM Sans',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textPrimary,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  const Row(
+                    children: [
+                      Text(
+                        'Complete setup now',
+                        style: TextStyle(
+                          fontFamily: 'DM Sans',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      SizedBox(width: 4),
+                      Icon(Icons.arrow_forward_rounded, size: 13, color: AppColors.primary),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final profile = ref.watch(profileProvider);
+    final missingTasks = <String>[];
+    if (profile.homeCity.isEmpty) missingTasks.add('home location');
+    if (profile.gcashNumber == null || profile.gcashNumber!.isEmpty) {
+      missingTasks.add('GCash number');
+    }
+    final showProfilePrompt = missingTasks.isNotEmpty &&
+        (_selectedFilter == 'All' || _selectedFilter == 'Unread' || _selectedFilter == 'Alerts');
+
     final displayedList = _filteredNotifications;
-    final unreadCount = _notifications.where((n) => !n.isRead).length;
+    final unreadCount = _notifications.where((n) => !n.isRead).length + (missingTasks.isNotEmpty ? 1 : 0);
 
     return Scaffold(
       backgroundColor: AppColors.surfaceLight,
@@ -186,7 +310,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ],
       ),
       body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Filter Chips
           SingleChildScrollView(
@@ -230,7 +353,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ),
           
           Expanded(
-            child: displayedList.isEmpty
+            child: (displayedList.isEmpty && !showProfilePrompt)
                 ? const Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -251,11 +374,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 : ListView.separated(
                     padding: const EdgeInsets.only(
                         left: 20, right: 20, top: 8, bottom: 40),
-                    itemCount: displayedList.length,
+                    itemCount: (showProfilePrompt ? 1 : 0) + displayedList.length,
                     separatorBuilder: (context, index) =>
                         const SizedBox(height: 10),
                     itemBuilder: (context, index) {
-                      final item = displayedList[index];
+                      if (showProfilePrompt && index == 0) {
+                        return _buildProfileSetupCard(context, missingTasks);
+                      }
+
+                      final itemIndex = showProfilePrompt ? index - 1 : index;
+                      final item = displayedList[itemIndex];
                       final originalIndex =
                           _notifications.indexWhere((n) => n.id == item.id);
 

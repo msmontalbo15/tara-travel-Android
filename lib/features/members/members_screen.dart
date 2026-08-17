@@ -11,6 +11,7 @@ import '../../core/providers/repository_providers.dart';
 import '../../core/models/member_model.dart';
 import '../../core/models/trip_model.dart';
 import '../../core/widgets/buttons/app_back_button.dart';
+import '../../core/widgets/shimmer_loading.dart';
 
 class MembersScreen extends ConsumerStatefulWidget {
   final bool showHeader;
@@ -122,7 +123,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
           ),
         );
       },
-      loading: () => const Scaffold(backgroundColor: AppColors.deepEarth, body: Center(child: CircularProgressIndicator())),
+      loading: () => const MembersScreenSkeleton(),
       error: (e, _) => Scaffold(backgroundColor: AppColors.deepEarth, body: Center(child: Text('Error: $e'))),
     );
   }

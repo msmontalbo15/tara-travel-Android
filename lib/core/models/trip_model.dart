@@ -51,6 +51,15 @@ class TripModel {
 
   double get remainingBudget => totalBudget - totalSpent;
 
+  /// Returns true if essential trip details (destination, budget, or valid dates) are missing/unspecified
+  bool get isIncomplete =>
+      isDraft ||
+      destination.trim().isEmpty ||
+      destination.trim().toUpperCase() == 'TBD' ||
+      name.trim().isEmpty ||
+      name.trim().toLowerCase() == 'my trip' ||
+      name.trim().toLowerCase() == 'draft trip';
+
   TripModel copyWith({
     String? id,
     String? name,

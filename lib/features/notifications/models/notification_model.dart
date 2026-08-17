@@ -4,6 +4,7 @@ enum NotificationCategory {
   payment,
   proximity,
   weather,
+  packing,
 }
 
 class NotificationItem {
@@ -60,6 +61,10 @@ class NotificationItem {
       case 'proximity':
       case 'location':
         category = NotificationCategory.proximity;
+        break;
+      case 'packing':
+      case 'packing_reminder':
+        category = NotificationCategory.packing;
         break;
       default:
         category = NotificationCategory.weather;

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/providers/activity_provider.dart';
 import '../../core/models/activity_model.dart';
+import '../../core/widgets/shimmer_loading.dart';
 
 // Standalone screen (with back button)
 class ActivityLogScreen extends ConsumerWidget {
@@ -39,7 +40,7 @@ class _ActivityList extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final activityAsync = ref.watch(activityProvider);
     return activityAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const ActivityListSkeleton(count: 6),
       error: (_, __) => const Center(child: Text('Unable to load activity')),
       data: (state) {
         final items = state.filtered;

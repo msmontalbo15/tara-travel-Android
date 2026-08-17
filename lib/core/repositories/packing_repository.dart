@@ -5,7 +5,7 @@ import '../services/database_service.dart';
 import '../services/session_cache_service.dart';
 import 'package:sembast/sembast.dart';
 
-/// Default packing categories seeded for every new trip.
+/// Default packing categories seeded for trips.
 const List<Map<String, dynamic>> _kDefaultCategories = [
   {'id': 'essentials', 'name': 'Essentials',    'icon': 0xe42d, 'color': 0xFFD85A30},
   {'id': 'clothing',   'name': 'Clothing',       'icon': 0xe90d, 'color': 0xFF8B5CF6},
@@ -13,15 +13,19 @@ const List<Map<String, dynamic>> _kDefaultCategories = [
   {'id': 'gadgets',    'name': 'Gadgets',        'icon': 0xe1b1, 'color': 0xFF3B82F6},
   {'id': 'documents',  'name': 'Documents',      'icon': 0xe873, 'color': 0xFFEF9F27},
   {'id': 'medicines',  'name': 'Medicines',      'icon': 0xe3f0, 'color': 0xFFEF4444},
+  {'id': 'food',       'name': 'Food & Snacks',  'icon': 0xe532, 'color': 0xFF10B981},
+  {'id': 'others',     'name': 'Others',         'icon': 0xe5d3, 'color': 0xFF6B7280},
 ];
 
 const Map<String, List<String>> _kDefaultItems = {
-  'essentials': ['Passport / ID', 'Cash (PHP)', 'Travel Pillow', 'Sunscreen SPF 50+'],
+  'essentials': ['Passport / Valid ID', 'Cash (PHP)', 'Travel Pillow', 'Sunscreen SPF 50+'],
   'clothing':   ['T-shirts (3x)', 'Underwear (4x)', 'Shorts', 'Light Jacket', 'Sandals'],
-  'toiletries': ['Toothbrush', 'Toothpaste', 'Shampoo', 'Body Wash', 'Deodorant'],
-  'gadgets':    ['Phone Charger', 'Power Bank', 'Earphones', 'Camera'],
-  'documents':  ['E-tickets', 'Hotel Booking', 'Emergency Contacts'],
-  'medicines':  ['Pain Reliever', 'Anti-diarrhea', 'Antihistamine', 'Band-Aids'],
+  'toiletries': ['Toothbrush & Paste', 'Shampoo & Body Wash', 'Deodorant', 'Wet Wipes'],
+  'gadgets':    ['Phone Charger', 'Power Bank (20,000mAh)', 'Earphones', 'Camera'],
+  'documents':  ['E-tickets / Boarding Pass', 'Hotel Booking Confirmation', 'Emergency Contacts'],
+  'medicines':  ['Pain Reliever / Paracetamol', 'Anti-diarrhea (Loperamide)', 'Antihistamine', 'Band-Aids'],
+  'food':       ['Drinking Water / Flask', 'Trail & Road Snacks', 'Instant 3-in-1 Coffee'],
+  'others':     ['Reusable Shopping Bag', 'Ziploc Pouches'],
 };
 
 class PackingRepository {
@@ -31,6 +35,9 @@ class PackingRepository {
 
   StoreRef<String, Map<String, dynamic>> get _store =>
       _db.getStore(DatabaseService.packingStore);
+
+  StoreRef<String, Map<String, dynamic>> get _templateStore =>
+      _db.getStore(DatabaseService.packingTemplateStore);
 
   // ────────────────────────────────────────────────────────────────
   // READ
@@ -95,12 +102,49 @@ class PackingRepository {
     }
   }
 
+  /// Assigns or unassigns an item to a member.
+  Future<void> assignItem({
+    required String itemId,
+    required String? memberId,
+    String? memberName,
+    String? memberInitials,
+    int? memberColor,
+    String? memberRole,
+  }) async {
+    final db = await _db.database;
+    final payload = {
+      'assigned_user_id': memberId,
+      'assigned_user_name': memberName,
+      'assigned_user_initials': memberInitials,
+      'assigned_user_color': memberColor,
+      'assigned_user_role': memberRole,
+    };
+    await _store.record(itemId).update(db, payload);
+
+    try {
+      await _supabase
+          .from('packing_items')
+          .update({
+            'assigned_user_id': memberId,
+          })
+          .eq('id', itemId);
+    } catch (e) {
+      debugPrint('[PackingRepository] assignItem sync error: $e');
+    }
+  }
+
   /// Adds a new packing item to a category.
   Future<PackingItem> addItem({
     required String tripId,
     required String category,
     required String name,
     bool isAiSuggested = false,
+    bool isCritical = false,
+    String? assignedMemberId,
+    String? assignedMemberName,
+    String? assignedMemberInitials,
+    int? assignedMemberColor,
+    String? memberRole,
   }) async {
     final id = 'local_${DateTime.now().millisecondsSinceEpoch}';
     final row = {
@@ -110,6 +154,12 @@ class PackingRepository {
       'category': category,
       'is_checked': false,
       'is_ai_suggested': isAiSuggested,
+      'is_critical': isCritical,
+      'assigned_user_id': assignedMemberId,
+      'assigned_user_name': assignedMemberName,
+      'assigned_user_initials': assignedMemberInitials,
+      'assigned_user_color': assignedMemberColor,
+      'assigned_user_role': memberRole,
       'created_at': DateTime.now().toIso8601String(),
     };
 
@@ -126,6 +176,7 @@ class PackingRepository {
             'category': category,
             'is_checked': false,
             'is_ai_suggested': isAiSuggested,
+            if (assignedMemberId != null) 'assigned_user_id': assignedMemberId,
             'created_by': _supabase.auth.currentUser?.id,
           })
           .select()
@@ -144,6 +195,12 @@ class PackingRepository {
       id: remoteId,
       name: name,
       isAiSuggested: isAiSuggested,
+      isCritical: isCritical,
+      assignedMemberId: assignedMemberId,
+      assignedMemberName: assignedMemberName,
+      assignedMemberInitials: assignedMemberInitials,
+      assignedMemberColor: assignedMemberColor,
+      assignedMemberRole: memberRole,
     );
   }
 
@@ -156,6 +213,36 @@ class PackingRepository {
       await _supabase.from('packing_items').delete().eq('id', itemId);
     } catch (e) {
       debugPrint('[PackingRepository] deleteItem sync error: $e');
+    }
+  }
+
+  /// Deletes all packing items under a specific category for a trip.
+  Future<void> deleteCategory(String tripId, String categoryId) async {
+    final db = await _db.database;
+    final snapshots = await _store.find(
+      db,
+      finder: Finder(
+        filter: Filter.and([
+          Filter.equals('trip_id', tripId),
+          Filter.equals('category', categoryId),
+        ]),
+      ),
+    );
+
+    await db.transaction((txn) async {
+      for (final s in snapshots) {
+        await _store.record(s.key).delete(txn);
+      }
+    });
+
+    try {
+      await _supabase
+          .from('packing_items')
+          .delete()
+          .eq('trip_id', tripId)
+          .eq('category', categoryId);
+    } catch (e) {
+      debugPrint('[PackingRepository] deleteCategory sync error: $e');
     }
   }
 
@@ -173,6 +260,104 @@ class PackingRepository {
   }
 
   // ────────────────────────────────────────────────────────────────
+  // TEMPLATES
+  // ────────────────────────────────────────────────────────────────
+
+  /// Saves a packing list as a custom template.
+  Future<PackingTemplate> saveTemplate({
+    required String name,
+    required String description,
+    required String icon,
+    required Map<String, List<String>> itemsByCategory,
+  }) async {
+    final template = PackingTemplate(
+      id: 'custom_tpl_${DateTime.now().millisecondsSinceEpoch}',
+      name: name,
+      description: description,
+      icon: icon,
+      itemsByCategory: itemsByCategory,
+      isPrebuilt: false,
+      createdAt: DateTime.now(),
+    );
+
+    final db = await _db.database;
+    await _templateStore.record(template.id).put(db, template.toMap());
+    return template;
+  }
+
+  /// Retrieves all templates (prebuilt + custom saved).
+  Future<List<PackingTemplate>> getTemplates() async {
+    final db = await _db.database;
+    final snapshots = await _templateStore.find(db);
+    final customTemplates = snapshots
+        .map((s) => PackingTemplate.fromMap(s.value))
+        .toList();
+
+    return [
+      ...PackingTemplate.prebuiltTemplates,
+      ...customTemplates,
+    ];
+  }
+
+  /// Deletes a custom template.
+  Future<void> deleteTemplate(String templateId) async {
+    final db = await _db.database;
+    await _templateStore.record(templateId).delete(db);
+  }
+
+  /// Applies a template by adding its items to the current trip.
+  Future<void> applyTemplate({
+    required String tripId,
+    required PackingTemplate template,
+  }) async {
+    for (final entry in template.itemsByCategory.entries) {
+      final catId = entry.key;
+      for (final itemName in entry.value) {
+        await addItem(
+          tripId: tripId,
+          category: catId,
+          name: itemName,
+          isAiSuggested: template.isPrebuilt,
+        );
+      }
+    }
+  }
+
+  // ────────────────────────────────────────────────────────────────
+  // NOTIFICATIONS & REMINDERS
+  // ────────────────────────────────────────────────────────────────
+
+  /// Dispatches an in-app packing reminder notification to a member or group.
+  Future<void> sendPackingReminder({
+    required String tripId,
+    required String tripName,
+    required String memberId,
+    required String memberName,
+    required List<String> unpackedItems,
+  }) async {
+    final previewItems = unpackedItems.take(3).join(', ');
+    final remainingCount = unpackedItems.length;
+    final countText = remainingCount > 3 ? ' (+$remainingCount more)' : '';
+    final body = remainingCount == 0
+        ? 'All assigned items are packed! Ready to go!'
+        : 'You have $remainingCount items left to pack: $previewItems$countText';
+
+    try {
+      await _supabase.from('notifications').insert({
+        'trip_id': tripId,
+        'user_id': memberId,
+        'type': 'packing',
+        'title': '🎒 Packing Reminder for $tripName',
+        'body': body,
+        'read': false,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+    } catch (e) {
+      debugPrint('[PackingRepository] sendPackingReminder sync error: $e');
+    }
+  }
+
+  // ────────────────────────────────────────────────────────────────
   // HELPERS
   // ────────────────────────────────────────────────────────────────
 
@@ -182,19 +367,20 @@ class PackingRepository {
   ) {
     // Group rows by category slug
     final grouped = <String, List<PackingItem>>{};
+    final customCategoryIds = <String>{};
+
     for (final row in rows) {
       final catId = '${row['category'] ?? 'essentials'}';
-      final item = PackingItem(
-        id: '${row['id']}',
-        name: '${row['name'] ?? ''}',
-        isChecked: row['is_checked'] == true,
-        isAiSuggested: row['is_ai_suggested'] == true,
-        assignedMemberId: row['assigned_user_id']?.toString(),
-      );
+      final item = PackingItem.fromMap(row);
       grouped.putIfAbsent(catId, () => []).add(item);
+
+      // Check if this is a custom category not in default list
+      if (!_kDefaultCategories.any((c) => c['id'] == catId)) {
+        customCategoryIds.add(catId);
+      }
     }
 
-    return _kDefaultCategories.map((catDef) {
+    final categories = _kDefaultCategories.map((catDef) {
       final catId = catDef['id'] as String;
       return PackingCategory(
         id: catId,
@@ -202,9 +388,25 @@ class PackingRepository {
         icon: IconData(catDef['icon'] as int, fontFamily: 'MaterialIcons'),
         color: Color(catDef['color'] as int),
         items: grouped[catId] ?? [],
-        isExpanded: true,
+        isExpanded: false, // Default collapsed
       );
     }).toList();
+
+    // Add any custom categories found in data
+    for (final customId in customCategoryIds) {
+      final name = customId.replaceAll('custom_', '').replaceAll('_', ' ').toUpperCase();
+      categories.add(PackingCategory(
+        id: customId,
+        name: name.isNotEmpty ? name : 'Custom',
+        icon: Icons.category_rounded,
+        color: const Color(0xFF8B5CF6),
+        items: grouped[customId] ?? [],
+        isExpanded: false,
+        isCustom: true,
+      ));
+    }
+
+    return categories;
   }
 
   List<PackingCategory> _defaultCategories(String tripId) {
@@ -224,8 +426,9 @@ class PackingRepository {
         icon: IconData(catDef['icon'] as int, fontFamily: 'MaterialIcons'),
         color: Color(catDef['color'] as int),
         items: items,
-        isExpanded: true,
+        isExpanded: false, // Default collapsed
       );
     }).toList();
   }
 }
+

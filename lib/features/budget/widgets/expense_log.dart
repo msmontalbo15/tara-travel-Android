@@ -17,6 +17,28 @@ class ExpenseLog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (expenses.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.dividerLight),
+        ),
+        child: const Center(
+          child: Text(
+            'No expenses logged yet. Add one below!',
+            style: TextStyle(
+              fontFamily: 'DM Sans',
+              fontSize: 13,
+              color: AppColors.warmMuted,
+            ),
+          ),
+        ),
+      );
+    }
+
     return Column(
       children: [
         // Filter chips could go here
@@ -35,7 +57,7 @@ class ExpenseLog extends StatelessWidget {
                   const MemberModel(
                     id: 'unknown',
                     name: 'Unknown member',
-                    initials: 'U',
+                    initials: '',
                     color: AppColors.primary,
                   ),
             );

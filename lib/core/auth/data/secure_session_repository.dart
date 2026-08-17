@@ -110,6 +110,13 @@ class SecureSessionRepository {
       debugPrint('[SecureSessionRepository] restoreSession AuthException: $e');
       await clearSession();
       return null;
+    } on FormatException catch (e) {
+      // recoverSession() throws FormatException (not AuthException) when the
+      // stored refresh token is corrupt, truncated, or not valid JSON/JWT.
+      // Clear the bad token so the user is taken to the login screen cleanly.
+      debugPrint('[SecureSessionRepository] corrupt token — clearing session: $e');
+      await clearSession();
+      return null;
     } on PlatformException catch (e) {
       // Keystore key invalidated (device wipe, OS upgrade, biometric change).
       debugPrint('[SecureSessionRepository] Keystore key lost — clearing session: $e');

@@ -67,15 +67,25 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   /// Initiates native Google Sign-In via the google_sign_in package.
   /// The underlying Credential Manager API is used automatically on
   /// Android 14+ when the package version supports it.
-  Future<void> signInWithGoogle() async {
+  /// If the account is new and [onConfirmNewAccount] is provided, it prompts
+  /// the user before creating the account in Supabase.
+  Future<void> signInWithGoogle({
+    Future<bool> Function({
+      required String email,
+      required String? displayName,
+      required String? photoUrl,
+    })? onConfirmNewAccount,
+  }) async {
     if (_throttled()) return;
     _recordAttempt();
 
     state = const AsyncData(AuthLoading());
     try {
-      final user = await _authRepo.signInWithGoogle();
+      final user = await _authRepo.signInWithGoogle(
+        onConfirmNewAccount: onConfirmNewAccount,
+      );
       if (user == null) {
-        // User dismissed the picker — not an error.
+        // User dismissed the picker or cancelled creation — not an error.
         state = const AsyncData(AuthUnauthenticated());
         return;
       }

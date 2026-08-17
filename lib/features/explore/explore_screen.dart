@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/app_brand_logo.dart';
 import '../../core/providers/explore_provider.dart';
 
 class ExploreScreen extends ConsumerStatefulWidget {
@@ -44,9 +45,20 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Explore', style: TextStyle(fontFamily: 'Playfair Display', fontSize: 30, fontWeight: FontWeight.w700, color: Colors.white)),
-                  const SizedBox(height: 2),
-                  Text('Find your next adventure', style: TextStyle(fontFamily: 'DM Sans', fontSize: 14, color: Colors.white.withValues(alpha: 0.4))),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Explore', style: TextStyle(fontFamily: 'Playfair Display', fontSize: 30, fontWeight: FontWeight.w700, color: Colors.white)),
+                          const SizedBox(height: 2),
+                          Text('Find your next adventure', style: TextStyle(fontFamily: 'DM Sans', fontSize: 14, color: Colors.white.withValues(alpha: 0.5))),
+                        ],
+                      ),
+                      const AppBrandLogo(size: 38, isDark: true),
+                    ],
+                  ),
                   const SizedBox(height: 18),
                   // Search bar
                   Container(

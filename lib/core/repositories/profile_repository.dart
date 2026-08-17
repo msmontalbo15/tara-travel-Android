@@ -103,7 +103,7 @@ class ProfileRepository {
 
     return {
       'email': data['accountEmail'] ?? _supabase.auth.currentUser?.email ?? '',
-      'display_name': data['displayName'] ?? 'User',
+      'display_name': data['displayName'] ?? '',
       'avatar_url': data['profilePhotoUrl'],
       'gcash_qr_url': data['gcashQrUrl'],
       'gcash_number': encryptedGcash ?? rawGcashNumber,
@@ -184,7 +184,7 @@ class ProfileRepository {
   }
 
   String _firstNameFromDisplayName(String? displayName) {
-    if (displayName == null || displayName.trim().isEmpty) return 'User';
+    if (displayName == null || displayName.trim().isEmpty) return '';
     return displayName.trim().split(' ').first;
   }
 }

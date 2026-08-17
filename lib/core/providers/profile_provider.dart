@@ -32,8 +32,8 @@ class ProfileState {
   final bool isFirstRun;
 
   const ProfileState({
-    this.displayName = 'User',
-    this.firstName = 'User',
+    this.displayName = '',
+    this.firstName = '',
     this.homeRegion = '',
     this.homeCity = '',
     this.homeBarangay = '',
@@ -72,7 +72,9 @@ class ProfileState {
     if (nickname != null && nickname!.trim().isNotEmpty) {
       return nickname!.trim();
     }
-    return displayName.isNotEmpty && displayName != 'User' ? displayName : firstName;
+    if (displayName.isNotEmpty && displayName != 'User') return displayName;
+    if (firstName.isNotEmpty && firstName != 'User') return firstName;
+    return '';
   }
 
   /// Returns the nickname for homepage display (falls back to effectiveName if nickname is not set).
@@ -84,11 +86,13 @@ class ProfileState {
   }
 
   String get initials {
-    final nameToUse = effectiveName;
-    if (nameToUse.isEmpty) return 'U';
-    final parts = nameToUse.trim().split(' ');
-    if (parts.length >= 2) return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-    return nameToUse.isNotEmpty ? nameToUse[0].toUpperCase() : 'U';
+    final nameToUse = effectiveName.trim();
+    if (nameToUse.isEmpty) return '';
+    final parts = nameToUse.split(RegExp(r'\s+'));
+    if (parts.length >= 2 && parts[0].isNotEmpty && parts[1].isNotEmpty) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    }
+    return nameToUse.isNotEmpty ? nameToUse[0].toUpperCase() : '';
   }
 
   Color get avatarColor => const Color(0xFFD85A30);
@@ -176,8 +180,8 @@ class ProfileState {
 
   factory ProfileState.fromJson(Map<String, dynamic> json) {
     return ProfileState(
-      displayName: json['displayName'] as String? ?? 'User',
-      firstName: json['firstName'] as String? ?? 'User',
+      displayName: json['displayName'] as String? ?? '',
+      firstName: json['firstName'] as String? ?? '',
       homeRegion: json['homeRegion'] as String? ?? '',
       homeCity: json['homeCity'] as String? ?? '',
       homeBarangay: json['homeBarangay'] as String? ?? '',

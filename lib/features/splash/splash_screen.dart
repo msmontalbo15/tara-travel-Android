@@ -58,10 +58,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       ),
     );
 
-    _logoRotation = Tween<double>(begin: -math.pi * 0.75, end: 0.0).animate(
+    _logoRotation = Tween<double>(begin: 0.0, end: 0.0).animate(
       CurvedAnimation(
         parent: _ctrl,
-        curve: const Interval(0.1, 0.6, curve: Curves.elasticOut),
+        curve: const Interval(0.0, 0.4, curve: Curves.easeOut),
       ),
     );
 

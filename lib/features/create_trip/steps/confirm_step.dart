@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../../../core/constants/trip_types.dart';
 import '../../../core/models/itinerary_model.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/app_brand_logo.dart';
 import '../../../core/utils/currency_utils.dart';
 import '../models/new_trip_model.dart';
 import '../widgets/step_indicator.dart';
@@ -157,8 +158,8 @@ class ConfirmStep extends StatelessWidget {
                       child: Text(
                         'Review Trip',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
-                          fontSize: 17,
+                          fontFamily: 'Playfair Display',
+                          fontSize: 18,
                           fontWeight: FontWeight.w700,
                           color: white,
                           letterSpacing: -0.3,
@@ -166,24 +167,7 @@ class ConfirmStep extends StatelessWidget {
                       ),
                     ),
                   ),
-                  // Progress indicator pill
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
-                    ),
-                    child: const Text(
-                      '4 of 4',
-                      style: TextStyle(
-                        fontFamily: 'DM Sans',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primaryLight,
-                      ),
-                    ),
-                  ),
+                  const AppBrandLogo(size: 32, isDark: true),
                 ],
               ),
             ),
@@ -304,30 +288,41 @@ class ConfirmStep extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            const Color(0xFF3B1F13),
-            themeColor.withValues(alpha: 0.25),
+            const Color(0xFF2C130B),
+            themeColor.withValues(alpha: 0.20),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isComplete
-              ? const Color(0xFF10B981).withValues(alpha: 0.4)
-              : AppColors.amber.withValues(alpha: 0.3),
+              ? const Color(0xFF10B981).withValues(alpha: 0.45)
+              : AppColors.amber.withValues(alpha: 0.35),
+          width: 1.2,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(9),
             decoration: BoxDecoration(
-              color: (isComplete ? const Color(0xFF10B981) : AppColors.amber).withValues(alpha: 0.2),
+              color: (isComplete ? const Color(0xFF10B981) : AppColors.amber).withValues(alpha: 0.18),
               shape: BoxShape.circle,
+              border: Border.all(
+                color: (isComplete ? const Color(0xFF10B981) : AppColors.amber).withValues(alpha: 0.35),
+              ),
             ),
             child: Icon(
               isComplete ? Icons.check_circle_rounded : Icons.info_outline_rounded,
@@ -335,7 +330,7 @@ class ConfirmStep extends StatelessWidget {
               color: isComplete ? const Color(0xFF34D399) : const Color(0xFFFBBF24),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -353,10 +348,11 @@ class ConfirmStep extends StatelessWidget {
                     ),
                     const Spacer(),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
                       ),
                       child: Text(
                         '$score / 4 Ready',
@@ -370,15 +366,16 @@ class ConfirmStep extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 4),
                 Text(
                   isComplete
-                      ? 'Destination, itinerary dates, transport & budget are fully locked in.'
-                      : 'Double check your itinerary parameters before finalizing.',
+                      ? 'Destination, travel dates, transport, and budget are fully configured.'
+                      : 'Review all trip details below before launching.',
                   style: const TextStyle(
                     fontFamily: 'DM Sans',
                     fontSize: 12,
                     color: Color(0xFFD1BDB7),
+                    height: 1.3,
                   ),
                 ),
               ],
@@ -1309,13 +1306,13 @@ class ConfirmStep extends StatelessWidget {
           _buildFeatureItem(
             icon: '📋',
             title: 'Auto-seeded Packing Checklist',
-            subtitle: 'Essential packing items tailored to your ${_tripTypeOption.label} trip.',
+            subtitle: 'Ready-to-use packing items tailored to your ${_tripTypeOption.label} trip.',
           ),
           const SizedBox(height: 10),
           _buildFeatureItem(
             icon: '🗺️',
-            title: 'Interactive Day-by-Day Timeline',
-            subtitle: 'Schedule stops, activities, and transport notes across $_days days.',
+            title: 'Empty $_days-Day Itinerary Template',
+            subtitle: 'A blank timeline created for your dates, ready for you to add stops & activities.',
           ),
           const SizedBox(height: 10),
           _buildFeatureItem(
