@@ -186,7 +186,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
         const SizedBox(height: 18),
         _sectionTitle('Member Contributions'),
         MemberContributionCard(members: trip.members, expenses: trip.expenses),
-        const SizedBox(height: 40),
+        const SizedBox(height: 130),
       ],
     );
   }
@@ -232,7 +232,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
             }
           },
         ),
-        const SizedBox(height: 40),
+        const SizedBox(height: 130),
       ],
     );
   }

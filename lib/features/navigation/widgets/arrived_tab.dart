@@ -12,7 +12,7 @@ class ArrivedTab extends ConsumerWidget {
     final nav = ref.watch(navigationProvider);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(14, 4, 14, 32),
+      padding: EdgeInsets.fromLTRB(14, 4, 14, 32 + MediaQuery.of(context).padding.bottom),
       child: Column(
         children: [
           // ── Check-in notification ─────────────────────────

@@ -278,7 +278,7 @@ class _TripDashboardState extends ConsumerState<_TripDashboard> {
                       _InviteCard(trip: trip),
 
                     // Bottom clearance for floating nav
-                    const SizedBox(height: 80),
+                    const SizedBox(height: 130),
                   ]),
                 ),
               ),

@@ -81,7 +81,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                     borderRadius: BorderRadius.only(topLeft: Radius.circular(32), topRight: Radius.circular(32)),
                   ),
                   child: ListView(
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
+                    padding: EdgeInsets.fromLTRB(20, 20, 20, 40 + MediaQuery.of(context).padding.bottom + 80),
                     children: [
                       // Invite code card
                       _buildInviteCard(context, trip),

@@ -340,7 +340,7 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
       children: [
         SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.only(bottom: 80),
+          padding: const EdgeInsets.only(bottom: 120),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

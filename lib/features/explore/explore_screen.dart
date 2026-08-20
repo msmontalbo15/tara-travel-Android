@@ -140,7 +140,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
         _horizontalList(weekend),
         _sectionHeader('✨ Recommended For You', onSeeAll: () {}),
         ...recommended.map((d) => _RecommendedCard(dest: d, onTap: () => _showDestinationDetail(context, d))),
-        const SizedBox(height: 40),
+        const SizedBox(height: 130),
       ],
     );
   }
@@ -159,7 +159,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
             child: Center(child: Text('No destinations found 🤔', style: TextStyle(fontFamily: 'DM Sans', fontSize: 15, color: AppColors.warmMuted))),
           ),
         ...results.map((d) => _RecommendedCard(dest: d, onTap: () => _showDestinationDetail(context, d))),
-        const SizedBox(height: 40),
+        const SizedBox(height: 130),
       ],
     );
   }

@@ -112,6 +112,7 @@ class ProfileRepository {
       'home_city': data['homeCity'],
       'phone': encryptedPhone ?? rawPhone,
       'share_health_with_org': data['shareHealthWithOrganizer'] ?? false,
+      'blood_type': data['bloodType'],
       // Persist app-specific extras in a compatible way.
       'dietary': <String>[
         if (data['homeCountry'] != null) 'country:${data['homeCountry']}',
@@ -119,6 +120,10 @@ class ProfileRepository {
         if (data['homeBarangay'] != null) 'barangay:${data['homeBarangay']}',
         if (data['preferredCurrency'] != null)
           'currency:${data['preferredCurrency']}',
+        if (data['nickname'] != null && (data['nickname'] as String).trim().isNotEmpty)
+          'nickname:${(data['nickname'] as String).trim()}',
+        if (data['dateOfBirth'] != null && (data['dateOfBirth'] as String).trim().isNotEmpty)
+          'dob:${(data['dateOfBirth'] as String).trim()}',
         if (data['hasCompletedOnboarding'] == true) 'onboarding:completed',
       ],
     };
@@ -171,6 +176,9 @@ class ProfileRepository {
       'homeBarangay': extractTag('barangay:') ?? '',
       'homeCountry': extractTag('country:') ?? 'Philippines',
       'preferredCurrency': extractTag('currency:') ?? 'PHP',
+      'nickname': extractTag('nickname:'),
+      'dateOfBirth': extractTag('dob:'),
+      'bloodType': row['blood_type'] as String?,
       'profilePhotoUrl': row['avatar_url'],
       'contactNumber': decryptedPhone,
       'gcashNumber': decryptedGcash,

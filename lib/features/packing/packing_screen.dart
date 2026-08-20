@@ -430,7 +430,7 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
   ) {
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(18, 14, 18, 100),
+      padding: const EdgeInsets.fromLTRB(18, 14, 18, 130),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -693,7 +693,7 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
   ) {
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.fromLTRB(20, 20, 20, 30 + MediaQuery.of(context).padding.bottom),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

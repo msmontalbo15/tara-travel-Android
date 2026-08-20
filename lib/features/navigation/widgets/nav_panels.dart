@@ -58,7 +58,7 @@ class StatsStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: Colors.white,
-      padding: EdgeInsets.fromLTRB(14, 8, 14, 4 + MediaQuery.of(context).padding.bottom),
+      padding: EdgeInsets.fromLTRB(14, 8, 14, 10 + MediaQuery.of(context).padding.bottom),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -165,7 +165,7 @@ class GroupTrackerPanel extends StatelessWidget {
                   ),
                   // Gap warning
                   Container(
-                    margin: const EdgeInsets.only(bottom: 20, top: 10),
+                    margin: EdgeInsets.only(bottom: 20 + MediaQuery.of(context).padding.bottom, top: 10),
                     padding: const EdgeInsets.all(12),
                     decoration: const BoxDecoration(color: Color(0xFFFCEBEB), borderRadius: BorderRadius.all(Radius.circular(11))),
                     child: const Row(
@@ -289,7 +289,7 @@ class ProximityPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + MediaQuery.of(context).padding.bottom),
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
@@ -479,7 +479,7 @@ class ArrivalFeedPanel extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 40),
+          SizedBox(height: 40 + MediaQuery.of(context).padding.bottom),
         ],
       ),
     );

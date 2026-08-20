@@ -184,7 +184,7 @@ class TripsScreen extends ConsumerWidget {
                   }
 
                   return ListView(
-                    padding: const EdgeInsets.fromLTRB(20, 22, 20, 80),
+                    padding: const EdgeInsets.fromLTRB(20, 22, 20, 140),
                     children: [
                       if (drafts.isNotEmpty) ...[
                         _sectionHeader('DRAFTS'),

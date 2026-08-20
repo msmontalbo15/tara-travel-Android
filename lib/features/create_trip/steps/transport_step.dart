@@ -464,7 +464,7 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
                 borderRadius: BorderRadius.only(topLeft: Radius.circular(32), topRight: Radius.circular(32)),
               ),
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
+                padding: EdgeInsets.fromLTRB(20, 20, 20, 24 + MediaQuery.of(context).padding.bottom),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

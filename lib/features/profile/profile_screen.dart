@@ -424,7 +424,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 borderRadius: BorderRadius.only(topLeft: Radius.circular(28), topRight: Radius.circular(28)),
               ),
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 60),
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 140),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

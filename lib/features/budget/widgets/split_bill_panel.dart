@@ -234,7 +234,7 @@ class _SplitBillPanelState extends State<SplitBillPanel>
 
         // Settlement Plan
         _buildSettlementSection(settlements),
-        const SizedBox(height: 40),
+        const SizedBox(height: 130),
       ],
     );
   }

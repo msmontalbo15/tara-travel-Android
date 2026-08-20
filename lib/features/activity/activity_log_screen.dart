@@ -53,7 +53,7 @@ class _ActivityList extends ConsumerWidget {
           );
         }
         return ListView.builder(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
+          padding: EdgeInsets.fromLTRB(20, 20, 20, 40 + MediaQuery.of(context).padding.bottom),
           itemCount: items.length,
           itemBuilder: (_, i) =>
               _ActivityRow(item: items[i], isLast: i == items.length - 1),

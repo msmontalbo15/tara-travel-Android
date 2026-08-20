@@ -39,12 +39,14 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        ),
+      builder: (ctx) => SafeArea(
+        top: false,
+        child: Container(
+          padding: EdgeInsets.fromLTRB(24, 16, 24, 24 + MediaQuery.of(ctx).padding.bottom),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -205,7 +207,8 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 
   // ── Add by Code Dialog ─────────────────────────────────────────────────────
@@ -510,7 +513,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
           );
         }
         return ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: EdgeInsets.fromLTRB(20, 0, 20, 24 + MediaQuery.of(context).padding.bottom),
           itemCount: users.length,
           itemBuilder: (context, index) {
             return FriendListItem(
@@ -578,7 +581,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
           );
         }
         return ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: EdgeInsets.fromLTRB(20, 0, 20, 24 + MediaQuery.of(context).padding.bottom),
           itemCount: friends.length,
           itemBuilder: (context, index) {
             return FriendListItem(

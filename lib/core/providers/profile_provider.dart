@@ -266,10 +266,31 @@ class ProfileNotifier extends Notifier<ProfileState> {
                   ? localName
                   : remoteName;
 
+          final remoteNickname = remote.nickname;
+          final localNickname = current.nickname;
+          final resolvedNickname = (remoteNickname != null && remoteNickname.trim().isNotEmpty)
+              ? remoteNickname
+              : localNickname;
+
+          final remoteDob = remote.dateOfBirth;
+          final localDob = current.dateOfBirth;
+          final resolvedDob = (remoteDob != null && remoteDob.trim().isNotEmpty)
+              ? remoteDob
+              : localDob;
+
+          final remoteBloodType = remote.bloodType;
+          final localBloodType = current.bloodType;
+          final resolvedBloodType = (remoteBloodType != null && remoteBloodType.trim().isNotEmpty)
+              ? remoteBloodType
+              : localBloodType;
+
           if (remote.hasCompletedOnboarding || !current.hasCompletedOnboarding) {
             current = remote.copyWith(
               displayName: resolvedName,
               firstName: resolvedName.split(' ').first,
+              nickname: resolvedNickname,
+              dateOfBirth: resolvedDob,
+              bloodType: resolvedBloodType,
               isCloudConnected: true,
               accountEmail: supaUser.email,
             );

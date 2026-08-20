@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -306,7 +307,7 @@ class _InputBar extends StatelessWidget {
     return Container(
       color: Colors.white,
       padding: EdgeInsets.fromLTRB(
-          16, 10, 16, 10 + MediaQuery.of(context).viewInsets.bottom),
+          16, 10, 16, 10 + math.max(MediaQuery.of(context).viewInsets.bottom, MediaQuery.of(context).padding.bottom)),
       child: Row(
         children: [
           Expanded(

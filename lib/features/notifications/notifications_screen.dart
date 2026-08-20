@@ -372,8 +372,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                     ),
                   )
                 : ListView.separated(
-                    padding: const EdgeInsets.only(
-                        left: 20, right: 20, top: 8, bottom: 40),
+                    padding: EdgeInsets.only(
+                        left: 20, right: 20, top: 8, bottom: 30 + MediaQuery.of(context).padding.bottom),
                     itemCount: (showProfilePrompt ? 1 : 0) + displayedList.length,
                     separatorBuilder: (context, index) =>
                         const SizedBox(height: 10),

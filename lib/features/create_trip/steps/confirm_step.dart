@@ -1375,7 +1375,7 @@ class ConfirmStep extends StatelessWidget {
 
   Widget _buildBottomActionBar(Color bg, Color white) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
       decoration: BoxDecoration(
         color: bg,
         border: const Border(top: BorderSide(color: Color(0xFF2C1510))),
