@@ -13,6 +13,10 @@ class StopCard extends StatelessWidget {
   final VoidCallback? onEdit;
   /// Called when the user taps "Mark Arrived" / check-in button.
   final VoidCallback? onCheckIn;
+  /// Called when the user taps "Log Expense" to convert this stop into a trip expense.
+  final VoidCallback? onLogExpense;
+  /// Called when the user taps the Roll Call button to view and manage group presence.
+  final VoidCallback? onRollCall;
 
   const StopCard({
     super.key,
@@ -23,6 +27,8 @@ class StopCard extends StatelessWidget {
     this.onStatusChange,
     this.onEdit,
     this.onCheckIn,
+    this.onLogExpense,
+    this.onRollCall,
   });
 
   MemberModel? get _assignedMember {
@@ -268,10 +274,17 @@ class StopCard extends StatelessWidget {
                         ],
                       ),
 
-                      // ── Checked-in members ────────────────────────────────
+                      // ── Checked-in members & Roll Call preview ─────────────────
                       if (_checkedInMembers.isNotEmpty) ...[
                         const SizedBox(height: 8),
-                        _CheckedInMemberRow(members: _checkedInMembers),
+                        GestureDetector(
+                          onTap: onRollCall,
+                          child: _CheckedInMemberRow(
+                            members: _checkedInMembers,
+                            totalMembersCount: members.length,
+                            onTap: onRollCall,
+                          ),
+                        ),
                       ],
 
                       // Footer
@@ -338,6 +351,42 @@ class StopCard extends StatelessWidget {
                             ),
                           ],
                           const Spacer(),
+                          // 1-Tap Log Expense chip
+                          if (onLogExpense != null) ...[
+                            GestureDetector(
+                              onTap: onLogExpense,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: AppColors.amber.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: AppColors.amber.withValues(alpha: 0.35),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.receipt_long_rounded,
+                                        size: 13, color: AppColors.amberText),
+                                    SizedBox(width: 3),
+                                    Text(
+                                      'Expense',
+                                      style: TextStyle(
+                                        fontFamily: 'DM Sans',
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.amberText,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                          ],
                           // Maps btn
                           GestureDetector(
                             onTap: () => openGoogleMapsForStop(context, stop),
@@ -428,12 +477,31 @@ class StopCard extends StatelessWidget {
                           ],
                         ),
                       ],
-                      // ── Check-In / Undo button ─────────────────────────────
-                      if (onCheckIn != null) ...[
+                      // ── Action Buttons (Check-In & Roll Call) ─────────────
+                      if (onCheckIn != null || onRollCall != null) ...[
                         const SizedBox(height: 10),
-                        _CheckInButton(
-                          completed: completed,
-                          onTap: onCheckIn!,
+                        Row(
+                          children: [
+                            if (onCheckIn != null)
+                              Expanded(
+                                flex: 3,
+                                child: _CheckInButton(
+                                  completed: completed,
+                                  onTap: onCheckIn!,
+                                ),
+                              ),
+                            if (onCheckIn != null && onRollCall != null && members.length > 1)
+                              const SizedBox(width: 8),
+                            if (onRollCall != null && members.length > 1)
+                              Expanded(
+                                flex: 2,
+                                child: _RollCallPillButton(
+                                  checkedCount: _checkedInMembers.length,
+                                  totalCount: members.length,
+                                  onTap: onRollCall!,
+                                ),
+                              ),
+                          ],
                         ),
                       ],
                     ],
@@ -481,61 +549,134 @@ class StopCard extends StatelessWidget {
 
 class _CheckedInMemberRow extends StatelessWidget {
   final List<MemberModel> members;
-  const _CheckedInMemberRow({required this.members});
+  final int totalMembersCount;
+  final VoidCallback? onTap;
+
+  const _CheckedInMemberRow({
+    required this.members,
+    required this.totalMembersCount,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     final visible = members.take(4).toList();
-    return Row(
-      children: [
-        // Avatar stack
-        SizedBox(
-          width: visible.length * 14.0 + 8,
-          height: 22,
-          child: Stack(
-            children: List.generate(visible.length, (i) {
-              final m = visible[i];
-              return Positioned(
-                left: i * 13.0,
-                child: Container(
-                  width: 22,
-                  height: 22,
-                  decoration: BoxDecoration(
-                    color: m.color,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AppColors.greenLight.withValues(alpha: 0.8),
-                      width: 1.5,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.greenBright.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Avatar stack
+          SizedBox(
+            width: visible.length * 14.0 + 8,
+            height: 22,
+            child: Stack(
+              children: List.generate(visible.length, (i) {
+                final m = visible[i];
+                return Positioned(
+                  left: i * 13.0,
+                  child: Container(
+                    width: 22,
+                    height: 22,
+                    decoration: BoxDecoration(
+                      color: m.color,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white,
+                        width: 1.5,
+                      ),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      m.initials.isNotEmpty ? m.initials.substring(0, 1) : '?',
+                      style: const TextStyle(
+                        fontFamily: 'DM Sans',
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    m.initials.substring(0, 1),
-                    style: const TextStyle(
-                      fontFamily: 'DM Sans',
-                      fontSize: 9,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              );
-            }),
+                );
+              }),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '${members.length}/$totalMembersCount present',
+            style: const TextStyle(
+              fontFamily: 'DM Sans',
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: AppColors.greenBright,
+            ),
+          ),
+          if (onTap != null) ...[
+            const SizedBox(width: 4),
+            const Icon(Icons.arrow_forward_ios_rounded, size: 9, color: AppColors.greenBright),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _RollCallPillButton extends StatelessWidget {
+  final int checkedCount;
+  final int totalCount;
+  final VoidCallback onTap;
+
+  const _RollCallPillButton({
+    required this.checkedCount,
+    required this.totalCount,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final allIn = totalCount > 0 && checkedCount == totalCount;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 9),
+        decoration: BoxDecoration(
+          color: allIn
+              ? AppColors.greenBright.withValues(alpha: 0.12)
+              : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: allIn
+                ? AppColors.greenBright.withValues(alpha: 0.4)
+                : AppColors.dividerLight,
+            width: 1,
           ),
         ),
-        const SizedBox(width: 8),
-        Text(
-          members.length == 1
-              ? '${members.first.name.split(' ').first} is here'
-              : '${members.map((m) => m.name.split(' ').first).take(2).join(', ')} ${members.length > 2 ? '+${members.length - 2} here' : 'are here'}',
-          style: const TextStyle(
-            fontFamily: 'DM Sans',
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: AppColors.greenBright,
-          ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.people_outline_rounded,
+              size: 15,
+              color: allIn ? AppColors.greenBright : AppColors.deepEarth,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              'Roll Call ($checkedCount/$totalCount)',
+              style: TextStyle(
+                fontFamily: 'DM Sans',
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: allIn ? AppColors.greenBright : AppColors.deepEarth,
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

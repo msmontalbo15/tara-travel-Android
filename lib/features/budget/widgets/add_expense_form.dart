@@ -11,11 +11,21 @@ import '../../../core/widgets/inputs/app_date_picker.dart';
 class AddExpenseForm extends StatefulWidget {
   final List<MemberModel> members;
   final void Function(ExpenseModel)? onExpenseAdded;
+  final String? initialDescription;
+  final double? initialAmount;
+  final ExpenseCategory? initialCategory;
+  final DateTime? initialDate;
+  final String? initialPayerId;
 
   const AddExpenseForm({
     super.key,
     required this.members,
     this.onExpenseAdded,
+    this.initialDescription,
+    this.initialAmount,
+    this.initialCategory,
+    this.initialDate,
+    this.initialPayerId,
   });
 
   @override
@@ -25,12 +35,12 @@ class AddExpenseForm extends StatefulWidget {
 class _AddExpenseFormState extends State<AddExpenseForm> {
   final _formKey = GlobalKey<FormState>();
 
-  final _descCtrl   = TextEditingController();
-  final _amountCtrl = TextEditingController();
+  late final TextEditingController _descCtrl;
+  late final TextEditingController _amountCtrl;
 
-  ExpenseCategory _category = ExpenseCategory.food;
+  late ExpenseCategory _category;
   String          _payerId  = '';
-  DateTime        _date     = DateTime.now();
+  late DateTime   _date;
 
   String? _descError;
   String? _amountError;
@@ -38,7 +48,19 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
   @override
   void initState() {
     super.initState();
-    if (widget.members.isNotEmpty) {
+    _descCtrl = TextEditingController(text: widget.initialDescription ?? '');
+    _amountCtrl = TextEditingController(
+      text: widget.initialAmount != null && widget.initialAmount! > 0
+          ? widget.initialAmount!.toStringAsFixed(0)
+          : '',
+    );
+    _category = widget.initialCategory ?? ExpenseCategory.food;
+    _date = widget.initialDate ?? DateTime.now();
+
+    if (widget.initialPayerId != null &&
+        widget.members.any((m) => m.id == widget.initialPayerId)) {
+      _payerId = widget.initialPayerId!;
+    } else if (widget.members.isNotEmpty) {
       _payerId = widget.members.first.id;
     }
   }

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/itinerary_model.dart';
 import '../providers/repository_providers.dart';
@@ -35,10 +36,23 @@ class ItineraryNotifier extends AsyncNotifier<ItineraryState> {
   @override
   Future<ItineraryState> build() async {
     final repo = ref.watch(itineraryRepositoryProvider);
-    final days = await repo.getItinerary(_tripId);
+    final tripRepo = ref.watch(tripRepositoryProvider);
+    final trip = await tripRepo.getTripById(_tripId);
+
+    final days = await repo.getItinerary(
+      _tripId,
+      startDate: trip?.fromDate,
+      endDate: trip?.toDate,
+    );
     days.sort((a, b) => a.dayNumber.compareTo(b.dayNumber));
     final effectiveDays = days.isEmpty
-        ? [ItineraryDay(dayNumber: 1, date: DateTime.now(), stops: const [])]
+        ? [
+            ItineraryDay(
+              dayNumber: 1,
+              date: trip?.fromDate ?? DateTime.now(),
+              stops: const [],
+            ),
+          ]
         : days;
     return ItineraryState(days: effectiveDays, activeDay: 0);
   }
@@ -280,6 +294,158 @@ class ItineraryNotifier extends AsyncNotifier<ItineraryState> {
 
     state = AsyncData(currentState.copyWith(days: updatedDays));
     await repo.saveItineraryDay(_tripId, updatedDay);
+  }
+
+  // ── Update checked-in members directly (Roll Call Sheet) ─────────
+  Future<void> updateCheckedInMembers(
+    int dayIndex,
+    String stopId,
+    List<String> memberIds,
+  ) async {
+    final currentState = state.value;
+    if (currentState == null) return;
+
+    final repo = ref.read(itineraryRepositoryProvider);
+    final day = currentState.days[dayIndex];
+    final updatedStops = day.stops.map((s) {
+      if (s.id != stopId) return s;
+      final nowVisited = memberIds.isNotEmpty ? (s.visitedAt ?? DateTime.now()) : null;
+      final newStatus = memberIds.isNotEmpty ? StopStatus.arrived : StopStatus.approved;
+      return s.copyWith(
+        checkedInMemberIds: memberIds,
+        visitedAt: nowVisited,
+        status: newStatus,
+      );
+    }).toList();
+
+    final updatedDay = day.copyWith(stops: updatedStops);
+    final updatedDays = List<ItineraryDay>.from(currentState.days);
+    updatedDays[dayIndex] = updatedDay;
+
+    state = AsyncData(currentState.copyWith(days: updatedDays));
+    await repo.saveItineraryDay(_tripId, updatedDay);
+  }
+
+  // ── Move a Stop to another Day ─────────────────────────────────────
+  Future<void> moveStopToDay(int fromDayIndex, int toDayIndex, String stopId) async {
+    final currentState = state.value;
+    if (currentState == null || fromDayIndex == toDayIndex) return;
+
+    final repo = ref.read(itineraryRepositoryProvider);
+    final fromDay = currentState.days[fromDayIndex];
+    final toDay = currentState.days[toDayIndex];
+
+    final stopToMove = fromDay.stops.firstWhere((s) => s.id == stopId, orElse: () => fromDay.stops.first);
+    final updatedFromStops = fromDay.stops.where((s) => s.id != stopId).toList();
+    final updatedToStops = List<ItineraryStop>.from(toDay.stops)..add(stopToMove);
+
+    final updatedFromDay = fromDay.copyWith(stops: updatedFromStops);
+    final updatedToDay = toDay.copyWith(stops: updatedToStops);
+
+    final updatedDays = List<ItineraryDay>.from(currentState.days);
+    updatedDays[fromDayIndex] = updatedFromDay;
+    updatedDays[toDayIndex] = updatedToDay;
+
+    state = AsyncData(currentState.copyWith(days: updatedDays, activeDay: toDayIndex));
+
+    await repo.deleteStop(stopId);
+    await repo.saveItineraryDay(_tripId, updatedToDay);
+  }
+
+  // ── Duplicate Day's Stops into a new Day ─────────────────────────
+  Future<void> duplicateDay(int dayIndex) async {
+    final currentState = state.value;
+    if (currentState == null) return;
+
+    final repo = ref.read(itineraryRepositoryProvider);
+    final sourceDay = currentState.days[dayIndex];
+    final nextDayNum = currentState.days.length + 1;
+    final lastDate = currentState.days.isNotEmpty
+        ? currentState.days.last.date
+        : DateTime.now();
+
+    final clonedStops = sourceDay.stops.map((s) {
+      final newId = 'cloned_${DateTime.now().millisecondsSinceEpoch}_${s.id}';
+      return s.copyWith(
+        id: newId,
+        status: StopStatus.pending,
+        visitedAt: null,
+        checkedInMemberIds: const [],
+      );
+    }).toList();
+
+    final newDay = ItineraryDay(
+      dayNumber: nextDayNum,
+      date: DateTime(lastDate.year, lastDate.month, lastDate.day + 1),
+      stops: clonedStops,
+    );
+
+    final updatedDays = List<ItineraryDay>.from(currentState.days)..add(newDay);
+    state = AsyncData(currentState.copyWith(days: updatedDays, activeDay: nextDayNum - 1));
+    await repo.saveItineraryDay(_tripId, newDay);
+  }
+
+  // ── Shift Schedule by minutes (+30m, +60m, -30m, -60m) ───────────
+  Future<void> shiftDaySchedule(int dayIndex, int minutesOffset) async {
+    final currentState = state.value;
+    if (currentState == null || minutesOffset == 0) return;
+
+    final repo = ref.read(itineraryRepositoryProvider);
+    final day = currentState.days[dayIndex];
+
+    TimeOfDay? shiftTime(TimeOfDay? time) {
+      if (time == null) return null;
+      final totalMin = time.hour * 60 + time.minute + minutesOffset;
+      final clampedMin = totalMin.clamp(0, 23 * 60 + 59);
+      return TimeOfDay(hour: clampedMin ~/ 60, minute: clampedMin % 60);
+    }
+
+    final updatedStops = day.stops.map((s) {
+      return s.copyWith(
+        startTime: shiftTime(s.startTime),
+        endTime: shiftTime(s.endTime),
+      );
+    }).toList();
+
+    final updatedDay = day.copyWith(stops: updatedStops);
+    final updatedDays = List<ItineraryDay>.from(currentState.days);
+    updatedDays[dayIndex] = updatedDay;
+
+    state = AsyncData(currentState.copyWith(days: updatedDays));
+    await repo.saveItineraryDay(_tripId, updatedDay);
+  }
+
+  // ── Delete a Day from the Itinerary ──────────────────────────────
+  Future<void> deleteDay(int dayIndex) async {
+    final currentState = state.value;
+    if (currentState == null || currentState.days.length <= 1) return;
+
+    final repo = ref.read(itineraryRepositoryProvider);
+    final dayToDelete = currentState.days[dayIndex];
+
+    // Delete stops belonging to this day
+    for (final stop in dayToDelete.stops) {
+      await repo.deleteStop(stop.id);
+    }
+
+    final updatedDays = List<ItineraryDay>.from(currentState.days)..removeAt(dayIndex);
+
+    // Re-index remaining days
+    final reindexedDays = updatedDays.asMap().entries.map((entry) {
+      final i = entry.key;
+      final d = entry.value;
+      return d.copyWith(dayNumber: i + 1);
+    }).toList();
+
+    final newActiveDay = (dayIndex >= reindexedDays.length)
+        ? reindexedDays.length - 1
+        : dayIndex;
+
+    state = AsyncData(currentState.copyWith(days: reindexedDays, activeDay: newActiveDay));
+
+    for (final d in reindexedDays) {
+      await repo.saveItineraryDay(_tripId, d);
+    }
   }
 }
 

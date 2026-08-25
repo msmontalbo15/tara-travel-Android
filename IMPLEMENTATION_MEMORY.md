@@ -426,3 +426,59 @@
       - Added "Leave Trip" button in the screen header for non-owners with confirmation dialog.
 - **Verification**:
   - `flutter analyze` → 0 issues (exit code 0).
+
+---
+
+### `IMP-044` · Accurate Itinerary Day Alignment to Trip Date Range
+- **Date**: August 25, 2026
+- **Target Files**:
+  - [lib/core/repositories/itinerary_repository.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/repositories/itinerary_repository.dart) **[MODIFIED]**
+  - [lib/core/providers/itinerary_provider.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/providers/itinerary_provider.dart) **[MODIFIED]**
+  - [lib/features/itinerary/itinerary_screen.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/itinerary_screen.dart) **[MODIFIED]**
+  - [lib/features/trip_detail/widgets/edit_trip_sheet.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/trip_detail/widgets/edit_trip_sheet.dart) **[MODIFIED]**
+  - [MEMORY.md](file:///d:/Spencer/Downloads/tara_travel/MEMORY.md) **[MODIFIED]**
+- **Scope & Objectives**:
+  - **Accurate Trip Date Range Mapping**:
+    - Updated `ItineraryRepository.getItinerary(tripId, {startDate, endDate})` to calculate total days and sequential day dates (`Day 1` ... `Day N`) derived directly from the trip's `start_date` (`fromDate`) and `end_date` (`toDate`), rather than relying on `DateTime.now()` or only generating days that already contain stops.
+    - Added fallback Supabase `trips` lookup for `start_date` and `end_date` if not supplied explicitly.
+    - Maintained support for trips with stops beyond the trip end date by resolving `totalDays = max(tripDaysCount, maxStopDay)`.
+  - **Riverpod Provider Integration**:
+    - `ItineraryNotifier.build()` now resolves `tripRepo.getTripById(_tripId)` and passes `trip.fromDate` & `trip.toDate` to `getItinerary()`.
+  - **Dynamic Budget & State Robustness**:
+    - Replaced hardcoded `tripBudget / 7` with dynamic `tripBudget / totalDaysCount`.
+    - Added bounds-safe fallback to `days.first` if `activeDay` index exceeds the current day count.
+    - Updated `EditTripSheet` to invalidate `itineraryProvider(widget.trip.id)` whenever trip dates are updated.
+- **Verification**:
+  - `flutter analyze` → 0 issues (exit code 0).
+
+---
+
+### `IMP-045` · Comprehensive Itinerary Power Suite (Transit Conflicts, Roll Call, Cost-to-Expense, Day Shift & Duplication)
+- **Date**: August 25, 2026
+- **Target Files**:
+  - [lib/features/itinerary/utils/transit_conflict_helper.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/utils/transit_conflict_helper.dart) **[NEW]**
+  - [lib/features/itinerary/widgets/inter_stop_transit_badge.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/inter_stop_transit_badge.dart) **[NEW]**
+  - [lib/features/itinerary/widgets/roll_call_sheet.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/roll_call_sheet.dart) **[NEW]**
+  - [lib/features/itinerary/widgets/day_actions_sheet.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/day_actions_sheet.dart) **[NEW]**
+  - [lib/features/itinerary/widgets/stop_card.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/stop_card.dart) **[MODIFIED]**
+  - [lib/features/budget/widgets/add_expense_form.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/budget/widgets/add_expense_form.dart) **[MODIFIED]**
+  - [lib/core/providers/itinerary_provider.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/providers/itinerary_provider.dart) **[MODIFIED]**
+  - [lib/features/itinerary/itinerary_screen.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/itinerary_screen.dart) **[MODIFIED]**
+  - [MEMORY.md](file:///d:/Spencer/Downloads/tara_travel/MEMORY.md) **[MODIFIED]**
+- **Scope & Objectives**:
+  - **Inter-Stop Transit & Conflict Engine**:
+    - Built `TransitConflictHelper` with Haversine distance, travel time estimates (walking, driving, transit), schedule collision detection, and tight buffer warnings (<15 min transfer time).
+    - Added `InterStopTransitBadge` rendering visual connector line with transit time/distance and amber/red conflict pills between consecutive stops.
+  - **1-Tap Convert Stop Cost to Trip Expense**:
+    - Updated `AddExpenseForm` to support initial values (`initialDescription`, `initialAmount`, `initialCategory`, `initialDate`, `initialPayerId`).
+    - Added 1-tap "Expense" buttons in `StopCard` and `_StopDetailSheet` pre-filling title, estimated cost, category, and date directly into budget system.
+  - **Live Companion Roll Call**:
+    - Created `RollCallSheet` enabling trip organizers to check in/out members on individual itinerary stops with 1-tap Select All and individual avatar rows.
+    - Added `updateCheckedInMembers` method in `ItineraryNotifier`.
+    - Rendered presence count pills and avatar stacks on `StopCard`.
+  - **Day Management & Schedule Shifting**:
+    - Implemented `shiftDaySchedule` (+30m, +1h, -30m, -1h), `duplicateDay`, `moveStopToDay`, and `deleteDay` in `ItineraryNotifier`.
+    - Created `DayActionsSheet` accessible via top header "Actions" button.
+- **Verification**:
+  - `flutter analyze` → 0 issues (exit code 0).
+

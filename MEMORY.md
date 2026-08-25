@@ -403,7 +403,7 @@ Client Tier               Storage Tier                Transport Tier
 
 ### 6. `ItineraryRepository` (`lib/core/repositories/itinerary_repository.dart`)
 - `Future<List<ItineraryStop>> getStops(String tripId)` — Direct Supabase query ordered by `day_number`, `sort_order`.
-- `Future<List<ItineraryDay>> getItinerary(String tripId)` — Groups stops into day clusters.
+- `Future<List<ItineraryDay>> getItinerary(String tripId, {startDate, endDate})` — Builds accurate chronological days aligned to the trip's date range (`fromDate` to `toDate`) and groups stops into day clusters.
 - `Future<void> updateStopStatus(String stopId, StopStatus status)` — Syncs stop status (`planned`, `completed`, `skipped`, `arrived`) to Supabase.
 - `Future<void> saveItineraryDay(String tripId, ItineraryDay day)` — Direct PostgREST upsert to `itinerary_stops`.
 - `Future<void> deleteStop(String stopId)` — Direct delete from `itinerary_stops`.
@@ -755,6 +755,24 @@ Client Tier               Storage Tier                Transport Tier
 '/trips'         -> TripsScreen (All planned, ongoing, and archived trips)
 '/friends'       -> FriendsScreen (Social graph, pending requests, search)
 ```
+
+---
+
+## 13. 🗓️ ITINERARY POWER SUITE ARCHITECTURE
+
+- **Date Range Alignment**: `ItineraryRepository.getItinerary` computes `Day 1` ... `Day N` based strictly on `trip.fromDate` to `trip.toDate`.
+- **Transit & Conflict Engine**:
+  - `TransitConflictHelper`: Computes Haversine geodesic distance, estimated travel time by speed profile, and detects schedule collisions (start before previous end) or tight buffers (< 15 mins).
+  - `InterStopTransitBadge`: Displays inter-stop transit duration, distance, and collision/tight buffer warning badges.
+- **Cost-to-Expense Handoff**:
+  - 1-tap conversion from `StopCard` / `_StopDetailSheet` pre-populating `AddExpenseForm` (description, cost, category, date).
+- **Group Roll Call**:
+  - `RollCallSheet` allows organizers to toggle companion check-ins per stop; updates `checkedInMemberIds` and syncs real-time state.
+- **Day Management**:
+  - `shiftDaySchedule(dayIndex, minutesOffset)`: Adjusts all start/end times forward or backward by 30m or 60m.
+  - `duplicateDay(dayIndex)`: Clones day and all stops into a new appended itinerary day.
+  - `moveStopToDay(fromDay, toDay, stopId)`: Translocates a stop across different itinerary days.
+  - `deleteDay(dayIndex)`: Removes day and re-indexes remaining days.
 
 ---
 

@@ -24,6 +24,14 @@ import 'widgets/day_summary_card.dart';
 import 'widgets/smart_suggestion_chips.dart';
 import 'widgets/arrival_pill.dart';
 import 'widgets/itinerary_fulfillment_banner.dart';
+import 'widgets/inter_stop_transit_badge.dart';
+import 'widgets/roll_call_sheet.dart';
+import 'widgets/day_actions_sheet.dart';
+import 'utils/transit_conflict_helper.dart';
+import '../budget/widgets/add_expense_form.dart';
+import '../../core/models/expense_model.dart';
+import '../../core/providers/expense_provider.dart';
+import '../../core/providers/repository_providers.dart';
 import '../../core/widgets/buttons/app_back_button.dart';
 
 // ── View mode toggle ─────────────────────────────────────────────────────────
@@ -119,6 +127,90 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
     );
   }
 
+  void _openLogExpenseForm(
+    BuildContext context,
+    ItineraryStop stop,
+    List<MemberModel> members,
+    String tripId,
+    DateTime stopDate,
+  ) {
+    ExpenseCategory category;
+    switch (stop.type) {
+      case StopType.hotel:
+        category = ExpenseCategory.hotel;
+        break;
+      case StopType.activity:
+        category = ExpenseCategory.activities;
+        break;
+      case StopType.food:
+        category = ExpenseCategory.food;
+        break;
+      case StopType.transport:
+        category = ExpenseCategory.transport;
+        break;
+      case StopType.custom:
+        category = ExpenseCategory.custom;
+        break;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(ctx).viewInsets.bottom,
+        ),
+        child: SingleChildScrollView(
+          child: Container(
+            margin: const EdgeInsets.all(12),
+            child: AddExpenseForm(
+              members: members,
+              initialDescription: stop.title,
+              initialAmount: stop.estimatedCost,
+              initialCategory: category,
+              initialDate: stopDate,
+              onExpenseAdded: (expense) async {
+                final repo = ref.read(expenseRepositoryProvider);
+                await repo.addExpense(tripId, expense);
+                ref.invalidate(expenseProvider(tripId));
+                ref.invalidate(activeTripProvider);
+                if (ctx.mounted) Navigator.pop(ctx);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Logged "${expense.description}" (₱${expense.amount.toStringAsFixed(0)}) as trip expense! 💰'),
+                      backgroundColor: AppColors.green,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  );
+                }
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openRollCallSheet(
+    BuildContext context,
+    int dayIndex,
+    ItineraryStop stop,
+    List<MemberModel> members,
+    ItineraryNotifier notifier,
+  ) {
+    RollCallSheet.show(
+      context,
+      stop: stop,
+      members: members,
+      onSave: (ids) {
+        notifier.updateCheckedInMembers(dayIndex, stop.id, ids);
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final tripAsync = ref.watch(activeTripProvider);
@@ -142,7 +234,9 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
           data: (itineraryState) {
             final days = itineraryState.days;
             final activeDay = itineraryState.activeDay;
-            final currentDay = (days.isNotEmpty && activeDay < days.length) ? days[activeDay] : null;
+            final currentDay = (days.isNotEmpty && activeDay < days.length)
+                ? days[activeDay]
+                : (days.isNotEmpty ? days.first : null);
 
             return Scaffold(
               backgroundColor: AppColors.deepEarth,
@@ -248,6 +342,35 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                                     ),
                                   ),
                                 ),
+                                if (canManageItinerary && currentDay != null) ...[
+                                  const SizedBox(width: 10),
+                                  // Day Actions button
+                                  GestureDetector(
+                                    onTap: () => DayActionsSheet.show(
+                                      context,
+                                      activeDayIndex: activeDay,
+                                      day: currentDay,
+                                      allDays: days,
+                                      notifier: ref.read(ref.read(itineraryProvider(trip.id)).notifier),
+                                    ),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                                      ),
+                                      child: const Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.tune_rounded, color: Colors.white, size: 14),
+                                          SizedBox(width: 4),
+                                          Text('Actions', style: TextStyle(fontFamily: 'DM Sans', fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white)),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
                                 const SizedBox(width: 10),
                                 // Arrival demo trigger (simulates GPS proximity)
                                 GestureDetector(
@@ -302,9 +425,9 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                           : _viewMode == _StopViewMode.timeline
                               ? TimelineView(
                                   day: currentDay,
-                                  onStopTap: (s) => _showStopDetail(context, s, trip.members, activeDay, trip.id),
+                                  onStopTap: (s) => _showStopDetail(context, s, trip.members, activeDay, trip.id, currentDay.date),
                                 )
-                              : _buildListContent(currentDay, activeDay, trip.members, trip.id, trip.totalBudget),
+                              : _buildListContent(currentDay, activeDay, trip.members, trip.id, trip.totalBudget, days.length),
                     ),
                   ),
                 ],
@@ -335,9 +458,9 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
   }
 
   // ── Feature 1+2+3+10 — List content with drag-reorder ───────────────────
-  Widget _buildListContent(ItineraryDay day, int dayIndex, List<MemberModel> members, String tripId, double tripBudget) {
+  Widget _buildListContent(ItineraryDay day, int dayIndex, List<MemberModel> members, String tripId, double tripBudget, int totalDaysCount) {
     final notifier = ref.read(ref.read(itineraryProvider(tripId)).notifier);
-    final dailyBudget = tripBudget > 0 ? tripBudget / 7 : 0.0;
+    final dailyBudget = (tripBudget > 0 && totalDaysCount > 0) ? tripBudget / totalDaysCount : 0.0;
     // Current user member (first for demo; in production use auth)
     final currentMemberId = members.isNotEmpty ? members.first.id : 'me';
 
@@ -394,12 +517,21 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                   itemBuilder: (context, i) {
                     final stop = day.stops[i];
                     final isEditing = _editingStopId == stop.id;
+                    final prevStop = i > 0 ? day.stops[i - 1] : null;
+                    final transitInfo = prevStop != null
+                        ? TransitConflictHelper.analyze(from: prevStop, to: stop)
+                        : null;
 
                     return KeyedSubtree(
                       key: ValueKey(stop.id),
                       child: Column(
                         key: ValueKey('col_${stop.id}'),
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // Inter-Stop Transit & Conflict Badge
+                          if (transitInfo != null && (transitInfo.distanceKm != null || transitInfo.hasWarning))
+                            InterStopTransitBadge(info: transitInfo),
+
                           // Feature 2 — Dismissible for swipe-to-delete
                           Dismissible(
                             key: ValueKey('dis_${stop.id}'),
@@ -449,11 +581,13 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                                   stop: stop,
                                   members: members,
                                   isLast: i == day.stops.length - 1,
-                                  onTap: () => _showStopDetail(context, stop, members, dayIndex, tripId),
+                                  onTap: () => _showStopDetail(context, stop, members, dayIndex, tripId, day.date),
                                   onStatusChange: (s) => notifier.updateStopStatus(dayIndex, stop.id, s),
                                   // Feature 2 — edit button
                                   onEdit: () => setState(() => _editingStopId = isEditing ? null : stop.id),
                                   onCheckIn: () => notifier.toggleStopVisited(dayIndex, stop.id, currentMemberId),
+                                  onLogExpense: () => _openLogExpenseForm(context, stop, members, tripId, day.date),
+                                  onRollCall: () => _openRollCallSheet(context, dayIndex, stop, members, notifier),
                                 ),
                               ),
                             ],
@@ -525,7 +659,7 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
     );
   }
 
-  void _showStopDetail(BuildContext context, ItineraryStop stop, List<MemberModel> members, int dayIndex, String tripId) {
+  void _showStopDetail(BuildContext context, ItineraryStop stop, List<MemberModel> members, int dayIndex, String tripId, DateTime stopDate) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -538,6 +672,14 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
         onEdit: () {
           Navigator.pop(context);
           _openEditForm(context, dayIndex, stop, members, ref.read(ref.read(itineraryProvider(tripId)).notifier));
+        },
+        onLogExpense: () {
+          Navigator.pop(context);
+          _openLogExpenseForm(context, stop, members, tripId, stopDate);
+        },
+        onRollCall: () {
+          Navigator.pop(context);
+          _openRollCallSheet(context, dayIndex, stop, members, ref.read(ref.read(itineraryProvider(tripId)).notifier));
         },
       ),
     );
@@ -677,6 +819,8 @@ class _StopDetailSheet extends StatelessWidget {
   final void Function(StopStatus) onStatusChange;
   final void Function(String memberId, bool upvote) onVote;
   final VoidCallback onEdit;
+  final VoidCallback? onLogExpense;
+  final VoidCallback? onRollCall;
 
   const _StopDetailSheet({
     required this.stop,
@@ -684,6 +828,8 @@ class _StopDetailSheet extends StatelessWidget {
     required this.onStatusChange,
     required this.onVote,
     required this.onEdit,
+    this.onLogExpense,
+    this.onRollCall,
   });
 
   @override
@@ -782,23 +928,70 @@ class _StopDetailSheet extends StatelessWidget {
 
           // 1-Tap Google Maps Navigation Button
           const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton.icon(
-              onPressed: () => openGoogleMapsForStop(context, stop),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: SizedBox(
+                  height: 44,
+                  child: ElevatedButton.icon(
+                    onPressed: () => openGoogleMapsForStop(context, stop),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    icon: const Icon(Icons.directions_rounded, size: 18),
+                    label: const Text(
+                      'Navigate Maps',
+                      style: TextStyle(fontFamily: 'DM Sans', fontSize: 13, fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ),
               ),
-              icon: const Icon(Icons.directions_rounded, size: 20),
-              label: const Text(
-                'Navigate in Google Maps',
-                style: TextStyle(fontFamily: 'DM Sans', fontSize: 14, fontWeight: FontWeight.w700),
-              ),
-            ),
+              if (onLogExpense != null) ...[
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 2,
+                  child: SizedBox(
+                    height: 44,
+                    child: OutlinedButton.icon(
+                      onPressed: onLogExpense,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.amberText,
+                        side: const BorderSide(color: AppColors.amber),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      icon: const Icon(Icons.receipt_long_rounded, size: 16),
+                      label: const Text(
+                        'Expense',
+                        style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+              if (onRollCall != null && members.length > 1) ...[
+                const SizedBox(width: 8),
+                SizedBox(
+                  height: 44,
+                  child: OutlinedButton.icon(
+                    onPressed: onRollCall,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.greenBright,
+                      side: const BorderSide(color: AppColors.greenBright),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    icon: const Icon(Icons.people_alt_rounded, size: 16),
+                    label: Text(
+                      'Roll Call (${stop.checkedInMemberIds.length}/${members.length})',
+                      style: const TextStyle(fontFamily: 'DM Sans', fontSize: 12, fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
           if (stop.notes != null && stop.notes!.isNotEmpty) ...[
             const SizedBox(height: 12),

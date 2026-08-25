@@ -10,6 +10,7 @@ import '../../../core/models/trip_model.dart';
 import '../../../core/providers/repository_providers.dart';
 import '../../../core/providers/selected_trip_provider.dart';
 import '../../../core/providers/trip_provider.dart';
+import '../../../core/providers/itinerary_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/inputs/app_text_field.dart';
 import '../../../core/widgets/inputs/location_picker.dart';
@@ -199,6 +200,7 @@ class _EditTripSheetState extends ConsumerState<EditTripSheet> {
       await ref.read(tripRepositoryProvider).updateTrip(updatedTrip);
       ref.invalidate(allTripsProvider);
       ref.invalidate(selectedTripProvider);
+      ref.invalidate(itineraryProvider(widget.trip.id));
 
       if (mounted) {
         Navigator.pop(context, true);

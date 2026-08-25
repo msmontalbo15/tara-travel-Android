@@ -35,8 +35,12 @@ class ItineraryRepository {
     }
   }
 
-  /// Fetches grouped itinerary days for a trip.
-  Future<List<ItineraryDay>> getItinerary(String tripId) async {
+  /// Fetches grouped itinerary days for a trip, accurately mapped to the trip's date range.
+  Future<List<ItineraryDay>> getItinerary(
+    String tripId, {
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
     final stops = await getStops(tripId);
 
     // Fetch remote day_number for each stop via Supabase query
@@ -53,20 +57,58 @@ class ItineraryRepository {
       dayNumberMap[id] = dayNum;
     }
 
-    final days = <int, List<ItineraryStop>>{};
+    final stopsByDay = <int, List<ItineraryStop>>{};
     for (final stop in stops) {
       final dayNum = dayNumberMap[stop.id] ?? 1;
-      days.putIfAbsent(dayNum, () => []).add(stop);
+      stopsByDay.putIfAbsent(dayNum, () => []).add(stop);
     }
 
-    final sortedKeys = days.keys.toList()..sort();
-    return sortedKeys.map((dayNum) {
-      return ItineraryDay(
-        dayNumber: dayNum,
-        date: DateTime.now().add(Duration(days: dayNum - 1)),
-        stops: days[dayNum]!,
+    DateTime tripStart = startDate ?? DateTime.now();
+    DateTime tripEnd = endDate ?? tripStart;
+
+    // If dates weren't supplied, query trips table for start_date & end_date
+    if (startDate == null || endDate == null) {
+      try {
+        final tripRow = await _supabase
+            .from('trips')
+            .select('start_date, end_date')
+            .eq('id', tripId)
+            .maybeSingle();
+        if (tripRow != null) {
+          if (startDate == null && tripRow['start_date'] != null) {
+            tripStart = DateTime.parse('${tripRow['start_date']}');
+          }
+          if (endDate == null && tripRow['end_date'] != null) {
+            tripEnd = DateTime.parse('${tripRow['end_date']}');
+          }
+        }
+      } catch (e) {
+        debugPrint('[ItineraryRepository] getItinerary trips date lookup error: $e');
+      }
+    }
+
+    final startOnly = DateTime(tripStart.year, tripStart.month, tripStart.day);
+    final endOnly = DateTime(tripEnd.year, tripEnd.month, tripEnd.day);
+    final diffDays = endOnly.difference(startOnly).inDays + 1;
+    final tripDaysCount = diffDays > 0 ? diffDays : 1;
+
+    final maxStopDay = stopsByDay.keys.isEmpty
+        ? 1
+        : stopsByDay.keys.reduce((a, b) => a > b ? a : b);
+    final totalDays = tripDaysCount > maxStopDay ? tripDaysCount : maxStopDay;
+
+    final resultDays = <ItineraryDay>[];
+    for (int dayNum = 1; dayNum <= totalDays; dayNum++) {
+      resultDays.add(
+        ItineraryDay(
+          dayNumber: dayNum,
+          date: DateTime(startOnly.year, startOnly.month, startOnly.day + (dayNum - 1)),
+          stops: stopsByDay[dayNum] ?? const [],
+        ),
       );
-    }).toList();
+    }
+
+    return resultDays;
   }
 
   // ────────────────────────────────────────────────────────────────
