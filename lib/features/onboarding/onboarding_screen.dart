@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supa;
 import '../../core/providers/profile_provider.dart';
-import '../../core/services/database_service.dart';
 import '../home/home_route_args.dart';
 import 'onboarding_route_args.dart';
 import 'widgets/choose_mode_step.dart';
@@ -81,10 +80,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           googlePhotoUrl ?? ref.read(profileProvider).profilePhotoUrl,
     ));
 
-    // Switch local DB to the authenticated user's partition
-    if (supaUser != null) {
-      await DatabaseService.instance.switchUser(supaUser.id);
-    }
     await ref.read(profileProvider.notifier).refreshProfile();
     if (!mounted) return;
 

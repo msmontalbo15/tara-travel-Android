@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'auth_provider.dart';
 import 'repository_providers.dart';
-import '../services/session_cache_service.dart';
 
 // ── Profile State ─────────────────────────────────────────────────────────────
 
@@ -28,6 +27,7 @@ class ProfileState {
   final bool isCloudConnected;
   final String? accountEmail;
   final bool hasCompletedOnboarding;
+  final bool hideSurname;
   final bool isLoaded;
   final bool isFirstRun;
 
@@ -60,6 +60,7 @@ class ProfileState {
     this.isCloudConnected = false,
     this.accountEmail,
     this.hasCompletedOnboarding = false,
+    this.hideSurname = false,
     this.isLoaded = false,
     this.isFirstRun = true,
   });
@@ -75,6 +76,17 @@ class ProfileState {
     if (displayName.isNotEmpty && displayName != 'User') return displayName;
     if (firstName.isNotEmpty && firstName != 'User') return firstName;
     return '';
+  }
+
+  /// Returns the display name formatted for peers/other members based on surname privacy.
+  String get effectiveNameForPeers {
+    final base = effectiveName;
+    if (!hideSurname || base.isEmpty) return base;
+    final parts = base.trim().split(RegExp(r'\s+'));
+    if (parts.length <= 1) return base;
+    final first = parts.first;
+    final lastInitial = parts.last[0].toUpperCase();
+    return '$first $lastInitial.';
   }
 
   /// Returns the nickname for homepage display (falls back to effectiveName if nickname is not set).
@@ -119,6 +131,7 @@ class ProfileState {
     bool? isGoogleConnected,
     String? accountEmail,
     bool? hasCompletedOnboarding,
+    bool? hideSurname,
     bool? isLoaded,
     bool? isFirstRun,
   }) {
@@ -146,6 +159,7 @@ class ProfileState {
       accountEmail: accountEmail ?? this.accountEmail,
       hasCompletedOnboarding:
           hasCompletedOnboarding ?? this.hasCompletedOnboarding,
+      hideSurname: hideSurname ?? this.hideSurname,
       isLoaded: isLoaded ?? this.isLoaded,
       isFirstRun: isFirstRun ?? this.isFirstRun,
     );
@@ -173,8 +187,7 @@ class ProfileState {
       'isCloudConnected': isCloudConnected,
       'accountEmail': accountEmail,
       'hasCompletedOnboarding': hasCompletedOnboarding,
-      // Note: isLoaded and isFirstRun are intentionally omitted from JSON
-      // because they are transient client-only fields.
+      'hideSurname': hideSurname,
     };
   }
 
@@ -211,10 +224,13 @@ class ProfileState {
             'reminders': true,
             'system': true,
           },
-      isCloudConnected: json['isCloudConnected'] as bool? ?? json['isGoogleConnected'] as bool? ?? false,
+      isCloudConnected: json['isCloudConnected'] as bool? ??
+          json['isGoogleConnected'] as bool? ??
+          false,
       accountEmail: json['accountEmail'] as String?,
       hasCompletedOnboarding:
           json['hasCompletedOnboarding'] as bool? ?? false,
+      hideSurname: json['hideSurname'] as bool? ?? false,
       isLoaded: true,
       isFirstRun: false,
     );
@@ -242,76 +258,29 @@ class ProfileNotifier extends Notifier<ProfileState> {
     ProfileState current = const ProfileState();
 
     try {
-      // 1. Load local data first for fast startup
-      final localData = await repo.getProfile();
-      current = localData != null
-          ? ProfileState.fromJson(localData)
-          : const ProfileState();
-
-      // 2. Merge with remote if user is authenticated
-      final supaUser =
-          Supabase.instance.client.auth.currentUser;
+      final supaUser = Supabase.instance.client.auth.currentUser;
       if (supaUser != null) {
         final remoteData = await repo.getRemoteProfile(supaUser.id);
         if (remoteData != null) {
           final remote = ProfileState.fromJson(remoteData);
-          // Remote wins when it has completed onboarding or local is default.
-          // But: if the remote name is blank/placeholder AND the local name was
-          // explicitly set (e.g. typed during offline onboarding), keep local name.
-          final remoteName = remote.displayName;
-          final localName = current.displayName;
-          final resolvedName = (remoteName.isNotEmpty && remoteName != 'User')
-              ? remoteName
-              : (localName.isNotEmpty && localName != 'User')
-                  ? localName
-                  : remoteName;
-
-          final remoteNickname = remote.nickname;
-          final localNickname = current.nickname;
-          final resolvedNickname = (remoteNickname != null && remoteNickname.trim().isNotEmpty)
-              ? remoteNickname
-              : localNickname;
-
-          final remoteDob = remote.dateOfBirth;
-          final localDob = current.dateOfBirth;
-          final resolvedDob = (remoteDob != null && remoteDob.trim().isNotEmpty)
-              ? remoteDob
-              : localDob;
-
-          final remoteBloodType = remote.bloodType;
-          final localBloodType = current.bloodType;
-          final resolvedBloodType = (remoteBloodType != null && remoteBloodType.trim().isNotEmpty)
-              ? remoteBloodType
-              : localBloodType;
-
-          if (remote.hasCompletedOnboarding || !current.hasCompletedOnboarding) {
-            current = remote.copyWith(
-              displayName: resolvedName,
-              firstName: resolvedName.split(' ').first,
-              nickname: resolvedNickname,
-              dateOfBirth: resolvedDob,
-              bloodType: resolvedBloodType,
-              isCloudConnected: true,
-              accountEmail: supaUser.email,
-            );
-          }
+          current = remote.copyWith(
+            accountEmail: supaUser.email,
+            isCloudConnected: true,
+          );
         } else {
-          // Authenticated but no remote profile yet — also try to seed name
-          // from Google/OAuth metadata so it is already set on first load.
+          // Seed initial name & photo from auth metadata if available
           final metadata = supaUser.userMetadata;
           final metaName = metadata?['full_name'] as String? ??
               metadata?['name'] as String?;
           final metaPhoto = metadata?['avatar_url'] as String? ??
               metadata?['picture'] as String?;
-          final resolvedName = (metaName != null && metaName.isNotEmpty)
-              ? metaName
-              : current.displayName;
+          final resolvedName = metaName ?? '';
           current = current.copyWith(
             displayName: resolvedName,
-            firstName: resolvedName.split(' ').first,
-            profilePhotoUrl: (metaPhoto != null && metaPhoto.isNotEmpty)
-                ? metaPhoto
-                : current.profilePhotoUrl,
+            firstName: resolvedName.isNotEmpty
+                ? resolvedName.split(' ').first
+                : '',
+            profilePhotoUrl: metaPhoto,
             isCloudConnected: true,
             accountEmail: supaUser.email,
           );
@@ -319,7 +288,6 @@ class ProfileNotifier extends Notifier<ProfileState> {
       }
     } catch (e) {
       debugPrint('[ProfileNotifier] Error loading profile: $e');
-      // On error, let it fall back to default or what was loaded locally
     } finally {
       state = current.copyWith(isLoaded: true);
     }
@@ -327,21 +295,16 @@ class ProfileNotifier extends Notifier<ProfileState> {
 
   // ── Persistence ────────────────────────────────────────────────
 
-  /// Forces a reload from remote (Supabase) + local storage.
-  /// Useful after a fresh sign-in to detect already-completed onboarding.
+  /// Forces a reload from remote (Supabase).
   Future<void> refreshProfile() => _loadProfile();
 
-
   Future<void> _persist() async {
-    // Automatically complete onboarding state if essential info (e.g. home location) is set
     if (!state.hasCompletedOnboarding && state.homeCity.isNotEmpty) {
       state = state.copyWith(hasCompletedOnboarding: true);
     }
 
     final repo = ref.read(profileRepositoryProvider);
     final json = state.toJson();
-
-    await repo.saveProfile(json);
 
     final supaUser = Supabase.instance.client.auth.currentUser;
     if (supaUser != null) {
@@ -358,7 +321,6 @@ class ProfileNotifier extends Notifier<ProfileState> {
 
   void setFirstRunCompleted() {
     state = state.copyWith(isFirstRun: false);
-    // isFirstRun is transient — no need to persist
   }
 
   void updateDisplayName(String name) {
@@ -451,28 +413,24 @@ class ProfileNotifier extends Notifier<ProfileState> {
     _persist();
   }
 
+  void toggleHideSurname(bool val) {
+    state = state.copyWith(hideSurname: val);
+    _persist();
+  }
+
   void updateGCash(String number, String? qrUrl) {
     state = state.copyWith(gcashNumber: number, gcashQrUrl: qrUrl);
     _persist();
   }
 
-  /// Signs the user out: clears remote auth, local DB, cache stamps and resets state.
+  /// Signs the user out from Supabase and resets in-memory profile state.
   Future<void> signOut() async {
     try {
-      // 1. Sign out from Supabase
       await Supabase.instance.client.auth.signOut();
     } catch (e) {
       debugPrint('[ProfileProvider] signOut error: $e');
     }
 
-    // 2. Invalidate all session cache TTL stamps
-    await SessionCacheService.instance.invalidateAll();
-
-    // 3. Clear local profile from Sembast
-    final repo = ref.read(profileRepositoryProvider);
-    await repo.clearProfile();
-
-    // 4. Reset in-memory state to defaults
     state = const ProfileState(isLoaded: true);
   }
 }

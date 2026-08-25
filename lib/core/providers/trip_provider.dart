@@ -23,16 +23,17 @@ final allTripsProvider = FutureProvider<List<TripModel>>((ref) async {
 // before the user taps into a trip).
 
 final activeTripProvider = FutureProvider<TripModel?>((ref) async {
-  // If a trip is explicitly selected, use that.
+  // If a trip is explicitly selected (and not archived), use that.
   final selected = await ref.watch(selectedTripProvider.future);
-  if (selected != null) return selected;
+  if (selected != null && !selected.isArchived) return selected;
 
   // Fallback: use the first upcoming (non-draft, non-archived) trip from the list.
   final trips = await ref.watch(allTripsProvider.future);
   if (trips.isEmpty) return null;
-  final activeUpcoming = trips.where((t) => !t.isDraft && !t.isArchived).toList();
+  final activeUpcoming =
+      trips.where((t) => !t.isDraft && !t.isArchived).toList();
   if (activeUpcoming.isNotEmpty) return activeUpcoming.first;
-  return trips.first;
+  return null;
 });
 
 // ── Current Member ─────────────────────────────────────────────────────────────

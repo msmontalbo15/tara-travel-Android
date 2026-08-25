@@ -321,7 +321,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   end: Alignment.bottomCenter,
                 ),
               ),
-              padding: const EdgeInsets.fromLTRB(24, 56, 24, 32),
+              padding: EdgeInsets.fromLTRB(
+                24,
+                MediaQuery.paddingOf(context).top + 16,
+                24,
+                32,
+              ),
               child: Column(
                 children: [
                   // Avatar
@@ -450,6 +455,104 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         _profileRow(Icons.payments_outlined, 'Preferred Currency', profile.preferredCurrency, onTap: () => _editCurrency(context, profile)),
                         _divider(),
                         _profileRow(Icons.call_outlined, 'Contact Number', profile.contactNumber ?? 'Add number', onTap: () => _editContactNumber(context, profile)),
+                      ],
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // Privacy & Visibility
+                    _sectionTitle('PRIVACY & VISIBILITY'),
+                    _ProfileCard(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: profile.hideSurname ? AppColors.sand : AppColors.surfaceLight,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Icon(
+                                      profile.hideSurname ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+                                      color: profile.hideSurname ? AppColors.primary : AppColors.warmMuted,
+                                      size: 20,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'Hide Surname from Members',
+                                          style: TextStyle(
+                                            fontFamily: 'DM Sans',
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColors.textPrimary,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          profile.hideSurname
+                                              ? 'Active — Surname hidden from members'
+                                              : 'Off — Full name visible to members',
+                                          style: TextStyle(
+                                            fontFamily: 'DM Sans',
+                                            fontSize: 12,
+                                            color: profile.hideSurname ? AppColors.primary : AppColors.textSecondary,
+                                            fontWeight: profile.hideSurname ? FontWeight.w600 : FontWeight.normal,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Switch.adaptive(
+                                    value: profile.hideSurname,
+                                    onChanged: (v) {
+                                      ref.read(profileProvider.notifier).toggleHideSurname(v);
+                                    },
+                                    activeThumbColor: AppColors.primary,
+                                    activeTrackColor: AppColors.primaryLight,
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: AppColors.sand.withValues(alpha: 0.6),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.15)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.info_outline_rounded, size: 16, color: AppColors.primary),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        profile.hideSurname
+                                            ? 'Other members see you as: "${profile.effectiveNameForPeers}"'
+                                            : 'When enabled, your name appears as "${profile.effectiveName.split(' ').length > 1 ? '${profile.effectiveName.split(' ').first} ${profile.effectiveName.split(' ').last[0]}.' : profile.effectiveName}" to other trip members.',
+                                        style: const TextStyle(
+                                          fontFamily: 'DM Sans',
+                                          fontSize: 11.5,
+                                          color: AppColors.deepEarth,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
 

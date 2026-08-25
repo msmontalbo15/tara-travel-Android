@@ -24,7 +24,6 @@ import 'features/friends/friends_screen.dart';
 
 import 'core/widgets/auth_gate.dart';
 import 'core/auth/data/secure_session_repository.dart';
-import 'core/services/database_service.dart';
 import 'core/security/three_layer_encryption_service.dart';
 
 void main() async {
@@ -60,13 +59,7 @@ void main() async {
   // On success, the user is silently signed in — no login screen shown.
   // On expired or missing session → falls through to unauthenticated state.
   // On Keystore key loss (device wipe / OS upgrade) → graceful clear.
-  final restoredUser = await SecureSessionRepository.instance.restoreSession();
-
-  // Pre-route the local database to the restored user's partition so the
-  // first frame can read local data without an extra async hop.
-  if (restoredUser != null) {
-    await DatabaseService.instance.switchUser(restoredUser.id);
-  }
+  await SecureSessionRepository.instance.restoreSession();
 
   // ── 4. Initialise 3-Layer Encryption (generate/load RSA + AES-256 keys) ────────
   // Keys are persisted in platform Keystore/Keychain via flutter_secure_storage.

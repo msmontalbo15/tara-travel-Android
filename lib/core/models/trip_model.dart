@@ -17,11 +17,16 @@ class TripModel {
   final String? coverEmoji;
   final String inviteCode;
   final String? ownerId;
-  // New metadata fields
+  // Visual / metadata
   final String? coverColor;
   final String? departurePoint;
+  final double? departureLat;
+  final double? departureLng;
   final String? departureMapUrl;
   final Map<String, dynamic>? destinationDetails;
+  // Transport detail (from Create Trip step 2)
+  final String? transportMode;          // e.g. 'plane', 'car', 'ferry'
+  final Map<String, dynamic>? transportMeta; // Full TransportDetail as JSON
 
   TripModel({
     required this.id,
@@ -41,8 +46,12 @@ class TripModel {
     this.ownerId,
     this.coverColor,
     this.departurePoint,
+    this.departureLat,
+    this.departureLng,
     this.departureMapUrl,
     this.destinationDetails,
+    this.transportMode,
+    this.transportMeta,
   });
 
   double get totalSpent => expenses
@@ -78,8 +87,12 @@ class TripModel {
     String? ownerId,
     String? coverColor,
     String? departurePoint,
+    double? departureLat,
+    double? departureLng,
     String? departureMapUrl,
     Map<String, dynamic>? destinationDetails,
+    String? transportMode,
+    Map<String, dynamic>? transportMeta,
   }) {
     return TripModel(
       id: id ?? this.id,
@@ -99,8 +112,12 @@ class TripModel {
       ownerId: ownerId ?? this.ownerId,
       coverColor: coverColor ?? this.coverColor,
       departurePoint: departurePoint ?? this.departurePoint,
+      departureLat: departureLat ?? this.departureLat,
+      departureLng: departureLng ?? this.departureLng,
       departureMapUrl: departureMapUrl ?? this.departureMapUrl,
       destinationDetails: destinationDetails ?? this.destinationDetails,
+      transportMode: transportMode ?? this.transportMode,
+      transportMeta: transportMeta ?? this.transportMeta,
     );
   }
 
@@ -115,6 +132,14 @@ class TripModel {
 
     final status = '${map['status'] ?? ''}'.toLowerCase();
     final isDraft = map['is_draft'] == true || status == 'draft';
+
+    // Deserialise transport_meta — stored as jsonb in Supabase (Map) or string (local)
+    Map<String, dynamic>? transportMeta;
+    final rawMeta = map['transport_meta'];
+    if (rawMeta is Map) {
+      transportMeta = rawMeta.cast<String, dynamic>();
+    }
+
     return TripModel(
       id: '${map['id']}',
       name: map['name']?.toString() ?? 'Untitled Trip',
@@ -141,10 +166,18 @@ class TripModel {
       ownerId: map['owner_id']?.toString() ?? map['ownerId']?.toString(),
       coverColor: map['cover_color']?.toString(),
       departurePoint: map['departure_point']?.toString(),
+      departureLat: map['departure_lat'] != null
+          ? double.tryParse('${map['departure_lat']}')
+          : null,
+      departureLng: map['departure_lng'] != null
+          ? double.tryParse('${map['departure_lng']}')
+          : null,
       departureMapUrl: map['departure_map_url']?.toString(),
       destinationDetails: map['destination_details'] != null
           ? (map['destination_details'] as Map).cast<String, dynamic>()
           : null,
+      transportMode: map['transport_mode']?.toString(),
+      transportMeta: transportMeta,
     );
   }
 
@@ -170,29 +203,42 @@ class TripModel {
       'owner_id': ownerId,
       'cover_color': coverColor,
       'departure_point': departurePoint,
+      'departure_lat': departureLat,
+      'departure_lng': departureLng,
       'departure_map_url': departureMapUrl,
       'destination_details': destinationDetails,
+      'transport_mode': transportMode,
+      'transport_meta': transportMeta,
     };
   }
 
   /// Produces the exact payload expected by Supabase (no nested objects)
   Map<String, dynamic> toSupabaseInsert(String ownerId) {
+    // Map non-standard trip types to a valid enum option allowed by trips_type_check constraint
+    const validTypes = {'beach', 'city', 'adventure', 'nature', 'cultural', 'heritage', 'pilgrimage', 'business', 'other'};
+    final normalizedType = tripType.toLowerCase().replaceAll('-', '_').replaceAll(' ', '_');
+    final safeType = validTypes.contains(normalizedType) ? normalizedType : 'other';
+
     return {
       'id': id,
       'name': name,
       'destination': destination,
       'start_date': fromDate.toIso8601String(),
       'end_date': toDate.toIso8601String(),
-      'type': tripType.toLowerCase(),
+      'type': safeType,
       'budget': totalBudget,
       'split_method': splitEqually ? 'equal' : 'fixed',
       'owner_id': ownerId,
       'status': isDraft ? 'draft' : (isArchived ? 'archived' : 'planned'),
       if (inviteCode.isNotEmpty) 'invite_code': inviteCode,
       if (coverColor != null) 'cover_color': coverColor,
+      if (coverEmoji != null) 'cover_emoji': coverEmoji,
       if (departurePoint != null) 'departure_point': departurePoint,
-      if (departureMapUrl != null) 'departure_map_url': departureMapUrl,
-      if (destinationDetails != null) 'destination_details': destinationDetails,
+      if (departureLat != null) 'departure_lat': departureLat,
+      if (departureLng != null) 'departure_lng': departureLng,
+      // Transport detail — written to existing transport_mode + transport_meta columns
+      if (transportMode != null) 'transport_mode': transportMode,
+      if (transportMeta != null) 'transport_meta': transportMeta,
     };
   }
 }

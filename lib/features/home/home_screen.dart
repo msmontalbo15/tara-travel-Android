@@ -9,7 +9,6 @@ import '../../core/providers/trip_provider.dart';
 import '../../core/providers/selected_trip_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_brand_logo.dart';
-import '../../core/widgets/profile_completion_banner.dart';
 import '../../core/widgets/navigation/floating_nav_bar.dart';
 import '../../core/widgets/shimmer_loading.dart';
 import '../../core/utils/jit_guard.dart';
@@ -23,6 +22,8 @@ import 'widgets/next_trip_card.dart';
 import 'widgets/quick_action_tile.dart';
 import 'widgets/trip_card.dart';
 import 'widgets/trip_action_sheet.dart';
+import 'widgets/empty_trip_hero_card.dart';
+import 'widgets/starter_templates_carousel.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -322,14 +323,12 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const ProfileCompletionBanner(),
-
                           ref.watch(allTripsProvider).when(
                                 data: (trips) {
                                   // Exclude archived trips from the homepage
                                   final visibleTrips = trips.where((t) => !t.isArchived).toList();
                                   if (visibleTrips.isEmpty) {
-                                    return const SizedBox.shrink();
+                                    return const StarterTemplatesCarousel();
                                   }
                                   return Column(
                                     crossAxisAlignment:
@@ -511,7 +510,7 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
                               crossAxisCount: 2,
                               crossAxisSpacing: 12,
                               mainAxisSpacing: 12,
-                              childAspectRatio: 1.45,
+                              childAspectRatio: 1.34,
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
                               children: [
@@ -975,7 +974,8 @@ class _HomeHeaderDelegate extends SliverPersistentHeaderDelegate {
   @override
   double get minExtent {
     if (activeTrip == null && !isLoadingTrip) {
-      return topPadding + 100.0;
+      // Fixed header + full empty hero card height
+      return topPadding + 290.0;
     }
     return topPadding + 215.0;
   }
@@ -983,7 +983,8 @@ class _HomeHeaderDelegate extends SliverPersistentHeaderDelegate {
   @override
   double get maxExtent {
     if (activeTrip == null && !isLoadingTrip) {
-      return topPadding + 100.0;
+      // Same as minExtent — hero card is non-collapsible
+      return topPadding + 290.0;
     }
     return topPadding + 375.0;
   }
@@ -1164,7 +1165,7 @@ class _HomeHeaderDelegate extends SliverPersistentHeaderDelegate {
                     overflow: TextOverflow.ellipsis,
                   ),
           ),
-          // ── Next Trip Section ──────────────────────────────────
+          // ── Next Trip / Empty Hero Section ─────────────────────
           if (activeTrip != null) ...[
             const SizedBox(height: 12),
             Expanded(
@@ -1188,6 +1189,15 @@ class _HomeHeaderDelegate extends SliverPersistentHeaderDelegate {
               child: Padding(
                 padding: EdgeInsets.only(bottom: 6.0),
                 child: NextTripCardSkeleton(),
+              ),
+            ),
+          ] else ...[
+            // No active trip — show the glassmorphic hero card
+            const SizedBox(height: 12),
+            const Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(bottom: 6.0),
+                child: EmptyTripHeroCard(),
               ),
             ),
           ],

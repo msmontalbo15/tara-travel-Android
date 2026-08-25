@@ -41,7 +41,12 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                   end: Alignment.bottomCenter,
                 ),
               ),
-              padding: const EdgeInsets.fromLTRB(24, 56, 24, 22),
+              padding: EdgeInsets.fromLTRB(
+                24,
+                MediaQuery.paddingOf(context).top + 16,
+                24,
+                22,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

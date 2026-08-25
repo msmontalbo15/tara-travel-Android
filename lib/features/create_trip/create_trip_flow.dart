@@ -25,12 +25,37 @@ class CreateTripFlow extends ConsumerStatefulWidget {
 class _CreateTripFlowState extends ConsumerState<CreateTripFlow> {
   final PageController _controller = PageController();
   final NewTripModel _draft = NewTripModel();
-  
+
   bool _saving = false;
   TripCreationLoadingMode _loadingMode = TripCreationLoadingMode.create;
   double _loadingProgress = 0.0;
   bool _isCompleted = false;
   String? _errorMessage;
+  // Guard so prefill from route args is applied only once
+  bool _didApplyPrefill = false;
+
+  /// Applies optional prefill data passed via route arguments.
+  ///
+  /// A [NewTripModel] may be supplied when navigating from the starter
+  /// templates carousel. Relevant fields are copied into [_draft] so that
+  /// [DetailsStep] opens with those values already populated.
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_didApplyPrefill) return;
+    _didApplyPrefill = true;
+
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is NewTripModel) {
+      if (args.destination.isNotEmpty) _draft.destination = args.destination;
+      if (args.destinationLat != null) _draft.destinationLat = args.destinationLat;
+      if (args.destinationLng != null) _draft.destinationLng = args.destinationLng;
+      if (args.tripType.isNotEmpty) _draft.tripType = args.tripType;
+      if (args.fromDate != null) _draft.fromDate = args.fromDate;
+      if (args.toDate != null) _draft.toDate = args.toDate;
+      if (args.coverColor != null) _draft.coverColor = args.coverColor;
+    }
+  }
 
   void _goTo(int step) {
     _controller.animateToPage(
@@ -63,6 +88,23 @@ class _CreateTripFlowState extends ConsumerState<CreateTripFlow> {
       final coverColorHex = _draft.coverColor != null
           ? '#${_draft.coverColor!.toRadixString(16).padLeft(8, '0').toUpperCase()}'
           : null;
+
+      // Encode TransportDetail into transport_mode + transport_meta
+      final td = _draft.transportDetail;
+      final transportMode = td?.mode.name;
+      final transportMeta = td == null ? null : {
+        'mode': td.mode.name,
+        if (td.vehicleCount != null) 'vehicle_count': td.vehicleCount,
+        if (td.flightNumber != null) 'flight_number': td.flightNumber,
+        if (td.operatorName != null) 'operator_name': td.operatorName,
+        if (td.bookingReference != null) 'booking_reference': td.bookingReference,
+        if (td.pierName != null) 'pier_name': td.pierName,
+        if (td.estimatedDuration.isNotEmpty) 'estimated_duration': td.estimatedDuration,
+        if (td.estimatedCost != null) 'estimated_cost': td.estimatedCost,
+        'split_gas': td.splitGas,
+        if (td.notes != null) 'notes': td.notes,
+      };
+
       final trip = TripModel(
         id: tripId,
         name: _draft.tripName.isEmpty ? 'My Trip' : _draft.tripName,
@@ -78,6 +120,10 @@ class _CreateTripFlowState extends ConsumerState<CreateTripFlow> {
         inviteCode: InviteCodeGenerator.generate(),
         coverColor: coverColorHex,
         departurePoint: _draft.transportDetail?.departurePoint,
+        departureLat: _draft.departureLat,
+        departureLng: _draft.departureLng,
+        transportMode: transportMode,
+        transportMeta: transportMeta,
         isDraft: false,
         members: _draft.travelers
             .map((t) => MemberModel(
@@ -124,7 +170,8 @@ class _CreateTripFlowState extends ConsumerState<CreateTripFlow> {
       debugPrint('[CreateTripFlow] confirm error: $e');
       if (mounted) {
         setState(() {
-          _errorMessage = 'Could not create trip: ${e.toString().replaceAll('Exception: ', '')}';
+          _saving = false;
+          _errorMessage = 'Supabase error: $e';
         });
       }
     }
@@ -146,6 +193,23 @@ class _CreateTripFlowState extends ConsumerState<CreateTripFlow> {
       final coverColorHex = _draft.coverColor != null
           ? '#${_draft.coverColor!.toRadixString(16).padLeft(8, '0').toUpperCase()}'
           : null;
+
+      // Encode TransportDetail into transport_mode + transport_meta
+      final td = _draft.transportDetail;
+      final transportMode = td?.mode.name;
+      final transportMeta = td == null ? null : {
+        'mode': td.mode.name,
+        if (td.vehicleCount != null) 'vehicle_count': td.vehicleCount,
+        if (td.flightNumber != null) 'flight_number': td.flightNumber,
+        if (td.operatorName != null) 'operator_name': td.operatorName,
+        if (td.bookingReference != null) 'booking_reference': td.bookingReference,
+        if (td.pierName != null) 'pier_name': td.pierName,
+        if (td.estimatedDuration.isNotEmpty) 'estimated_duration': td.estimatedDuration,
+        if (td.estimatedCost != null) 'estimated_cost': td.estimatedCost,
+        'split_gas': td.splitGas,
+        if (td.notes != null) 'notes': td.notes,
+      };
+
       final trip = TripModel(
         id: tripId,
         name: _draft.tripName.isEmpty ? 'Draft Trip' : _draft.tripName,
@@ -160,6 +224,10 @@ class _CreateTripFlowState extends ConsumerState<CreateTripFlow> {
         inviteCode: InviteCodeGenerator.generate(),
         coverColor: coverColorHex,
         departurePoint: _draft.transportDetail?.departurePoint,
+        departureLat: _draft.departureLat,
+        departureLng: _draft.departureLng,
+        transportMode: transportMode,
+        transportMeta: transportMeta,
         isDraft: true,
       );
 
@@ -182,7 +250,8 @@ class _CreateTripFlowState extends ConsumerState<CreateTripFlow> {
       debugPrint('[CreateTripFlow] saveDraft error: $e');
       if (mounted) {
         setState(() {
-          _errorMessage = 'Could not save draft: ${e.toString().replaceAll('Exception: ', '')}';
+          _saving = false;
+          _errorMessage = 'Supabase error: $e';
         });
       }
     }

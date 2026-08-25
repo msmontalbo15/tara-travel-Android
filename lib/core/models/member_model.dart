@@ -28,6 +28,7 @@ class MemberModel {
   final String? gcashNumber;
   final String? gcashQrUrl;
   final MemberStatus status;
+  final bool hideSurname;
 
   const MemberModel({
     required this.id,
@@ -42,6 +43,7 @@ class MemberModel {
     this.gcashNumber,
     this.gcashQrUrl,
     this.status = MemberStatus.approved,
+    this.hideSurname = false,
   });
 
   MemberModel copyWith({
@@ -57,6 +59,7 @@ class MemberModel {
     String? gcashNumber,
     String? gcashQrUrl,
     MemberStatus? status,
+    bool? hideSurname,
   }) {
     return MemberModel(
       id: id ?? this.id,
@@ -71,7 +74,20 @@ class MemberModel {
       gcashNumber: gcashNumber ?? this.gcashNumber,
       gcashQrUrl: gcashQrUrl ?? this.gcashQrUrl,
       status: status ?? this.status,
+      hideSurname: hideSurname ?? this.hideSurname,
     );
+  }
+
+  /// Formats a user's display name according to their surname privacy preference.
+  /// E.g. "Juan Dela Cruz" with hideSurname=true becomes "Juan D."
+  static String formatDisplayName(String rawName, {bool hideSurname = false}) {
+    final trimmed = rawName.trim();
+    if (!hideSurname || trimmed.isEmpty) return trimmed;
+    final parts = trimmed.split(RegExp(r'\s+'));
+    if (parts.length <= 1) return trimmed;
+    final firstName = parts.first;
+    final lastInitial = parts.last[0].toUpperCase();
+    return '$firstName $lastInitial.';
   }
 
   factory MemberModel.fromMap(Map<String, dynamic> map) {
@@ -92,14 +108,21 @@ class MemberModel {
     }
 
     final nestedUser = (map['users'] as Map?)?.cast<String, dynamic>();
-    final displayName = map['name'] ??
+    final rawDisplayName = (map['name'] ??
         map['display_name'] ??
         nestedUser?['display_name'] ??
         nestedUser?['email'] ??
-        'Member';
-    final id = '${map['user_id'] ?? map['id'] ?? nestedUser?['id'] ?? displayName}';
+        'Member').toString();
+
+    final dietary = (nestedUser?['dietary'] as List?)?.map((e) => '$e').toList() ?? [];
+    final hideSurname = map['hide_surname'] == true ||
+        nestedUser?['hide_surname'] == true ||
+        dietary.contains('privacy:hide_surname');
+
+    final displayName = formatDisplayName(rawDisplayName, hideSurname: hideSurname);
+    final id = '${map['user_id'] ?? map['id'] ?? nestedUser?['id'] ?? rawDisplayName}';
     final initials = map['initials']?.toString() ??
-        _initialsFromName(displayName.toString());
+        _initialsFromName(rawDisplayName);
     final rolesRaw = (map['roles'] as List?) ?? const ['member'];
     final parsedRoles = rolesRaw
         .map((r) => '$r'.replaceAll('MemberRole.', '').toLowerCase())
@@ -119,7 +142,7 @@ class MemberModel {
 
     return MemberModel(
       id: id,
-      name: displayName.toString(),
+      name: displayName,
       initials: initials,
       color: parseColor(map['color'], id),
       roles: parsedRoles,
@@ -131,6 +154,7 @@ class MemberModel {
       gcashNumber: map['gcash_number'] ?? nestedUser?['gcash_number'],
       gcashQrUrl: map['gcash_qr_url'] ?? nestedUser?['gcash_qr_url'],
       status: status,
+      hideSurname: hideSurname,
     );
   }
 
@@ -156,6 +180,7 @@ class MemberModel {
       'gcash_number': gcashNumber,
       'gcash_qr_url': gcashQrUrl,
       'status': status.name,
+      'hide_surname': hideSurname,
     };
   }
 }

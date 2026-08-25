@@ -1,26 +1,19 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/expense_model.dart';
-import '../services/database_service.dart';
-import '../services/session_cache_service.dart';
-import 'package:sembast/sembast.dart';
 
+/// Pure Supabase data source for trip expenses.
+/// All operations hit the Supabase `expenses` table directly.
+/// RLS policies enforce row-level isolation per trip member.
 class ExpenseRepository {
   final SupabaseClient _supabase = Supabase.instance.client;
-  final DatabaseService _db = DatabaseService.instance;
-  final SessionCacheService _cache = SessionCacheService.instance;
-
-  StoreRef<String, Map<String, dynamic>> get _expenseStore =>
-      _db.getStore(DatabaseService.expenseStore);
 
   // ────────────────────────────────────────────────────────────────
   // READ
   // ────────────────────────────────────────────────────────────────
 
-  /// Fetches expenses for a trip — Supabase first, local cache fallback.
+  /// Fetches all expenses for a trip, ordered newest first.
   Future<List<ExpenseModel>> getExpenses(String tripId) async {
-    final db = await _db.database;
-
     try {
       final response = await _supabase
           .from('expenses')
@@ -28,30 +21,15 @@ class ExpenseRepository {
           .eq('trip_id', tripId)
           .order('created_at', ascending: false);
 
-      final expenses = (response as List)
-          .map((json) =>
-              ExpenseModel.fromMap((json as Map).cast<String, dynamic>()))
+      return (response as List)
+          .map((json) => ExpenseModel.fromMap((json as Map).cast<String, dynamic>()))
           .toList();
-
-      // Cache locally
-      await db.transaction((txn) async {
-        for (final expense in expenses) {
-          await _expenseStore.record(expense.id).put(txn, {
-            ...expense.toMap(),
-            'trip_id': tripId,
-          });
-        }
-      });
-      await _cache.stamp(DatabaseService.expenseStore);
-
-      return expenses;
+    } on PostgrestException catch (e) {
+      debugPrint('[ExpenseRepository] getExpenses PostgrestException: ${e.message}');
+      rethrow;
     } catch (e) {
       debugPrint('[ExpenseRepository] getExpenses error: $e');
-      final snapshots = await _expenseStore.find(
-        db,
-        finder: Finder(filter: Filter.equals('trip_id', tripId)),
-      );
-      return snapshots.map((s) => ExpenseModel.fromMap(s.value)).toList();
+      rethrow;
     }
   }
 
@@ -59,16 +37,8 @@ class ExpenseRepository {
   // WRITE
   // ────────────────────────────────────────────────────────────────
 
-  /// Adds a new expense — optimistic local write + Supabase sync.
+  /// Adds a new expense to Supabase.
   Future<void> addExpense(String tripId, ExpenseModel expense) async {
-    final db = await _db.database;
-
-    // Optimistic local write
-    await _expenseStore.record(expense.id).put(db, {
-      ...expense.toMap(),
-      'trip_id': tripId,
-    });
-
     try {
       await _supabase.from('expenses').insert({
         'id': expense.id,
@@ -81,44 +51,48 @@ class ExpenseRepository {
         'created_at': expense.date.toIso8601String(),
         'receipt_url': expense.receiptPhotoUrl,
       });
+    } on PostgrestException catch (e) {
+      debugPrint('[ExpenseRepository] addExpense PostgrestException: ${e.message}');
+      rethrow;
     } catch (e) {
-      debugPrint('[ExpenseRepository] addExpense sync error: $e');
+      debugPrint('[ExpenseRepository] addExpense error: $e');
+      rethrow;
     }
   }
 
   /// Updates expense status (approve / reject).
+  /// Organizer or Treasurer roles only — enforced via RLS + UI guard.
   Future<void> updateStatus(
     String expenseId,
     ExpenseStatus status, {
     String? note,
   }) async {
-    final db = await _db.database;
-
-    await _expenseStore.record(expenseId).update(db, {
-      'status': status.name,
-      'rejection_note': note,
-    });
-
     try {
       await _supabase.from('expenses').update({
         'status': status.name,
         'rejection_note': note,
         'approved_by': _supabase.auth.currentUser?.id,
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
       }).eq('id', expenseId);
+    } on PostgrestException catch (e) {
+      debugPrint('[ExpenseRepository] updateStatus PostgrestException: ${e.message}');
+      rethrow;
     } catch (e) {
-      debugPrint('[ExpenseRepository] updateStatus sync error: $e');
+      debugPrint('[ExpenseRepository] updateStatus error: $e');
+      rethrow;
     }
   }
 
-  /// Deletes an expense (local + Supabase).
+  /// Deletes an expense permanently from Supabase.
   Future<void> deleteExpense(String expenseId) async {
-    final db = await _db.database;
-    await _expenseStore.record(expenseId).delete(db);
-
     try {
       await _supabase.from('expenses').delete().eq('id', expenseId);
+    } on PostgrestException catch (e) {
+      debugPrint('[ExpenseRepository] deleteExpense PostgrestException: ${e.message}');
+      rethrow;
     } catch (e) {
-      debugPrint('[ExpenseRepository] deleteExpense sync error: $e');
+      debugPrint('[ExpenseRepository] deleteExpense error: $e');
+      rethrow;
     }
   }
 }

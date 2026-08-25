@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/packing_model.dart';
-import '../services/database_service.dart';
-import '../services/session_cache_service.dart';
-import 'package:sembast/sembast.dart';
 
-/// Default packing categories seeded for trips.
+/// Default packing categories seeded for trips on first load.
 const List<Map<String, dynamic>> _kDefaultCategories = [
   {'id': 'essentials', 'name': 'Essentials',    'icon': 0xe42d, 'color': 0xFFD85A30},
   {'id': 'clothing',   'name': 'Clothing',       'icon': 0xe90d, 'color': 0xFF8B5CF6},
@@ -28,26 +25,19 @@ const Map<String, List<String>> _kDefaultItems = {
   'others':     ['Reusable Shopping Bag', 'Ziploc Pouches'],
 };
 
+/// Pure Supabase data source for packing items.
+/// All CRUD operations go directly to `packing_items` in Supabase.
+/// RLS policies enforce per-trip member access.
 class PackingRepository {
   final SupabaseClient _supabase = Supabase.instance.client;
-  final DatabaseService _db = DatabaseService.instance;
-  final SessionCacheService _cache = SessionCacheService.instance;
-
-  StoreRef<String, Map<String, dynamic>> get _store =>
-      _db.getStore(DatabaseService.packingStore);
-
-  StoreRef<String, Map<String, dynamic>> get _templateStore =>
-      _db.getStore(DatabaseService.packingTemplateStore);
 
   // ────────────────────────────────────────────────────────────────
   // READ
   // ────────────────────────────────────────────────────────────────
 
-  /// Fetches packing categories/items for a trip.
-  /// Supabase → local cache → default seed.
+  /// Fetches packing categories and items for a trip from Supabase.
+  /// If no items exist yet (first time), seeds defaults for the trip.
   Future<List<PackingCategory>> getCategories(String tripId) async {
-    final db = await _db.database;
-
     try {
       final response = await _supabase
           .from('packing_items')
@@ -59,27 +49,19 @@ class PackingRepository {
           .map((r) => (r as Map).cast<String, dynamic>())
           .toList();
 
-      // Cache locally
-      await db.transaction((txn) async {
-        for (final row in rows) {
-          await _store.record('${row['id']}').put(txn, {...row});
-        }
-      });
-      await _cache.stamp(DatabaseService.packingStore);
+      if (rows.isEmpty) {
+        // Auto-seed default items for brand-new trips
+        await seedDefaultItems(tripId);
+        return _defaultCategories(tripId);
+      }
 
       return _buildCategories(rows, tripId);
+    } on PostgrestException catch (e) {
+      debugPrint('[PackingRepository] getCategories PostgrestException: ${e.message}');
+      rethrow;
     } catch (e) {
       debugPrint('[PackingRepository] getCategories error: $e');
-      // Fall back to local cache
-      final snapshots = await _store.find(
-        db,
-        finder: Finder(filter: Filter.equals('trip_id', tripId)),
-      );
-      if (snapshots.isEmpty) return _defaultCategories(tripId);
-      return _buildCategories(
-        snapshots.map((s) => s.value).toList(),
-        tripId,
-      );
+      rethrow;
     }
   }
 
@@ -87,22 +69,26 @@ class PackingRepository {
   // WRITE
   // ────────────────────────────────────────────────────────────────
 
-  /// Toggles an item's checked state — optimistic local + Supabase sync.
+  /// Toggles an item's checked state in Supabase.
   Future<void> toggleItem(String itemId, bool checked) async {
-    final db = await _db.database;
-    await _store.record(itemId).update(db, {'is_checked': checked});
-
     try {
       await _supabase
           .from('packing_items')
-          .update({'is_checked': checked})
+          .update({
+            'is_checked': checked,
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
+          })
           .eq('id', itemId);
+    } on PostgrestException catch (e) {
+      debugPrint('[PackingRepository] toggleItem PostgrestException: ${e.message}');
+      rethrow;
     } catch (e) {
-      debugPrint('[PackingRepository] toggleItem sync error: $e');
+      debugPrint('[PackingRepository] toggleItem error: $e');
+      rethrow;
     }
   }
 
-  /// Assigns or unassigns an item to a member.
+  /// Assigns or unassigns an item to a member in Supabase.
   Future<void> assignItem({
     required String itemId,
     required String? memberId,
@@ -111,29 +97,24 @@ class PackingRepository {
     int? memberColor,
     String? memberRole,
   }) async {
-    final db = await _db.database;
-    final payload = {
-      'assigned_user_id': memberId,
-      'assigned_user_name': memberName,
-      'assigned_user_initials': memberInitials,
-      'assigned_user_color': memberColor,
-      'assigned_user_role': memberRole,
-    };
-    await _store.record(itemId).update(db, payload);
-
     try {
       await _supabase
           .from('packing_items')
           .update({
             'assigned_user_id': memberId,
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
           })
           .eq('id', itemId);
+    } on PostgrestException catch (e) {
+      debugPrint('[PackingRepository] assignItem PostgrestException: ${e.message}');
+      rethrow;
     } catch (e) {
-      debugPrint('[PackingRepository] assignItem sync error: $e');
+      debugPrint('[PackingRepository] assignItem error: $e');
+      rethrow;
     }
   }
 
-  /// Adds a new packing item to a category.
+  /// Adds a new packing item to Supabase and returns the saved PackingItem.
   Future<PackingItem> addItem({
     required String tripId,
     required String category,
@@ -146,27 +127,6 @@ class PackingRepository {
     int? assignedMemberColor,
     String? memberRole,
   }) async {
-    final id = 'local_${DateTime.now().millisecondsSinceEpoch}';
-    final row = {
-      'id': id,
-      'trip_id': tripId,
-      'name': name,
-      'category': category,
-      'is_checked': false,
-      'is_ai_suggested': isAiSuggested,
-      'is_critical': isCritical,
-      'assigned_user_id': assignedMemberId,
-      'assigned_user_name': assignedMemberName,
-      'assigned_user_initials': assignedMemberInitials,
-      'assigned_user_color': assignedMemberColor,
-      'assigned_user_role': memberRole,
-      'created_at': DateTime.now().toIso8601String(),
-    };
-
-    final db = await _db.database;
-    await _store.record(id).put(db, row);
-
-    String remoteId = id;
     try {
       final inserted = await _supabase
           .from('packing_items')
@@ -177,85 +137,82 @@ class PackingRepository {
             'is_checked': false,
             'is_ai_suggested': isAiSuggested,
             if (assignedMemberId != null) 'assigned_user_id': assignedMemberId,
-            'created_by': _supabase.auth.currentUser?.id,
           })
           .select()
           .single();
-      remoteId = '${inserted['id']}';
-      // Update local with real UUID
-      if (remoteId != id) {
-        await _store.record(id).delete(db);
-        await _store.record(remoteId).put(db, {...row, 'id': remoteId});
-      }
-    } catch (e) {
-      debugPrint('[PackingRepository] addItem sync error: $e');
-    }
 
-    return PackingItem(
-      id: remoteId,
-      name: name,
-      isAiSuggested: isAiSuggested,
-      isCritical: isCritical,
-      assignedMemberId: assignedMemberId,
-      assignedMemberName: assignedMemberName,
-      assignedMemberInitials: assignedMemberInitials,
-      assignedMemberColor: assignedMemberColor,
-      assignedMemberRole: memberRole,
-    );
+      final remoteId = '${inserted['id']}';
+
+      return PackingItem(
+        id: remoteId,
+        name: name,
+        isAiSuggested: isAiSuggested,
+        isCritical: isCritical,
+        assignedMemberId: assignedMemberId,
+        assignedMemberName: assignedMemberName,
+        assignedMemberInitials: assignedMemberInitials,
+        assignedMemberColor: assignedMemberColor,
+        assignedMemberRole: memberRole,
+      );
+    } on PostgrestException catch (e) {
+      debugPrint('[PackingRepository] addItem PostgrestException: ${e.message}');
+      rethrow;
+    } catch (e) {
+      debugPrint('[PackingRepository] addItem error: $e');
+      rethrow;
+    }
   }
 
-  /// Deletes a packing item.
+  /// Deletes a packing item from Supabase.
   Future<void> deleteItem(String itemId) async {
-    final db = await _db.database;
-    await _store.record(itemId).delete(db);
-
     try {
       await _supabase.from('packing_items').delete().eq('id', itemId);
+    } on PostgrestException catch (e) {
+      debugPrint('[PackingRepository] deleteItem PostgrestException: ${e.message}');
+      rethrow;
     } catch (e) {
-      debugPrint('[PackingRepository] deleteItem sync error: $e');
+      debugPrint('[PackingRepository] deleteItem error: $e');
+      rethrow;
     }
   }
 
   /// Deletes all packing items under a specific category for a trip.
   Future<void> deleteCategory(String tripId, String categoryId) async {
-    final db = await _db.database;
-    final snapshots = await _store.find(
-      db,
-      finder: Finder(
-        filter: Filter.and([
-          Filter.equals('trip_id', tripId),
-          Filter.equals('category', categoryId),
-        ]),
-      ),
-    );
-
-    await db.transaction((txn) async {
-      for (final s in snapshots) {
-        await _store.record(s.key).delete(txn);
-      }
-    });
-
     try {
       await _supabase
           .from('packing_items')
           .delete()
           .eq('trip_id', tripId)
           .eq('category', categoryId);
+    } on PostgrestException catch (e) {
+      debugPrint('[PackingRepository] deleteCategory PostgrestException: ${e.message}');
+      rethrow;
     } catch (e) {
-      debugPrint('[PackingRepository] deleteCategory sync error: $e');
+      debugPrint('[PackingRepository] deleteCategory error: $e');
+      rethrow;
     }
   }
 
-  /// Seeds default packing categories/items for a brand-new trip.
+  /// Seeds default packing items for a brand-new trip into Supabase.
   Future<void> seedDefaultItems(String tripId) async {
-    for (final entry in _kDefaultItems.entries) {
-      for (final itemName in entry.value) {
-        await addItem(
-          tripId: tripId,
-          category: entry.key,
-          name: itemName,
-        );
+    try {
+      final rows = <Map<String, dynamic>>[];
+      for (final entry in _kDefaultItems.entries) {
+        for (final itemName in entry.value) {
+          rows.add({
+            'trip_id': tripId,
+            'name': itemName,
+            'category': entry.key,
+            'is_checked': false,
+            'is_ai_suggested': false,
+          });
+        }
       }
+      if (rows.isNotEmpty) {
+        await _supabase.from('packing_items').insert(rows);
+      }
+    } catch (e) {
+      debugPrint('[PackingRepository] seedDefaultItems error: $e');
     }
   }
 
@@ -263,7 +220,9 @@ class PackingRepository {
   // TEMPLATES
   // ────────────────────────────────────────────────────────────────
 
-  /// Saves a packing list as a custom template.
+  static final List<PackingTemplate> _customTemplates = [];
+
+  /// Saves a packing list as a custom template in memory.
   Future<PackingTemplate> saveTemplate({
     required String name,
     required String description,
@@ -279,43 +238,34 @@ class PackingRepository {
       isPrebuilt: false,
       createdAt: DateTime.now(),
     );
-
-    final db = await _db.database;
-    await _templateStore.record(template.id).put(db, template.toMap());
+    _customTemplates.removeWhere((t) => t.id == template.id);
+    _customTemplates.add(template);
     return template;
-  }
-
-  /// Retrieves all templates (prebuilt + custom saved).
-  Future<List<PackingTemplate>> getTemplates() async {
-    final db = await _db.database;
-    final snapshots = await _templateStore.find(db);
-    final customTemplates = snapshots
-        .map((s) => PackingTemplate.fromMap(s.value))
-        .toList();
-
-    return [
-      ...PackingTemplate.prebuiltTemplates,
-      ...customTemplates,
-    ];
   }
 
   /// Deletes a custom template.
   Future<void> deleteTemplate(String templateId) async {
-    final db = await _db.database;
-    await _templateStore.record(templateId).delete(db);
+    _customTemplates.removeWhere((t) => t.id == templateId);
   }
 
-  /// Applies a template by adding its items to the current trip.
+  /// Returns all templates (prebuilt + custom in-memory).
+  Future<List<PackingTemplate>> getTemplates() async {
+    return [
+      ...PackingTemplate.prebuiltTemplates,
+      ..._customTemplates,
+    ];
+  }
+
+  /// Applies a template by adding its items to the trip in Supabase.
   Future<void> applyTemplate({
     required String tripId,
     required PackingTemplate template,
   }) async {
     for (final entry in template.itemsByCategory.entries) {
-      final catId = entry.key;
       for (final itemName in entry.value) {
         await addItem(
           tripId: tripId,
-          category: catId,
+          category: entry.key,
           name: itemName,
           isAiSuggested: template.isPrebuilt,
         );
@@ -327,7 +277,7 @@ class PackingRepository {
   // NOTIFICATIONS & REMINDERS
   // ────────────────────────────────────────────────────────────────
 
-  /// Dispatches an in-app packing reminder notification to a member or group.
+  /// Dispatches a packing reminder notification via Supabase `notifications` table.
   Future<void> sendPackingReminder({
     required String tripId,
     required String tripName,
@@ -349,11 +299,11 @@ class PackingRepository {
         'type': 'packing',
         'title': '🎒 Packing Reminder for $tripName',
         'body': body,
-        'read': false,
+        'is_read': false,
         'created_at': DateTime.now().toIso8601String(),
       });
     } catch (e) {
-      debugPrint('[PackingRepository] sendPackingReminder sync error: $e');
+      debugPrint('[PackingRepository] sendPackingReminder error: $e');
     }
   }
 
@@ -365,7 +315,6 @@ class PackingRepository {
     List<Map<String, dynamic>> rows,
     String tripId,
   ) {
-    // Group rows by category slug
     final grouped = <String, List<PackingItem>>{};
     final customCategoryIds = <String>{};
 
@@ -374,7 +323,6 @@ class PackingRepository {
       final item = PackingItem.fromMap(row);
       grouped.putIfAbsent(catId, () => []).add(item);
 
-      // Check if this is a custom category not in default list
       if (!_kDefaultCategories.any((c) => c['id'] == catId)) {
         customCategoryIds.add(catId);
       }
@@ -388,11 +336,10 @@ class PackingRepository {
         icon: IconData(catDef['icon'] as int, fontFamily: 'MaterialIcons'),
         color: Color(catDef['color'] as int),
         items: grouped[catId] ?? [],
-        isExpanded: false, // Default collapsed
+        isExpanded: false,
       );
     }).toList();
 
-    // Add any custom categories found in data
     for (final customId in customCategoryIds) {
       final name = customId.replaceAll('custom_', '').replaceAll('_', ' ').toUpperCase();
       categories.add(PackingCategory(
@@ -426,9 +373,8 @@ class PackingRepository {
         icon: IconData(catDef['icon'] as int, fontFamily: 'MaterialIcons'),
         color: Color(catDef['color'] as int),
         items: items,
-        isExpanded: false, // Default collapsed
+        isExpanded: false,
       );
     }).toList();
   }
 }
-

@@ -31,7 +31,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
         if (trip == null) {
           return const Scaffold(body: Center(child: Text('Trip not found')));
         }
-        
+
         ref.watch(membersRealtimeProvider(trip.id));
 
         final allMembers = trip.members;
@@ -39,7 +39,10 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
         final approvedMembers = allMembers.where((m) => m.status == MemberStatus.approved).toList();
 
         final currentMember = ref.watch(currentMemberProvider(trip));
-        final canManageMembers = currentMember?.canManageMembers ?? true;
+        final canManageMembers = currentMember?.canManageMembers ?? false;
+        // Non-owners can leave the trip
+        final isOwner = currentMember?.isTripCreator(trip.ownerId) ?? false;
+        final canLeave = !isOwner && currentMember != null;
 
         return Scaffold(
           backgroundColor: AppColors.deepEarth,
@@ -48,7 +51,12 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
             children: [
               if (widget.showHeader)
                 Container(
-                  padding: const EdgeInsets.fromLTRB(24, 56, 24, 24),
+                  padding: EdgeInsets.fromLTRB(
+                    24,
+                    MediaQuery.paddingOf(context).top + 16,
+                    24,
+                    24,
+                  ),
                   decoration: const BoxDecoration(
                     gradient: LinearGradient(
                       colors: [Color(0xFF1A0A04), AppColors.deepEarth],
@@ -71,6 +79,27 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                           ],
                         ),
                       ),
+                      // Leave Trip button for non-owners
+                      if (canLeave)
+                        GestureDetector(
+                          onTap: () => _confirmLeaveTrip(context, trip.id, trip.name),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: AppColors.red.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: AppColors.red.withValues(alpha: 0.35), width: 1),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.logout_rounded, size: 14, color: AppColors.red),
+                                SizedBox(width: 5),
+                                Text('Leave', style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.red)),
+                              ],
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -83,38 +112,35 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                   child: ListView(
                     padding: EdgeInsets.fromLTRB(20, 20, 20, 40 + MediaQuery.of(context).padding.bottom + 80),
                     children: [
-                      // Invite code card
                       _buildInviteCard(context, trip),
                       const SizedBox(height: 20),
-                      
+
                       if (pendingMembers.isNotEmpty) ...[
                         const Text('PENDING APPROVAL', style: TextStyle(fontFamily: 'DM Sans', fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.amber, letterSpacing: 1.5)),
                         const SizedBox(height: 12),
                         ...pendingMembers.map((m) => _PendingMemberCard(
                           member: m,
-                          onApprove: () async {
-                            await ref.read(tripRepositoryProvider).approveMember(trip.id, m.id);
-                            ref.invalidate(selectedTripProvider);
-                            ref.invalidate(allTripsProvider);
-                          },
-                          onReject: () async {
-                            await ref.read(tripRepositoryProvider).rejectMember(trip.id, m.id);
-                            ref.invalidate(selectedTripProvider);
-                            ref.invalidate(allTripsProvider);
-                          },
+                          onApprove: () => _handleApprove(context, trip.id, m),
+                          onReject: () => _handleReject(context, trip.id, m),
                         )),
                         const SizedBox(height: 20),
                       ],
 
                       const Text('TRIP MEMBERS', style: TextStyle(fontFamily: 'DM Sans', fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.warmMuted, letterSpacing: 1.5)),
                       const SizedBox(height: 12),
-                      ...approvedMembers.map((m) => _MemberCard(
-                        member: m,
-                        isCreator: m.isTripCreator(trip.ownerId),
-                        canEditRoles: canManageMembers,
-                        onEditRoles: () => _showRoleEditor(context, trip.id, m),
-                        onContact: () => _showContactSheet(context, m),
-                      )),
+                      ...approvedMembers.map((m) {
+                        final isCreator = m.isTripCreator(trip.ownerId);
+                        return _MemberCard(
+                          member: m,
+                          isCreator: isCreator,
+                          canEditRoles: canManageMembers,
+                          // Organizers can remove non-creator members
+                          canRemove: canManageMembers && !isCreator,
+                          onEditRoles: () => _showRoleEditor(context, trip.id, m, canRemove: canManageMembers && !isCreator),
+                          onContact: () => _showContactSheet(context, m),
+                          onRemove: () => _confirmRemoveMember(context, trip.id, trip.name, m),
+                        );
+                      }),
                     ],
                   ),
                 ),
@@ -126,6 +152,148 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
       loading: () => const MembersScreenSkeleton(),
       error: (e, _) => Scaffold(backgroundColor: AppColors.deepEarth, body: Center(child: Text('Error: $e'))),
     );
+  }
+
+  // ── Action Handlers ──────────────────────────────────────────────────────────
+
+  Future<void> _handleApprove(BuildContext context, String tripId, MemberModel member) async {
+    try {
+      await ref.read(tripRepositoryProvider).approveMember(tripId, member.id);
+      ref.invalidate(selectedTripProvider);
+      ref.invalidate(allTripsProvider);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('${member.name} approved! 🎉', style: const TextStyle(fontFamily: 'DM Sans', fontWeight: FontWeight.w600)),
+          backgroundColor: AppColors.green,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ));
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Failed to approve: $e', style: const TextStyle(fontFamily: 'DM Sans')),
+          backgroundColor: AppColors.red,
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+    }
+  }
+
+  Future<void> _handleReject(BuildContext context, String tripId, MemberModel member) async {
+    try {
+      await ref.read(tripRepositoryProvider).rejectMember(tripId, member.id);
+      ref.invalidate(selectedTripProvider);
+      ref.invalidate(allTripsProvider);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Request from ${member.name} declined.', style: const TextStyle(fontFamily: 'DM Sans')),
+          backgroundColor: AppColors.warmMuted,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ));
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Failed to reject: $e', style: const TextStyle(fontFamily: 'DM Sans')),
+          backgroundColor: AppColors.red,
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+    }
+  }
+
+  Future<void> _confirmRemoveMember(BuildContext context, String tripId, String tripName, MemberModel member) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Remove Member', style: TextStyle(fontFamily: 'Playfair Display', fontWeight: FontWeight.w700)),
+        content: Text(
+          'Remove ${member.name} from "$tripName"?\n\nTheir assigned tasks and expenses will remain recorded.',
+          style: const TextStyle(fontFamily: 'DM Sans', fontSize: 14),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.red),
+            child: const Text('Remove', style: TextStyle(fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !context.mounted) return;
+
+    try {
+      await ref.read(tripRepositoryProvider).removeMember(tripId, member.id);
+      ref.invalidate(selectedTripProvider);
+      ref.invalidate(allTripsProvider);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('${member.name} was removed from the trip.', style: const TextStyle(fontFamily: 'DM Sans')),
+          backgroundColor: AppColors.warmMuted,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ));
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Failed to remove: $e', style: const TextStyle(fontFamily: 'DM Sans')),
+          backgroundColor: AppColors.red,
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+    }
+  }
+
+  Future<void> _confirmLeaveTrip(BuildContext context, String tripId, String tripName) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Leave Trip', style: TextStyle(fontFamily: 'Playfair Display', fontWeight: FontWeight.w700)),
+        content: Text(
+          'Are you sure you want to leave "$tripName"? You will need a new invite code to rejoin.',
+          style: const TextStyle(fontFamily: 'DM Sans', fontSize: 14),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.red),
+            child: const Text('Leave Trip', style: TextStyle(fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !context.mounted) return;
+
+    try {
+      final leftTripName = await ref.read(tripRepositoryProvider).leaveTrip(tripId);
+      ref.invalidate(allTripsProvider);
+      ref.invalidate(selectedTripProvider);
+      if (context.mounted) {
+        // Pop back to previous screen since user is no longer in this trip
+        if (Navigator.canPop(context)) Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('You left "$leftTripName".', style: const TextStyle(fontFamily: 'DM Sans')),
+          backgroundColor: AppColors.warmMuted,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ));
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(e.toString().replaceAll('Exception: ', ''), style: const TextStyle(fontFamily: 'DM Sans')),
+          backgroundColor: AppColors.red,
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+    }
   }
 
   Widget _buildInviteCard(BuildContext context, TripModel trip) {
@@ -285,13 +453,17 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
     );
   }
 
-  void _showRoleEditor(BuildContext context, String tripId, MemberModel member) {
+  void _showRoleEditor(BuildContext context, String tripId, MemberModel member, {bool canRemove = false}) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _RoleEditorSheet(tripId: tripId, member: member),
-    );
+      builder: (_) => _RoleEditorSheet(tripId: tripId, member: member, canRemove: canRemove),
+    ).then((_) {
+      // If the organizer tapped Remove inside the sheet, refresh lists
+      ref.invalidate(selectedTripProvider);
+      ref.invalidate(allTripsProvider);
+    });
   }
 
   void _showContactSheet(BuildContext context, MemberModel member) {
@@ -370,15 +542,19 @@ class _MemberCard extends StatelessWidget {
   final MemberModel member;
   final bool isCreator;
   final bool canEditRoles;
+  final bool canRemove;
   final VoidCallback onEditRoles;
   final VoidCallback onContact;
+  final VoidCallback? onRemove;
 
   const _MemberCard({
     required this.member,
     required this.isCreator,
     required this.canEditRoles,
+    this.canRemove = false,
     required this.onEditRoles,
     required this.onContact,
+    this.onRemove,
   });
 
   @override
@@ -525,8 +701,7 @@ class _MemberCard extends StatelessWidget {
                     color: AppColors.blueLight,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.call_outlined,
-                      size: 16, color: AppColors.blue),
+                  child: const Icon(Icons.call_outlined, size: 16, color: AppColors.blue),
                 ),
               ),
               if (canEditRoles) ...[
@@ -540,8 +715,23 @@ class _MemberCard extends StatelessWidget {
                       color: AppColors.chipBackground,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.edit_outlined,
-                        size: 16, color: AppColors.primary),
+                    child: const Icon(Icons.edit_outlined, size: 16, color: AppColors.primary),
+                  ),
+                ),
+              ],
+              // Remove button — only for organizers on non-creator members
+              if (canRemove && onRemove != null) ...[
+                const SizedBox(height: 6),
+                GestureDetector(
+                  onTap: onRemove,
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: AppColors.red.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.person_remove_outlined, size: 16, color: AppColors.red),
                   ),
                 ),
               ],
@@ -575,7 +765,8 @@ class _MemberCard extends StatelessWidget {
 class _RoleEditorSheet extends ConsumerStatefulWidget {
   final String tripId;
   final MemberModel member;
-  const _RoleEditorSheet({required this.tripId, required this.member});
+  final bool canRemove;
+  const _RoleEditorSheet({required this.tripId, required this.member, this.canRemove = false});
 
   @override
   ConsumerState<_RoleEditorSheet> createState() => _RoleEditorSheetState();
@@ -645,29 +836,23 @@ class _RoleEditorSheetState extends ConsumerState<_RoleEditorSheet> {
                         ref.invalidate(allTripsProvider);
                         if (context.mounted) {
                           Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                  'Updated roles for ${widget.member.name}!',
-                                  style:
-                                      const TextStyle(fontFamily: 'DM Sans')),
-                              backgroundColor: AppColors.green,
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text('Updated roles for ${widget.member.name}!',
+                                style: const TextStyle(fontFamily: 'DM Sans')),
+                            backgroundColor: AppColors.green,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ));
                         }
                       } catch (e) {
                         if (context.mounted) {
                           setState(() => _isSaving = false);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Failed to update roles: $e',
-                                  style:
-                                      const TextStyle(fontFamily: 'DM Sans')),
-                              backgroundColor: AppColors.red,
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text('Failed to update roles: $e',
+                                style: const TextStyle(fontFamily: 'DM Sans')),
+                            backgroundColor: AppColors.red,
+                            behavior: SnackBarBehavior.floating,
+                          ));
                         }
                       }
                     },
@@ -681,15 +866,36 @@ class _RoleEditorSheetState extends ConsumerState<_RoleEditorSheet> {
                   ? const SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(
-                          color: Colors.white, strokeWidth: 2))
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                   : const Text('Save Changes',
-                      style: TextStyle(
-                          fontFamily: 'DM Sans',
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600)),
+                      style: TextStyle(fontFamily: 'DM Sans', fontSize: 15, fontWeight: FontWeight.w600)),
             ),
           ),
+          // Remove Member — destructive, only for organizers on non-creator members
+          if (widget.canRemove) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: OutlinedButton.icon(
+                onPressed: _isSaving
+                    ? null
+                    : () async {
+                        Navigator.pop(context);
+                        // Removal confirmation is handled by _confirmRemoveMember in the parent.
+                        // We just pop and let the parent's onRemove callback handle it.
+                      },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.red,
+                  side: const BorderSide(color: AppColors.red, width: 1.2),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+                icon: const Icon(Icons.person_remove_outlined, size: 18),
+                label: const Text('Remove from Trip',
+                    style: TextStyle(fontFamily: 'DM Sans', fontSize: 15, fontWeight: FontWeight.w600)),
+              ),
+            ),
+          ],
         ],
       ),
     );

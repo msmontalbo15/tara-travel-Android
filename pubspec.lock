@@ -1384,14 +1384,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.0"
-  sembast:
-    dependency: "direct main"
-    description:
-      name: sembast
-      sha256: "139cf71496105de32e7a08a4e3a1ead0f81c4a616ec9703ed07e8f0d10cdd505"
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.8.6"
   share_plus:
     dependency: "direct main"
     description:

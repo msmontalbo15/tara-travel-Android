@@ -49,6 +49,8 @@ create table if not exists public.users (
   -- Online presence
   is_online             boolean     not null default false,
   last_seen             timestamptz,
+  -- Privacy & Visibility
+  hide_surname          boolean     not null default false,
   -- Metadata
   created_at            timestamptz not null default now(),
   updated_at            timestamptz not null default now()
@@ -62,6 +64,7 @@ drop policy if exists "users_update_own"  on public.users;
 -- Allow trip members to view each other's basic public profiles (needed for
 -- member cards, chat avatars, friend search results).
 drop policy if exists "users_select_trip_peers" on public.users;
+drop policy if exists "users_select_any_authenticated" on public.users;
 
 create policy "users_select_own"
   on public.users for select using (auth.uid() = id);
@@ -104,6 +107,7 @@ create table if not exists public.user_settings (
   location_sharing_default  boolean     not null default true,
   profile_visibility        text        not null default 'friends'
                             check (profile_visibility in ('public', 'friends', 'private')),
+  hide_surname              boolean     not null default false,
   -- Metadata
   created_at                timestamptz not null default now(),
   updated_at                timestamptz not null default now(),
@@ -184,13 +188,13 @@ create policy "friends_select_own"
   on public.friends for select using (auth.uid() = user_id or auth.uid() = friend_id);
 
 create policy "friends_insert_own"
-  on public.friends for insert with check (auth.uid() = user_id);
+  on public.friends for insert with check (auth.uid() = user_id or auth.uid() = friend_id);
 
 create policy "friends_update_own"
   on public.friends for update using (auth.uid() = user_id or auth.uid() = friend_id);
 
 create policy "friends_delete_own"
-  on public.friends for delete using (auth.uid() = user_id);
+  on public.friends for delete using (auth.uid() = user_id or auth.uid() = friend_id);
 
 -- ── 2b. FRIENDSHIPS ──────────────────────────────────────────────────────────
 -- Directional friend request ledger (used by FriendshipModel.fromMap).
@@ -251,6 +255,9 @@ create table if not exists public.trips (
   -- Status & visual
   status              text        not null default 'planned'
                       check (status in ('draft','planned','active','completed','archived')),
+  departure_point     text,
+  departure_lat       double precision,
+  departure_lng       double precision,
   cover_color         text,
   cover_emoji         text,
   cover_image_url     text,
@@ -276,6 +283,8 @@ create table if not exists public.trip_members (
   trip_id          uuid        not null references public.trips(id) on delete cascade,
   user_id          uuid        not null references public.users(id) on delete cascade,
   roles            text[]      not null default '{"member"}',
+  status           text        not null default 'approved'
+                   check (status in ('pending','approved','rejected')),
   joined_at        timestamptz not null default now(),
   -- Location tracking
   location_sharing boolean     not null default true,
@@ -383,6 +392,7 @@ create table if not exists public.itinerary_stops (
   lng              double precision,
   address          text,
   photo_url        text,
+  booking_ref      text,
   status           text        not null default 'planned'
                    check (status in ('planned','arrived','completed','skipped')),
   created_by       uuid        references public.users(id),
@@ -531,14 +541,16 @@ create table if not exists public.expenses (
 
 alter table public.expenses enable row level security;
 
-drop policy if exists "expenses_select"     on public.expenses;
-drop policy if exists "expenses_insert"     on public.expenses;
-drop policy if exists "expenses_approve"    on public.expenses;
+drop policy if exists "expenses_select"              on public.expenses;
+drop policy if exists "expenses_insert"              on public.expenses;
+drop policy if exists "expenses_approve"             on public.expenses;
+drop policy if exists "expenses_update_own_pending"  on public.expenses;
 
 create policy "expenses_select"
   on public.expenses for select
   using (public.is_trip_member(trip_id));
 
+-- All trip members may log expenses
 create policy "expenses_insert"
   on public.expenses for insert
   with check (public.is_trip_member(trip_id) and paid_by_user_id = auth.uid());
@@ -583,6 +595,7 @@ drop policy if exists "settlements_select"        on public.settlements;
 drop policy if exists "settlements_payer_update"  on public.settlements;
 drop policy if exists "settlements_payee_confirm" on public.settlements;
 drop policy if exists "settlements_owner_all"     on public.settlements;
+drop policy if exists "settlements_insert"        on public.settlements;
 
 create policy "settlements_select"
   on public.settlements for select

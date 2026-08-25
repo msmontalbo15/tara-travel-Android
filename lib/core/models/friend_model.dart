@@ -15,6 +15,7 @@ class FriendModel {
   final bool isOnline;
   final DateTime? lastSeen;
   final FriendStatus status;
+  final bool hideSurname;
 
   const FriendModel({
     required this.id,
@@ -25,6 +26,7 @@ class FriendModel {
     this.isOnline = false,
     this.lastSeen,
     this.status = FriendStatus.accepted,
+    this.hideSurname = false,
   });
 
   FriendModel copyWith({
@@ -36,6 +38,7 @@ class FriendModel {
     bool? isOnline,
     DateTime? lastSeen,
     FriendStatus? status,
+    bool? hideSurname,
   }) {
     return FriendModel(
       id: id ?? this.id,
@@ -46,7 +49,18 @@ class FriendModel {
       isOnline: isOnline ?? this.isOnline,
       lastSeen: lastSeen ?? this.lastSeen,
       status: status ?? this.status,
+      hideSurname: hideSurname ?? this.hideSurname,
     );
+  }
+
+  static String formatDisplayName(String rawName, {bool hideSurname = false}) {
+    final trimmed = rawName.trim();
+    if (!hideSurname || trimmed.isEmpty) return trimmed;
+    final parts = trimmed.split(RegExp(r'\s+'));
+    if (parts.length <= 1) return trimmed;
+    final firstName = parts.first;
+    final lastInitial = parts.last[0].toUpperCase();
+    return '$firstName $lastInitial.';
   }
 
   factory FriendModel.fromMap(Map<String, dynamic> map, String currentUserId) {
@@ -67,15 +81,19 @@ class FriendModel {
     }
 
     final friendData = map['friendData'] as Map<String, dynamic>? ?? map;
+    final dietary = (friendData['dietary'] as List?)?.map((e) => '$e').toList() ?? [];
+    final hideSurname = friendData['hide_surname'] == true ||
+        dietary.contains('privacy:hide_surname');
     
-    final displayName = friendData['display_name'] ??
+    final rawDisplayName = (friendData['display_name'] ??
         friendData['name'] ??
         friendData['email'] ??
-        'User';
+        'User').toString();
+    final displayName = formatDisplayName(rawDisplayName, hideSurname: hideSurname);
         
-    final id = friendData['id']?.toString() ?? displayName;
+    final id = friendData['id']?.toString() ?? rawDisplayName;
     
-    final initialsStr = friendData['initials']?.toString() ?? _initialsFromName(displayName.toString());
+    final initialsStr = friendData['initials']?.toString() ?? _initialsFromName(rawDisplayName);
     
     final statusStr = map['status']?.toString().toLowerCase() ?? 'accepted';
     final status = FriendStatus.values.firstWhere(
@@ -85,13 +103,14 @@ class FriendModel {
 
     return FriendModel(
       id: id,
-      name: displayName.toString(),
+      name: displayName,
       initials: initialsStr,
       color: parseColor(friendData['color'], id),
       profilePhotoUrl: friendData['avatar_url'] ?? friendData['profile_photo_url'],
       isOnline: friendData['is_online'] ?? false,
       lastSeen: friendData['last_seen'] != null ? DateTime.tryParse(friendData['last_seen']) : null,
       status: status,
+      hideSurname: hideSurname,
     );
   }
 

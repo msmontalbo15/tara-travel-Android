@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/widgets/app_brand_logo.dart';
 import '../../core/providers/trip_provider.dart';
 import '../../core/providers/selected_trip_provider.dart';
 import '../../core/providers/repository_providers.dart';
@@ -11,6 +10,7 @@ import '../../core/utils/jit_guard.dart';
 import '../../core/constants/trip_types.dart';
 import '../../core/widgets/shimmer_loading.dart';
 import '../trip_detail/widgets/edit_trip_sheet.dart';
+import 'widgets/join_trip_modal.dart';
 
 class TripsScreen extends ConsumerWidget {
   const TripsScreen({super.key});
@@ -26,7 +26,12 @@ class TripsScreen extends ConsumerWidget {
         children: [
           // ── Header ──────────────────────────────────────────────────
           Container(
-            padding: const EdgeInsets.fromLTRB(24, 56, 24, 22),
+            padding: EdgeInsets.fromLTRB(
+              24,
+              MediaQuery.paddingOf(context).top + 16,
+              24,
+              22,
+            ),
             decoration: const BoxDecoration(
               gradient: LinearGradient(
                 colors: [Color(0xFF1A0A04), AppColors.deepEarth],
@@ -132,49 +137,125 @@ class TripsScreen extends ConsumerWidget {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const AppBrandLogo(size: 64),
-                            const SizedBox(height: 18),
-                            const Text('No trips yet',
-                                style: TextStyle(
-                                    fontFamily: 'Playfair Display',
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.textPrimary)),
-                            const SizedBox(height: 6),
-                            const Text('Your journey begins here. Plan your first adventure with Tara Travel!',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                    fontFamily: 'DM Sans',
-                                    fontSize: 14,
-                                    height: 1.5,
-                                    color: AppColors.textSecondary)),
-                            const SizedBox(height: 24),
+                            // ── Icon container ─────────────────────────────
+                            Container(
+                              width: 88,
+                              height: 88,
+                              decoration: BoxDecoration(
+                                color: AppColors.sand,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: AppColors.primary.withValues(alpha: 0.20),
+                                  width: 2,
+                                ),
+                              ),
+                              child: const Center(
+                                child: Text(
+                                  '✈️',
+                                  style: TextStyle(fontSize: 36),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+
+                            // ── Headline ─────────────────────────────────────
+                            const Text(
+                              'No trips planned yet',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontFamily: 'Playfair Display',
+                                fontSize: 24,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+
+                            // ── Description ──────────────────────────────────
+                            const Text(
+                              'Your next adventure starts with a plan.\nCreate a new trip or join one with an invite code.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontFamily: 'DM Sans',
+                                fontSize: 14,
+                                height: 1.55,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                            const SizedBox(height: 28),
+
+                            // ── Primary CTA ───────────────────────────────────
+                            SizedBox(
+                              width: double.infinity,
+                              child: GestureDetector(
+                                onTap: () async {
+                                  final canProceed = await JitGuard.checkCreateTripGuard(context, ref);
+                                  if (!canProceed || !context.mounted) return;
+                                  Navigator.pushNamed(context, '/create-trip');
+                                },
+                                child: Container(
+                                  height: 52,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary,
+                                    borderRadius: BorderRadius.circular(16),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppColors.primary.withValues(alpha: 0.35),
+                                        blurRadius: 14,
+                                        offset: const Offset(0, 5),
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.add_rounded,
+                                          size: 20, color: Colors.white),
+                                      SizedBox(width: 6),
+                                      Text(
+                                        'Create a Trip',
+                                        style: TextStyle(
+                                          fontFamily: 'DM Sans',
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w700,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+
+                            // ── Secondary CTA ─────────────────────────────────
                             GestureDetector(
-                              onTap: () async {
-                                final canProceed = await JitGuard.checkCreateTripGuard(context, ref);
-                                if (!canProceed || !context.mounted) return;
-                                Navigator.pushNamed(context, '/create-trip');
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 28, vertical: 14),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary,
-                                  borderRadius: BorderRadius.circular(20),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: AppColors.primary.withValues(alpha: 0.3),
-                                      blurRadius: 12,
-                                      offset: const Offset(0, 4),
+                              onTap: () => showJoinTripModal(context, ref),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.qr_code_rounded,
+                                      size: 16,
+                                      color: AppColors.primary,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Have an invite code? Join Trip',
+                                      style: TextStyle(
+                                        fontFamily: 'DM Sans',
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.primary,
+                                        decoration: TextDecoration.underline,
+                                        decorationColor:
+                                            AppColors.primary.withValues(alpha: 0.4),
+                                      ),
                                     ),
                                   ],
                                 ),
-                                child: const Text('Create a Trip',
-                                    style: TextStyle(
-                                        fontFamily: 'DM Sans',
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w700,
-                                        color: Colors.white)),
                               ),
                             ),
                           ],
@@ -183,49 +264,58 @@ class TripsScreen extends ConsumerWidget {
                     );
                   }
 
-                  return ListView(
-                    padding: const EdgeInsets.fromLTRB(20, 22, 20, 140),
-                    children: [
-                      if (drafts.isNotEmpty) ...[
-                        _sectionHeader('DRAFTS'),
-                        ...drafts.map((t) => _TripListCard(
-                              trip: t,
-                              onTap: () {
-                                 ref
-                                     .read(selectedTripIdProvider.notifier)
-                                     .select(t.id);
-                                 Navigator.pushNamed(context, '/trip-detail');
-                               },
-                            )),
-                        const SizedBox(height: 8),
+                  return RefreshIndicator(
+                    onRefresh: () async {
+                      ref.invalidate(allTripsProvider);
+                      ref.invalidate(activeTripProvider);
+                    },
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(20, 22, 20, 140),
+                      physics: const AlwaysScrollableScrollPhysics(
+                        parent: BouncingScrollPhysics(),
+                      ),
+                      children: [
+                        if (drafts.isNotEmpty) ...[
+                          _sectionHeader('DRAFTS'),
+                          ...drafts.map((t) => _TripListCard(
+                                trip: t,
+                                onTap: () {
+                                   ref
+                                       .read(selectedTripIdProvider.notifier)
+                                       .select(t.id);
+                                   Navigator.pushNamed(context, '/trip-detail');
+                                 },
+                              )),
+                          const SizedBox(height: 8),
+                        ],
+                        if (upcoming.isNotEmpty) ...[
+                          _sectionHeader('UPCOMING'),
+                          ...upcoming.map((t) => _TripListCard(
+                                trip: t,
+                                onTap: () {
+                                   ref
+                                       .read(selectedTripIdProvider.notifier)
+                                       .select(t.id);
+                                   Navigator.pushNamed(context, '/trip-detail');
+                                 },
+                              )),
+                        ],
+                        if (past.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          _sectionHeader('PAST TRIPS'),
+                          ...past.map((t) => _TripListCard(
+                                trip: t,
+                                isArchived: true,
+                                onTap: () {
+                                   ref
+                                       .read(selectedTripIdProvider.notifier)
+                                       .select(t.id);
+                                   Navigator.pushNamed(context, '/trip-detail');
+                                 },
+                              )),
+                        ],
                       ],
-                      if (upcoming.isNotEmpty) ...[
-                        _sectionHeader('UPCOMING'),
-                        ...upcoming.map((t) => _TripListCard(
-                              trip: t,
-                              onTap: () {
-                                 ref
-                                     .read(selectedTripIdProvider.notifier)
-                                     .select(t.id);
-                                 Navigator.pushNamed(context, '/trip-detail');
-                               },
-                            )),
-                      ],
-                      if (past.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        _sectionHeader('PAST TRIPS'),
-                        ...past.map((t) => _TripListCard(
-                              trip: t,
-                              isArchived: true,
-                              onTap: () {
-                                 ref
-                                     .read(selectedTripIdProvider.notifier)
-                                     .select(t.id);
-                                 Navigator.pushNamed(context, '/trip-detail');
-                               },
-                            )),
-                      ],
-                    ],
+                    ),
                   );
                 },
                 loading: () =>
@@ -271,156 +361,11 @@ class TripsScreen extends ConsumerWidget {
   }
 
   void _showJoinTripModal(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _JoinTripSheet(ref: ref),
-    );
+    showJoinTripModal(context, ref);
   }
 }
 
-class _JoinTripSheet extends StatefulWidget {
-  final WidgetRef ref;
-  const _JoinTripSheet({required this.ref});
 
-  @override
-  State<_JoinTripSheet> createState() => _JoinTripSheetState();
-}
-
-class _JoinTripSheetState extends State<_JoinTripSheet> {
-  final _codeController = TextEditingController();
-  bool _isLoading = false;
-  String? _error;
-
-  @override
-  void dispose() {
-    _codeController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _join() async {
-    final code = _codeController.text.trim().toUpperCase();
-    if (code.isEmpty) {
-      setState(() => _error = 'Please enter a 6-character invite code.');
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    try {
-      final repo = widget.ref.read(tripRepositoryProvider);
-      await repo.joinTripByCode(code);
-      
-      // Refresh the trips list so the new trip shows up
-      widget.ref.invalidate(allTripsProvider);
-      
-      if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-             content: Text('Successfully joined trip!'),
-             backgroundColor: AppColors.green,
-             behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = e.toString().replaceAll('Exception: ', '');
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final keyboardSpace = MediaQuery.of(context).viewInsets.bottom;
-    return Container(
-      padding: EdgeInsets.fromLTRB(24, 24, 24, 24 + keyboardSpace),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(32), topRight: Radius.circular(32)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Join a Trip',
-              style: TextStyle(
-                  fontFamily: 'Playfair Display',
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary)),
-          const SizedBox(height: 8),
-          const Text('Enter the 6-character invite code from your trip organizer.',
-              style: TextStyle(
-                  fontFamily: 'DM Sans',
-                  fontSize: 14,
-                  color: AppColors.textSecondary)),
-          const SizedBox(height: 24),
-          TextField(
-            controller: _codeController,
-            textCapitalization: TextCapitalization.characters,
-            maxLength: 6,
-            decoration: InputDecoration(
-              hintText: 'e.g. TAR4BC',
-              counterText: '',
-              errorText: _error,
-              filled: true,
-              fillColor: AppColors.surfaceLight,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            ),
-            style: const TextStyle(
-              fontFamily: 'DM Sans',
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 2,
-            ),
-            onChanged: (v) {
-              if (_error != null) setState(() => _error = null);
-            },
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: ElevatedButton(
-              onPressed: _isLoading ? null : _join,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16)),
-              ),
-              child: _isLoading
-                  ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
-                          color: Colors.white, strokeWidth: 2))
-                  : const Text('Join Trip',
-                      style: TextStyle(
-                          fontFamily: 'DM Sans',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 // ── Trip List Card with Smooth Swipe-to-Reveal Actions ─────────────────────────
 

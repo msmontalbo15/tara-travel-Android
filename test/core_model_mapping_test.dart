@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tara_travel/core/models/expense_model.dart';
+import 'package:tara_travel/core/models/member_model.dart';
 import 'package:tara_travel/core/models/trip_model.dart';
 
 void main() {
@@ -68,4 +69,45 @@ void main() {
 
     expect(expense.amount, 150.5);
   });
+
+  test('MemberModel formats surname privacy correctly', () {
+    // Single word name remains unchanged
+    expect(MemberModel.formatDisplayName('Spencer', hideSurname: true), 'Spencer');
+
+    // Multi-word name has surname hidden with last initial
+    expect(
+      MemberModel.formatDisplayName('Spencer Montalbo', hideSurname: true),
+      'Spencer M.',
+    );
+    expect(
+      MemberModel.formatDisplayName('Juan Dela Cruz', hideSurname: true),
+      'Juan C.',
+    );
+
+    // When hideSurname is false, full name is preserved
+    expect(
+      MemberModel.formatDisplayName('Juan Dela Cruz', hideSurname: false),
+      'Juan Dela Cruz',
+    );
+
+    // MemberModel.fromMap correctly parses hide_surname from user data and dietary tags
+    final memberWithPrivacy = MemberModel.fromMap({
+      'user_id': 'u1',
+      'name': 'Juan Dela Cruz',
+      'hide_surname': true,
+    });
+    expect(memberWithPrivacy.name, 'Juan C.');
+    expect(memberWithPrivacy.hideSurname, true);
+
+    final memberFromNestedUser = MemberModel.fromMap({
+      'user_id': 'u2',
+      'users': {
+        'display_name': 'Maria Santos',
+        'dietary': ['privacy:hide_surname'],
+      },
+    });
+    expect(memberFromNestedUser.name, 'Maria S.');
+    expect(memberFromNestedUser.hideSurname, true);
+  });
 }
+

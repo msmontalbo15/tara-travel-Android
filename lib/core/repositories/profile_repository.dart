@@ -1,59 +1,35 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:sembast/sembast.dart';
 import '../security/three_layer_encryption_service.dart';
-import '../services/database_service.dart';
-import '../services/session_cache_service.dart';
 
+/// Pure Supabase data source for user profiles.
+/// Sensitive fields (phone, gcash_number, health_notes) are encrypted/decrypted
+/// using ThreeLayerEncryptionService before writing to or reading from Supabase.
+/// There is no local cache — all data comes directly from `public.users`.
 class ProfileRepository {
-  final DatabaseService _dbService = DatabaseService.instance;
   final SupabaseClient _supabase = Supabase.instance.client;
   final ThreeLayerEncryptionService _encryption =
       ThreeLayerEncryptionService.instance;
-  final SessionCacheService _cache = SessionCacheService.instance;
 
-  /// Synchronous store reference — no need for async here.
-  StoreRef<String, Map<String, dynamic>> get _store =>
-      _dbService.getStore(DatabaseService.userStore);
+  // ── REMOTE STORAGE (SUPABASE WITH 3-LAYER ENCRYPTION) ──────────────────────
 
-  // ── LOCAL STORAGE ──────────────────────────────────────────────
-
-  Future<Map<String, dynamic>?> getProfile() async {
-    final db = await _dbService.database;
-    return _store.record('current_user').get(db);
-  }
-
-  Future<void> saveProfile(Map<String, dynamic> data) async {
-    final db = await _dbService.database;
-    // Attach a refreshed-at timestamp so callers can detect stale local data
-    await _store.record('current_user').put(db, {
-      ...data,
-      'refreshedAt': DateTime.now().toUtc().toIso8601String(),
-    });
-  }
-
-  Future<void> clearProfile() async {
-    final db = await _dbService.database;
-    await _store.record('current_user').delete(db);
-  }
-
-  // ── REMOTE STORAGE (SUPABASE WITH 3-LAYER ENCRYPTION) ──────────
-
+  /// Fetches a user's profile from Supabase, decrypting sensitive fields.
   Future<Map<String, dynamic>?> getRemoteProfile(String userId) async {
     try {
       final response =
           await _supabase.from('users').select().eq('id', userId).maybeSingle();
       if (response == null) return null;
-      final result = await _fromRemoteJson(response);
-      // Stamp profile cache freshness on successful remote load
-      await _cache.stamp(DatabaseService.userStore);
-      return result;
+      return _fromRemoteJson(response);
+    } on PostgrestException catch (e) {
+      debugPrint('[ProfileRepository] getRemoteProfile PostgrestException: ${e.message}');
+      return null;
     } catch (e) {
       debugPrint('[ProfileRepository] getRemoteProfile error: $e');
       return null;
     }
   }
 
+  /// Saves a user's profile to Supabase, encrypting sensitive fields.
   Future<void> saveRemoteProfile(
     String userId,
     Map<String, dynamic> data,
@@ -77,10 +53,16 @@ class ProfileRepository {
       remoteData['updated_at'] = DateTime.now().toIso8601String();
 
       await _supabase.from('users').upsert(remoteData);
+    } on PostgrestException catch (e) {
+      debugPrint('[ProfileRepository] saveRemoteProfile PostgrestException: ${e.message}');
+      rethrow;
     } catch (e) {
       debugPrint('[ProfileRepository] saveRemoteProfile error: $e');
+      rethrow;
     }
   }
+
+  // ── SERIALISATION HELPERS ───────────────────────────────────────────────────
 
   Future<Map<String, dynamic>> _toRemoteJson(Map<String, dynamic> data) async {
     final healthNotes = data['healthNotes'];
@@ -113,18 +95,22 @@ class ProfileRepository {
       'phone': encryptedPhone ?? rawPhone,
       'share_health_with_org': data['shareHealthWithOrganizer'] ?? false,
       'blood_type': data['bloodType'],
-      // Persist app-specific extras in a compatible way.
+      'hide_surname': data['hideSurname'] ?? false,
+      // Persist app-specific extras encoded into the `dietary` text-array column.
       'dietary': <String>[
         if (data['homeCountry'] != null) 'country:${data['homeCountry']}',
         if (data['homeRegion'] != null) 'region:${data['homeRegion']}',
         if (data['homeBarangay'] != null) 'barangay:${data['homeBarangay']}',
         if (data['preferredCurrency'] != null)
           'currency:${data['preferredCurrency']}',
-        if (data['nickname'] != null && (data['nickname'] as String).trim().isNotEmpty)
+        if (data['nickname'] != null &&
+            (data['nickname'] as String).trim().isNotEmpty)
           'nickname:${(data['nickname'] as String).trim()}',
-        if (data['dateOfBirth'] != null && (data['dateOfBirth'] as String).trim().isNotEmpty)
+        if (data['dateOfBirth'] != null &&
+            (data['dateOfBirth'] as String).trim().isNotEmpty)
           'dob:${(data['dateOfBirth'] as String).trim()}',
         if (data['hasCompletedOnboarding'] == true) 'onboarding:completed',
+        if (data['hideSurname'] == true) 'privacy:hide_surname',
       ],
     };
   }
@@ -166,10 +152,9 @@ class ProfileRepository {
     }.toList();
 
     return {
-      // Treat empty string the same as null so local name is not overwritten
       'displayName': (row['display_name'] as String?)?.trim().isNotEmpty == true
           ? row['display_name'] as String
-          : null, // null → ProfileState.fromJson uses its own fallback logic
+          : null,
       'firstName': _firstNameFromDisplayName(row['display_name'] as String?),
       'homeRegion': extractTag('region:') ?? '',
       'homeCity': row['home_city'] ?? '',
@@ -185,6 +170,8 @@ class ProfileRepository {
       'gcashQrUrl': row['gcash_qr_url'],
       'healthNotes': healthNotes,
       'shareHealthWithOrganizer': row['share_health_with_org'] ?? false,
+      'hideSurname': row['hide_surname'] == true ||
+          dietary.contains('privacy:hide_surname'),
       'isCloudConnected': true,
       'accountEmail': row['email'],
       'hasCompletedOnboarding': dietary.contains('onboarding:completed'),

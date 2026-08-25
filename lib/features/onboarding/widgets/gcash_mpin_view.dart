@@ -4,11 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:local_auth/local_auth.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/providers/profile_provider.dart';
-import '../../../core/services/database_service.dart';
 import '../../../core/auth/services/biometric_service.dart';
 import '../../../core/auth/services/mpin_service.dart';
 import '../../../core/auth/presentation/auth_notifier.dart';
-import '../../../core/auth/domain/auth_state.dart' as domain;
 
 /// GCash-Style 4-Digit MPIN & Biometric Unlock Screen.
 class GCashMpinView extends ConsumerStatefulWidget {
@@ -148,14 +146,6 @@ class _GCashMpinViewState extends ConsumerState<GCashMpinView>
     // Rehydrate session from secure storage
     await ref.read(authNotifierProvider.notifier).restoreSession();
     if (!mounted) return;
-
-    // Check if we have an authenticated Supabase user to switch local DB context
-    final authValue = ref.read(authNotifierProvider).value;
-    final supaUser = (authValue is domain.AuthAuthenticated) ? authValue.user : null;
-
-    if (supaUser != null) {
-      await DatabaseService.instance.switchUser(supaUser.id);
-    }
 
     await ref.read(profileProvider.notifier).refreshProfile();
     if (!mounted) return;

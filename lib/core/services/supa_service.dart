@@ -71,7 +71,6 @@ class SupaService {
       if (status == ExpenseStatus.approved) {
         updateMap['approved_by'] = userId;
       } else if (status == ExpenseStatus.rejected) {
-        updateMap['rejected_by'] = userId;
         if (rejectionNote != null) updateMap['rejection_note'] = rejectionNote;
       }
       await _client.from('expenses').update(updateMap).eq('id', expenseId);

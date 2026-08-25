@@ -63,7 +63,7 @@ class _QuickActionTileState extends State<QuickActionTile>
             );
           },
           child: Container(
-            padding: const EdgeInsets.all(18),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
               gradient: widget.orange
                   ? const LinearGradient(
@@ -76,7 +76,7 @@ class _QuickActionTileState extends State<QuickActionTile>
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(22),
               border: widget.orange
                   ? Border.all(
                       color: const Color(0xFFE87040).withValues(alpha: 0.5))
@@ -112,43 +112,54 @@ class _QuickActionTileState extends State<QuickActionTile>
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  width: 36,
-                  height: 36,
+                  width: 34,
+                  height: 34,
                   decoration: BoxDecoration(
                     color: widget.orange
                         ? Colors.white.withValues(alpha: 0.22)
                         : AppColors.sand,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
                     widget.icon,
-                    size: 18,
+                    size: 17,
                     color: widget.orange ? Colors.white : AppColors.primary,
                   ),
                 ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      widget.label,
-                      style: TextStyle(
-                        fontFamily: 'DM Sans',
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: widget.orange
-                            ? Colors.white
-                            : AppColors.textPrimary,
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        widget.label,
+                        style: TextStyle(
+                          fontFamily: 'DM Sans',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: widget.orange
+                              ? Colors.white
+                              : AppColors.textPrimary,
+                        ),
                       ),
                     ),
                     if (widget.sublabel != null)
-                      Text(
-                        widget.sublabel!,
-                        style: TextStyle(
-                          fontFamily: 'DM Sans',
-                          fontSize: 11,
-                          color: widget.orange
-                              ? Colors.white.withValues(alpha: 0.6)
-                              : AppColors.textSecondary,
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          widget.sublabel!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: 'DM Sans',
+                            fontSize: 11,
+                            color: widget.orange
+                                ? Colors.white.withValues(alpha: 0.7)
+                                : AppColors.textSecondary,
+                          ),
                         ),
                       ),
                   ],

@@ -8,7 +8,6 @@ import '../../../core/widgets/app_brand_logo.dart';
 import '../../../core/auth/presentation/auth_notifier.dart';
 import '../../../core/auth/services/biometric_service.dart';
 import '../../../core/auth/services/mpin_service.dart';
-import '../../../core/services/database_service.dart';
 import '../../../core/providers/profile_provider.dart';
 import '../../../core/widgets/npc_privacy_policy_sheet.dart';
 import 'gcash_mpin_view.dart';
@@ -451,7 +450,6 @@ class _ChooseModeStepState extends ConsumerState<ChooseModeStep>
     }
 
     if (user != null) {
-      await DatabaseService.instance.switchUser(user.id);
       await ref.read(profileProvider.notifier).refreshProfile();
       if (!mounted) return;
 

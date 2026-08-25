@@ -9,32 +9,12 @@ import '../repositories/expense_repository.dart';
 import '../repositories/itinerary_repository.dart';
 import '../repositories/profile_repository.dart';
 import '../repositories/packing_repository.dart';
-import '../services/database_service.dart';
 import '../services/connectivity_service.dart';
-import '../offline/offline_sync_queue.dart';
-import '../offline/sync_manager.dart';
 
 // ── SERVICES ─────────────────────────────────────────────────────────────────
 
-final databaseServiceProvider = Provider<DatabaseService>((ref) {
-  return DatabaseService.instance;
-});
-
 final connectivityServiceProvider = Provider<ConnectivityService>((ref) {
   return ConnectivityService.instance;
-});
-
-// ── OFFLINE ───────────────────────────────────────────────────────────────────
-
-final offlineSyncQueueProvider = Provider<OfflineSyncQueue>((ref) {
-  return OfflineSyncQueue.instance;
-});
-
-final syncManagerProvider = Provider<SyncManager>((ref) {
-  final manager = syncManagerInstance;
-  manager.start();
-  ref.onDispose(manager.dispose);
-  return manager;
 });
 
 // ── REPOSITORIES ─────────────────────────────────────────────────────────────

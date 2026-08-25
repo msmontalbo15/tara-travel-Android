@@ -150,7 +150,12 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                 children: [
                   // ── Header Section ──────────────────────────────────────────
                   Container(
-                    padding: const EdgeInsets.fromLTRB(20, 52, 20, 16),
+                    padding: EdgeInsets.fromLTRB(
+                      20,
+                      MediaQuery.paddingOf(context).top + 12,
+                      20,
+                      16,
+                    ),
                     decoration: const BoxDecoration(
                       gradient: LinearGradient(
                         colors: [Color(0xFF1A0A04), AppColors.deepEarth],

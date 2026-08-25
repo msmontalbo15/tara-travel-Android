@@ -1,73 +1,66 @@
+/// trip_repository.dart
+/// Pure Supabase data source for trips.
+/// All read and write operations hit Supabase directly — there is no local
+/// Sembast cache layer. This guarantees the UI always reflects the
+/// authoritative remote state and eliminates count/deduplication drift.
+library;
+
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/trip_model.dart';
 import '../models/member_model.dart';
-import '../services/database_service.dart';
-import '../services/session_cache_service.dart';
 import '../utils/invite_code_generator.dart';
-import 'package:sembast/sembast.dart';
 
 class TripRepository {
   final SupabaseClient _supabase = Supabase.instance.client;
-  final DatabaseService _db = DatabaseService.instance;
-  final SessionCacheService _cache = SessionCacheService.instance;
-
-  StoreRef<String, Map<String, dynamic>> get _tripStore =>
-      _db.getStore(DatabaseService.tripStore);
 
   // ────────────────────────────────────────────────────────────────
   // READ
   // ────────────────────────────────────────────────────────────────
 
-  /// Fetches trips from Supabase and updates local cache.
-  /// Falls back to local cache if offline.
+  /// Fetches all trips the current user owns or is a member of, directly
+  /// from Supabase. RLS policies enforce row-level isolation.
   Future<List<TripModel>> getTrips() async {
-    final db = await _db.database;
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) {
+      debugPrint('[TripRepository] getTrips: no authenticated user.');
+      return [];
+    }
 
     try {
-      // Scope to trips the current user owns or is a member of
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) return _loadLocalTrips(db);
-
       final response = await _supabase
           .from('trips')
-          .select('*, trip_members!inner(*, users(*)), expenses(*)')
-          .or('owner_id.eq.$userId,trip_members.user_id.eq.$userId')
+          .select('*, trip_members(*, users(*)), expenses(*)')
           .order('start_date', ascending: true);
 
-      final trips = (response as List)
-          .map((json) => TripModel.fromMap((json as Map).cast<String, dynamic>()))
-          .toList();
+      final rows = response as List;
+      debugPrint('[TripRepository] getTrips fetched ${rows.length} rows from Supabase.');
 
-      // Update local cache
-      await db.transaction((txn) async {
-        for (final trip in trips) {
-          await _tripStore.record(trip.id).put(txn, trip.toMap());
+      // Deduplicate by trip ID (defensive — RLS should already prevent duplicates)
+      final Map<String, TripModel> seen = {};
+      for (final json in rows) {
+        try {
+          final trip = TripModel.fromMap((json as Map).cast<String, dynamic>());
+          seen[trip.id] = trip;
+        } catch (parseErr) {
+          debugPrint('[TripRepository] Failed to parse trip row: $parseErr\nRow: $json');
         }
-      });
-      await _cache.stamp(DatabaseService.tripStore);
+      }
 
+      final trips = seen.values.toList();
+      debugPrint('[TripRepository] ${trips.length} unique trips: ${trips.map((t) => t.name).toList()}');
       return trips;
-    } catch (e) {
-      debugPrint('[TripRepository] getTrips error: $e');
-      return _loadLocalTrips(db);
+    } on PostgrestException catch (e) {
+      debugPrint('[TripRepository] getTrips PostgrestException: code=${e.code} message=${e.message} details=${e.details}');
+      rethrow;
+    } catch (e, st) {
+      debugPrint('[TripRepository] getTrips error: $e\n$st');
+      rethrow;
     }
   }
 
-  Future<List<TripModel>> _loadLocalTrips(Database db) async {
-    final snapshots = await _tripStore.find(
-      db,
-      finder: Finder(sortOrders: [SortOrder('start_date')]),
-    );
-    return snapshots.map((s) => TripModel.fromMap(s.value)).toList();
-  }
-
-  /// Fetches a single trip by ID — always fetches fresh from Supabase so
-  /// expense totals and member data are up-to-date after realtime invalidation.
-  /// Falls back to local Sembast cache only when offline or on network error.
+  /// Fetches a single trip by ID — always fresh from Supabase.
   Future<TripModel?> getTripById(String tripId) async {
-    final db = await _db.database;
-
     try {
       final response = await _supabase
           .from('trips')
@@ -76,253 +69,245 @@ class TripRepository {
           .maybeSingle();
 
       if (response == null) return null;
-      final trip = TripModel.fromMap((response as Map).cast<String, dynamic>());
-      // Update local cache with the fresh data
-      await _tripStore.record(trip.id).put(db, trip.toMap());
-      return trip;
-    } catch (e) {
-      debugPrint('[TripRepository] getTripById error (falling back to cache): $e');
-      // Offline or network error — serve stale local data
-      final local = await _tripStore.record(tripId).get(db);
-      if (local != null) return TripModel.fromMap(local);
-      return null;
+      return TripModel.fromMap((response as Map).cast<String, dynamic>());
+    } on PostgrestException catch (e) {
+      debugPrint('[TripRepository] getTripById PostgrestException: code=${e.code} message=${e.message}');
+      rethrow;
+    } catch (e, st) {
+      debugPrint('[TripRepository] getTripById error: $e\n$st');
+      rethrow;
     }
-  }
-
-  /// Streams trips from the local database for real-time UI updates
-  Stream<List<TripModel>> watchTrips() async* {
-    final db = await _db.database;
-    final query = _tripStore.query(
-      finder: Finder(sortOrders: [SortOrder('start_date')]),
-    );
-
-    yield* query.onSnapshots(db).map((snapshots) {
-      return snapshots.map((s) => TripModel.fromMap(s.value)).toList();
-    });
   }
 
   // ────────────────────────────────────────────────────────────────
   // WRITE
   // ────────────────────────────────────────────────────────────────
 
-  /// Creates a new trip — optimistic local write + Supabase sync.
+  /// Creates a new trip in Supabase. Throws on any remote error so the
+  /// calling UI can surface the failure immediately.
   Future<void> createTrip(TripModel trip) async {
-    final db = await _db.database;
     final ownerId = _supabase.auth.currentUser?.id;
+    if (ownerId == null) {
+      throw Exception('User is not authenticated with Supabase.');
+    }
 
     // Ensure trip has a secure invite code
     if (trip.inviteCode.trim().isEmpty) {
       trip = trip.copyWith(inviteCode: InviteCodeGenerator.generate());
     }
 
-    // Optimistic local write for instant UI feedback
-    await _tripStore.record(trip.id).put(db, trip.toMap());
-
-    if (ownerId != null) {
-      try {
-        await _supabase.from('trips').insert(trip.toSupabaseInsert(ownerId));
-        // Also add the owner as an organizer member
-        await _supabase.from('trip_members').insert({
-          'trip_id': trip.id,
-          'user_id': ownerId,
-          'roles': ['organizer'],
+    // 1. Upsert the public.users row to satisfy the FK constraint
+    try {
+      final existingUser = await _supabase
+          .from('users')
+          .select('id')
+          .eq('id', ownerId)
+          .maybeSingle();
+      if (existingUser == null) {
+        final email =
+            _supabase.auth.currentUser?.email ?? '$ownerId@taratravel.app';
+        final name =
+            (_supabase.auth.currentUser?.userMetadata?['full_name'] as String?) ??
+            (_supabase.auth.currentUser?.userMetadata?['name'] as String?) ??
+            email.split('@').first;
+        debugPrint('[TripRepository] Upserting public.users row for $ownerId');
+        await _supabase.from('users').upsert({
+          'id': ownerId,
+          'email': email,
+          'display_name': name,
+          'updated_at': DateTime.now().toIso8601String(),
         });
-      } catch (e) {
-        debugPrint('[TripRepository] createTrip sync error: $e');
-        // Local write already done — no rethrow; will sync later
       }
+    } catch (userErr) {
+      debugPrint('[TripRepository] User upsert warning: $userErr');
+    }
+
+    // 2. Insert the trip row
+    final payload = trip.toSupabaseInsert(ownerId);
+    debugPrint('[TripRepository] Inserting payload: $payload');
+    await _supabase.from('trips').insert(payload);
+    debugPrint('[TripRepository] Trip ${trip.id} saved to Supabase.');
+
+    // 3. Add owner as organizer in trip_members
+    try {
+      await _supabase.from('trip_members').insert({
+        'trip_id': trip.id,
+        'user_id': ownerId,
+        'roles': ['organizer'],
+        'status': 'approved',
+      });
+    } catch (memberErr) {
+      // Unique-violation (already a member) is acceptable
+      debugPrint('[TripRepository] trip_members insert note: $memberErr');
     }
   }
 
   /// Regenerates a fresh invite code for a trip (organizer action).
   Future<String> regenerateInviteCode(String tripId) async {
     final newCode = InviteCodeGenerator.generate();
-    final db = await _db.database;
-
-    // Update local cache
-    final localRecord = await _tripStore.record(tripId).get(db);
-    if (localRecord != null) {
-      final updatedMap = Map<String, dynamic>.from(localRecord);
-      updatedMap['invite_code'] = newCode;
-      await _tripStore.record(tripId).put(db, updatedMap);
-    }
-
-    // Update Supabase
-    try {
-      await _supabase
-          .from('trips')
-          .update({'invite_code': newCode})
-          .eq('id', tripId);
-    } catch (e) {
-      debugPrint('[TripRepository] regenerateInviteCode remote error: $e');
-    }
-
+    await _supabase
+        .from('trips')
+        .update({'invite_code': newCode}).eq('id', tripId);
     return newCode;
   }
 
-  /// Updates an existing trip both locally and in Supabase.
+  /// Updates an existing trip.
   Future<void> updateTrip(TripModel trip) async {
-    final db = await _db.database;
-    await _tripStore.record(trip.id).put(db, trip.toMap());
+    const validTypes = {
+      'beach', 'city', 'adventure', 'nature', 'cultural',
+      'heritage', 'pilgrimage', 'business', 'other'
+    };
+    final normalizedType =
+        trip.tripType.toLowerCase().replaceAll('-', '_').replaceAll(' ', '_');
+    final safeType =
+        validTypes.contains(normalizedType) ? normalizedType : 'other';
+
+    final payload = {
+      'name': trip.name,
+      'destination': trip.destination,
+      'start_date': trip.fromDate.toIso8601String().split('T').first,
+      'end_date': trip.toDate.toIso8601String().split('T').first,
+      'budget': trip.totalBudget,
+      'type': safeType,
+      'split_method': trip.splitEqually ? 'equal' : 'fixed',
+      'invite_code': trip.inviteCode,
+      'status': trip.isDraft ? 'draft' : (trip.isArchived ? 'archived' : 'planned'),
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+      if (trip.coverColor != null) 'cover_color': trip.coverColor,
+      if (trip.coverEmoji != null) 'cover_emoji': trip.coverEmoji,
+      if (trip.departurePoint != null) 'departure_point': trip.departurePoint,
+      if (trip.departureLat != null) 'departure_lat': trip.departureLat,
+      if (trip.departureLng != null) 'departure_lng': trip.departureLng,
+      if (trip.transportMode != null) 'transport_mode': trip.transportMode,
+      if (trip.transportMeta != null) 'transport_meta': trip.transportMeta,
+    };
 
     try {
-      await _supabase.from('trips').update({
-        'name': trip.name,
-        'destination': trip.destination,
-        'start_date': trip.fromDate.toIso8601String(),
-        'end_date': trip.toDate.toIso8601String(),
-        'budget': trip.totalBudget,
-        'type': trip.tripType.toLowerCase(),
-        'split_method': trip.splitEqually ? 'equal' : 'fixed',
-        'invite_code': trip.inviteCode,
-      }).eq('id', trip.id);
-    } catch (e) {
-      debugPrint('[TripRepository] updateTrip sync error: $e');
+      debugPrint('[TripRepository] Updating trip ${trip.id} with payload: $payload');
+      await _supabase.from('trips').update(payload).eq('id', trip.id);
+      debugPrint('[TripRepository] Trip ${trip.id} successfully updated in Supabase.');
+    } on PostgrestException catch (e) {
+      debugPrint('[TripRepository] updateTrip PostgrestException: code=${e.code} message=${e.message} details=${e.details}');
+      rethrow;
+    } catch (e, st) {
+      debugPrint('[TripRepository] updateTrip error: $e\n$st');
+      rethrow;
     }
   }
 
   /// Marks a trip as archived (soft-delete).
   Future<void> archiveTrip(String tripId) async {
-    final db = await _db.database;
-    await _tripStore.record(tripId).update(db, {'is_archived': true});
-
     try {
+      debugPrint('[TripRepository] Archiving trip $tripId');
       await _supabase
           .from('trips')
-          .update({'status': 'archived'})
+          .update({
+            'status': 'archived',
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
+          })
           .eq('id', tripId);
-    } catch (e) {
-      debugPrint('[TripRepository] archiveTrip sync error: $e');
+      debugPrint('[TripRepository] Trip $tripId successfully archived.');
+    } on PostgrestException catch (e) {
+      debugPrint('[TripRepository] archiveTrip PostgrestException: code=${e.code} message=${e.message}');
+      rethrow;
+    } catch (e, st) {
+      debugPrint('[TripRepository] archiveTrip error: $e\n$st');
+      rethrow;
     }
   }
 
-  /// Permanently deletes a trip (local + Supabase cascade).
-  Future<void> deleteTrip(String tripId) async {
-    final db = await _db.database;
-    await _tripStore.record(tripId).delete(db);
-
+  /// Restores an archived trip to active/planned status.
+  Future<void> unarchiveTrip(String tripId) async {
     try {
-      await _supabase.from('trips').delete().eq('id', tripId);
-    } catch (e) {
-      debugPrint('[TripRepository] deleteTrip sync error: $e');
+      debugPrint('[TripRepository] Unarchiving trip $tripId');
+      await _supabase
+          .from('trips')
+          .update({
+            'status': 'planned',
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
+          })
+          .eq('id', tripId);
+      debugPrint('[TripRepository] Trip $tripId successfully unarchived.');
+    } on PostgrestException catch (e) {
+      debugPrint('[TripRepository] unarchiveTrip PostgrestException: code=${e.code} message=${e.message}');
+      rethrow;
+    } catch (e, st) {
+      debugPrint('[TripRepository] unarchiveTrip error: $e\n$st');
+      rethrow;
     }
   }
 
-  /// Joins a trip using an invite code.
-  Future<void> joinTripByCode(String code) async {
+  /// Permanently deletes a trip.
+  Future<void> deleteTrip(String tripId) async {
+    try {
+      debugPrint('[TripRepository] Deleting trip $tripId');
+      await _supabase.from('trips').delete().eq('id', tripId);
+      debugPrint('[TripRepository] Trip $tripId successfully deleted.');
+    } on PostgrestException catch (e) {
+      debugPrint('[TripRepository] deleteTrip PostgrestException: code=${e.code} message=${e.message}');
+      rethrow;
+    } catch (e, st) {
+      debugPrint('[TripRepository] deleteTrip error: $e\n$st');
+      rethrow;
+    }
+  }
+
+  // ────────────────────────────────────────────────────────────────
+  // MEMBER LIFECYCLE
+  // ────────────────────────────────────────────────────────────────
+
+  /// Joins a trip using a 6-character invite code.
+  ///
+  /// Returns a [JoinResult] indicating whether membership is now
+  /// [JoinStatus.pending] (awaiting organizer approval) or
+  /// [JoinStatus.approved] (instantly joined).
+  Future<JoinResult> joinTripByCode(String code) async {
     final cleanCode = InviteCodeGenerator.sanitize(code);
     if (!InviteCodeGenerator.isValidFormat(cleanCode)) {
       throw Exception('Invalid invite code format. Please check the 6-character code.');
     }
 
-    final userId = _supabase.auth.currentUser?.id;
-
-    // 1. Try Supabase RPC `join_trip_by_code` (handles RLS security)
+    // RPC handles: pending status, notification fanout to organizers,
+    // and activity logging — all inside a SECURITY DEFINER transaction.
     try {
       final rpcRes = await _supabase.rpc(
         'join_trip_by_code',
         params: {'p_invite_code': cleanCode},
       );
       if (rpcRes != null && rpcRes['trip_id'] != null) {
-        final tripId = rpcRes['trip_id'].toString();
-        await _fetchAndCacheRemoteTrip(tripId);
-        return;
+        final status = rpcRes['status'] as String? ?? 'pending';
+        final tripName = rpcRes['trip_name'] as String? ?? '';
+        debugPrint('[TripRepository] Joined via RPC: ${rpcRes['trip_id']} — status=$status');
+        return JoinResult(
+          status: status == 'approved' ? JoinStatus.approved : JoinStatus.pending,
+          tripName: tripName,
+        );
       }
-    } catch (e) {
-      debugPrint('[TripRepository] RPC join_trip_by_code notice: $e');
-    }
-
-    // 2. Fallback direct Supabase query
-    if (userId == null) {
-      throw Exception('Must be logged in to join a trip.');
-    }
-
-    String? tripId;
-    final tripResponse = await _supabase
-        .from('trips')
-        .select('id')
-        .eq('invite_code', cleanCode)
-        .maybeSingle();
-
-    if (tripResponse != null) {
-      tripId = tripResponse['id'] as String;
-    } else {
-      // 3. Fallback check local database for offline or local-only trips
-      final db = await _db.database;
-      final localTrips = await _tripStore.find(db);
-      for (final snap in localTrips) {
-        final codeInLocal = snap.value['invite_code']?.toString().toUpperCase();
-        if (codeInLocal == cleanCode) {
-          tripId = snap.key;
-          break;
-        }
-      }
-    }
-
-    if (tripId == null) {
-      throw Exception('Invalid invite code or trip not found.');
-    }
-
-    // Insert into trip_members
-    try {
-      await _supabase.from('trip_members').insert({
-        'trip_id': tripId,
-        'user_id': userId,
-        'roles': ['member'],
-      });
     } on PostgrestException catch (e) {
-      // 23505 is unique violation (already a member)
-      if (e.code != '23505') {
-        rethrow;
-      }
-    } catch (e) {
-      debugPrint('[TripRepository] joinTripByCode member insert error: $e');
+      final msg = e.message.isNotEmpty ? e.message : 'Failed to join trip.';
+      throw Exception(msg);
     }
 
-    // Fetch the full trip from remote/local and refresh cache
-    await _fetchAndCacheRemoteTrip(tripId);
+    throw Exception('Unexpected error — could not join trip.');
   }
 
-  /// Updates roles for a member in a trip.
-  /// Persists locally to Sembast and remotely to Supabase.
+  /// Updates roles for a member in a trip (organizer-only action).
   Future<void> updateMemberRoles(
     String tripId,
     String memberId,
     List<MemberRole> newRoles,
   ) async {
-    final db = await _db.database;
-
-    // Ensure member has at least one role (default to member if empty)
     final rolesToAssign = newRoles.isEmpty ? [MemberRole.member] : newRoles;
     final roleNames = rolesToAssign.map((r) => r.name).toList();
 
-    // 1. Update local cache
-    final localRecord = await _tripStore.record(tripId).get(db);
-    if (localRecord != null) {
-      final tripMap = Map<String, dynamic>.from(localRecord);
-      final membersList = (tripMap['members'] as List?)
-              ?.map((m) => Map<String, dynamic>.from(m as Map))
-              .toList() ??
-          [];
-      final memberIndex = membersList.indexWhere(
-        (m) => m['id'] == memberId || m['user_id'] == memberId,
-      );
-      if (memberIndex != -1) {
-        membersList[memberIndex]['roles'] = roleNames;
-        tripMap['members'] = membersList;
-        await _tripStore.record(tripId).put(db, tripMap);
-      }
-    }
+    await _supabase
+        .from('trip_members')
+        .update({'roles': roleNames})
+        .eq('trip_id', tripId)
+        .or('user_id.eq.$memberId,id.eq.$memberId');
 
-    // 2. Sync to Supabase
+    // Activity log entry
     try {
-      await _supabase
-          .from('trip_members')
-          .update({'roles': roleNames})
-          .eq('trip_id', tripId)
-          .or('user_id.eq.$memberId,id.eq.$memberId');
-
-      // 3. Add activity log entry
       final roleLabels = rolesToAssign.map((r) => r.displayName).join(', ');
       await _supabase.from('activity_log').insert({
         'trip_id': tripId,
@@ -332,86 +317,108 @@ class TripRepository {
         'created_at': DateTime.now().toIso8601String(),
       });
     } catch (e) {
-      debugPrint('[TripRepository] updateMemberRoles sync error: $e');
+      debugPrint('[TripRepository] updateMemberRoles activity log error: $e');
     }
   }
 
-  /// Approves a pending trip member
+  /// Approves a pending trip member.
+  ///
+  /// Delegates to the [approve_member] RPC which also notifies the applicant
+  /// and writes an activity log entry.
   Future<void> approveMember(String tripId, String memberId) async {
-    final db = await _db.database;
-    final localRecord = await _tripStore.record(tripId).get(db);
-    if (localRecord != null) {
-      final tripMap = Map<String, dynamic>.from(localRecord);
-      final membersList = (tripMap['members'] as List?)
-              ?.map((m) => Map<String, dynamic>.from(m as Map))
-              .toList() ??
-          [];
-      final memberIndex = membersList.indexWhere(
-        (m) => m['id'] == memberId || m['user_id'] == memberId,
-      );
-      if (memberIndex != -1) {
-        membersList[memberIndex]['status'] = 'approved';
-        tripMap['members'] = membersList;
-        await _tripStore.record(tripId).put(db, tripMap);
-      }
-    }
-
     try {
-      await _supabase
-          .from('trip_members')
-          .update({'status': 'approved'})
-          .eq('trip_id', tripId)
-          .or('user_id.eq.$memberId,id.eq.$memberId');
-    } catch (e) {
-      debugPrint('[TripRepository] approveMember sync error: $e');
+      debugPrint('[TripRepository] Approving member $memberId for trip $tripId');
+      await _supabase.rpc('approve_member', params: {
+        'p_trip_id':    tripId,
+        'p_member_uid': memberId,
+      });
+      debugPrint('[TripRepository] Member $memberId approved.');
+    } on PostgrestException catch (e) {
+      debugPrint('[TripRepository] approveMember RPC error: ${e.message}');
+      throw Exception(e.message.isNotEmpty ? e.message : 'Failed to approve member.');
+    } catch (e, st) {
+      debugPrint('[TripRepository] approveMember error: $e\n$st');
+      rethrow;
     }
   }
 
-  /// Rejects a pending trip member
+  /// Rejects a pending trip member join request.
+  ///
+  /// Delegates to [reject_or_remove_member] RPC with reason='rejected',
+  /// which deletes the row and sends a declined notification to the applicant.
   Future<void> rejectMember(String tripId, String memberId) async {
-    final db = await _db.database;
-    final localRecord = await _tripStore.record(tripId).get(db);
-    if (localRecord != null) {
-      final tripMap = Map<String, dynamic>.from(localRecord);
-      final membersList = (tripMap['members'] as List?)
-              ?.map((m) => Map<String, dynamic>.from(m as Map))
-              .toList() ??
-          [];
-      membersList.removeWhere(
-        (m) => m['id'] == memberId || m['user_id'] == memberId,
-      );
-      tripMap['members'] = membersList;
-      await _tripStore.record(tripId).put(db, tripMap);
-    }
-
     try {
-      await _supabase
-          .from('trip_members')
-          .delete()
-          .eq('trip_id', tripId)
-          .or('user_id.eq.$memberId,id.eq.$memberId');
-    } catch (e) {
-      debugPrint('[TripRepository] rejectMember sync error: $e');
+      debugPrint('[TripRepository] Rejecting member $memberId for trip $tripId');
+      await _supabase.rpc('reject_or_remove_member', params: {
+        'p_trip_id':    tripId,
+        'p_member_uid': memberId,
+        'p_reason':     'rejected',
+      });
+      debugPrint('[TripRepository] Member $memberId rejected.');
+    } on PostgrestException catch (e) {
+      debugPrint('[TripRepository] rejectMember RPC error: ${e.message}');
+      throw Exception(e.message.isNotEmpty ? e.message : 'Failed to reject member.');
+    } catch (e, st) {
+      debugPrint('[TripRepository] rejectMember error: $e\n$st');
+      rethrow;
     }
   }
 
-  Future<TripModel?> _fetchAndCacheRemoteTrip(String tripId) async {
-    final db = await _db.database;
+  /// Removes an approved member from a trip (organizer-only).
+  ///
+  /// Delegates to [reject_or_remove_member] RPC with reason='removed',
+  /// which sends a removal notification to the affected member.
+  Future<void> removeMember(String tripId, String memberId) async {
     try {
-      final response = await _supabase
-          .from('trips')
-          .select('*, trip_members(*, users(*)), expenses(*)')
-          .eq('id', tripId)
-          .maybeSingle();
-
-      if (response != null) {
-        final trip = TripModel.fromMap((response as Map).cast<String, dynamic>());
-        await _tripStore.record(trip.id).put(db, trip.toMap());
-        return trip;
-      }
-    } catch (e) {
-      debugPrint('[TripRepository] _fetchAndCacheRemoteTrip error: $e');
+      debugPrint('[TripRepository] Removing member $memberId from trip $tripId');
+      await _supabase.rpc('reject_or_remove_member', params: {
+        'p_trip_id':    tripId,
+        'p_member_uid': memberId,
+        'p_reason':     'removed',
+      });
+      debugPrint('[TripRepository] Member $memberId removed.');
+    } on PostgrestException catch (e) {
+      debugPrint('[TripRepository] removeMember RPC error: ${e.message}');
+      throw Exception(e.message.isNotEmpty ? e.message : 'Failed to remove member.');
+    } catch (e, st) {
+      debugPrint('[TripRepository] removeMember error: $e\n$st');
+      rethrow;
     }
-    return getTripById(tripId);
   }
+
+  /// Allows the current authenticated user to voluntarily leave a trip.
+  ///
+  /// Blocked by the RPC if the caller is the trip owner (must transfer first).
+  /// Returns the trip name for use in a farewell snackbar.
+  Future<String> leaveTrip(String tripId) async {
+    try {
+      debugPrint('[TripRepository] Leaving trip $tripId');
+      final res = await _supabase.rpc('leave_trip', params: {'p_trip_id': tripId});
+      final tripName = (res as Map?)?['trip_name'] as String? ?? 'the trip';
+      debugPrint('[TripRepository] Left trip $tripId ($tripName).');
+      return tripName;
+    } on PostgrestException catch (e) {
+      debugPrint('[TripRepository] leaveTrip RPC error: ${e.message}');
+      throw Exception(e.message.isNotEmpty ? e.message : 'Failed to leave trip.');
+    } catch (e, st) {
+      debugPrint('[TripRepository] leaveTrip error: $e\n$st');
+      rethrow;
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Value types for join results
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum JoinStatus { pending, approved }
+
+class JoinResult {
+  final JoinStatus status;
+  final String tripName;
+
+  const JoinResult({required this.status, required this.tripName});
+
+  bool get isPending => status == JoinStatus.pending;
+  bool get isApproved => status == JoinStatus.approved;
 }
