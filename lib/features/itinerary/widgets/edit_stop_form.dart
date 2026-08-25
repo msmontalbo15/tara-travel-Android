@@ -188,6 +188,8 @@ class _EditStopFormState extends State<EditStopForm> {
 
           LocationPicker(
             initialValue: widget.stop.location,
+            initialLat: widget.stop.lat,
+            initialLon: widget.stop.lng,
             onLocationSelected: (loc) => setState(() => _selectedLocation = loc),
           ),
           const SizedBox(height: 10),

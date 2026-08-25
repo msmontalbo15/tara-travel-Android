@@ -1,9 +1,10 @@
 import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:maplibre_gl/maplibre_gl.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import '../../services/philippine_geocoding_service.dart';
 import '../../theme/app_colors.dart';
 import 'location_picker.dart';
 
@@ -39,16 +40,12 @@ class MapPinPickerModal extends StatefulWidget {
 }
 
 class _MapPinPickerModalState extends State<MapPinPickerModal> {
-  MapLibreMapController? _mapController;
-  final Dio _dio = Dio();
+  final MapController _mapController = MapController();
   final TextEditingController _searchCtrl = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
 
   // Default position: Manila, Philippines if none provided
   static const LatLng _defaultLocation = LatLng(14.5995, 120.9842);
-
-  // High quality open vector tile styles (OpenFreeMap / MapLibre)
-  static const String _mapStyle = 'https://tiles.openfreemap.org/styles/liberty';
 
   late LatLng _currentCenter;
   String _placeName = 'Move map to select location';
@@ -92,81 +89,43 @@ class _MapPinPickerModalState extends State<MapPinPickerModal> {
       setState(() => _isGeocoding = true);
     }
 
-    final apiKey = dotenv.env['EXPO_PUBLIC_GOOGLE_MAPS_API_KEY'] ??
-        dotenv.env['GOOGLE_MAPS_API_KEY'];
-
     try {
-      if (apiKey != null && apiKey.isNotEmpty) {
-        final url =
-            'https://maps.googleapis.com/maps/api/geocode/json?latlng=${target.latitude},${target.longitude}&key=$apiKey';
-        final response = await _dio.get(url, cancelToken: _geocodingCancelToken);
-        if (response.statusCode == 200 && response.data['status'] == 'OK') {
-          final results = response.data['results'] as List;
-          if (results.isNotEmpty) {
-            final first = results.first;
-            final formatted = first['formatted_address'] as String? ?? '';
-            final parts = formatted.split(',');
-            final title = parts.isNotEmpty ? parts.first.trim() : formatted;
-            final subtitle = parts.length > 1 ? parts.sublist(1).join(',').trim() : '';
-
-            if (mounted) {
-              setState(() {
-                _placeName = title;
-                _fullAddress = subtitle.isNotEmpty ? subtitle : formatted;
-                _isGeocoding = false;
-              });
-            }
-            return;
-          }
-        }
-      }
-
-      // Fallback: Nominatim OpenStreetMap reverse geocoding
-      final response = await _dio.get(
-        'https://nominatim.openstreetmap.org/reverse',
-        queryParameters: {
-          'lat': target.latitude,
-          'lon': target.longitude,
-          'format': 'json',
-        },
-        options: Options(headers: {'User-Agent': 'TaraTravelApp/1.0'}),
+      final result = await PhilippineGeocodingService.instance.reverseGeocode(
+        target.latitude,
+        target.longitude,
         cancelToken: _geocodingCancelToken,
       );
 
-      if (response.statusCode == 200) {
-        final displayName = response.data['display_name'] as String? ?? '';
-        final parts = displayName.split(',');
-        final title = parts.isNotEmpty ? parts.first.trim() : 'Selected Location';
-        final subtitle = parts.length > 1 ? parts.sublist(1).join(',').trim() : displayName;
+      if (result != null && mounted) {
+        final parts = result.displayName.split(',');
+        final title = parts.isNotEmpty ? parts.first.trim() : result.displayName;
+        final subtitle = parts.length > 1 ? parts.sublist(1).join(',').trim() : '';
 
-        if (mounted) {
-          setState(() {
-            _placeName = title;
-            _fullAddress = subtitle;
-            _isGeocoding = false;
-          });
-        }
-      }
-    } catch (e) {
-      if (DioException.connectionError == e || (e is DioException && CancelToken.isCancel(e))) {
-        return; // Ignore cancelled requests cleanly
-      }
-      if (mounted) {
         setState(() {
-          _placeName = '${target.latitude.toStringAsFixed(4)}, ${target.longitude.toStringAsFixed(4)}';
-          _fullAddress = 'Pinned location on map';
+          _placeName = title;
+          _fullAddress = subtitle.isNotEmpty ? subtitle : result.displayName;
           _isGeocoding = false;
         });
+        return;
       }
+    } catch (e) {
+      if (e is DioException && CancelToken.isCancel(e)) {
+        return; // Ignore cancelled requests cleanly
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _placeName = '${target.latitude.toStringAsFixed(4)}, ${target.longitude.toStringAsFixed(4)}';
+        _fullAddress = 'Pinned location on map';
+        _isGeocoding = false;
+      });
     }
   }
 
-  void _onCameraIdle() {
-    final target = _mapController?.cameraPosition?.target;
-    if (target != null) {
-      _currentCenter = target;
-    }
-    
+  void _onMapPositionChanged(MapCamera camera, bool hasGesture) {
+    _currentCenter = camera.center;
+
     // Completely delay address picking & state updates until map finishes dragging and remains stationary
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 650), () {
@@ -191,7 +150,7 @@ class _MapPinPickerModalState extends State<MapPinPickerModal> {
         );
         final target = LatLng(pos.latitude, pos.longitude);
         _currentCenter = target;
-        _mapController?.animateCamera(CameraUpdate.newLatLngZoom(target, 15));
+        _mapController.move(target, 15);
       }
     } catch (_) {}
     if (mounted) setState(() => _isLocatingUser = false);
@@ -207,54 +166,21 @@ class _MapPinPickerModalState extends State<MapPinPickerModal> {
     }
 
     setState(() => _isSearching = true);
-    final apiKey = dotenv.env['EXPO_PUBLIC_GOOGLE_MAPS_API_KEY'] ??
-        dotenv.env['GOOGLE_MAPS_API_KEY'];
 
     try {
-      if (apiKey != null && apiKey.isNotEmpty) {
-        final url =
-            'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${Uri.encodeComponent(query)}&components=country:ph&key=$apiKey';
-        final response = await _dio.get(url);
-        if (response.statusCode == 200 && response.data['status'] == 'OK') {
-          final predictions = (response.data['predictions'] as List)
-              .take(5)
-              .map((p) => LocationResult.fromJson(p))
-              .toList();
-
-          if (mounted) {
-            setState(() {
-              _searchSuggestions = predictions;
-              _showSuggestions = true;
-              _isSearching = false;
-            });
-          }
-          return;
-        }
-      }
-
-      // Nominatim search fallback (Philippines restricted)
-      final response = await _dio.get(
-        'https://nominatim.openstreetmap.org/search',
-        queryParameters: {
-          'q': query,
-          'format': 'json',
-          'limit': 5,
-          'countrycodes': 'ph',
-        },
-        options: Options(headers: {'User-Agent': 'TaraTravelApp/1.0'}),
+      final results = await PhilippineGeocodingService.instance.search(
+        query,
+        limit: 5,
       );
 
-      if (response.statusCode == 200) {
-        final list = (response.data as List)
-            .map((item) => LocationResult.fromJson(item))
-            .toList();
-        if (mounted) {
-          setState(() {
-            _searchSuggestions = list;
-            _showSuggestions = true;
-            _isSearching = false;
-          });
-        }
+      if (mounted) {
+        setState(() {
+          _searchSuggestions = results
+              .map((r) => LocationResult.fromGeocodingResult(r))
+              .toList();
+          _showSuggestions = true;
+          _isSearching = false;
+        });
       }
     } catch (_) {
       if (mounted) setState(() => _isSearching = false);
@@ -270,28 +196,9 @@ class _MapPinPickerModalState extends State<MapPinPickerModal> {
 
     LatLng target = LatLng(result.lat, result.lon);
 
-    if (result.lat == 0.0 && result.lon == 0.0 && result.placeId != null) {
-      final apiKey = dotenv.env['EXPO_PUBLIC_GOOGLE_MAPS_API_KEY'] ??
-          dotenv.env['GOOGLE_MAPS_API_KEY'];
-      if (apiKey != null && apiKey.isNotEmpty) {
-        try {
-          final url =
-              'https://maps.googleapis.com/maps/api/place/details/json?place_id=${result.placeId}&fields=geometry&key=$apiKey';
-          final res = await _dio.get(url);
-          if (res.statusCode == 200 && res.data['status'] == 'OK') {
-            final loc = res.data['result']['geometry']['location'];
-            target = LatLng(
-              (loc['lat'] as num).toDouble(),
-              (loc['lng'] as num).toDouble(),
-            );
-          }
-        } catch (_) {}
-      }
-    }
-
     if (target.latitude != 0.0 || target.longitude != 0.0) {
       _currentCenter = target;
-      _mapController?.animateCamera(CameraUpdate.newLatLngZoom(target, 15));
+      _mapController.move(target, 15);
     }
   }
 
@@ -308,19 +215,26 @@ class _MapPinPickerModalState extends State<MapPinPickerModal> {
       clipBehavior: Clip.antiAlias,
       child: Stack(
         children: [
-          // ── 1. MapLibre Map View ─────────────────────────────────────────
-          MapLibreMap(
-            initialCameraPosition: CameraPosition(
-              target: _currentCenter,
-              zoom: 14,
+          // ── 1. Flutter Map View ──────────────────────────────────────────
+          FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: _currentCenter,
+              initialZoom: 14,
+              onPositionChanged: _onMapPositionChanged,
+              interactionOptions: const InteractionOptions(
+                flags: InteractiveFlag.all,
+              ),
             ),
-            styleString: _mapStyle,
-            onMapCreated: (controller) => _mapController = controller,
-            onCameraIdle: _onCameraIdle,
-            trackCameraPosition: true,
-            myLocationEnabled: true,
-            myLocationRenderMode: MyLocationRenderMode.normal,
-            compassEnabled: true,
+            children: [
+              TileLayer(
+                urlTemplate:
+                    'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
+                subdomains: const ['a', 'b', 'c', 'd'],
+                userAgentPackageName: 'ph.taratravel.app',
+                maxZoom: 19,
+              ),
+            ],
           ),
 
           // ── 2. Fixed Center Pin Indicator ───────────────────────────────
@@ -395,7 +309,7 @@ class _MapPinPickerModalState extends State<MapPinPickerModal> {
                             color: AppColors.textPrimary,
                           ),
                           decoration: const InputDecoration(
-                            hintText: 'Search place or city on MapLibre map...',
+                            hintText: 'Search Philippine places...',
                             hintStyle: TextStyle(
                               fontFamily: 'DM Sans',
                               fontSize: 13,
@@ -480,7 +394,7 @@ class _MapPinPickerModalState extends State<MapPinPickerModal> {
             right: 16,
             bottom: 140,
             child: FloatingActionButton.small(
-              heroTag: 'maplibre_pin_my_loc',
+              heroTag: 'flutter_map_pin_my_loc',
               onPressed: _goToMyLocation,
               backgroundColor: Colors.white,
               elevation: 4,

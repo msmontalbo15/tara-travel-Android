@@ -2,7 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/models/itinerary_model.dart';
-import '../../../core/widgets/inputs/map_pin_picker_modal.dart';
+import '../../../core/widgets/inputs/location_picker.dart';
 import '../../../core/utils/currency_utils.dart';
 import '../models/new_trip_model.dart';
 
@@ -251,24 +251,7 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
     _fadeCtrl.forward();
   }
 
-  Future<void> _pickDepartureOnMap() async {
-    final result = await MapPinPickerModal.show(
-      context,
-      initialAddress: _departureCtrl.text.trim(),
-    );
 
-    if (result != null) {
-      setState(() {
-        _departureCtrl.text = result.displayName;
-        _departureLat = result.lat;
-        _departureLng = result.lon;
-        widget.trip.departurePoint = result.displayName;
-        widget.trip.departureLat = result.lat;
-        widget.trip.departureLng = result.lon;
-      });
-      _recalculateSmartEstimate(autoSetDuration: true);
-    }
-  }
 
   void _selectPresetHub(TransportPresetHub hub) {
     setState(() {
@@ -1112,43 +1095,30 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
   }
 
   Widget _buildDepartureField(String label, String hint, TextEditingController ctrl) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(fontFamily: 'DM Sans', fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.muted),
-        ),
-        const SizedBox(height: 6),
-        TextField(
-          controller: ctrl,
-          style: const TextStyle(fontFamily: 'DM Sans', fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.deepEarth),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: const TextStyle(fontFamily: 'DM Sans', fontSize: 12, color: AppColors.muted),
-            filled: true,
-            fillColor: AppColors.surfaceLight,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-            prefixIcon: const Icon(Icons.pin_drop_rounded, color: Color(0xFFEA4335), size: 20),
-            suffixIcon: IconButton(
-              icon: const Icon(Icons.map_rounded, color: AppColors.primary, size: 22),
-              tooltip: 'Select on MapLibre Map',
-              onPressed: _pickDepartureOnMap,
-            ),
-          ),
-          onTap: () {
-            if (ctrl.text.trim().isEmpty) {
-              _pickDepartureOnMap();
-            }
-          },
-          onChanged: (val) {
-            _departureLat = null;
-            _departureLng = null;
-            _recalculateSmartEstimate();
-          },
-        ),
-      ],
+    return LocationPicker(
+      label: label,
+      hint: hint,
+      initialValue: ctrl.text.isNotEmpty ? ctrl.text : null,
+      initialLat: _departureLat,
+      initialLon: _departureLng,
+      onLocationSelected: (loc) {
+        if (loc != null) {
+          ctrl.text = loc.displayName;
+          _departureLat = loc.lat;
+          _departureLng = loc.lon;
+          widget.trip.departurePoint = loc.displayName;
+          widget.trip.departureLat = loc.lat;
+          widget.trip.departureLng = loc.lon;
+        } else {
+          ctrl.clear();
+          _departureLat = null;
+          _departureLng = null;
+          widget.trip.departurePoint = null;
+          widget.trip.departureLat = null;
+          widget.trip.departureLng = null;
+        }
+        _recalculateSmartEstimate(autoSetDuration: true);
+      },
     );
   }
 

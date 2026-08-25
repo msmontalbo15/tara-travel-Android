@@ -19,6 +19,7 @@ import 'widgets/transport_badge.dart';
 import 'widgets/itinerary_map.dart';
 import 'widgets/navigate_route_button.dart';
 import 'widgets/timeline_view.dart';
+import '../../core/providers/group_tracking_provider.dart';
 import 'widgets/day_budget_bar.dart';
 import 'widgets/day_summary_card.dart';
 import 'widgets/smart_suggestion_chips.dart';
@@ -305,7 +306,7 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                                 const SizedBox(width: 10),
                                 // Map view btn
                                 GestureDetector(
-                                  onTap: () => _showMapView(context, currentDay),
+                                  onTap: () => _showMapView(context, currentDay, trip.id),
                                   child: Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
@@ -699,13 +700,13 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
     );
   }
 
-  void _showMapView(BuildContext context, ItineraryDay? day) {
+  void _showMapView(BuildContext context, ItineraryDay? day, String tripId) {
     if (day == null) return;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _MapViewSheet(day: day),
+      builder: (_) => _MapViewSheet(day: day, tripId: tripId),
     );
   }
 
@@ -1165,13 +1166,17 @@ class _VoteButton extends StatelessWidget {
 }
 
 // ── Map View Sheet ───────────────────────────────────────────────────────────
-class _MapViewSheet extends StatelessWidget {
+class _MapViewSheet extends ConsumerWidget {
   final ItineraryDay day;
+  final String tripId;
 
-  const _MapViewSheet({required this.day});
+  const _MapViewSheet({required this.day, required this.tripId});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ridersAsync = ref.watch(groupRidersProvider(tripId));
+    final riders = ridersAsync.value;
+
     return Container(
       height: MediaQuery.of(context).size.height * 0.8,
       decoration: const BoxDecoration(
@@ -1185,18 +1190,36 @@ class _MapViewSheet extends StatelessWidget {
             child: Row(
               children: [
                 const Text('Day Map View', style: TextStyle(fontFamily: 'Playfair Display', fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
+                if (riders != null && riders.isNotEmpty) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: AppColors.greenBright.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(width: 6, height: 6, decoration: const BoxDecoration(color: AppColors.greenBright, shape: BoxShape.circle)),
+                        const SizedBox(width: 4),
+                        Text('${riders.length} Live', style: const TextStyle(fontFamily: 'DM Sans', fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.greenBright)),
+                      ],
+                    ),
+                  ),
+                ],
                 const Spacer(),
                 GestureDetector(onTap: () => Navigator.pop(context), child: const Icon(Icons.close_rounded, color: Colors.white54)),
               ],
             ),
           ),
-          // Google Map
+          // Map
           Expanded(
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 16),
               clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(color: const Color(0xFF1E3A2B), borderRadius: BorderRadius.circular(20)),
-              child: ItineraryMap(day: day),
+              child: ItineraryMap(day: day, riders: riders),
             ),
           ),
           const SizedBox(height: 16),

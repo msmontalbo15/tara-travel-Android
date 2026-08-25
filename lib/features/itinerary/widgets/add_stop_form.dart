@@ -186,9 +186,21 @@ class _AddStopFormState extends State<AddStopForm> {
           ),
           const SizedBox(height: 10),
 
-          // Location
+          // Location with integrated Map Pin Picker & PH search
           LocationPicker(
-            onLocationSelected: (loc) => setState(() => _selectedLocation = loc),
+            onLocationSelected: (loc) {
+              setState(() {
+                _selectedLocation = loc;
+                if (loc != null && _titleCtrl.text.trim().isEmpty) {
+                  final titleGuess =
+                      loc.mainText ?? loc.displayName.split(',').first.trim();
+                  if (titleGuess.isNotEmpty) {
+                    _titleCtrl.text = titleGuess;
+                    _titleError = null;
+                  }
+                }
+              });
+            },
           ),
           const SizedBox(height: 10),
 

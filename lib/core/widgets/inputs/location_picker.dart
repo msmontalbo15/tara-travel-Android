@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:dio/dio.dart';
+import 'package:latlong2/latlong.dart' hide Path;
+import '../../services/philippine_geocoding_service.dart';
 import '../../theme/app_colors.dart';
+import 'map_pin_picker_modal.dart';
 
 class LocationResult {
   final String displayName;
@@ -21,26 +23,19 @@ class LocationResult {
     required this.lon,
   });
 
+  /// Parse from Nominatim JSON.
   factory LocationResult.fromJson(Map<String, dynamic> json) {
-    String name = json['display_name'] ?? json['description'] ?? json['formatted_address'] ?? '';
-    String? main = json['structured_formatting']?['main_text'] as String?;
-    String? secondary = json['structured_formatting']?['secondary_text'] as String?;
+    String name = json['display_name'] ?? '';
 
-    if (main == null && name.isNotEmpty) {
-      final parts = name.split(',');
-      main = parts.first.trim();
-      if (parts.length > 1) {
-        secondary = parts.sublist(1).join(',').trim();
-      }
-    }
+    final parts = name.split(',');
+    String? main = parts.isNotEmpty ? parts.first.trim() : name;
+    String? secondary =
+        parts.length > 1 ? parts.sublist(1).join(',').trim() : null;
 
     double parsedLat = 0.0;
     double parsedLon = 0.0;
 
-    if (json['geometry']?['location'] != null) {
-      parsedLat = (json['geometry']['location']['lat'] as num?)?.toDouble() ?? 0.0;
-      parsedLon = (json['geometry']['location']['lng'] as num?)?.toDouble() ?? 0.0;
-    } else if (json['lat'] != null && json['lon'] != null) {
+    if (json['lat'] != null && json['lon'] != null) {
       parsedLat = double.tryParse(json['lat'].toString()) ?? 0.0;
       parsedLon = double.tryParse(json['lon'].toString()) ?? 0.0;
     }
@@ -54,19 +49,36 @@ class LocationResult {
       lon: parsedLon,
     );
   }
+
+  /// Construct from a [GeocodingResult].
+  factory LocationResult.fromGeocodingResult(GeocodingResult r) {
+    return LocationResult(
+      displayName: r.displayName,
+      mainText: r.mainText,
+      secondaryText: r.secondaryText,
+      lat: r.lat,
+      lon: r.lon,
+    );
+  }
 }
 
 class LocationPicker extends StatefulWidget {
   final String label;
   final String? hint;
   final String? initialValue;
+  final double? initialLat;
+  final double? initialLon;
+  final bool enableMapPin;
   final ValueChanged<LocationResult?> onLocationSelected;
 
   const LocationPicker({
     super.key,
     this.label = 'Location',
-    this.hint = 'Search Google Maps places...',
+    this.hint = 'Search Philippine places...',
     this.initialValue,
+    this.initialLat,
+    this.initialLon,
+    this.enableMapPin = true,
     required this.onLocationSelected,
   });
 
@@ -77,9 +89,9 @@ class LocationPicker extends StatefulWidget {
 class _LocationPickerState extends State<LocationPicker> {
   final TextEditingController _searchCtrl = TextEditingController();
   final FocusNode _focusNode = FocusNode();
-  final Dio _dio = Dio();
   Timer? _debounce;
-  
+  CancelToken? _cancelToken;
+
   List<LocationResult> _results = [];
   bool _isLoading = false;
   bool _showDropdown = false;
@@ -90,6 +102,13 @@ class _LocationPickerState extends State<LocationPicker> {
     super.initState();
     if (widget.initialValue != null && widget.initialValue!.isNotEmpty) {
       _searchCtrl.text = widget.initialValue!;
+      if (widget.initialLat != null && widget.initialLon != null) {
+        _selectedLocation = LocationResult(
+          displayName: widget.initialValue!,
+          lat: widget.initialLat!,
+          lon: widget.initialLon!,
+        );
+      }
     }
     _searchCtrl.addListener(_onSearchChanged);
     _focusNode.addListener(() {
@@ -111,14 +130,16 @@ class _LocationPickerState extends State<LocationPicker> {
     _searchCtrl.dispose();
     _focusNode.dispose();
     _debounce?.cancel();
+    _cancelToken?.cancel('Widget disposed');
     super.dispose();
   }
 
   void _onSearchChanged() {
-    if (_selectedLocation != null && _searchCtrl.text == _selectedLocation!.displayName) {
+    if (_selectedLocation != null &&
+        _searchCtrl.text == _selectedLocation!.displayName) {
       return;
     }
-    
+
     if (_searchCtrl.text.isEmpty) {
       _selectedLocation = null;
       widget.onLocationSelected(null);
@@ -148,99 +169,65 @@ class _LocationPickerState extends State<LocationPicker> {
       _showDropdown = true;
     });
 
-    final apiKey = dotenv.env['EXPO_PUBLIC_GOOGLE_MAPS_API_KEY'] ??
-        dotenv.env['GOOGLE_MAPS_API_KEY'];
+    // Cancel previous in-flight request
+    _cancelToken?.cancel('New query');
+    _cancelToken = CancelToken();
 
     try {
-      if (apiKey != null && apiKey.isNotEmpty) {
-        // ── 1. Official Google Places Autocomplete API (Philippines restricted) ────────────────────
-        final url =
-            'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${Uri.encodeComponent(query)}&components=country:ph&key=$apiKey';
-        final response = await _dio.get(url);
-        if (response.statusCode == 200 && response.data['status'] == 'OK') {
-          final List predictions = response.data['predictions'] ?? [];
-          final results = <LocationResult>[];
-
-          for (final p in predictions.take(5)) {
-            results.add(LocationResult.fromJson(p));
-          }
-
-          if (mounted) {
-            setState(() {
-              _results = results;
-            });
-          }
-          return;
-        }
-      }
-
-      // ── 2. Fallback Nominatim Search (Philippines restricted) ───────
-      final response = await _dio.get(
-        'https://nominatim.openstreetmap.org/search',
-        queryParameters: {
-          'q': query,
-          'format': 'json',
-          'limit': 6,
-          'addressdetails': 1,
-          'countrycodes': 'ph',
-        },
-        options: Options(
-          headers: {
-            'User-Agent': 'TaraTravelApp/1.0',
-          },
-        ),
+      final geocodingResults = await PhilippineGeocodingService.instance.search(
+        query,
+        limit: 6,
+        cancelToken: _cancelToken,
       );
 
-      if (response.statusCode == 200) {
-        final List data = response.data;
-        if (mounted) {
-          setState(() {
-            _results = data.map((json) => LocationResult.fromJson(json)).toList();
-          });
-        }
-      }
-    } catch (e) {
-      debugPrint('[LocationPicker] Google Maps search error: $e');
-    } finally {
       if (mounted) {
         setState(() {
-          _isLoading = false;
+          _results = geocodingResults
+              .map((r) => LocationResult.fromGeocodingResult(r))
+              .toList();
         });
+      }
+    } catch (e) {
+      debugPrint('[LocationPicker] Search error: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
       }
     }
   }
 
   Future<void> _selectLocation(LocationResult location) async {
-    final apiKey = dotenv.env['EXPO_PUBLIC_GOOGLE_MAPS_API_KEY'] ??
-        dotenv.env['GOOGLE_MAPS_API_KEY'];
-
-    LocationResult finalLoc = location;
-
-    // Fetch exact lat/lng via Google Place Details if place_id exists and coordinates are zero
-    if (apiKey != null &&
-        apiKey.isNotEmpty &&
-        location.placeId != null &&
-        (location.lat == 0.0 || location.lon == 0.0)) {
-      try {
-        final detailsUrl =
-            'https://maps.googleapis.com/maps/api/place/details/json?place_id=${location.placeId}&fields=geometry,name,formatted_address&key=$apiKey';
-        final res = await _dio.get(detailsUrl);
-        if (res.statusCode == 200 && res.data['status'] == 'OK') {
-          final result = res.data['result'];
-          finalLoc = LocationResult.fromJson(result);
-        }
-      } catch (e) {
-        debugPrint('[LocationPicker] Place details error: $e');
-      }
-    }
-
     setState(() {
-      _selectedLocation = finalLoc;
-      _searchCtrl.text = finalLoc.displayName;
+      _selectedLocation = location;
+      _searchCtrl.text = location.displayName;
       _showDropdown = false;
     });
     _focusNode.unfocus();
-    widget.onLocationSelected(finalLoc);
+    widget.onLocationSelected(location);
+  }
+
+  Future<void> _openMapPinPicker() async {
+    _focusNode.unfocus();
+    setState(() => _showDropdown = false);
+
+    LatLng? initialPos;
+    if (_selectedLocation != null &&
+        _selectedLocation!.lat != 0.0 &&
+        _selectedLocation!.lon != 0.0) {
+      initialPos = LatLng(_selectedLocation!.lat, _selectedLocation!.lon);
+    } else if (widget.initialLat != null && widget.initialLon != null) {
+      initialPos = LatLng(widget.initialLat!, widget.initialLon!);
+    }
+
+    final result = await MapPinPickerModal.show(
+      context,
+      initialPosition: initialPos,
+      initialAddress: _searchCtrl.text.isNotEmpty ? _searchCtrl.text : null,
+    );
+
+    if (result != null && mounted) {
+      _selectLocation(result);
+    }
   }
 
   @override
@@ -248,14 +235,45 @@ class _LocationPickerState extends State<LocationPicker> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          widget.label,
-          style: const TextStyle(
-            fontFamily: 'DM Sans',
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: AppColors.deepEarth,
-          ),
+        Row(
+          children: [
+            Text(
+              widget.label,
+              style: const TextStyle(
+                fontFamily: 'DM Sans',
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.deepEarth,
+              ),
+            ),
+            const Spacer(),
+            if (widget.enableMapPin)
+              InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: _openMapPinPicker,
+                child: const Padding(
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.pin_drop_rounded,
+                          size: 14, color: AppColors.primary),
+                      SizedBox(width: 4),
+                      Text(
+                        'Pin on Map',
+                        style: TextStyle(
+                          fontFamily: 'DM Sans',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
         ),
         const SizedBox(height: 6),
         Stack(
@@ -274,44 +292,62 @@ class _LocationPickerState extends State<LocationPicker> {
                   color: AppColors.warmMuted.withValues(alpha: 0.6),
                   fontSize: 14,
                 ),
-                prefixIcon: const Icon(Icons.place_outlined, size: 20, color: Color(0xFFEA4335)),
-                suffixIcon: _isLoading 
-                    ? const Padding(
+                prefixIcon: const Icon(Icons.place_outlined,
+                    size: 20, color: AppColors.primary),
+                suffixIcon: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (_isLoading)
+                      const Padding(
                         padding: EdgeInsets.all(12.0),
                         child: SizedBox(
-                          width: 16, height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: AppColors.primary),
                         ),
                       )
-                    : (_searchCtrl.text.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear_rounded, size: 20, color: AppColors.muted),
-                            onPressed: () {
-                              _searchCtrl.clear();
-                              _selectedLocation = null;
-                              widget.onLocationSelected(null);
-                            },
-                          )
-                        : null),
+                    else if (_searchCtrl.text.isNotEmpty)
+                      IconButton(
+                        icon: const Icon(Icons.clear_rounded,
+                            size: 18, color: AppColors.muted),
+                        onPressed: () {
+                          _searchCtrl.clear();
+                          _selectedLocation = null;
+                          widget.onLocationSelected(null);
+                        },
+                      ),
+                    if (widget.enableMapPin)
+                      IconButton(
+                        tooltip: 'Choose pin on map',
+                        icon: const Icon(Icons.map_outlined,
+                            size: 20, color: AppColors.primary),
+                        onPressed: _openMapPinPicker,
+                      ),
+                  ],
+                ),
                 filled: true,
                 fillColor: Colors.white,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: const BorderSide(color: AppColors.cardBorder),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppColors.cardBorder, width: 0.8),
+                  borderSide:
+                      const BorderSide(color: AppColors.cardBorder, width: 0.8),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                  borderSide:
+                      const BorderSide(color: AppColors.primary, width: 1.5),
                 ),
               ),
             ),
-            
-            // Google Maps Recommended Places Dropdown
+
+            // Philippines Search Dropdown
             if (_showDropdown && (_results.isNotEmpty || _isLoading))
               Positioned(
                 top: 60,
@@ -322,7 +358,7 @@ class _LocationPickerState extends State<LocationPicker> {
                   borderRadius: BorderRadius.circular(16),
                   shadowColor: Colors.black.withValues(alpha: 0.15),
                   child: Container(
-                    constraints: const BoxConstraints(maxHeight: 260),
+                    constraints: const BoxConstraints(maxHeight: 290),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
@@ -331,9 +367,10 @@ class _LocationPickerState extends State<LocationPicker> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Google Maps Header Banner
+                        // OpenStreetMap Header Banner
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 8),
                           decoration: const BoxDecoration(
                             color: Color(0xFFF8F9FA),
                             borderRadius: BorderRadius.only(
@@ -343,10 +380,11 @@ class _LocationPickerState extends State<LocationPicker> {
                           ),
                           child: const Row(
                             children: [
-                              Icon(Icons.map_rounded, size: 14, color: Color(0xFFEA4335)),
+                              Icon(Icons.public_rounded,
+                                  size: 14, color: AppColors.primary),
                               SizedBox(width: 6),
                               Text(
-                                'Recommended by Google Maps',
+                                'Philippine Places (OpenStreetMap)',
                                 style: TextStyle(
                                   fontFamily: 'DM Sans',
                                   fontSize: 11,
@@ -359,6 +397,65 @@ class _LocationPickerState extends State<LocationPicker> {
                           ),
                         ),
                         const Divider(height: 1, color: AppColors.cardBorder),
+
+                        // Pin on Map Quick Action
+                        if (widget.enableMapPin) ...[
+                          InkWell(
+                            onTap: _openMapPinPicker,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 10),
+                              color: const Color(0xFFFDF7F5),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary
+                                          .withValues(alpha: 0.15),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.pin_drop_rounded,
+                                      color: AppColors.primary,
+                                      size: 16,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  const Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Set pin directly on map',
+                                          style: TextStyle(
+                                            fontFamily: 'DM Sans',
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.primary,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Drag pin and pinpoint exact location',
+                                          style: TextStyle(
+                                            fontFamily: 'DM Sans',
+                                            fontSize: 11,
+                                            color: AppColors.darkAccent,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const Icon(Icons.arrow_forward_ios_rounded,
+                                      size: 12, color: AppColors.primary),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const Divider(
+                              height: 1, color: AppColors.cardBorder),
+                        ],
 
                         // Results List
                         Flexible(
@@ -374,12 +471,12 @@ class _LocationPickerState extends State<LocationPicker> {
                                           height: 16,
                                           child: CircularProgressIndicator(
                                             strokeWidth: 2,
-                                            color: Color(0xFFEA4335),
+                                            color: AppColors.primary,
                                           ),
                                         ),
                                         SizedBox(width: 10),
                                         Text(
-                                          'Searching Google Maps...',
+                                          'Searching Philippine places...',
                                           style: TextStyle(
                                             fontFamily: 'DM Sans',
                                             fontSize: 13,
@@ -394,24 +491,29 @@ class _LocationPickerState extends State<LocationPicker> {
                                   padding: EdgeInsets.zero,
                                   shrinkWrap: true,
                                   itemCount: _results.length,
-                                  separatorBuilder: (_, __) => const Divider(height: 1, color: AppColors.cardBorder),
+                                  separatorBuilder: (_, __) => const Divider(
+                                      height: 1, color: AppColors.cardBorder),
                                   itemBuilder: (context, index) {
                                     final res = _results[index];
-                                    final mainTitle = res.mainText ?? res.displayName;
+                                    final mainTitle =
+                                        res.mainText ?? res.displayName;
                                     final subTitle = res.secondaryText;
 
                                     return ListTile(
                                       dense: true,
-                                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                              horizontal: 14, vertical: 4),
                                       leading: Container(
                                         padding: const EdgeInsets.all(6),
                                         decoration: BoxDecoration(
-                                          color: const Color(0xFFEA4335).withValues(alpha: 0.1),
+                                          color: AppColors.primary
+                                              .withValues(alpha: 0.1),
                                           shape: BoxShape.circle,
                                         ),
                                         child: const Icon(
                                           Icons.location_on_rounded,
-                                          color: Color(0xFFEA4335),
+                                          color: AppColors.primary,
                                           size: 16,
                                         ),
                                       ),
@@ -426,13 +528,15 @@ class _LocationPickerState extends State<LocationPicker> {
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
-                                      subtitle: subTitle != null && subTitle.isNotEmpty
+                                      subtitle: subTitle != null &&
+                                              subTitle.isNotEmpty
                                           ? Text(
                                               subTitle,
                                               style: TextStyle(
                                                 fontFamily: 'DM Sans',
                                                 fontSize: 11,
-                                                color: AppColors.warmMuted.withValues(alpha: 0.9),
+                                                color: AppColors.warmMuted
+                                                    .withValues(alpha: 0.9),
                                               ),
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,

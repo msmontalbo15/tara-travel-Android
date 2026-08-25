@@ -34,6 +34,7 @@
 | **`IMP-042`** | 2026-08-25 | UI / Responsiveness | Mobile Resolution & Layout Responsiveness Hardening across 7 core screens. |
 | **`IMP-043`** | 2026-08-25 | Member Lifecycle / Notifications | Organizer approval workflow, member removal, voluntary trip departure, and automated notification triggers. |
 | **`IMP-047`** | 2026-08-25 | Itinerary / Supabase Sync | Permission-gated Itinerary Day Deletion (Organizers & Navigators), multi-day check, batch stop deletion (`deleteStops`), and remote day re-indexing synchronization. |
+| **`IMP-048`** | 2026-08-26 | Maps & Live Tracking | Complete open-source migration to `flutter_map` (OSM), PostGIS live tracking (`004_postgis_live_tracking.sql`), `LocationTrackingService` with offline queue, `GroupRideSyncService` with exponential backoff, and Philippine `Nominatim` geocoding. |
 
 ---
 
@@ -550,6 +551,48 @@
     - **Clear Day**: Executes batch `deleteStops` in Supabase to completely remove all stops for the targeted day.
 - **Verification**:
   - `flutter analyze` → 0 issues (exit code 0).
+
+
+### `IMP-048` · Open-Source Map Provider & PostGIS Real-Time Tracking Migration
+- **Date**: August 26, 2026
+- **Target Files**:
+  - [pubspec.yaml](file:///d:/Spencer/Downloads/tara_travel/pubspec.yaml) **[MODIFIED]**
+  - [supabase/migrations/004_postgis_live_tracking.sql](file:///d:/Spencer/Downloads/tara_travel/supabase/migrations/004_postgis_live_tracking.sql) **[NEW]**
+  - [lib/core/services/philippine_geocoding_service.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/services/philippine_geocoding_service.dart) **[NEW]**
+  - [lib/core/services/location_tracking_service.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/services/location_tracking_service.dart) **[NEW]**
+  - [lib/core/services/group_ride_sync_service.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/services/group_ride_sync_service.dart) **[NEW]**
+  - [lib/core/providers/group_tracking_provider.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/providers/group_tracking_provider.dart) **[NEW]**
+  - [lib/features/itinerary/widgets/itinerary_map.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/itinerary_map.dart) **[MODIFIED]**
+  - [lib/core/widgets/inputs/location_picker.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/widgets/inputs/location_picker.dart) **[MODIFIED]**
+  - [lib/core/widgets/inputs/map_pin_picker_modal.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/widgets/inputs/map_pin_picker_modal.dart) **[MODIFIED]**
+  - [lib/features/itinerary/widgets/navigate_route_button.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/navigate_route_button.dart) **[MODIFIED]**
+  - [lib/features/itinerary/itinerary_screen.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/itinerary_screen.dart) **[MODIFIED]**
+  - [MEMORY.md](file:///d:/Spencer/Downloads/tara_travel/MEMORY.md) **[MODIFIED]**
+- **Scope & Objectives**:
+  - **100% Free Open-Source Map Provider**:
+    - Purged `google_maps_flutter` and `maplibre_gl` dependencies and API keys.
+    - Integrated `flutter_map: ^7.0.2` and `latlong2: ^0.9.1` with OpenStreetMap / CartoDB tiles.
+    - Added custom Flutter widget markers for stops and animated group rider avatars with heading orientation and speed badges.
+    - Implemented polyline route overlays and interactive camera controls.
+  - **PostGIS Realtime Spatial Sync**:
+    - Created migration `004_postgis_live_tracking.sql` with PostGIS extension, `GEOMETRY(Point, 4326)` column, GiST spatial index, and `update_member_location` RPC.
+    - Built `LocationTrackingService` streaming high-accuracy GPS telemetry (lat, lng, heading, speed, altitude) synced to Supabase every 3 seconds.
+  - **Network Resilience & Mountain Pass Offline Handling**:
+    - Implemented local FIFO queue for outgoing GPS pings when connection drops in rural/mountainous Philippine terrain, automatically bulk-flushing once reconnected.
+    - Built `GroupRideSyncService` wrapping Supabase Realtime with exponential backoff auto-reconnection (1s → 30s) and WebSocket disconnect handling.
+    - Handled offline group riders by retaining last-known locations with a visual "Signal Lost" badge and dimmed opacity instead of dropping markers.
+  - **Philippine-Bounded Nominatim Geocoding**:
+    - Built `PhilippineGeocodingService` with strict PH bounding box (`viewbox=116.9298,4.5872,126.6053,21.1221`) and `countrycodes=ph`.
+    - Integrated LRU caching and `CancelToken` debounce cancellation for forward search and reverse geocoding.
+    - Refactored `LocationPicker` and `MapPinPickerModal` to use the open geocoder without proprietary API keys.
+  - **Uniform Map Pin Picker Standardization**:
+    - Embedded direct "Pin on Map" interactive header button, text field suffix icon, and dropdown quick-launch into the universal `LocationPicker`.
+    - Refactored `DetailsStep` (Destination), `TransportStep` (Departure Point), `EditTripSheet` (Destination), `AddStopForm` (Stop Location), and `EditStopForm` (Stop Location) onto the unified `LocationPicker` standard.
+    - Removed redundant manual Autocomplete widgets, separate HTTP callers, and ad-hoc map button listeners across the codebase.
+- **Verification**:
+  - `flutter pub get` → clean (exit code 0).
+  - `flutter analyze` → 0 issues (exit code 0).
+
 
 
 

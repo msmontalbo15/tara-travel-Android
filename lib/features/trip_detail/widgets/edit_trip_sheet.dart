@@ -1,9 +1,7 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import '../../../core/constants/trip_types.dart';
 import '../../../core/models/trip_model.dart';
@@ -14,7 +12,6 @@ import '../../../core/providers/itinerary_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/inputs/app_text_field.dart';
 import '../../../core/widgets/inputs/location_picker.dart';
-import '../../../core/widgets/inputs/map_pin_picker_modal.dart';
 
 class EditTripSheet extends ConsumerStatefulWidget {
   final TripModel trip;
@@ -50,10 +47,6 @@ class _EditTripSheetState extends ConsumerState<EditTripSheet> {
   String? _destError;
   String? _dateError;
 
-  List<LocationResult> _placePredictions = [];
-  bool _isLoadingPlaces = false;
-  Timer? _debounceTimer;
-
   @override
   void initState() {
     super.initState();
@@ -71,71 +64,13 @@ class _EditTripSheetState extends ConsumerState<EditTripSheet> {
 
   @override
   void dispose() {
-    _debounceTimer?.cancel();
     _nameController.dispose();
     _destController.dispose();
     _budgetController.dispose();
     super.dispose();
   }
 
-  // Location search engine matching CreateTripFlow
-  Future<void> _fetchPlaces(String query) async {
-    _debounceTimer?.cancel();
-    final cleanQuery = query.trim();
 
-    if (cleanQuery.isEmpty) {
-      if (mounted) setState(() => _placePredictions = []);
-      return;
-    }
-
-    _debounceTimer = Timer(const Duration(milliseconds: 300), () async {
-      if (!mounted) return;
-      setState(() => _isLoadingPlaces = true);
-
-      try {
-        final uri = Uri.parse(
-          'https://nominatim.openstreetmap.org/search?q=${Uri.encodeComponent(cleanQuery)}&format=json&limit=6&addressdetails=1&countrycodes=ph',
-        );
-        final res = await http.get(
-          uri,
-          headers: {'User-Agent': 'TaraTravelApp/1.0 (MapLibre Search)'},
-        );
-
-        if (res.statusCode == 200) {
-          final List data = json.decode(res.body);
-          final predictions = data.map((e) => LocationResult.fromJson(e)).toList();
-
-          if (mounted) {
-            setState(() {
-              _placePredictions = predictions;
-              _isLoadingPlaces = false;
-            });
-          }
-        } else {
-          if (mounted) setState(() => _isLoadingPlaces = false);
-        }
-      } catch (_) {
-        if (mounted) setState(() => _isLoadingPlaces = false);
-      }
-    });
-  }
-
-  Future<void> _openMapPinPicker([TextEditingController? textEditingController]) async {
-    final result = await MapPinPickerModal.show(
-      context,
-      initialAddress: _destController.text,
-    );
-
-    if (result != null) {
-      setState(() {
-        _destController.text = result.displayName;
-        if (textEditingController != null) {
-          textEditingController.text = result.displayName;
-        }
-        _destError = null;
-      });
-    }
-  }
 
   Future<void> _pickDateRange() async {
     final picked = await showDateRangePicker(
@@ -297,229 +232,34 @@ class _EditTripSheetState extends ConsumerState<EditTripSheet> {
                       ),
                       const SizedBox(height: 18),
 
-                      // 2. Destination with Pin on Map + MapLibre Suggestions
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Destination',
-                            style: TextStyle(
-                              fontFamily: 'DM Sans',
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.deepEarth,
-                            ),
-                          ),
-                          InkWell(
-                            onTap: () => _openMapPinPicker(_destController),
-                            borderRadius: BorderRadius.circular(8),
-                            child: const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.pin_drop_rounded, size: 14, color: Color(0xFFEA4335)),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    'Pin on Map',
-                                    style: TextStyle(
-                                      fontFamily: 'DM Sans',
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                      color: Color(0xFFEA4335),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
+                      // 2. Destination
+                      LocationPicker(
+                        label: 'Destination',
+                        hint: 'Search destination in the Philippines...',
+                        initialValue: _destController.text.isNotEmpty ? _destController.text : null,
+                        onLocationSelected: (loc) {
+                          if (loc != null) {
+                            _destController.text = loc.displayName;
+                            if (_destError != null) setState(() => _destError = null);
+                          } else {
+                            _destController.clear();
+                          }
+                        },
                       ),
-                      const SizedBox(height: 8),
-                      Autocomplete<LocationResult>(
-                        optionsBuilder: (TextEditingValue textEditingValue) {
-                          if (textEditingValue.text.isEmpty) {
-                            return const Iterable<LocationResult>.empty();
-                          }
-                          return _placePredictions;
-                        },
-                        displayStringForOption: (LocationResult option) => option.displayName,
-                        onSelected: (LocationResult selection) {
-                          _destController.text = selection.displayName;
-                          if (_destError != null) setState(() => _destError = null);
-                        },
-                        fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
-                          if (textEditingController.text != _destController.text && !focusNode.hasFocus) {
-                            textEditingController.text = _destController.text;
-                          }
-
-                          textEditingController.addListener(() {
-                            if (focusNode.hasFocus) {
-                              _destController.text = textEditingController.text;
-                              if (_destError != null) setState(() => _destError = null);
-                              _fetchPlaces(textEditingController.text);
-                            }
-                          });
-
-                          return TextField(
-                            controller: textEditingController,
-                            focusNode: focusNode,
+                      if (_destError != null) ...[
+                        const SizedBox(height: 6),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 12),
+                          child: Text(
+                            _destError!,
                             style: const TextStyle(
                               fontFamily: 'DM Sans',
-                              fontSize: 15,
-                              color: AppColors.textPrimary,
+                              fontSize: 12,
+                              color: AppColors.red,
                             ),
-                            decoration: InputDecoration(
-                              hintText: 'Search destination on MapLibre...',
-                              hintStyle: const TextStyle(
-                                fontFamily: 'DM Sans',
-                                fontSize: 15,
-                                color: AppColors.muted,
-                              ),
-                              errorText: _destError,
-                              prefixIcon: const Icon(
-                                Icons.location_on_rounded,
-                                color: AppColors.primary,
-                                size: 20,
-                              ),
-                              suffixIcon: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  if (_isLoadingPlaces)
-                                    Container(
-                                      width: 18,
-                                      height: 18,
-                                      margin: const EdgeInsets.only(right: 10),
-                                      child: const CircularProgressIndicator(
-                                        strokeWidth: 2.2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-                                      ),
-                                    ),
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.map_rounded,
-                                      color: Color(0xFFEA4335),
-                                      size: 20,
-                                    ),
-                                    tooltip: 'Pin location on Map',
-                                    onPressed: () => _openMapPinPicker(textEditingController),
-                                  ),
-                                ],
-                              ),
-                              filled: true,
-                              fillColor: AppColors.surfaceLight,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(16),
-                                borderSide: BorderSide.none,
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 16,
-                              ),
-                            ),
-                          );
-                        },
-                        optionsViewBuilder: (context, onSelected, options) {
-                          return Align(
-                            alignment: Alignment.topLeft,
-                            child: Material(
-                              elevation: 6.0,
-                              borderRadius: BorderRadius.circular(16),
-                              shadowColor: Colors.black.withValues(alpha: 0.15),
-                              child: Container(
-                                width: MediaQuery.of(context).size.width - 40,
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: AppColors.cardBorder),
-                                ),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                      decoration: const BoxDecoration(
-                                        color: Color(0xFFF8F9FA),
-                                        borderRadius: BorderRadius.only(
-                                          topLeft: Radius.circular(16),
-                                          topRight: Radius.circular(16),
-                                        ),
-                                      ),
-                                      child: const Row(
-                                        children: [
-                                          Icon(Icons.map_rounded, size: 14, color: AppColors.primary),
-                                          SizedBox(width: 6),
-                                          Text(
-                                            'Place Suggestions',
-                                            style: TextStyle(
-                                              fontFamily: 'DM Sans',
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w700,
-                                              color: Color(0xFF5F6368),
-                                              letterSpacing: 0.2,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const Divider(height: 1, color: AppColors.cardBorder),
-                                    Flexible(
-                                      child: ListView.separated(
-                                        padding: EdgeInsets.zero,
-                                        shrinkWrap: true,
-                                        itemCount: options.length,
-                                        separatorBuilder: (_, __) =>
-                                            const Divider(height: 1, color: AppColors.cardBorder),
-                                        itemBuilder: (BuildContext context, int index) {
-                                          final LocationResult option = options.elementAt(index);
-                                          return ListTile(
-                                            dense: true,
-                                            leading: Container(
-                                              padding: const EdgeInsets.all(6),
-                                              decoration: BoxDecoration(
-                                                color: AppColors.primary.withValues(alpha: 0.1),
-                                                shape: BoxShape.circle,
-                                              ),
-                                              child: const Icon(
-                                                Icons.location_on_rounded,
-                                                color: AppColors.primary,
-                                                size: 16,
-                                              ),
-                                            ),
-                                            title: Text(
-                                              option.mainText ?? option.displayName,
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: const TextStyle(
-                                                fontFamily: 'DM Sans',
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.w600,
-                                                color: AppColors.textPrimary,
-                                              ),
-                                            ),
-                                            subtitle: option.secondaryText != null
-                                                ? Text(
-                                                    option.secondaryText!,
-                                                    maxLines: 1,
-                                                    overflow: TextOverflow.ellipsis,
-                                                    style: const TextStyle(
-                                                      fontFamily: 'DM Sans',
-                                                      fontSize: 11,
-                                                      color: AppColors.muted,
-                                                    ),
-                                                  )
-                                                : null,
-                                            onTap: () => onSelected(option),
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 18),
 
                       // 3. Travel Dates Picker (Unified layout)
