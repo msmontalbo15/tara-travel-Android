@@ -228,7 +228,7 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
         final weatherAsync = ref.watch(tripWeatherProvider(trip.id));
         final weatherList = weatherAsync.value;
         final currentMember = ref.watch(currentMemberProvider(trip));
-        final canManageItinerary = currentMember?.canManageItinerary ?? true;
+        final canManageItinerary = currentMember?.canManageItinerary ?? false;
 
         return itineraryAsync.when(
           data: (itineraryState) {
@@ -407,7 +407,21 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                             activeIndex: activeDay,
                             weather: weatherList,
                             onTap: (i) => ref.read(ref.read(itineraryProvider(trip.id)).notifier).setActiveDay(i),
-                            onAddDay: canManageItinerary ? () => ref.read(ref.read(itineraryProvider(trip.id)).notifier).addDay() : null,
+                            onAddDay: canManageItinerary
+                                ? () async {
+                                    final newDay = await ref.read(ref.read(itineraryProvider(trip.id)).notifier).addDay();
+                                    if (context.mounted && newDay != null) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Added Day ${newDay.dayNumber} (${DateFormat('MMM d').format(newDay.date)}) to itinerary! 🗓️'),
+                                          backgroundColor: AppColors.green,
+                                          behavior: SnackBarBehavior.floating,
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                        ),
+                                      );
+                                    }
+                                  }
+                                : null,
                           ),
                       ],
                     ),

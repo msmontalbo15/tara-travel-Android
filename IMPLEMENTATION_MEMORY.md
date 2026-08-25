@@ -33,6 +33,7 @@
 | **`IMP-041`** | 2026-08-25 | Provider / State | Active Trip Archived Fallback Guard in `activeTripProvider`. |
 | **`IMP-042`** | 2026-08-25 | UI / Responsiveness | Mobile Resolution & Layout Responsiveness Hardening across 7 core screens. |
 | **`IMP-043`** | 2026-08-25 | Member Lifecycle / Notifications | Organizer approval workflow, member removal, voluntary trip departure, and automated notification triggers. |
+| **`IMP-047`** | 2026-08-25 | Itinerary / Supabase Sync | Permission-gated Itinerary Day Deletion (Organizers & Navigators), multi-day check, batch stop deletion (`deleteStops`), and remote day re-indexing synchronization. |
 
 ---
 
@@ -447,38 +448,108 @@
   - **Dynamic Budget & State Robustness**:
     - Replaced hardcoded `tripBudget / 7` with dynamic `tripBudget / totalDaysCount`.
     - Added bounds-safe fallback to `days.first` if `activeDay` index exceeds the current day count.
-    - Updated `EditTripSheet` to invalidate `itineraryProvider(widget.trip.id)` whenever trip dates are updated.
-- **Verification**:
-  - `flutter analyze` → 0 issues (exit code 0).
+| **`IMP-045`** | 2026-08-25 | Comprehensive Itinerary Power Suite | Transit conflict detection, live roll call sheet, 1-tap cost-to-expense, and day schedule manipulation. |
+| **`IMP-046`** | 2026-08-25 | Multi-Member Assignment Suite | Multi-member assignments on packing items & itinerary stops, batch role assignments, and multi-member expense splitting. |
+| **`IMP-047`** | 2026-08-25 | Itinerary Functional Add Day & Date Extension | Fully functional Add Day action via DayStrip (+ Day) and DayActionsSheet, with dynamic date calculation and trip end_date auto-extension. |
 
 ---
 
-### `IMP-045` · Comprehensive Itinerary Power Suite (Transit Conflicts, Roll Call, Cost-to-Expense, Day Shift & Duplication)
+## 🔍 Detailed Implementation History
+
+### `IMP-047` · Itinerary Functional Add Day & Date Extension
 - **Date**: August 25, 2026
 - **Target Files**:
-  - [lib/features/itinerary/utils/transit_conflict_helper.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/utils/transit_conflict_helper.dart) **[NEW]**
-  - [lib/features/itinerary/widgets/inter_stop_transit_badge.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/inter_stop_transit_badge.dart) **[NEW]**
-  - [lib/features/itinerary/widgets/roll_call_sheet.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/roll_call_sheet.dart) **[NEW]**
-  - [lib/features/itinerary/widgets/day_actions_sheet.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/day_actions_sheet.dart) **[NEW]**
-  - [lib/features/itinerary/widgets/stop_card.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/stop_card.dart) **[MODIFIED]**
-  - [lib/features/budget/widgets/add_expense_form.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/budget/widgets/add_expense_form.dart) **[MODIFIED]**
   - [lib/core/providers/itinerary_provider.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/providers/itinerary_provider.dart) **[MODIFIED]**
   - [lib/features/itinerary/itinerary_screen.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/itinerary_screen.dart) **[MODIFIED]**
+  - [lib/features/itinerary/widgets/day_actions_sheet.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/day_actions_sheet.dart) **[MODIFIED]**
+  - [lib/features/itinerary/widgets/day_strip.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/day_strip.dart) **[MODIFIED]**
   - [MEMORY.md](file:///d:/Spencer/Downloads/tara_travel/MEMORY.md) **[MODIFIED]**
 - **Scope & Objectives**:
-  - **Inter-Stop Transit & Conflict Engine**:
-    - Built `TransitConflictHelper` with Haversine distance, travel time estimates (walking, driving, transit), schedule collision detection, and tight buffer warnings (<15 min transfer time).
-    - Added `InterStopTransitBadge` rendering visual connector line with transit time/distance and amber/red conflict pills between consecutive stops.
-  - **1-Tap Convert Stop Cost to Trip Expense**:
-    - Updated `AddExpenseForm` to support initial values (`initialDescription`, `initialAmount`, `initialCategory`, `initialDate`, `initialPayerId`).
-    - Added 1-tap "Expense" buttons in `StopCard` and `_StopDetailSheet` pre-filling title, estimated cost, category, and date directly into budget system.
-  - **Live Companion Roll Call**:
-    - Created `RollCallSheet` enabling trip organizers to check in/out members on individual itinerary stops with 1-tap Select All and individual avatar rows.
-    - Added `updateCheckedInMembers` method in `ItineraryNotifier`.
-    - Rendered presence count pills and avatar stacks on `StopCard`.
-  - **Day Management & Schedule Shifting**:
-    - Implemented `shiftDaySchedule` (+30m, +1h, -30m, -1h), `duplicateDay`, `moveStopToDay`, and `deleteDay` in `ItineraryNotifier`.
-    - Created `DayActionsSheet` accessible via top header "Actions" button.
+  - **Dynamic Add Day Engine**:
+    - Implemented `ItineraryNotifier.addDay({DateTime? customDate})` returning the newly created `ItineraryDay`.
+    - Automatically calculates next day number (`days.length + 1`) and next calendar date (+1 day from last day, or trip `fromDate`).
+    - If the newly appended day exceeds `trip.toDate`, automatically updates `trip.toDate` in Supabase (`trips` table) and invalidates `activeTripProvider` / `allTripsProvider`.
+    - Automatically shifts `activeDay` focus to the newly added day.
+  - **User Experience & Feedback**:
+    - Wired `DayStrip` "+ Day" button to call `addDay()` with informative toast (`Added Day N (MMM d) to itinerary! 🗓️`).
+    - Added "Add New Day" action tile inside `DayActionsSheet`.
 - **Verification**:
   - `flutter analyze` → 0 issues (exit code 0).
+
+
+### `IMP-046` · Multiple Member Assignment Suite (Packing, Itinerary, Roles, Expense Splitting)
+- **Date**: August 25, 2026
+- **Target Files**:
+  - [lib/core/widgets/multi_member_picker_sheet.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/widgets/multi_member_picker_sheet.dart) **[NEW]**
+  - [lib/core/models/packing_model.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/models/packing_model.dart) **[MODIFIED]**
+  - [lib/core/models/itinerary_model.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/models/itinerary_model.dart) **[MODIFIED]**
+  - [lib/core/providers/packing_provider.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/providers/packing_provider.dart) **[MODIFIED]**
+  - [lib/features/packing/widgets/member_assignment_sheet.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/packing/widgets/member_assignment_sheet.dart) **[MODIFIED]**
+  - [lib/features/packing/packing_screen.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/packing/packing_screen.dart) **[MODIFIED]**
+  - [lib/features/itinerary/widgets/add_stop_form.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/add_stop_form.dart) **[MODIFIED]**
+  - [lib/features/itinerary/widgets/edit_stop_form.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/edit_stop_form.dart) **[MODIFIED]**
+  - [lib/features/itinerary/widgets/stop_card.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/stop_card.dart) **[MODIFIED]**
+  - [lib/features/members/members_screen.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/members/members_screen.dart) **[MODIFIED]**
+  - [lib/features/budget/widgets/add_expense_form.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/budget/widgets/add_expense_form.dart) **[MODIFIED]**
+  - [MEMORY.md](file:///d:/Spencer/Downloads/tara_travel/MEMORY.md) **[MODIFIED]**
+- **Scope & Objectives**:
+  - **Shared Multi-Member Picker Component**:
+    - Created `MultiMemberPickerSheet` with interactive checkboxes, "Select All / Clear All" toggle, unassigned option, and reactive `onConfirm` callback.
+    - Created `MemberAvatarStack` helper widget to visually stack multi-member profile badges with `+N` overflow indicator.
+  - **Packing Items Multi-Assignment**:
+    - Expanded `PackingItem` model to store `assignedMemberIds: List<String>`.
+    - Rewrote `MemberAssignmentSheet` to utilize `MultiMemberPickerSheet`.
+    - Updated `PackingNotifier.assignMembers()` and packing filter logic.
+    - Rendered stacked member avatars in `_PackingItemRow`.
+  - **Itinerary Stops Multi-Lead Assignment**:
+    - Updated `ItineraryStop` model with `assignedMemberIds: List<String>`.
+    - Updated `AddStopForm` and `EditStopForm` with toggleable multi-member chips.
+    - Updated `StopCard` to render `MemberAvatarStack` and pluralized lead labels (`N leads`).
+  - **Batch Role Assignment for Organizers**:
+    - Added "Batch Assign" header action in `MembersScreen`.
+    - Implemented `_BatchRoleEditorSheet` allowing organizers to apply multiple roles across selected members at once.
+  - **Multi-Member Expense Split Calculator**:
+    - Integrated multi-member "Split With" toggle chips into `AddExpenseForm`.
+    - Added live calculation badge displaying `₱XX.XX / person (N travelers)`.
+- **Verification**:
+  - `flutter analyze` → 0 issues (exit code 0).
+
+
+### `IMP-047` · Itinerary Day Deletion & Supabase Synchronization
+- **Date**: August 25, 2026
+- **Target Files**:
+  - [lib/core/repositories/itinerary_repository.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/repositories/itinerary_repository.dart) **[MODIFIED]**
+  - [lib/core/providers/itinerary_provider.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/providers/itinerary_provider.dart) **[MODIFIED]**
+  - [lib/features/itinerary/itinerary_screen.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/itinerary_screen.dart) **[MODIFIED]**
+  - [lib/features/itinerary/widgets/add_stop_form.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/add_stop_form.dart) **[MODIFIED]**
+  - [lib/features/itinerary/widgets/day_actions_sheet.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/day_actions_sheet.dart) **[VERIFIED]**
+  - [MEMORY.md](file:///d:/Spencer/Downloads/tara_travel/MEMORY.md) **[MODIFIED]**
+- **Scope & Objectives**:
+  - **Permission Enforcement**:
+    - Enforced `canManageItinerary` check (`isOrganizer || isNavigator`) with a strict `false` fallback in `ItineraryScreen`.
+    - Protected `DayActionsSheet` and "Delete Day" actions from non-privileged members.
+  - **Multi-Day Guard**:
+    - Guarded day deletion so trips with only 1 day cannot delete their remaining day (`allDays.length > 1`).
+  - **Supabase Schema Alignment & UUID Validation**:
+    - Replaced legacy `'new_timestamp'` ID generation in `AddStopForm` with standard `const Uuid().v4()` satisfying PostgreSQL `uuid` type constraints.
+    - Added `_ensureUuid` and `_isValidUuid` in `ItineraryRepository.saveItineraryDay` to ensure all row IDs and `assigned_user_id` foreign keys strictly conform to PostgreSQL UUID requirements.
+    - Aligned check constraints for `type` (`hotel`, `activity`, `food`, `transport`, `custom`) and `status` (`planned`, `arrived`, `completed`, `skipped`).
+  - **Cost Sanitization & Location Input Fallback**:
+    - Fixed `double.tryParse` failure in `AddStopForm` and `EditStopForm` caused by `CurrencyInputFormatter` comma formatting (e.g. `1,000` -> `double.tryParse` was evaluating to `null`).
+    - Added `initialValue` support to `LocationPicker` for pre-populating existing locations in `EditStopForm`.
+    - Added fallback text capture in `LocationPicker` so manual/custom typed addresses are captured and saved to Supabase even when a dropdown place prediction is not tapped.
+  - **Full 4-Step Supabase Synchronization for Day Deletion**:
+    - **Step 1**: Batch deleted all stops in the deleted day via `deleteStops`.
+    - **Step 2**: Re-indexed remaining days (`day_number = 1..N`) and updated their calendar dates consecutively.
+    - **Step 3**: Purged any orphan stops beyond the new total day count via `deleteStopsBeyondDay`.
+    - **Step 4**: Shortened `end_date` in the `trips` table in Supabase via `tripRepo.updateTrip()` and invalidated `activeTripProvider` / `allTripsProvider`, preventing deleted days from reappearing as empty placeholder days.
+  - **Itinerary Quick Actions Supabase Synchronization**:
+    - **Duplicate Day**: Generates RFC4122 v4 UUIDs for all duplicated stops, appends the new day, and extends `end_date` in Supabase `trips` table when crossing the trip boundary.
+    - **Move Stop to Another Day**: Synchronizes both source and destination days (`saveItineraryDay`) to ensure updated `day_number` and `sort_order` are immediately persisted.
+    - **Shift Schedule**: Batch updates `time_start` and `time_end` across the day's stops and persists to Supabase.
+    - **Clear Day**: Executes batch `deleteStops` in Supabase to completely remove all stops for the targeted day.
+- **Verification**:
+  - `flutter analyze` → 0 issues (exit code 0).
+
+
 

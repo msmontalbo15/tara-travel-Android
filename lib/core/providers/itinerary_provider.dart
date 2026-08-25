@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 import '../models/itinerary_model.dart';
 import '../providers/repository_providers.dart';
+import '../providers/trip_provider.dart';
 
 // ── Itinerary State ───────────────────────────────────────────────────────────
 
@@ -193,24 +195,52 @@ class ItineraryNotifier extends AsyncNotifier<ItineraryState> {
   }
 
   // ── Add a new Day to the itinerary ──────────────────────────────
-  Future<void> addDay() async {
+  Future<ItineraryDay?> addDay({DateTime? customDate}) async {
     final currentState = state.value;
-    if (currentState == null) return;
+    if (currentState == null) return null;
 
     final repo = ref.read(itineraryRepositoryProvider);
+    final tripRepo = ref.read(tripRepositoryProvider);
     final nextDayNum = currentState.days.length + 1;
-    final lastDate = currentState.days.isNotEmpty
-        ? currentState.days.last.date
-        : DateTime.now();
+
+    final trip = await tripRepo.getTripById(_tripId);
+
+    DateTime nextDate;
+    if (customDate != null) {
+      nextDate = customDate;
+    } else if (currentState.days.isNotEmpty) {
+      final lastDate = currentState.days.last.date;
+      nextDate = DateTime(lastDate.year, lastDate.month, lastDate.day + 1);
+    } else {
+      nextDate = trip?.fromDate ?? DateTime.now();
+    }
+
     final newDay = ItineraryDay(
       dayNumber: nextDayNum,
-      date: lastDate.add(const Duration(days: 1)),
+      date: nextDate,
       stops: const [],
     );
 
     final updatedDays = List<ItineraryDay>.from(currentState.days)..add(newDay);
-    state = AsyncData(currentState.copyWith(days: updatedDays, activeDay: nextDayNum - 1));
+    state = AsyncData(currentState.copyWith(
+      days: updatedDays,
+      activeDay: nextDayNum - 1,
+    ));
+
+    // If the new date exceeds the trip's toDate, extend the trip's end_date
+    if (trip != null && nextDate.isAfter(trip.toDate)) {
+      try {
+        final updatedTrip = trip.copyWith(toDate: nextDate);
+        await tripRepo.updateTrip(updatedTrip);
+        ref.invalidate(activeTripProvider);
+        ref.invalidate(allTripsProvider);
+      } catch (e) {
+        debugPrint('[ItineraryNotifier] Error extending trip end_date: $e');
+      }
+    }
+
     await repo.saveItineraryDay(_tripId, newDay);
+    return newDay;
   }
 
   // ── Clear all stops in a Day ──────────────────────────────────────
@@ -220,12 +250,16 @@ class ItineraryNotifier extends AsyncNotifier<ItineraryState> {
 
     final repo = ref.read(itineraryRepositoryProvider);
     final day = currentState.days[dayIndex];
+    final stopIds = day.stops.map((s) => s.id).toList();
+
     final updatedDay = day.copyWith(stops: const []);
     final updatedDays = List<ItineraryDay>.from(currentState.days);
     updatedDays[dayIndex] = updatedDay;
 
     state = AsyncData(currentState.copyWith(days: updatedDays));
-    await repo.saveItineraryDay(_tripId, updatedDay);
+    if (stopIds.isNotEmpty) {
+      await repo.deleteStops(stopIds);
+    }
   }
 
   // ── Member Check-In: toggle a member's presence on a stop ────
@@ -348,7 +382,8 @@ class ItineraryNotifier extends AsyncNotifier<ItineraryState> {
 
     state = AsyncData(currentState.copyWith(days: updatedDays, activeDay: toDayIndex));
 
-    await repo.deleteStop(stopId);
+    // Save both source and destination days to sync day_number and sort_order in Supabase
+    await repo.saveItineraryDay(_tripId, updatedFromDay);
     await repo.saveItineraryDay(_tripId, updatedToDay);
   }
 
@@ -358,16 +393,18 @@ class ItineraryNotifier extends AsyncNotifier<ItineraryState> {
     if (currentState == null) return;
 
     final repo = ref.read(itineraryRepositoryProvider);
+    final tripRepo = ref.read(tripRepositoryProvider);
     final sourceDay = currentState.days[dayIndex];
     final nextDayNum = currentState.days.length + 1;
     final lastDate = currentState.days.isNotEmpty
         ? currentState.days.last.date
         : DateTime.now();
 
+    final newDayDate = DateTime(lastDate.year, lastDate.month, lastDate.day + 1);
+
     final clonedStops = sourceDay.stops.map((s) {
-      final newId = 'cloned_${DateTime.now().millisecondsSinceEpoch}_${s.id}';
       return s.copyWith(
-        id: newId,
+        id: const Uuid().v4(),
         status: StopStatus.pending,
         visitedAt: null,
         checkedInMemberIds: const [],
@@ -376,12 +413,26 @@ class ItineraryNotifier extends AsyncNotifier<ItineraryState> {
 
     final newDay = ItineraryDay(
       dayNumber: nextDayNum,
-      date: DateTime(lastDate.year, lastDate.month, lastDate.day + 1),
+      date: newDayDate,
       stops: clonedStops,
     );
 
     final updatedDays = List<ItineraryDay>.from(currentState.days)..add(newDay);
     state = AsyncData(currentState.copyWith(days: updatedDays, activeDay: nextDayNum - 1));
+
+    // If duplicated day extends past trip end_date, synchronize end_date to Supabase
+    final trip = await tripRepo.getTripById(_tripId);
+    if (trip != null && newDayDate.isAfter(trip.toDate)) {
+      try {
+        final updatedTrip = trip.copyWith(toDate: newDayDate);
+        await tripRepo.updateTrip(updatedTrip);
+        ref.invalidate(activeTripProvider);
+        ref.invalidate(allTripsProvider);
+      } catch (e) {
+        debugPrint('[ItineraryNotifier] Error extending trip end_date on duplicateDay: $e');
+      }
+    }
+
     await repo.saveItineraryDay(_tripId, newDay);
   }
 
@@ -421,20 +472,23 @@ class ItineraryNotifier extends AsyncNotifier<ItineraryState> {
     if (currentState == null || currentState.days.length <= 1) return;
 
     final repo = ref.read(itineraryRepositoryProvider);
+    final tripRepo = ref.read(tripRepositoryProvider);
     final dayToDelete = currentState.days[dayIndex];
+    final stopIds = dayToDelete.stops.map((s) => s.id).toList();
 
-    // Delete stops belonging to this day
-    for (final stop in dayToDelete.stops) {
-      await repo.deleteStop(stop.id);
-    }
+    final trip = await tripRepo.getTripById(_tripId);
 
     final updatedDays = List<ItineraryDay>.from(currentState.days)..removeAt(dayIndex);
 
-    // Re-index remaining days
+    // Re-index remaining days and adjust consecutive calendar dates
+    final tripStart = trip?.fromDate ?? currentState.days.first.date;
     final reindexedDays = updatedDays.asMap().entries.map((entry) {
       final i = entry.key;
       final d = entry.value;
-      return d.copyWith(dayNumber: i + 1);
+      return d.copyWith(
+        dayNumber: i + 1,
+        date: DateTime(tripStart.year, tripStart.month, tripStart.day + i),
+      );
     }).toList();
 
     final newActiveDay = (dayIndex >= reindexedDays.length)
@@ -443,8 +497,34 @@ class ItineraryNotifier extends AsyncNotifier<ItineraryState> {
 
     state = AsyncData(currentState.copyWith(days: reindexedDays, activeDay: newActiveDay));
 
+    // 1. Delete all stops belonging to the deleted day from Supabase
+    if (stopIds.isNotEmpty) {
+      await repo.deleteStops(stopIds);
+    }
+
+    // 2. Persist re-indexed days & updated day_number for their stops to Supabase
     for (final d in reindexedDays) {
       await repo.saveItineraryDay(_tripId, d);
+    }
+
+    // 3. Purge any orphan stops with day_number higher than the new total days in Supabase
+    await repo.deleteStopsBeyondDay(_tripId, reindexedDays.length);
+
+    // 4. Shorten trip end_date in the `trips` table in Supabase so the deleted day doesn't reappear
+    if (trip != null) {
+      try {
+        final newEndDate = DateTime(
+          tripStart.year,
+          tripStart.month,
+          tripStart.day + (reindexedDays.length - 1),
+        );
+        final updatedTrip = trip.copyWith(toDate: newEndDate);
+        await tripRepo.updateTrip(updatedTrip);
+        ref.invalidate(activeTripProvider);
+        ref.invalidate(allTripsProvider);
+      } catch (e) {
+        debugPrint('[ItineraryNotifier] Error updating trip end_date on deleteDay: $e');
+      }
     }
   }
 }

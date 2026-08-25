@@ -205,7 +205,8 @@ class ItineraryStop {
   final TimeOfDay? startTime;
   final TimeOfDay? endTime;
   final double? estimatedCost;
-  final String? assignedMemberId;
+  /// Multi-member assignment — primary storage.
+  final List<String> assignedMemberIds;
   final String? location;
   final double? lat;
   final double? lng;
@@ -231,7 +232,9 @@ class ItineraryStop {
     this.startTime,
     this.endTime,
     this.estimatedCost,
-    this.assignedMemberId,
+    /// Accepts either [assignedMemberIds] (multi) or legacy [assignedMemberId] (single).
+    List<String>? assignedMemberIds,
+    @Deprecated('Use assignedMemberIds') String? assignedMemberId,
     this.location,
     this.lat,
     this.lng,
@@ -243,7 +246,16 @@ class ItineraryStop {
     this.checkedInMemberIds = const [],
     this.visitedAt,
     this.checkInPhotoUrls = const [],
-  });
+  }) : assignedMemberIds = assignedMemberIds ??  
+           (assignedMemberId != null && assignedMemberId.isNotEmpty
+               ? [assignedMemberId]
+               : const []);
+
+  /// Legacy compat: first assigned member (or null if unassigned).
+  String? get assignedMemberId =>
+      assignedMemberIds.isNotEmpty ? assignedMemberIds.first : null;
+
+  bool get isAssigned => assignedMemberIds.isNotEmpty;
 
   /// Whether this stop is fully fulfilled (at least one member arrived).
   bool get isCompleted => status == StopStatus.arrived || visitedAt != null;
@@ -286,7 +298,7 @@ class ItineraryStop {
     TimeOfDay? startTime,
     TimeOfDay? endTime,
     double? estimatedCost,
-    String? assignedMemberId,
+    List<String>? assignedMemberIds,
     String? location,
     double? lat,
     double? lng,
@@ -308,7 +320,7 @@ class ItineraryStop {
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,
       estimatedCost: estimatedCost ?? this.estimatedCost,
-      assignedMemberId: assignedMemberId ?? this.assignedMemberId,
+      assignedMemberIds: assignedMemberIds ?? this.assignedMemberIds,
       location: location ?? this.location,
       lat: lat ?? this.lat,
       lng: lng ?? this.lng,

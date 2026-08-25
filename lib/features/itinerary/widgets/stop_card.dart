@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/models/itinerary_model.dart';
 import '../../../core/models/member_model.dart';
+import '../../../core/widgets/multi_member_picker_sheet.dart';
 import 'navigate_route_button.dart';
 
 class StopCard extends StatelessWidget {
@@ -31,14 +32,9 @@ class StopCard extends StatelessWidget {
     this.onRollCall,
   });
 
-  MemberModel? get _assignedMember {
-    if (stop.assignedMemberId == null) return null;
-    try {
-      return members.firstWhere((m) => m.id == stop.assignedMemberId);
-    } catch (_) {
-      return null;
-    }
-  }
+  List<MemberModel> get _assignedMembers => members
+      .where((m) => stop.assignedMemberIds.contains(m.id))
+      .toList();
 
   List<MemberModel> get _checkedInMembers => members
       .where((m) => stop.checkedInMemberIds.contains(m.id))
@@ -425,30 +421,42 @@ class StopCard extends StatelessWidget {
                             ),
                             const SizedBox(width: 6),
                           ],
-                          if (_assignedMember != null && _checkedInMembers.isEmpty)
+                          if (_assignedMembers.isNotEmpty && _checkedInMembers.isEmpty)
                             Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                Container(
-                                  width: 22,
-                                  height: 22,
-                                  decoration: BoxDecoration(
-                                    color: _assignedMember!.color,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      _assignedMember!.initials.substring(0, 1),
-                                      style: const TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
+                                if (_assignedMembers.length > 1)
+                                  MemberAvatarStack(
+                                    members: members,
+                                    memberIds: stop.assignedMemberIds,
+                                    size: 20,
+                                  )
+                                else
+                                  Container(
+                                    width: 22,
+                                    height: 22,
+                                    decoration: BoxDecoration(
+                                      color: _assignedMembers.first.color,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        _assignedMembers.first.initials.isNotEmpty
+                                            ? _assignedMembers.first.initials.substring(0, 1)
+                                            : 'M',
+                                        style: const TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  _assignedMember!.name.split(' ').first,
+                                  _assignedMembers.length > 1
+                                      ? '${_assignedMembers.length} leads'
+                                      : _assignedMembers.first.name.split(' ').first,
                                   style: const TextStyle(
                                     fontFamily: 'DM Sans',
                                     fontSize: 11,

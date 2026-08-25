@@ -8,6 +8,9 @@ class PackingItem {
   bool isChecked;
   bool isAiSuggested;
   bool isCritical;
+  // Primary multi-member assignment list.
+  List<String> assignedMemberIds;
+  // Legacy display-only fields — mirror the first assigned member.
   String? assignedMemberId;
   String? assignedMemberName;
   String? assignedMemberInitials;
@@ -20,14 +23,18 @@ class PackingItem {
     this.isChecked = false,
     this.isAiSuggested = false,
     this.isCritical = false,
+    List<String>? assignedMemberIds,
     this.assignedMemberId,
     this.assignedMemberName,
     this.assignedMemberInitials,
     this.assignedMemberColor,
     this.assignedMemberRole,
-  });
+  }) : assignedMemberIds = assignedMemberIds ??
+           (assignedMemberId != null && assignedMemberId.isNotEmpty
+               ? [assignedMemberId]
+               : []);
 
-  bool get isAssigned => assignedMemberId != null && assignedMemberId!.isNotEmpty;
+  bool get isAssigned => assignedMemberIds.isNotEmpty;
 
   PackingItem copyWith({
     String? id,
@@ -35,6 +42,7 @@ class PackingItem {
     bool? isChecked,
     bool? isAiSuggested,
     bool? isCritical,
+    List<String>? assignedMemberIds,
     String? assignedMemberId,
     String? assignedMemberName,
     String? assignedMemberInitials,
@@ -48,6 +56,7 @@ class PackingItem {
       isChecked: isChecked ?? this.isChecked,
       isAiSuggested: isAiSuggested ?? this.isAiSuggested,
       isCritical: isCritical ?? this.isCritical,
+      assignedMemberIds: clearAssignment ? [] : (assignedMemberIds ?? List<String>.from(this.assignedMemberIds)),
       assignedMemberId: clearAssignment ? null : (assignedMemberId ?? this.assignedMemberId),
       assignedMemberName: clearAssignment ? null : (assignedMemberName ?? this.assignedMemberName),
       assignedMemberInitials: clearAssignment ? null : (assignedMemberInitials ?? this.assignedMemberInitials),

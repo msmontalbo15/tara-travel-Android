@@ -250,6 +250,28 @@ class DayActionsSheet extends StatelessWidget {
 
           // ── 2. Action list items ──────────────────────────────────
           _ActionTile(
+            icon: Icons.add_circle_outline_rounded,
+            color: AppColors.primary,
+            title: 'Add New Day',
+            subtitle: 'Append Day ${allDays.length + 1} to your trip itinerary',
+            onTap: () async {
+              final newDay = await notifier.addDay();
+              if (context.mounted) {
+                Navigator.pop(context);
+                if (newDay != null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Added Day ${newDay.dayNumber} to your itinerary! 🗓️'),
+                      backgroundColor: AppColors.green,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  );
+                }
+              }
+            },
+          ),
+          _ActionTile(
             icon: Icons.copy_rounded,
             color: const Color(0xFF3B82F6),
             title: 'Duplicate Day',

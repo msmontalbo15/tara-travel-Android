@@ -59,12 +59,14 @@ class LocationResult {
 class LocationPicker extends StatefulWidget {
   final String label;
   final String? hint;
+  final String? initialValue;
   final ValueChanged<LocationResult?> onLocationSelected;
 
   const LocationPicker({
     super.key,
     this.label = 'Location',
     this.hint = 'Search Google Maps places...',
+    this.initialValue,
     required this.onLocationSelected,
   });
 
@@ -86,6 +88,9 @@ class _LocationPickerState extends State<LocationPicker> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialValue != null && widget.initialValue!.isNotEmpty) {
+      _searchCtrl.text = widget.initialValue!;
+    }
     _searchCtrl.addListener(_onSearchChanged);
     _focusNode.addListener(() {
       if (!_focusNode.hasFocus) {
@@ -115,12 +120,21 @@ class _LocationPickerState extends State<LocationPicker> {
     }
     
     if (_searchCtrl.text.isEmpty) {
+      _selectedLocation = null;
+      widget.onLocationSelected(null);
       setState(() {
         _results = [];
         _showDropdown = false;
       });
       return;
     }
+
+    // Provide custom typed text fallback
+    widget.onLocationSelected(LocationResult(
+      displayName: _searchCtrl.text.trim(),
+      lat: _selectedLocation?.lat ?? 0.0,
+      lon: _selectedLocation?.lon ?? 0.0,
+    ));
 
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 400), () {

@@ -15,6 +15,7 @@ import '../../core/widgets/shimmer_loading.dart';
 import 'widgets/member_assignment_sheet.dart';
 import 'widgets/packing_template_modals.dart';
 import 'widgets/ai_packing_dialog.dart';
+import '../../core/widgets/multi_member_picker_sheet.dart';
 
 class PackingScreen extends ConsumerStatefulWidget {
   final bool showHeader;
@@ -628,8 +629,8 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
                   context,
                   item: item,
                   members: trip.members,
-                  onSelectMember: (m) =>
-                      notifier.assignMember(cat.id, item.id, m),
+                  onSelectMembers: (selected) =>
+                      notifier.assignMembers(cat.id, item.id, selected),
                 ),
                 onDeleteItem: (itemId) => notifier.removeItem(cat.id, itemId),
                 onDeleteCategory: () => _confirmDeleteCategory(context, notifier, cat),
@@ -2195,58 +2196,81 @@ class _PackingItemRow extends StatelessWidget {
                               .withValues(alpha: 0.3),
                         ),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 16,
-                            height: 16,
-                            decoration: BoxDecoration(
-                              color: memberColor ?? AppColors.primary,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Center(
-                              child: Text(
-                                memberInitials.substring(0, 1),
-                                style: const TextStyle(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
+                      child: item.assignedMemberIds.length > 1
+                          ? Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                MemberAvatarStack(
+                                  members: members,
+                                  memberIds: item.assignedMemberIds,
+                                  size: 18,
                                 ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 5),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                item.assignedMemberName ?? 'Assigned',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontFamily: 'DM Sans',
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: memberColor ?? AppColors.primary,
-                                ),
-                              ),
-                              if (item.assignedMemberRole != null &&
-                                  item.assignedMemberRole!.isNotEmpty)
+                                const SizedBox(width: 6),
                                 Text(
-                                  item.assignedMemberRole!,
+                                  '${item.assignedMemberIds.length} assignees',
                                   style: TextStyle(
                                     fontFamily: 'DM Sans',
-                                    fontSize: 9,
-                                    color: (memberColor ?? AppColors.primary)
-                                        .withValues(alpha: 0.7),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: memberColor ?? AppColors.primary,
                                   ),
                                 ),
-                            ],
-                          ),
-                        ],
-                      ),
+                              ],
+                            )
+                          : Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 16,
+                                  height: 16,
+                                  decoration: BoxDecoration(
+                                    color: memberColor ?? AppColors.primary,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      memberInitials.isNotEmpty
+                                          ? memberInitials.substring(0, 1)
+                                          : 'M',
+                                      style: const TextStyle(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 5),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      item.assignedMemberName ?? 'Assigned',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontFamily: 'DM Sans',
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        color: memberColor ?? AppColors.primary,
+                                      ),
+                                    ),
+                                    if (item.assignedMemberRole != null &&
+                                        item.assignedMemberRole!.isNotEmpty)
+                                      Text(
+                                        item.assignedMemberRole!,
+                                        style: TextStyle(
+                                          fontFamily: 'DM Sans',
+                                          fontSize: 9,
+                                          color: (memberColor ?? AppColors.primary)
+                                              .withValues(alpha: 0.7),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ],
+                            ),
                     )
                   : Container(
                       padding: const EdgeInsets.symmetric(

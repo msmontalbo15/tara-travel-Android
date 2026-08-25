@@ -126,7 +126,39 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                         const SizedBox(height: 20),
                       ],
 
-                      const Text('TRIP MEMBERS', style: TextStyle(fontFamily: 'DM Sans', fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.warmMuted, letterSpacing: 1.5)),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('TRIP MEMBERS', style: TextStyle(fontFamily: 'DM Sans', fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.warmMuted, letterSpacing: 1.5)),
+                          if (canManageMembers && approvedMembers.length > 1)
+                            GestureDetector(
+                              onTap: () => _showBatchRoleEditor(context, trip.id, approvedMembers),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.tune_rounded, size: 12, color: AppColors.primary),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      'Batch Assign',
+                                      style: TextStyle(
+                                        fontFamily: 'DM Sans',
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
                       const SizedBox(height: 12),
                       ...approvedMembers.map((m) {
                         final isCreator = m.isTripCreator(trip.ownerId);
@@ -461,6 +493,18 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
       builder: (_) => _RoleEditorSheet(tripId: tripId, member: member, canRemove: canRemove),
     ).then((_) {
       // If the organizer tapped Remove inside the sheet, refresh lists
+      ref.invalidate(selectedTripProvider);
+      ref.invalidate(allTripsProvider);
+    });
+  }
+
+  void _showBatchRoleEditor(BuildContext context, String tripId, List<MemberModel> members) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _BatchRoleEditorSheet(tripId: tripId, members: members),
+    ).then((_) {
       ref.invalidate(selectedTripProvider);
       ref.invalidate(allTripsProvider);
     });
@@ -1042,6 +1086,291 @@ class _ContactSheet extends ConsumerWidget {
               Icon(Icons.chevron_right_rounded, color: color, size: 20),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _BatchRoleEditorSheet extends ConsumerStatefulWidget {
+  final String tripId;
+  final List<MemberModel> members;
+  const _BatchRoleEditorSheet({required this.tripId, required this.members});
+
+  @override
+  ConsumerState<_BatchRoleEditorSheet> createState() => _BatchRoleEditorSheetState();
+}
+
+class _BatchRoleEditorSheetState extends ConsumerState<_BatchRoleEditorSheet> {
+  final Set<String> _selectedMemberIds = {};
+  final Set<MemberRole> _selectedRoles = {MemberRole.member};
+  bool _isSaving = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 48),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(32),
+          topRight: Radius.circular(32),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.dividerLight,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            'Batch Assign Roles',
+            style: TextStyle(
+              fontFamily: 'Playfair Display',
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: AppColors.deepEarth,
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Select multiple members and assign common roles at once.',
+            style: TextStyle(
+              fontFamily: 'DM Sans',
+              fontSize: 12,
+              color: AppColors.muted,
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Select Members Section
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'TARGET MEMBERS',
+                style: TextStyle(
+                  fontFamily: 'DM Sans',
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.warmMuted,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    if (_selectedMemberIds.length == widget.members.length) {
+                      _selectedMemberIds.clear();
+                    } else {
+                      _selectedMemberIds.addAll(widget.members.map((m) => m.id));
+                    }
+                  });
+                },
+                child: Text(
+                  _selectedMemberIds.length == widget.members.length ? 'Clear All' : 'Select All',
+                  style: const TextStyle(
+                    fontFamily: 'DM Sans',
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 44,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: widget.members.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
+                final m = widget.members[index];
+                final active = _selectedMemberIds.contains(m.id);
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      if (active) {
+                        _selectedMemberIds.remove(m.id);
+                      } else {
+                        _selectedMemberIds.add(m.id);
+                      }
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: active ? m.color : m.color.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: active ? m.color : Colors.transparent,
+                        width: 1.2,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (active) ...[
+                          const Icon(Icons.check_rounded, size: 14, color: Colors.white),
+                          const SizedBox(width: 4),
+                        ],
+                        Text(
+                          m.name.split(' ').first,
+                          style: TextStyle(
+                            fontFamily: 'DM Sans',
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: active ? Colors.white : m.color,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+
+          const SizedBox(height: 16),
+          const Divider(color: AppColors.dividerLight),
+          const SizedBox(height: 10),
+
+          // Select Roles Section
+          const Text(
+            'SELECT ROLES TO APPLY',
+            style: TextStyle(
+              fontFamily: 'DM Sans',
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: AppColors.warmMuted,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 6),
+          ...MemberRole.values.map((role) {
+            return CheckboxListTile(
+              value: _selectedRoles.contains(role),
+              onChanged: (v) {
+                setState(() {
+                  if (v == true) {
+                    _selectedRoles.add(role);
+                  } else {
+                    if (_selectedRoles.length > 1) {
+                      _selectedRoles.remove(role);
+                    }
+                  }
+                });
+              },
+              title: Text(
+                role.displayName,
+                style: const TextStyle(
+                  fontFamily: 'DM Sans',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.deepEarth,
+                ),
+              ),
+              subtitle: Text(
+                role.description,
+                style: const TextStyle(
+                  fontFamily: 'DM Sans',
+                  fontSize: 11,
+                  color: AppColors.muted,
+                ),
+              ),
+              activeColor: role.color,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 0),
+            );
+          }),
+
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton(
+              onPressed: (_selectedMemberIds.isEmpty || _isSaving)
+                  ? null
+                  : () async {
+                      setState(() => _isSaving = true);
+                      try {
+                        final repo = ref.read(tripRepositoryProvider);
+                        final rolesList = _selectedRoles.toList();
+                        for (final memberId in _selectedMemberIds) {
+                          await repo.updateMemberRoles(
+                            widget.tripId,
+                            memberId,
+                            rolesList,
+                          );
+                        }
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Roles updated for ${_selectedMemberIds.length} members!',
+                                style: const TextStyle(fontFamily: 'DM Sans'),
+                              ),
+                              backgroundColor: AppColors.green,
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          setState(() => _isSaving = false);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Failed to batch update roles: $e',
+                                style: const TextStyle(fontFamily: 'DM Sans'),
+                              ),
+                              backgroundColor: AppColors.red,
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      }
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: _isSaving
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                    )
+                  : Text(
+                      _selectedMemberIds.isEmpty
+                          ? 'Select members to apply'
+                          : 'Apply Roles to ${_selectedMemberIds.length} Members',
+                      style: const TextStyle(
+                        fontFamily: 'DM Sans',
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+            ),
+          ),
+        ],
       ),
     );
   }

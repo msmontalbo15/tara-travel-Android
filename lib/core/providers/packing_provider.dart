@@ -68,11 +68,11 @@ class PackingState {
       final filteredItems = cat.items.where((item) {
         if (selectedMemberFilter == 'my') {
           if (currentUserId == null || currentUserId.isEmpty) return true;
-          return item.assignedMemberId == currentUserId;
+          return item.assignedMemberIds.contains(currentUserId);
         } else if (selectedMemberFilter == 'unassigned') {
           return !item.isAssigned;
         } else {
-          return item.assignedMemberId == selectedMemberFilter;
+          return item.assignedMemberIds.contains(selectedMemberFilter);
         }
       }).toList();
 
@@ -86,7 +86,7 @@ class PackingState {
     int total = 0;
     for (final cat in categories) {
       for (final item in cat.items) {
-        if (item.assignedMemberId == memberId) {
+        if (item.assignedMemberIds.contains(memberId)) {
           total++;
           if (item.isChecked) packed++;
         }
@@ -100,7 +100,7 @@ class PackingState {
     final list = <String>[];
     for (final cat in categories) {
       for (final item in cat.items) {
-        if (item.assignedMemberId == memberId && !item.isChecked) {
+        if (item.assignedMemberIds.contains(memberId) && !item.isChecked) {
           list.add(item.name);
         }
       }
@@ -200,26 +200,28 @@ class PackingNotifier extends Notifier<PackingState> {
     state = state.copyWith(categories: cats);
   }
 
-  Future<void> assignMember(
+  /// Assigns multiple members to a packing item. Pass an empty list to clear.
+  Future<void> assignMembers(
     String categoryId,
     String itemId,
-    MemberModel? member,
+    List<MemberModel> members,
   ) async {
+    final primary = members.isNotEmpty ? members.first : null;
     final cats = _mapCategories(categoryId, (items) {
       return items.map((i) {
         if (i.id != itemId) return i;
-        if (member == null) {
+        if (members.isEmpty) {
           return i.copyWith(clearAssignment: true);
         }
-        // Store role display name (first role, or 'Trip Member')
-        final roleLabel = member.roles.isNotEmpty
-            ? member.roles.first.displayName
+        final roleLabel = primary!.roles.isNotEmpty
+            ? primary.roles.first.displayName
             : 'Trip Member';
         return i.copyWith(
-          assignedMemberId: member.id,
-          assignedMemberName: member.name,
-          assignedMemberInitials: member.initials,
-          assignedMemberColor: member.color.toARGB32(),
+          assignedMemberIds: members.map((m) => m.id).toList(),
+          assignedMemberId: primary.id,
+          assignedMemberName: primary.name,
+          assignedMemberInitials: primary.initials,
+          assignedMemberColor: primary.color.toARGB32(),
           assignedMemberRole: roleLabel,
         );
       }).toList();
@@ -227,18 +229,31 @@ class PackingNotifier extends Notifier<PackingState> {
     state = state.copyWith(categories: cats);
 
     if (state.tripId != null) {
-      final roleLabel = member?.roles.isNotEmpty == true
-          ? member!.roles.first.displayName
-          : member != null ? 'Trip Member' : null;
+      final roleLabel = primary?.roles.isNotEmpty == true
+          ? primary!.roles.first.displayName
+          : primary != null ? 'Trip Member' : null;
       await ref.read(packingRepositoryProvider).assignItem(
             itemId: itemId,
-            memberId: member?.id,
-            memberName: member?.name,
-            memberInitials: member?.initials,
-            memberColor: member?.color.toARGB32(),
+            memberId: primary?.id,
+            memberName: primary?.name,
+            memberInitials: primary?.initials,
+            memberColor: primary?.color.toARGB32(),
             memberRole: roleLabel,
           );
     }
+  }
+
+  /// Legacy single-member assignment shim — delegates to [assignMembers].
+  Future<void> assignMember(
+    String categoryId,
+    String itemId,
+    MemberModel? member,
+  ) async {
+    await assignMembers(
+      categoryId,
+      itemId,
+      member != null ? [member] : [],
+    );
   }
 
   Future<void> addItemToCategory(

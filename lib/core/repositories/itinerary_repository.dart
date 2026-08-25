@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
 import '../models/itinerary_model.dart';
 
 /// Pure Supabase data source for itinerary stops and collaborative voting.
@@ -140,23 +141,34 @@ class ItineraryRepository {
       final rows = day.stops.asMap().entries.map((entry) {
         final i = entry.key;
         final stop = entry.value;
+        final stopId = _ensureUuid(stop.id);
+        final assignedUserId = (stop.assignedMemberId != null && _isValidUuid(stop.assignedMemberId!))
+            ? stop.assignedMemberId
+            : null;
+
+        // DB type check constraint: ('hotel', 'activity', 'food', 'transport', 'custom')
+        final dbType = const {'hotel', 'activity', 'food', 'transport', 'custom'}
+                .contains(stop.type.name)
+            ? stop.type.name
+            : 'activity';
+
         return {
-          'id': stop.id,
+          'id': stopId,
           'trip_id': tripId,
           'day_number': day.dayNumber,
           'sort_order': i,
           'title': stop.title,
           'notes': stop.notes,
-          'type': stop.type.name,
+          'type': dbType,
           'status': _toDbStatus(stop.status),
           'time_start': _encodeTime(stop.startTime),
           'time_end': _encodeTime(stop.endTime),
           'cost_estimate': stop.estimatedCost,
           'lat': stop.lat,
           'lng': stop.lng,
-          if (stop.location != null) 'address': stop.location,
-          if (stop.assignedMemberId != null) 'assigned_user_id': stop.assignedMemberId,
-          if (stop.confirmationNumber != null) 'booking_ref': stop.confirmationNumber,
+          'address': stop.location,
+          'assigned_user_id': assignedUserId,
+          'booking_ref': stop.confirmationNumber,
           'updated_at': DateTime.now().toUtc().toIso8601String(),
         };
       }).toList();
@@ -165,7 +177,7 @@ class ItineraryRepository {
         await _supabase.from('itinerary_stops').upsert(rows);
       }
     } on PostgrestException catch (e) {
-      debugPrint('[ItineraryRepository] saveItineraryDay PostgrestException: ${e.message}');
+      debugPrint('[ItineraryRepository] saveItineraryDay PostgrestException: ${e.message} code=${e.code} details=${e.details}');
       rethrow;
     } catch (e) {
       debugPrint('[ItineraryRepository] saveItineraryDay error: $e');
@@ -182,6 +194,37 @@ class ItineraryRepository {
       rethrow;
     } catch (e) {
       debugPrint('[ItineraryRepository] deleteStop error: $e');
+      rethrow;
+    }
+  }
+
+  /// Deletes multiple stops from Supabase in a single batch query.
+  Future<void> deleteStops(List<String> stopIds) async {
+    if (stopIds.isEmpty) return;
+    try {
+      await _supabase.from('itinerary_stops').delete().inFilter('id', stopIds);
+    } on PostgrestException catch (e) {
+      debugPrint('[ItineraryRepository] deleteStops PostgrestException: ${e.message}');
+      rethrow;
+    } catch (e) {
+      debugPrint('[ItineraryRepository] deleteStops error: $e');
+      rethrow;
+    }
+  }
+
+  /// Deletes any stops belonging to day numbers greater than [maxDayNumber] in Supabase.
+  Future<void> deleteStopsBeyondDay(String tripId, int maxDayNumber) async {
+    try {
+      await _supabase
+          .from('itinerary_stops')
+          .delete()
+          .eq('trip_id', tripId)
+          .gt('day_number', maxDayNumber);
+    } on PostgrestException catch (e) {
+      debugPrint('[ItineraryRepository] deleteStopsBeyondDay PostgrestException: ${e.message}');
+      rethrow;
+    } catch (e) {
+      debugPrint('[ItineraryRepository] deleteStopsBeyondDay error: $e');
       rethrow;
     }
   }
@@ -303,5 +346,16 @@ class ItineraryRepository {
       hour: int.tryParse(parts[0]) ?? 0,
       minute: int.tryParse(parts[1]) ?? 0,
     );
+  }
+
+  static final RegExp _uuidRegex = RegExp(
+    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+  );
+
+  bool _isValidUuid(String str) => _uuidRegex.hasMatch(str);
+
+  String _ensureUuid(String id) {
+    if (_isValidUuid(id)) return id;
+    return const Uuid().v4();
   }
 }

@@ -41,6 +41,7 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
   late ExpenseCategory _category;
   String          _payerId  = '';
   late DateTime   _date;
+  final Set<String> _splitWithMemberIds = {};
 
   String? _descError;
   String? _amountError;
@@ -63,6 +64,7 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
     } else if (widget.members.isNotEmpty) {
       _payerId = widget.members.first.id;
     }
+    _splitWithMemberIds.addAll(widget.members.map((m) => m.id));
   }
 
   @override
@@ -220,6 +222,134 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
                 )).toList(),
                 semanticsLabel: 'Who paid',
               ),
+              const SizedBox(height: 14),
+            ],
+
+            // ── Split with (Multi-member) ──────────────────────────
+            if (widget.members.length > 1) ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Split With',
+                    style: TextStyle(
+                      fontFamily: 'DM Sans',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.deepEarth,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        if (_splitWithMemberIds.length == widget.members.length) {
+                          _splitWithMemberIds.clear();
+                        } else {
+                          _splitWithMemberIds.addAll(widget.members.map((m) => m.id));
+                        }
+                      });
+                    },
+                    child: Text(
+                      _splitWithMemberIds.length == widget.members.length ? 'Clear All' : 'All Members',
+                      style: const TextStyle(
+                        fontFamily: 'DM Sans',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                height: 38,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: widget.members.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (context, index) {
+                    final m = widget.members[index];
+                    final active = _splitWithMemberIds.contains(m.id);
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          if (active) {
+                            _splitWithMemberIds.remove(m.id);
+                          } else {
+                            _splitWithMemberIds.add(m.id);
+                          }
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: active ? m.color : m.color.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: active ? m.color : Colors.transparent,
+                            width: 1.2,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (active) ...[
+                              const Icon(Icons.check_rounded, size: 12, color: Colors.white),
+                              const SizedBox(width: 4),
+                            ],
+                            Text(
+                              m.name.split(' ').first,
+                              style: TextStyle(
+                                fontFamily: 'DM Sans',
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: active ? Colors.white : m.color,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              if (_splitWithMemberIds.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Builder(
+                  builder: (_) {
+                    final parsed = double.tryParse(_amountCtrl.text.trim().replaceAll(',', '')) ?? 0;
+                    final perPerson = parsed > 0 && _splitWithMemberIds.isNotEmpty
+                        ? parsed / _splitWithMemberIds.length
+                        : 0.0;
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.calculate_outlined, size: 14, color: AppColors.primary),
+                          const SizedBox(width: 6),
+                          Text(
+                            perPerson > 0
+                                ? '₱${perPerson.toStringAsFixed(2)} / person (${_splitWithMemberIds.length} travelers)'
+                                : 'Split equally among ${_splitWithMemberIds.length} travelers',
+                            style: const TextStyle(
+                              fontFamily: 'DM Sans',
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ],
               const SizedBox(height: 14),
             ],
 
