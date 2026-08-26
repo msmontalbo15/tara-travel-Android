@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 
 enum FriendStatus {
-  pending,
+  none,
+  pending,       // Sent friend request (outgoing)
+  incoming,      // Received friend request from them
   accepted,
   rejected,
+  blocked,
 }
 
 class FriendModel {
   final String id; // The user ID of the friend
   final String name;
+  final String? email;
   final String initials;
   final Color color;
   final String? profilePhotoUrl;
@@ -20,6 +24,7 @@ class FriendModel {
   const FriendModel({
     required this.id,
     required this.name,
+    this.email,
     required this.initials,
     required this.color,
     this.profilePhotoUrl,
@@ -32,6 +37,7 @@ class FriendModel {
   FriendModel copyWith({
     String? id,
     String? name,
+    String? email,
     String? initials,
     Color? color,
     String? profilePhotoUrl,
@@ -43,6 +49,7 @@ class FriendModel {
     return FriendModel(
       id: id ?? this.id,
       name: name ?? this.name,
+      email: email ?? this.email,
       initials: initials ?? this.initials,
       color: color ?? this.color,
       profilePhotoUrl: profilePhotoUrl ?? this.profilePhotoUrl,
@@ -63,7 +70,7 @@ class FriendModel {
     return '$firstName $lastInitial.';
   }
 
-  factory FriendModel.fromMap(Map<String, dynamic> map, String currentUserId) {
+  factory FriendModel.fromMap(Map<String, dynamic> map, String currentUserId, {FriendStatus? overrideStatus}) {
     Color parseColor(dynamic raw, String seed) {
       if (raw is int) return Color(raw);
       if (raw is String) {
@@ -90,20 +97,27 @@ class FriendModel {
         friendData['email'] ??
         'User').toString();
     final displayName = formatDisplayName(rawDisplayName, hideSurname: hideSurname);
+    final email = friendData['email']?.toString();
         
     final id = friendData['id']?.toString() ?? rawDisplayName;
     
     final initialsStr = friendData['initials']?.toString() ?? _initialsFromName(rawDisplayName);
     
-    final statusStr = map['status']?.toString().toLowerCase() ?? 'accepted';
-    final status = FriendStatus.values.firstWhere(
-      (e) => e.name == statusStr,
-      orElse: () => FriendStatus.accepted,
-    );
+    FriendStatus status;
+    if (overrideStatus != null) {
+      status = overrideStatus;
+    } else {
+      final statusStr = map['status']?.toString().toLowerCase() ?? 'accepted';
+      status = FriendStatus.values.firstWhere(
+        (e) => e.name == statusStr,
+        orElse: () => FriendStatus.accepted,
+      );
+    }
 
     return FriendModel(
       id: id,
       name: displayName,
+      email: email,
       initials: initialsStr,
       color: parseColor(friendData['color'], id),
       profilePhotoUrl: friendData['avatar_url'] ?? friendData['profile_photo_url'],

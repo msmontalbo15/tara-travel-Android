@@ -398,12 +398,14 @@ Client Tier               Storage Tier                Transport Tier
 
 ### 5. `FriendRepository` (`lib/core/repositories/friend_repository.dart`)
 - `Future<List<FriendModel>> getFriends()` — Queries accepted friends with live presence (`is_online`, `last_seen`).
-- `Future<List<FriendModel>> getIncomingRequests()` — Queries pending inbound friend requests.
-- `Future<List<FriendModel>> searchUsers(String query)` — Fuzzy search by `display_name` or `email`.
-- `Future<void> sendRequest(String friendId)` — Reciprocal upsert (`user_id, friend_id`).
-- `Future<void> acceptRequest(String requesterId)` — Updates reciprocal rows to `accepted`.
-- `Future<void> rejectRequest(String friendId)` — Deletes reciprocal friend rows.
-- `Future<String> addFriendByCode(String codeOrId)` — Looks up user by UUID/name and sends request.
+- `Future<List<FriendModel>> getIncomingRequests()` — Queries pending inbound friend requests with caller presence.
+- `Future<List<FriendModel>> getOutgoingRequests()` — Queries pending outbound friend requests sent by the current user.
+- `Future<List<FriendModel>> searchUsers(String query)` — Fuzzy search by `display_name`, `email`, or ID, cross-referencing and returning exact relationship status (`none`, `pending`, `incoming`, `accepted`).
+- `Future<FriendModel?> lookupUser(String codeOrIdOrName)` — Resolves single user by exact ID, display name, or email with relationship status.
+- `Future<void> sendRequest(String friendId)` — Directional upsert (`user_id = currentUserId, friend_id = friendId, status = 'pending'`).
+- `Future<void> acceptRequest(String requesterId)` — Updates inbound row and upserts reciprocal row to `accepted`.
+- `Future<void> rejectRequest(String friendId)` / `cancelRequest()` / `removeFriend()` — Deletes reciprocal friend rows.
+- `Future<String> addFriendByCode(String codeOrId)` — Looks up user by UUID/name/email and sends/accepts request.
 - `Future<Map<String, dynamic>?> getCurrentUserProfile()` — Public profile payload for QR sharing.
 
 ### 6. `ItineraryRepository` (`lib/core/repositories/itinerary_repository.dart`)
@@ -455,7 +457,12 @@ Client Tier               Storage Tier                Transport Tier
 | `itineraryNotifierProvider(tripId)` | `StateNotifierProvider<ItineraryNotifier, AsyncValue<List<ItineraryDay>>>` | Multi-day stops, voting counters, drag-and-drop ordering. |
 | `packingNotifierProvider(tripId)` | `StateNotifierProvider<PackingNotifier, PackingState>` | Categorized packing list, progress percentage, member assignment. |
 | `expenseNotifierProvider(tripId)` | `StateNotifierProvider<ExpenseNotifier, ExpenseState>` | Group expenses, category breakdown, GCash settlement calculator. |
-| `friendNotifierProvider` | `StateNotifierProvider<FriendNotifier, FriendState>` | Accepted friends list, incoming requests, user search. |
+| `friendsProvider` | `FutureProvider<List<FriendModel>>` | List of accepted friends with presence status. |
+| `incomingRequestsProvider` | `FutureProvider<List<FriendModel>>` | Inbound friend requests directed to the current user. |
+| `outgoingRequestsProvider` | `FutureProvider<List<FriendModel>>` | Outbound friend requests sent by the current user. |
+| `friendRequestsCountProvider` | `Provider<int>` | Badge counter for pending incoming requests. |
+| `searchUsersProvider(query)` | `FutureProvider.family<List<FriendModel>, String>` | Fuzzy user search with annotated relationship states (`none`, `pending`, `incoming`, `accepted`). |
+| `lookupUserProvider(query)` | `FutureProvider.family<FriendModel?, String>` | Live user resolution by ID/name/email with relationship preview. |
 | `realtimeNotifierProvider(tripId)`| `StateNotifierProvider<RealtimeNotifier, RealtimeState>` | Live GPS member location tracking, stop voting broadcasts. |
 | `exploreProvider` | `FutureProvider<List<DestinationModel>>` | Destination catalog with search, tags, and rating filters. |
 

@@ -1,28 +1,498 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/models/friend_model.dart';
 import '../../../core/providers/friend_provider.dart';
+import '../../../core/providers/trip_provider.dart';
 
-class FriendListItem extends ConsumerWidget {
+class FriendListItem extends ConsumerStatefulWidget {
   final FriendModel friend;
   final bool isSearchMode;
+  final bool isIncomingRequest;
+  final bool isOutgoingRequest;
+  final VoidCallback? onActionCompleted;
 
   const FriendListItem({
     super.key,
     required this.friend,
     this.isSearchMode = false,
+    this.isIncomingRequest = false,
+    this.isOutgoingRequest = false,
+    this.onActionCompleted,
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<FriendListItem> createState() => _FriendListItemState();
+}
+
+class _FriendListItemState extends ConsumerState<FriendListItem> {
+  bool _isLoading = false;
+
+  void _invalidateAllFriendProviders() {
+    ref.invalidate(friendsProvider);
+    ref.invalidate(incomingRequestsProvider);
+    ref.invalidate(outgoingRequestsProvider);
+    widget.onActionCompleted?.call();
+  }
+
+  Future<void> _handleAccept() async {
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+    try {
+      final repo = ref.read(friendRepositoryProvider);
+      await repo.acceptRequest(widget.friend.id);
+      _invalidateAllFriendProviders();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('You are now friends with ${widget.friend.name}! 🎉',
+                style: const TextStyle(fontFamily: 'DM Sans')),
+            backgroundColor: AppColors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to accept: $e',
+                style: const TextStyle(fontFamily: 'DM Sans')),
+            backgroundColor: AppColors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _handleDeclineOrCancel({bool isCancel = false}) async {
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+    try {
+      final repo = ref.read(friendRepositoryProvider);
+      await repo.rejectRequest(widget.friend.id);
+      _invalidateAllFriendProviders();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              isCancel ? 'Friend request cancelled.' : 'Friend request declined.',
+              style: const TextStyle(fontFamily: 'DM Sans'),
+            ),
+            backgroundColor: AppColors.deepEarth,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e', style: const TextStyle(fontFamily: 'DM Sans')),
+            backgroundColor: AppColors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _handleSendRequest() async {
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+    try {
+      final repo = ref.read(friendRepositoryProvider);
+      await repo.sendRequest(widget.friend.id);
+      _invalidateAllFriendProviders();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Friend request sent to ${widget.friend.name}! 🚀',
+                style: const TextStyle(fontFamily: 'DM Sans')),
+            backgroundColor: AppColors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$e', style: const TextStyle(fontFamily: 'DM Sans')),
+            backgroundColor: AppColors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _showFriendOptionsModal() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => SafeArea(
+        top: false,
+        child: Container(
+          padding: EdgeInsets.fromLTRB(20, 16, 20, 24 + MediaQuery.of(ctx).padding.bottom),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.cardBorder,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+
+              // Friend Profile Header
+              Row(
+                children: [
+                  _buildAvatar(size: 52),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.friend.name,
+                          style: const TextStyle(
+                            fontFamily: 'DM Sans',
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: widget.friend.isOnline ? AppColors.green : AppColors.muted,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              widget.friend.isOnline ? 'Online now' : 'Offline',
+                              style: TextStyle(
+                                fontFamily: 'DM Sans',
+                                fontSize: 12,
+                                color: widget.friend.isOnline ? AppColors.green : AppColors.textSecondary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              const Divider(height: 1, color: AppColors.surfaceLight),
+              const SizedBox(height: 8),
+
+              // Option 1: Invite to a Trip
+              _sheetTile(
+                icon: Icons.flight_takeoff_rounded,
+                iconColor: AppColors.primary,
+                title: 'Invite to Trip',
+                subtitle: 'Add ${widget.friend.name} to one of your trips',
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showInviteToTripDialog();
+                },
+              ),
+
+              // Option 2: Copy User ID
+              _sheetTile(
+                icon: Icons.copy_rounded,
+                iconColor: AppColors.blue,
+                title: 'Copy User ID',
+                subtitle: 'Copy ${widget.friend.name}\'s unique ID',
+                onTap: () {
+                  Clipboard.setData(ClipboardData(text: widget.friend.id));
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Friend ID copied to clipboard!',
+                          style: TextStyle(fontFamily: 'DM Sans')),
+                      backgroundColor: AppColors.deepEarth,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                },
+              ),
+
+              // Option 3: Remove Friend
+              _sheetTile(
+                icon: Icons.person_remove_rounded,
+                iconColor: AppColors.red,
+                title: 'Remove Friend',
+                subtitle: 'Remove from your friends list',
+                isDestructive: true,
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _confirmRemoveFriend();
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showInviteToTripDialog() {
+    final tripsAsync = ref.read(allTripsProvider);
+    final trips = tripsAsync.value ?? [];
+
+    if (trips.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You don\'t have any active trips yet. Create one first!',
+              style: TextStyle(fontFamily: 'DM Sans')),
+          backgroundColor: AppColors.deepEarth,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Invite ${widget.friend.name}',
+          style: const TextStyle(
+            fontFamily: 'DM Sans',
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Select a trip to copy its invite code:',
+                style: TextStyle(
+                  fontFamily: 'DM Sans',
+                  fontSize: 13,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: trips.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1, color: AppColors.surfaceLight),
+                  itemBuilder: (context, index) {
+                    final trip = trips[index];
+                    return ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.luggage_rounded, color: AppColors.primary, size: 18),
+                      ),
+                      title: Text(
+                        trip.name,
+                        style: const TextStyle(
+                          fontFamily: 'DM Sans',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      subtitle: Text(
+                        'Code: ${trip.inviteCode.isNotEmpty ? trip.inviteCode : 'N/A'}',
+                        style: const TextStyle(
+                          fontFamily: 'DM Sans',
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      trailing: const Icon(Icons.send_rounded, size: 16, color: AppColors.primary),
+                      onTap: () {
+                        if (trip.inviteCode.isNotEmpty) {
+                          Clipboard.setData(ClipboardData(
+                              text: 'Join my trip "${trip.name}" on Tara Travel! Invite code: ${trip.inviteCode}'));
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Trip invite code copied for "${trip.name}"! 📋',
+                                  style: const TextStyle(fontFamily: 'DM Sans')),
+                              backgroundColor: AppColors.green,
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close', style: TextStyle(fontFamily: 'DM Sans', color: AppColors.textSecondary)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmRemoveFriend() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Remove Friend?',
+          style: TextStyle(
+            fontFamily: 'DM Sans',
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        content: Text(
+          'Are you sure you want to remove ${widget.friend.name} from your friends list?',
+          style: const TextStyle(fontFamily: 'DM Sans', fontSize: 14, color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(fontFamily: 'DM Sans', color: AppColors.textSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              setState(() => _isLoading = true);
+              try {
+                final repo = ref.read(friendRepositoryProvider);
+                await repo.removeFriend(widget.friend.id);
+                _invalidateAllFriendProviders();
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Removed ${widget.friend.name} from friends.',
+                          style: const TextStyle(fontFamily: 'DM Sans')),
+                      backgroundColor: AppColors.deepEarth,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.red),
+                  );
+                }
+              } finally {
+                if (mounted) setState(() => _isLoading = false);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.red,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('Remove', style: TextStyle(fontFamily: 'DM Sans', fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sheetTile({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    bool isDestructive = false,
+  }) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      leading: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: iconColor.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(icon, color: iconColor, size: 20),
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontFamily: 'DM Sans',
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+          color: isDestructive ? AppColors.red : AppColors.textPrimary,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: const TextStyle(
+          fontFamily: 'DM Sans',
+          fontSize: 12,
+          color: AppColors.textSecondary,
+        ),
+      ),
+      onTap: onTap,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.cardBorder, width: 0.5),
+        border: Border.all(color: AppColors.cardBorder, width: 0.8),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -33,62 +503,122 @@ class FriendListItem extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          _buildAvatar(),
-          const SizedBox(width: 14),
+          _buildAvatar(size: 46),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  friend.name,
+                  widget.friend.name,
                   style: const TextStyle(
                     fontFamily: 'DM Sans',
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                if (!isSearchMode && friend.status == FriendStatus.accepted)
-                  Text(
-                    friend.isOnline ? 'Online' : 'Offline',
-                    style: TextStyle(
-                      fontFamily: 'DM Sans',
-                      fontSize: 12,
-                      color: friend.isOnline ? AppColors.green : AppColors.textSecondary,
-                    ),
-                  ),
+                const SizedBox(height: 2),
+                _buildSubtitle(),
               ],
             ),
           ),
-          _buildActionButtons(ref),
+          const SizedBox(width: 8),
+          _buildActionButtons(),
         ],
       ),
     );
   }
 
-  Widget _buildAvatar() {
+  Widget _buildSubtitle() {
+    if (widget.isIncomingRequest) {
+      return const Text(
+        'Wants to be your friend',
+        style: TextStyle(
+          fontFamily: 'DM Sans',
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: AppColors.primary,
+        ),
+      );
+    }
+
+    if (widget.isOutgoingRequest) {
+      return const Text(
+        'Request pending approval',
+        style: TextStyle(
+          fontFamily: 'DM Sans',
+          fontSize: 12,
+          color: AppColors.textSecondary,
+        ),
+      );
+    }
+
+    if (widget.isSearchMode) {
+      if (widget.friend.email != null && widget.friend.email!.isNotEmpty) {
+        return Text(
+          widget.friend.email!,
+          style: const TextStyle(
+            fontFamily: 'DM Sans',
+            fontSize: 12,
+            color: AppColors.textSecondary,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        );
+      }
+    }
+
+    // Default Accepted Friend subtitle: Online Presence
+    return Row(
+      children: [
+        Container(
+          width: 7,
+          height: 7,
+          decoration: BoxDecoration(
+            color: widget.friend.isOnline ? AppColors.green : AppColors.muted,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 5),
+        Text(
+          widget.friend.isOnline ? 'Active now' : 'Offline',
+          style: TextStyle(
+            fontFamily: 'DM Sans',
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: widget.friend.isOnline ? AppColors.green : AppColors.textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAvatar({double size = 46}) {
     return Stack(
       children: [
         Container(
-          width: 48,
-          height: 48,
+          width: size,
+          height: size,
           decoration: BoxDecoration(
-            color: friend.color,
+            color: widget.friend.color,
             shape: BoxShape.circle,
-            image: friend.profilePhotoUrl != null
+            image: widget.friend.profilePhotoUrl != null && widget.friend.profilePhotoUrl!.isNotEmpty
                 ? DecorationImage(
-                    image: NetworkImage(friend.profilePhotoUrl!),
+                    image: NetworkImage(widget.friend.profilePhotoUrl!),
                     fit: BoxFit.cover,
                   )
                 : null,
           ),
-          child: friend.profilePhotoUrl == null
+          child: (widget.friend.profilePhotoUrl == null || widget.friend.profilePhotoUrl!.isEmpty)
               ? Center(
                   child: Text(
-                    friend.initials,
-                    style: const TextStyle(
+                    widget.friend.initials,
+                    style: TextStyle(
                       fontFamily: 'DM Sans',
-                      fontSize: 16,
+                      fontSize: size * 0.38,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
                     ),
@@ -96,15 +626,18 @@ class FriendListItem extends ConsumerWidget {
                 )
               : null,
         ),
-        if (!isSearchMode && friend.status == FriendStatus.accepted)
+        if (!widget.isSearchMode &&
+            !widget.isIncomingRequest &&
+            !widget.isOutgoingRequest &&
+            widget.friend.status == FriendStatus.accepted)
           Positioned(
             right: 0,
             bottom: 0,
             child: Container(
-              width: 14,
-              height: 14,
+              width: 13,
+              height: 13,
               decoration: BoxDecoration(
-                color: friend.isOnline ? AppColors.green : AppColors.cardBorder,
+                color: widget.friend.isOnline ? AppColors.green : AppColors.cardBorder,
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 2),
               ),
@@ -114,74 +647,231 @@ class FriendListItem extends ConsumerWidget {
     );
   }
 
-  Widget _buildActionButtons(WidgetRef ref) {
-    if (isSearchMode) {
-      if (friend.status == FriendStatus.pending) {
-        return _buildButton('Pending', null, isOutlined: true);
-      } else if (friend.status == FriendStatus.accepted) {
-        return const Icon(Icons.check_circle, color: AppColors.primary);
-      }
-      return _buildButton('Add', () {
-        ref.read(friendRepositoryProvider).sendRequest(friend.id);
-        ref.invalidate(friendsProvider);
-      });
+  Widget _buildActionButtons() {
+    if (_isLoading) {
+      return const SizedBox(
+        width: 32,
+        height: 32,
+        child: Center(
+          child: CircularProgressIndicator(strokeWidth: 2.2, color: AppColors.primary),
+        ),
+      );
     }
 
-    if (friend.status == FriendStatus.pending) {
+    // 1. Incoming Friend Request Mode
+    if (widget.isIncomingRequest || widget.friend.status == FriendStatus.incoming) {
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _buildIconButton(Icons.close, () {
-            ref.read(friendRepositoryProvider).rejectRequest(friend.id);
-            ref.invalidate(friendsProvider);
-          }, color: AppColors.red),
+          // Decline Button
+          _iconButton(
+            icon: Icons.close_rounded,
+            tooltip: 'Decline',
+            color: AppColors.textSecondary,
+            bgColor: AppColors.surfaceLight,
+            onTap: () => _handleDeclineOrCancel(isCancel: false),
+          ),
           const SizedBox(width: 8),
-          _buildIconButton(Icons.check, () {
-            ref.read(friendRepositoryProvider).acceptRequest(friend.id);
-            ref.invalidate(friendsProvider);
-          }, color: AppColors.primary),
+          // Accept Button
+          GestureDetector(
+            onTap: _handleAccept,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.3),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.check_rounded, size: 15, color: Colors.white),
+                  SizedBox(width: 4),
+                  Text(
+                    'Accept',
+                    style: TextStyle(
+                      fontFamily: 'DM Sans',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       );
     }
 
-    return _buildIconButton(Icons.more_horiz, () {
-      // Show options like remove friend
-    }, color: AppColors.textSecondary);
-  }
-
-  Widget _buildButton(String label, VoidCallback? onTap, {bool isOutlined = false}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isOutlined ? Colors.transparent : AppColors.primary,
-          border: Border.all(color: isOutlined ? AppColors.textSecondary : Colors.transparent),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontFamily: 'DM Sans',
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: isOutlined ? AppColors.textSecondary : Colors.white,
+    // 2. Outgoing Sent Request Mode
+    if (widget.isOutgoingRequest) {
+      return GestureDetector(
+        onTap: () => _handleDeclineOrCancel(isCancel: true),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceLight,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.cardBorder),
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.close_rounded, size: 14, color: AppColors.textSecondary),
+              SizedBox(width: 4),
+              Text(
+                'Cancel',
+                style: TextStyle(
+                  fontFamily: 'DM Sans',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
           ),
         ),
-      ),
+      );
+    }
+
+    // 3. Search Results Mode
+    if (widget.isSearchMode) {
+      switch (widget.friend.status) {
+        case FriendStatus.accepted:
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.green.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.check_circle_rounded, size: 14, color: AppColors.green),
+                SizedBox(width: 4),
+                Text(
+                  'Friends',
+                  style: TextStyle(
+                    fontFamily: 'DM Sans',
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.green,
+                  ),
+                ),
+              ],
+            ),
+          );
+
+        case FriendStatus.pending:
+          return GestureDetector(
+            onTap: () => _handleDeclineOrCancel(isCancel: true),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.amber.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppColors.amber.withValues(alpha: 0.4)),
+              ),
+              child: const Text(
+                'Requested',
+                style: TextStyle(
+                  fontFamily: 'DM Sans',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFFB45309),
+                ),
+              ),
+            ),
+          );
+
+        case FriendStatus.incoming:
+          return GestureDetector(
+            onTap: _handleAccept,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Text(
+                'Accept',
+                style: TextStyle(
+                  fontFamily: 'DM Sans',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          );
+
+        case FriendStatus.none:
+        default:
+          return GestureDetector(
+            onTap: _handleSendRequest,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.person_add_rounded, size: 14, color: Colors.white),
+                  SizedBox(width: 4),
+                  Text(
+                    'Add',
+                    style: TextStyle(
+                      fontFamily: 'DM Sans',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+      }
+    }
+
+    // 4. Default Accepted Friend Mode: 3-Dots Action Menu
+    return _iconButton(
+      icon: Icons.more_vert_rounded,
+      tooltip: 'Options',
+      color: AppColors.textSecondary,
+      bgColor: AppColors.surfaceLight,
+      onTap: _showFriendOptionsModal,
     );
   }
 
-  Widget _buildIconButton(IconData icon, VoidCallback onTap, {required Color color}) {
+  Widget _iconButton({
+    required IconData icon,
+    required String tooltip,
+    required Color color,
+    required Color bgColor,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          shape: BoxShape.circle,
+      child: Tooltip(
+        message: tooltip,
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: bgColor,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, size: 18, color: color),
         ),
-        child: Icon(icon, size: 18, color: color),
       ),
     );
   }

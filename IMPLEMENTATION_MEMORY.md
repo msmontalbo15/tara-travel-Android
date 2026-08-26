@@ -36,6 +36,7 @@
 | **`IMP-047`** | 2026-08-25 | Itinerary / Supabase Sync | Permission-gated Itinerary Day Deletion (Organizers & Navigators), multi-day check, batch stop deletion (`deleteStops`), and remote day re-indexing synchronization. |
 | **`IMP-048`** | 2026-08-26 | Maps & Live Tracking | Complete open-source migration to `flutter_map` (OSM), PostGIS live tracking (`004_postgis_live_tracking.sql`), `LocationTrackingService` with offline queue, `GroupRideSyncService` with exponential backoff, and Philippine `Nominatim` geocoding. |
 | **`IMP-049`** | 2026-08-26 | Member Roles & Security RPC | Atomic member role assignment via `update_member_roles` RPC, `user_is_trip_organizer` RLS recursion helper, extended `trip_members_update` policy, and reactive UI state invalidation. |
+| **`IMP-050`** | 2026-08-26 | Social Graph & Friend Module | 3-tab modern Friends UI (My Friends, Requests, Find Friends), bidirectional friend status resolution, live user preview search, QR sharing, request management, and trip invitation integration. |
 
 ---
 
@@ -624,6 +625,38 @@
     - Added unit test cases in `test/core_model_mapping_test.dart` verifying multiple roles parsing, `isOrganizer`, `canManageMembers`, `canManageItinerary`, `canApproveExpenses`, and `isTripCreator` permission evaluation.
 - **Verification**:
   - `flutter analyze` → 0 issues (exit code 0).
+
+---
+
+### `IMP-050` · Social Graph & Friend Module Overhaul
+- **Date**: August 26, 2026
+- **Target Files**:
+  - [lib/core/models/friend_model.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/models/friend_model.dart) **[MODIFIED]**
+  - [lib/core/repositories/friend_repository.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/repositories/friend_repository.dart) **[MODIFIED]**
+  - [lib/core/providers/friend_provider.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/providers/friend_provider.dart) **[MODIFIED]**
+  - [lib/features/friends/widgets/friend_list_item.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/friends/widgets/friend_list_item.dart) **[MODIFIED]**
+  - [lib/features/friends/friends_screen.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/friends/friends_screen.dart) **[MODIFIED]**
+  - [MEMORY.md](file:///d:/Spencer/Downloads/tara_travel/MEMORY.md) **[MODIFIED]**
+  - [IMPLEMENTATION_MEMORY.md](file:///d:/Spencer/Downloads/tara_travel/IMPLEMENTATION_MEMORY.md) **[MODIFIED]**
+- **Scope & Objectives**:
+  - **Friend Status & Model Enhancements**:
+    - Expanded `FriendStatus` enum to include `none`, `pending` (outgoing), `incoming` (inbound), `accepted`, `rejected`, and `blocked`.
+    - Added optional `email` field and helper getters for direct social mapping.
+  - **Bidirectional Friend Repository Architecture**:
+    - Upgraded `FriendRepository.searchUsers()` to query users from `public.users` and cross-reference all existing relationships for the current user in `public.friends`, returning dynamic contextual statuses.
+    - Added `lookupUser(query)` for instantaneous user lookup by UUID, display name, or email with live relationship check.
+    - Updated `sendRequest()`, `acceptRequest()`, `rejectRequest()`, `cancelRequest()`, and `removeFriend()` for clean, reciprocal consistency in `public.friends`.
+  - **Riverpod Provider Suite**:
+    - Added `incomingRequestsProvider`, `outgoingRequestsProvider`, `friendRequestsCountProvider` (for badge counters), and `lookupUserProvider`.
+  - **Revamped 3-Tab Friends Screen Experience**:
+    - **Tab 1 (My Friends)**: Real-time presence indicators, local filtering bar, pull-to-refresh, empty-state onboarding, and a 3-dots friend options bottom sheet (Invite to Trip, Copy ID, Remove Friend).
+    - **Tab 2 (Requests)**: Sectioned display for Inbound requests (with one-tap Accept and Decline actions) and Outgoing requests (with Cancel Request action).
+    - **Tab 3 (Find Friends)**: Debounced real-time global user search with contextual state buttons (`+ Add`, `Requested`, `Accept`, `Friends ✓`), quick QR code modal launcher, and "Add by ID" dialog featuring a live user preview card before sending requests.
+  - **Trip Invitation Integration**:
+    - Built trip picker bottom sheet allowing users to directly copy/share active trip invite codes with selected friends.
+- **Verification**:
+  - `flutter analyze` → 0 issues across entire `lib/` (ran in 9.7s, exit code 0).
+
 
 
 
