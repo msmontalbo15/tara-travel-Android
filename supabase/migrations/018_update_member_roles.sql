@@ -1,26 +1,44 @@
 -- ═══════════════════════════════════════════════════════════════════════════
--- TARA TRAVEL · MIGRATION 018: SECURE ROLE ASSIGNMENT RPC
+-- TARA TRAVEL · MIGRATION 018: FIX trip_members TRIGGER & ROLE ASSIGNMENT RPC
 -- ═══════════════════════════════════════════════════════════════════════════
 --
--- Problem: updateMemberRoles() issued a direct client-side UPDATE on
--- trip_members. The existing RLS policy (auth.uid() = user_id OR
--- user_owns_trip(trip_id)) blocked non-owner organizers and caused silent
--- 0-row updates — the client saw "success" but no DB row was mutated.
+-- Instructions: Run this entire script in your Supabase Dashboard -> SQL Editor -> New Query -> Run.
 --
--- Fix:
---   1. Add user_is_trip_organizer() SECURITY DEFINER helper.
---   2. Promote updateMemberRoles to a SECURITY DEFINER RPC that:
---        · Enforces organizer/owner caller check.
---        · Writes the canonical DB update.
---        · Emits an in-app notification to the affected member.
---        · Appends an activity log entry.
---   3. Extend trip_members_update RLS so non-owner organizers can
---      update roles via direct client calls as well.
+-- Root Cause Fixed:
+--   1. PostgreSQL error 42703 (record "new" has no field "updated_at"):
+--      A legacy trigger `set_trip_members_updated_at` called `set_updated_at()`
+--      on `trip_members`, but `trip_members` lacked the `updated_at` column.
+--      This caused all UPDATEs on `trip_members` to fail.
+--   2. Added `updated_at` column and safely dropped/recreated the trigger.
+--   3. Created `update_member_roles()` SECURITY DEFINER RPC.
+--   4. Extended `trip_members_update` RLS policy for organizers.
 -- ═══════════════════════════════════════════════════════════════════════════
 
--- ── Helper: is the current user an approved organizer for this trip? ──────────
--- Checks trip ownership OR approved 'organizer' role in trip_members.
--- SECURITY DEFINER prevents RLS recursion.
+-- ── 1. Fix trip_members updated_at & Broken Trigger ──────────────────────────
+-- Drop the trigger that caused error 42703
+drop trigger if exists set_trip_members_updated_at on public.trip_members;
+drop trigger if exists set_updated_at on public.trip_members;
+
+-- Ensure updated_at column exists on trip_members
+alter table public.trip_members
+  add column if not exists updated_at timestamptz not null default now();
+
+-- Recreate trigger cleanly
+create or replace function public.set_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+create trigger set_trip_members_updated_at
+  before update on public.trip_members
+  for each row execute procedure public.set_updated_at();
+
+-- ── 2. Helper: is the caller an owner or approved organizer? ──────────────────
 create or replace function public.user_is_trip_organizer(p_trip_id uuid)
 returns boolean
 language sql
@@ -44,9 +62,7 @@ $$;
 
 grant execute on function public.user_is_trip_organizer(uuid) to authenticated;
 
--- ── RPC: update_member_roles ──────────────────────────────────────────────────
--- Replaces the fragile client-side UPDATE that was blocked by RLS for
--- non-owner organizers. Called from TripRepository.updateMemberRoles().
+-- ── 3. RPC: update_member_roles ──────────────────────────────────────────────
 create or replace function public.update_member_roles(
   p_trip_id    uuid,
   p_member_uid uuid,
@@ -58,24 +74,26 @@ security definer
 set search_path = public
 as $$
 declare
-  v_caller_id   uuid   := auth.uid();
-  v_trip_name   text;
-  v_member_name text;
-  v_role_labels text;
-  v_safe_roles  text[];
+  v_caller_id      uuid   := auth.uid();
+  v_target_user_id uuid;
+  v_trip_name      text;
+  v_member_name    text;
+  v_role_labels    text;
+  v_safe_roles     text[];
 begin
-  -- Caller must be trip owner or approved organizer
+  if v_caller_id is null then
+    raise exception 'Not authenticated.';
+  end if;
+
   if not public.user_is_trip_organizer(p_trip_id) then
     raise exception 'Only organizers can assign roles.';
   end if;
 
-  -- Default to ['member'] when the caller passes an empty array
   v_safe_roles := case
     when p_roles is null or array_length(p_roles, 1) is null then array['member']
     else p_roles
   end;
 
-  -- Validate every role string against the known enum values
   if exists (
     select 1
     from unnest(v_safe_roles) as r
@@ -84,68 +102,69 @@ begin
     raise exception 'Unknown role value detected. Allowed: organizer, treasurer, navigator, buyer, documenter, member.';
   end if;
 
-  -- Perform the update
+  -- Update trip_members (matches by user_id or row id)
   update public.trip_members
-     set roles = v_safe_roles
+     set roles      = v_safe_roles,
+         updated_at = now()
    where trip_id = p_trip_id
-     and user_id  = p_member_uid;
+     and (user_id = p_member_uid or id = p_member_uid)
+   returning user_id into v_target_user_id;
 
-  if not found then
+  if not found or v_target_user_id is null then
     raise exception 'Member record not found for this trip.';
   end if;
 
-  -- Resolve display strings for notification/activity log
-  select name into v_trip_name   from public.trips where id = p_trip_id;
+  -- Resolve display strings
+  select name into v_trip_name from public.trips where id = p_trip_id;
   select coalesce(display_name, full_name, email, 'Member')
     into v_member_name
-    from public.users where id = p_member_uid;
+    from public.users
+   where id = v_target_user_id;
 
   v_role_labels := array_to_string(v_safe_roles, ', ');
 
-  -- Notify the affected member (best-effort — never fail the main update)
-  begin
-    insert into public.notifications (user_id, trip_id, type, title, body, data)
-    values (
-      p_member_uid,
-      p_trip_id,
-      'role_updated',
-      '🏷️ Your Role Was Updated',
-      'Your role in "' || v_trip_name || '" has been changed to: ' || v_role_labels,
-      jsonb_build_object('trip_id', p_trip_id, 'roles', v_safe_roles)
-    );
-  exception when others then
-    -- Non-fatal: proceed even if notification insert fails
-    null;
-  end;
+  -- Notify the affected member if not self-editing (best-effort)
+  if v_target_user_id != v_caller_id then
+    begin
+      insert into public.notifications (user_id, trip_id, type, title, body, data)
+      values (
+        v_target_user_id,
+        p_trip_id,
+        'role_updated',
+        '🏷️ Your Role Was Updated',
+        'Your role in "' || coalesce(v_trip_name, 'the trip') || '" has been changed to: ' || v_role_labels,
+        jsonb_build_object('trip_id', p_trip_id, 'roles', v_safe_roles)
+      );
+    exception when others then
+      null;
+    end;
+  end if;
 
-  -- Activity log entry (best-effort)
+  -- Log activity (best-effort)
   begin
     insert into public.activity_log (trip_id, user_id, action_type, description)
     values (
       p_trip_id,
       v_caller_id,
       'member_role_changed',
-      v_member_name || '''s roles updated to: ' || v_role_labels
+      coalesce(v_member_name, 'Member') || '''s roles updated to: ' || v_role_labels
     );
   exception when others then
     null;
   end;
 
   return jsonb_build_object(
-    'success',      true,
-    'trip_id',      p_trip_id,
-    'member_uid',   p_member_uid,
-    'roles',        v_safe_roles
+    'success',    true,
+    'trip_id',    p_trip_id,
+    'member_uid', v_target_user_id,
+    'roles',      v_safe_roles
   );
 end;
 $$;
 
 grant execute on function public.update_member_roles(uuid, uuid, text[]) to authenticated;
 
--- ── Extend trip_members UPDATE policy ─────────────────────────────────────────
--- Previous policy: auth.uid() = user_id OR user_owns_trip(trip_id)
--- Extended policy: additionally allow approved organizers to update any row.
--- Drops and recreates the policy to avoid duplicate-policy errors.
+-- ── 4. Extend trip_members UPDATE policy ─────────────────────────────────────
 drop policy if exists "trip_members_update" on public.trip_members;
 
 create policy "trip_members_update"

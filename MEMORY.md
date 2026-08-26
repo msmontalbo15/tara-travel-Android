@@ -117,6 +117,7 @@ public.trip_members (
   is_location_sharing_paused boolean default false,
   status text not null default 'approved' check (status in ('pending','approved','rejected')),
   joined_at timestamptz default now(),
+  updated_at timestamptz default now(),
   unique (trip_id, user_id)
 );
 
