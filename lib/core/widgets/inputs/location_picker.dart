@@ -69,16 +69,18 @@ class LocationPicker extends StatefulWidget {
   final double? initialLat;
   final double? initialLon;
   final bool enableMapPin;
+  final bool openMapOnTap;
   final ValueChanged<LocationResult?> onLocationSelected;
 
   const LocationPicker({
     super.key,
     this.label = 'Location',
-    this.hint = 'Search Philippine places...',
+    this.hint,
     this.initialValue,
     this.initialLat,
     this.initialLon,
     this.enableMapPin = true,
+    this.openMapOnTap = true,
     required this.onLocationSelected,
   });
 
@@ -118,11 +120,27 @@ class _LocationPickerState extends State<LocationPicker> {
           if (mounted) setState(() => _showDropdown = false);
         });
       } else {
-        if (_searchCtrl.text.isNotEmpty) {
+        if (_searchCtrl.text.isNotEmpty && !widget.openMapOnTap) {
           setState(() => _showDropdown = true);
         }
       }
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant LocationPicker oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialValue != oldWidget.initialValue &&
+        widget.initialValue != _searchCtrl.text) {
+      _searchCtrl.text = widget.initialValue ?? '';
+      if (widget.initialLat != null && widget.initialLon != null) {
+        _selectedLocation = LocationResult(
+          displayName: widget.initialValue ?? '',
+          lat: widget.initialLat!,
+          lon: widget.initialLon!,
+        );
+      }
+    }
   }
 
   @override
@@ -150,7 +168,9 @@ class _LocationPickerState extends State<LocationPicker> {
       return;
     }
 
-    // Provide custom typed text fallback
+    if (widget.openMapOnTap) return;
+
+    // Provide custom typed text fallback when in typing mode
     widget.onLocationSelected(LocationResult(
       displayName: _searchCtrl.text.trim(),
       lat: _selectedLocation?.lat ?? 0.0,
@@ -232,6 +252,11 @@ class _LocationPickerState extends State<LocationPicker> {
 
   @override
   Widget build(BuildContext context) {
+    final effectiveHint = widget.hint ??
+        (widget.openMapOnTap
+            ? 'Tap to select location on map...'
+            : 'Search Philippine places...');
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -281,13 +306,15 @@ class _LocationPickerState extends State<LocationPicker> {
             TextFormField(
               controller: _searchCtrl,
               focusNode: _focusNode,
+              readOnly: widget.openMapOnTap,
+              onTap: widget.openMapOnTap ? _openMapPinPicker : null,
               style: const TextStyle(
                 fontFamily: 'DM Sans',
                 fontSize: 15,
                 color: AppColors.textPrimary,
               ),
               decoration: InputDecoration(
-                hintText: widget.hint,
+                hintText: effectiveHint,
                 hintStyle: TextStyle(
                   color: AppColors.warmMuted.withValues(alpha: 0.6),
                   fontSize: 14,
@@ -309,6 +336,7 @@ class _LocationPickerState extends State<LocationPicker> {
                       )
                     else if (_searchCtrl.text.isNotEmpty)
                       IconButton(
+                        tooltip: 'Clear location',
                         icon: const Icon(Icons.clear_rounded,
                             size: 18, color: AppColors.muted),
                         onPressed: () {
@@ -319,8 +347,8 @@ class _LocationPickerState extends State<LocationPicker> {
                       ),
                     if (widget.enableMapPin)
                       IconButton(
-                        tooltip: 'Choose pin on map',
-                        icon: const Icon(Icons.map_outlined,
+                        tooltip: 'Open Map Pin Picker',
+                        icon: const Icon(Icons.map_rounded,
                             size: 20, color: AppColors.primary),
                         onPressed: _openMapPinPicker,
                       ),
@@ -347,8 +375,10 @@ class _LocationPickerState extends State<LocationPicker> {
               ),
             ),
 
-            // Philippines Search Dropdown
-            if (_showDropdown && (_results.isNotEmpty || _isLoading))
+            // Philippines Search Dropdown (for typing mode when openMapOnTap == false)
+            if (!widget.openMapOnTap &&
+                _showDropdown &&
+                (_results.isNotEmpty || _isLoading))
               Positioned(
                 top: 60,
                 left: 0,
