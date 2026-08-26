@@ -286,6 +286,8 @@ All PostgreSQL functions are implemented with `SECURITY DEFINER` where required 
   Checks if `auth.uid()` matches `public.trips.owner_id`.
 - **`public.user_can_access_trip(p_trip_id uuid) -> boolean`**  
   Returns `true` if `user_owns_trip(p_trip_id)` OR `is_trip_member(p_trip_id)`.
+- **`public.user_is_trip_organizer(p_trip_id uuid) -> boolean`** *(Migration 018)*  
+  Checks if `auth.uid()` is the trip owner OR has an approved `organizer` role in `public.trip_members`. Prevents RLS recursion when evaluating organizer management permissions.
 
 ### 2. User & Auth Automation Functions
 - **`public.handle_new_user()`** *(Trigger on `auth.users`)*  
@@ -300,6 +302,8 @@ All PostgreSQL functions are implemented with `SECURITY DEFINER` where required 
   Finds the trip by sanitized 6-character invite code, inserts `auth.uid()` into `trip_members` with `status = 'pending'`, fans out in-app notifications (`trip_join_request`) to all organizers/owners, logs activity, and returns `{ success, trip_id, trip_name, status }`.
 - **`public.approve_member(p_trip_id uuid, p_member_uid uuid) -> jsonb`** *(RPC, Migration 017)*  
   Allows organizers/owners to approve a pending member, updates `status = 'approved'`, inserts `trip_approved` notification to the applicant, and logs activity.
+- **`public.update_member_roles(p_trip_id uuid, p_member_uid uuid, p_roles text[]) -> jsonb`** *(RPC, Migration 018)*  
+  Allows organizers/owners to assign and update member roles atomically. Validates roles against the enum domain, updates `public.trip_members.roles`, sends in-app `role_updated` notification to the affected member, and records an activity log entry.
 - **`public.reject_or_remove_member(p_trip_id uuid, p_member_uid uuid, p_reason text) -> jsonb`** *(RPC, Migration 017)*  
   Deletes `trip_members` row, sends notification (`trip_rejected` or `member_removed`), and logs activity. Cannot be used on trip owner.
 - **`public.leave_trip(p_trip_id uuid) -> jsonb`** *(RPC, Migration 017)*  

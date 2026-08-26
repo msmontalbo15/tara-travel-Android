@@ -39,9 +39,9 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
         final approvedMembers = allMembers.where((m) => m.status == MemberStatus.approved).toList();
 
         final currentMember = ref.watch(currentMemberProvider(trip));
-        final canManageMembers = currentMember?.canManageMembers ?? false;
         // Non-owners can leave the trip
         final isOwner = currentMember?.isTripCreator(trip.ownerId) ?? false;
+        final canManageMembers = (currentMember?.canManageMembers ?? false) || isOwner;
         final canLeave = !isOwner && currentMember != null;
 
         return Scaffold(
@@ -492,9 +492,10 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
       backgroundColor: Colors.transparent,
       builder: (_) => _RoleEditorSheet(tripId: tripId, member: member, canRemove: canRemove),
     ).then((_) {
-      // If the organizer tapped Remove inside the sheet, refresh lists
+      // If roles changed or member was removed, refresh lists
       ref.invalidate(selectedTripProvider);
       ref.invalidate(allTripsProvider);
+      ref.invalidate(activeTripProvider);
     });
   }
 
@@ -507,6 +508,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
     ).then((_) {
       ref.invalidate(selectedTripProvider);
       ref.invalidate(allTripsProvider);
+      ref.invalidate(activeTripProvider);
     });
   }
 
@@ -878,6 +880,7 @@ class _RoleEditorSheetState extends ConsumerState<_RoleEditorSheet> {
                             widget.tripId, widget.member.id, rolesList);
                         ref.invalidate(selectedTripProvider);
                         ref.invalidate(allTripsProvider);
+                        ref.invalidate(activeTripProvider);
                         if (context.mounted) {
                           Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -892,7 +895,7 @@ class _RoleEditorSheetState extends ConsumerState<_RoleEditorSheet> {
                         if (context.mounted) {
                           setState(() => _isSaving = false);
                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                            content: Text('Failed to update roles: $e',
+                            content: Text('Failed to update roles: ${e.toString().replaceAll('Exception: ', '')}',
                                 style: const TextStyle(fontFamily: 'DM Sans')),
                             backgroundColor: AppColors.red,
                             behavior: SnackBarBehavior.floating,
@@ -1312,6 +1315,9 @@ class _BatchRoleEditorSheetState extends ConsumerState<_BatchRoleEditorSheet> {
                             rolesList,
                           );
                         }
+                        ref.invalidate(selectedTripProvider);
+                        ref.invalidate(allTripsProvider);
+                        ref.invalidate(activeTripProvider);
                         if (context.mounted) {
                           Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -1334,7 +1340,7 @@ class _BatchRoleEditorSheetState extends ConsumerState<_BatchRoleEditorSheet> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
-                                'Failed to batch update roles: $e',
+                                'Failed to batch update roles: ${e.toString().replaceAll('Exception: ', '')}',
                                 style: const TextStyle(fontFamily: 'DM Sans'),
                               ),
                               backgroundColor: AppColors.red,

@@ -35,6 +35,7 @@
 | **`IMP-043`** | 2026-08-25 | Member Lifecycle / Notifications | Organizer approval workflow, member removal, voluntary trip departure, and automated notification triggers. |
 | **`IMP-047`** | 2026-08-25 | Itinerary / Supabase Sync | Permission-gated Itinerary Day Deletion (Organizers & Navigators), multi-day check, batch stop deletion (`deleteStops`), and remote day re-indexing synchronization. |
 | **`IMP-048`** | 2026-08-26 | Maps & Live Tracking | Complete open-source migration to `flutter_map` (OSM), PostGIS live tracking (`004_postgis_live_tracking.sql`), `LocationTrackingService` with offline queue, `GroupRideSyncService` with exponential backoff, and Philippine `Nominatim` geocoding. |
+| **`IMP-049`** | 2026-08-26 | Member Roles & Security RPC | Atomic member role assignment via `update_member_roles` RPC, `user_is_trip_organizer` RLS recursion helper, extended `trip_members_update` policy, and reactive UI state invalidation. |
 
 ---
 
@@ -592,6 +593,38 @@
 - **Verification**:
   - `flutter pub get` → clean (exit code 0).
   - `flutter analyze` → 0 issues (exit code 0).
+
+---
+
+### `IMP-049` · Member Role Assignment & Security RPC Suite
+- **Date**: August 26, 2026
+- **Target Files**:
+  - [supabase/migrations/018_update_member_roles.sql](file:///d:/Spencer/Downloads/tara_travel/supabase/migrations/018_update_member_roles.sql) **[NEW]**
+  - [lib/core/repositories/trip_repository.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/repositories/trip_repository.dart) **[MODIFIED]**
+  - [lib/features/members/members_screen.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/members/members_screen.dart) **[MODIFIED]**
+  - [test/core_model_mapping_test.dart](file:///d:/Spencer/Downloads/tara_travel/test/core_model_mapping_test.dart) **[MODIFIED]**
+  - [MEMORY.md](file:///d:/Spencer/Downloads/tara_travel/MEMORY.md) **[MODIFIED]**
+  - [IMPLEMENTATION_MEMORY.md](file:///d:/Spencer/Downloads/tara_travel/IMPLEMENTATION_MEMORY.md) **[MODIFIED]**
+- **Scope & Objectives**:
+  - **Migration 018**:
+    - Implemented `public.user_is_trip_organizer(p_trip_id uuid)` with `SECURITY DEFINER` execution context to check trip ownership or approved organizer status without triggering RLS infinite recursion.
+    - Implemented `public.update_member_roles(p_trip_id uuid, p_member_uid uuid, p_roles text[])` RPC (`SECURITY DEFINER`):
+      - Verifies caller has organizer permissions.
+      - Validates assigned role strings against allowed values (`organizer`, `treasurer`, `navigator`, `buyer`, `documenter`, `member`).
+      - Atomically updates `trip_members.roles` (defaults to `['member']` if empty).
+      - Emits in-app `role_updated` notification to the affected member.
+      - Records `member_role_changed` entry in `activity_log`.
+    - Extended `trip_members_update` policy to allow `auth.uid() = user_id OR public.user_owns_trip(trip_id) OR public.user_is_trip_organizer(trip_id)`.
+  - **Trip Repository**:
+    - Updated `updateMemberRoles()` to call `update_member_roles` RPC first, with fallback to direct table update and activity log insertion.
+  - **Members Screen State & Permissions**:
+    - Guaranteed trip owner has management privileges: `canManageMembers = (currentMember?.canManageMembers ?? false) || isOwner`.
+    - Ensured `activeTripProvider` is explicitly invalidated along with `selectedTripProvider` and `allTripsProvider` in `_RoleEditorSheet` and `_BatchRoleEditorSheet` upon successful role updates.
+  - **Unit Testing**:
+    - Added unit test cases in `test/core_model_mapping_test.dart` verifying multiple roles parsing, `isOrganizer`, `canManageMembers`, `canManageItinerary`, `canApproveExpenses`, and `isTripCreator` permission evaluation.
+- **Verification**:
+  - `flutter analyze` → 0 issues (exit code 0).
+
 
 
 

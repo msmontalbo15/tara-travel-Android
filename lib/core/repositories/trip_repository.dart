@@ -300,24 +300,42 @@ class TripRepository {
     final rolesToAssign = newRoles.isEmpty ? [MemberRole.member] : newRoles;
     final roleNames = rolesToAssign.map((r) => r.name).toList();
 
-    await _supabase
-        .from('trip_members')
-        .update({'roles': roleNames})
-        .eq('trip_id', tripId)
-        .or('user_id.eq.$memberId,id.eq.$memberId');
-
-    // Activity log entry
     try {
-      final roleLabels = rolesToAssign.map((r) => r.displayName).join(', ');
-      await _supabase.from('activity_log').insert({
-        'trip_id': tripId,
-        'user_id': _supabase.auth.currentUser?.id,
-        'action_type': 'member_role_changed',
-        'description': 'Updated member roles to: $roleLabels',
-        'created_at': DateTime.now().toIso8601String(),
-      });
-    } catch (e) {
-      debugPrint('[TripRepository] updateMemberRoles activity log error: $e');
+      debugPrint('[TripRepository] Calling update_member_roles RPC: trip=$tripId member=$memberId roles=$roleNames');
+      final res = await _supabase.rpc(
+        'update_member_roles',
+        params: {
+          'p_trip_id': tripId,
+          'p_member_uid': memberId,
+          'p_roles': roleNames,
+        },
+      );
+      debugPrint('[TripRepository] update_member_roles RPC succeeded: $res');
+      return;
+    } on PostgrestException catch (rpcErr) {
+      debugPrint('[TripRepository] update_member_roles RPC warning (${rpcErr.code}): ${rpcErr.message}. Attempting direct update fallback.');
+      try {
+        await _supabase
+            .from('trip_members')
+            .update({'roles': roleNames})
+            .eq('trip_id', tripId)
+            .or('user_id.eq.$memberId,id.eq.$memberId');
+
+        final roleLabels = rolesToAssign.map((r) => r.displayName).join(', ');
+        await _supabase.from('activity_log').insert({
+          'trip_id': tripId,
+          'user_id': _supabase.auth.currentUser?.id,
+          'action_type': 'member_role_changed',
+          'description': 'Updated member roles to: $roleLabels',
+          'created_at': DateTime.now().toIso8601String(),
+        });
+      } catch (directErr) {
+        debugPrint('[TripRepository] Direct update fallback failed: $directErr');
+        throw Exception(rpcErr.message.isNotEmpty ? rpcErr.message : 'Failed to update member roles.');
+      }
+    } catch (e, st) {
+      debugPrint('[TripRepository] updateMemberRoles unexpected error: $e\n$st');
+      rethrow;
     }
   }
 

@@ -109,5 +109,40 @@ void main() {
     expect(memberFromNestedUser.name, 'Maria S.');
     expect(memberFromNestedUser.hideSurname, true);
   });
+
+  test('MemberModel parses multiple roles and evaluates permissions', () {
+    final member = MemberModel.fromMap({
+      'user_id': 'u-org',
+      'name': 'Alex Rivera',
+      'roles': ['organizer', 'treasurer', 'navigator'],
+      'status': 'approved',
+    });
+
+    expect(member.roles, [
+      MemberRole.organizer,
+      MemberRole.treasurer,
+      MemberRole.navigator,
+    ]);
+    expect(member.isOrganizer, true);
+    expect(member.isTreasurer, true);
+    expect(member.isNavigator, true);
+    expect(member.canManageMembers, true);
+    expect(member.canManageItinerary, true);
+    expect(member.canApproveExpenses, true);
+    expect(member.isTripCreator('u-org'), true);
+    expect(member.isTripCreator('u-other'), false);
+
+    // Default fallback for empty or member role
+    final defaultMember = MemberModel.fromMap({
+      'user_id': 'u-regular',
+      'name': 'Sam Cruz',
+      'roles': ['member'],
+    });
+
+    expect(defaultMember.roles, [MemberRole.member]);
+    expect(defaultMember.isOrganizer, false);
+    expect(defaultMember.canManageMembers, false);
+    expect(defaultMember.canViewTripData, true);
+  });
 }
 
