@@ -37,6 +37,7 @@
 | **`IMP-048`** | 2026-08-26 | Maps & Live Tracking | Complete open-source migration to `flutter_map` (OSM), PostGIS live tracking (`004_postgis_live_tracking.sql`), `LocationTrackingService` with offline queue, `GroupRideSyncService` with exponential backoff, and Philippine `Nominatim` geocoding. |
 | **`IMP-049`** | 2026-08-26 | Member Roles & Security RPC | Atomic member role assignment via `update_member_roles` RPC, `user_is_trip_organizer` RLS recursion helper, extended `trip_members_update` policy, and reactive UI state invalidation. |
 | **`IMP-050`** | 2026-08-26 | Social Graph & Friend Module | 3-tab modern Friends UI (My Friends, Requests, Find Friends), bidirectional friend status resolution, live user preview search, QR sharing, request management, and trip invitation integration. |
+| **`IMP-051`** | 2026-08-26 | Real-time Friend Presence | `UserPresenceService` with heartbeat & lifecycle observer, `friendsRealtimePresenceProvider`, dynamic online calculation (`isCurrentlyOnline`, `presenceStatusText`), and interactive online friend filtering. |
 
 ---
 
@@ -656,6 +657,37 @@
     - Built trip picker bottom sheet allowing users to directly copy/share active trip invite codes with selected friends.
 - **Verification**:
   - `flutter analyze` → 0 issues across entire `lib/` (ran in 9.7s, exit code 0).
+
+---
+
+### `IMP-051` · Real-time Online Presence & Friend Activity Telemetry
+- **Date**: August 26, 2026
+- **Target Files**:
+  - [lib/core/services/user_presence_service.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/services/user_presence_service.dart) **[NEW]**
+  - [lib/core/widgets/auth_gate.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/widgets/auth_gate.dart) **[MODIFIED]**
+  - [lib/core/models/friend_model.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/models/friend_model.dart) **[MODIFIED]**
+  - [lib/core/providers/friend_provider.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/providers/friend_provider.dart) **[MODIFIED]**
+  - [lib/features/friends/widgets/friend_list_item.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/friends/widgets/friend_list_item.dart) **[MODIFIED]**
+  - [lib/features/friends/friends_screen.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/friends/friends_screen.dart) **[MODIFIED]**
+  - [MEMORY.md](file:///d:/Spencer/Downloads/tara_travel/MEMORY.md) **[MODIFIED]**
+  - [IMPLEMENTATION_MEMORY.md](file:///d:/Spencer/Downloads/tara_travel/IMPLEMENTATION_MEMORY.md) **[MODIFIED]**
+- **Scope & Objectives**:
+  - **User Presence Service**:
+    - Built `UserPresenceService` with `WidgetsBindingObserver` to track lifecycle transitions.
+    - Automatically sets `is_online = true` and `last_seen = now()` on foregrounding/login and marks `is_online = false` on backgrounding/logout.
+    - Dispatches heartbeats every 45 seconds to guarantee active session freshness.
+  - **Presence Evaluation & Relative Timestamps**:
+    - Added `FriendModel.isCurrentlyOnline` checking `isOnline == true` alongside active heartbeat within the last 5 minutes.
+    - Added `FriendModel.presenceStatusText` converting `lastSeen` into human-friendly relative activity descriptions (`Active now`, `Active 5m ago`, `Active 2h ago`, `Active yesterday`, `Offline`).
+  - **Realtime Presence Streaming**:
+    - Created `friendsRealtimePresenceProvider` subscribing to Supabase Realtime changes on `public.users` and `public.friends`.
+    - Automatically refreshes the friends roster when any friend transitions between online and offline states.
+  - **Interactive Online Friend Filter & Glow Badges**:
+    - Added interactive `All Friends` vs `🟢 Online` chip toggles to the header banner in `FriendsScreen`.
+    - Added green status dots with ambient glow shadows on online friend avatars and cards.
+- **Verification**:
+  - `flutter analyze lib/` → 0 issues (ran in 5.4s, exit code 0).
+
 
 
 

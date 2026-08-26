@@ -60,6 +60,28 @@ class FriendModel {
     );
   }
 
+  /// Evaluates whether the user is actively online based on flag and recent heartbeat.
+  bool get isCurrentlyOnline {
+    if (!isOnline) return false;
+    if (lastSeen == null) return true;
+    // Consider active if heartbeat occurred in the last 5 minutes
+    return DateTime.now().toUtc().difference(lastSeen!.toUtc()).inMinutes <= 5;
+  }
+
+  /// Formatted relative presence text (e.g. 'Active now', 'Active 5m ago', 'Offline').
+  String get presenceStatusText {
+    if (isCurrentlyOnline) return 'Active now';
+    if (lastSeen == null) return 'Offline';
+
+    final diff = DateTime.now().toUtc().difference(lastSeen!.toUtc());
+    if (diff.inMinutes < 1) return 'Active just now';
+    if (diff.inMinutes < 60) return 'Active ${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return 'Active ${diff.inHours}h ago';
+    if (diff.inDays == 1) return 'Active yesterday';
+    if (diff.inDays < 7) return 'Active ${diff.inDays}d ago';
+    return 'Offline';
+  }
+
   static String formatDisplayName(String rawName, {bool hideSurname = false}) {
     final trimmed = rawName.trim();
     if (!hideSurname || trimmed.isEmpty) return trimmed;

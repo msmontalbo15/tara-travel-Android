@@ -23,6 +23,7 @@ import '../auth/data/secure_session_repository.dart';
 import '../auth/presentation/auth_notifier.dart';
 import '../middleware/audit_logger.dart';
 import '../providers/profile_provider.dart';
+import '../services/user_presence_service.dart';
 
 class _RouteTrackingObserver extends NavigatorObserver {
   String? currentRoute;
@@ -72,6 +73,7 @@ class _AuthGateState extends ConsumerState<AuthGate> {
       // Check in-memory Supabase user first (hydrated from main() before runApp)
       final inMemoryUser = Supabase.instance.client.auth.currentUser;
       if (inMemoryUser != null) {
+        UserPresenceService.instance.start(inMemoryUser.id);
         await _navigateAuthenticatedUser(inMemoryUser);
         return;
       }
@@ -83,6 +85,7 @@ class _AuthGateState extends ConsumerState<AuthGate> {
         if (!mounted) return;
         final authState = ref.read(authNotifierProvider).value;
         if (authState is AuthAuthenticated) {
+          UserPresenceService.instance.start(authState.user.id);
           await _navigateAuthenticatedUser(authState.user);
         }
       }
@@ -92,6 +95,7 @@ class _AuthGateState extends ConsumerState<AuthGate> {
   // ── Navigation Helpers ─────────────────────────────────────────────────────
 
   Future<void> _navigateAuthenticatedUser(User user) async {
+    UserPresenceService.instance.start(user.id);
     await ref.read(profileProvider.notifier).refreshProfile();
     if (!mounted) return;
 
@@ -114,6 +118,7 @@ class _AuthGateState extends ConsumerState<AuthGate> {
     }
 
     if (event == AuthChangeEvent.signedIn && session != null) {
+      UserPresenceService.instance.start(session.user.id);
       await ref.read(profileProvider.notifier).refreshProfile();
       if (!mounted) return;
 
@@ -127,11 +132,12 @@ class _AuthGateState extends ConsumerState<AuthGate> {
       final destination =
           profile.hasCompletedOnboarding ? '/home' : '/onboarding';
       _navigatorKey.currentState
-          ?.pushNamedAndRemoveUntil(destination, (route) => false);
+        ?.pushNamedAndRemoveUntil(destination, (route) => false);
       return;
     }
 
     if (event == AuthChangeEvent.signedOut) {
+      await UserPresenceService.instance.stop();
       await AuditLogger.instance.flush();
 
       // Invalidate in-memory profile provider cache

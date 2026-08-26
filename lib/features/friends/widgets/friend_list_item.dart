@@ -192,17 +192,26 @@ class _FriendListItemState extends ConsumerState<FriendListItem> {
                               width: 8,
                               height: 8,
                               decoration: BoxDecoration(
-                                color: widget.friend.isOnline ? AppColors.green : AppColors.muted,
+                                color: widget.friend.isCurrentlyOnline ? AppColors.green : AppColors.muted,
                                 shape: BoxShape.circle,
+                                boxShadow: widget.friend.isCurrentlyOnline
+                                    ? [
+                                        BoxShadow(
+                                          color: AppColors.green.withValues(alpha: 0.5),
+                                          blurRadius: 6,
+                                          spreadRadius: 1,
+                                        ),
+                                      ]
+                                    : null,
                               ),
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              widget.friend.isOnline ? 'Online now' : 'Offline',
+                              widget.friend.presenceStatusText,
                               style: TextStyle(
                                 fontFamily: 'DM Sans',
                                 fontSize: 12,
-                                color: widget.friend.isOnline ? AppColors.green : AppColors.textSecondary,
+                                color: widget.friend.isCurrentlyOnline ? AppColors.green : AppColors.textSecondary,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -572,24 +581,36 @@ class _FriendListItemState extends ConsumerState<FriendListItem> {
     }
 
     // Default Accepted Friend subtitle: Online Presence
+    final isOnline = widget.friend.isCurrentlyOnline;
+    final statusText = widget.friend.presenceStatusText;
+
     return Row(
       children: [
         Container(
           width: 7,
           height: 7,
           decoration: BoxDecoration(
-            color: widget.friend.isOnline ? AppColors.green : AppColors.muted,
+            color: isOnline ? AppColors.green : AppColors.muted,
             shape: BoxShape.circle,
+            boxShadow: isOnline
+                ? [
+                    BoxShadow(
+                      color: AppColors.green.withValues(alpha: 0.6),
+                      blurRadius: 4,
+                      spreadRadius: 0.5,
+                    ),
+                  ]
+                : null,
           ),
         ),
         const SizedBox(width: 5),
         Text(
-          widget.friend.isOnline ? 'Active now' : 'Offline',
+          statusText,
           style: TextStyle(
             fontFamily: 'DM Sans',
             fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: widget.friend.isOnline ? AppColors.green : AppColors.textSecondary,
+            fontWeight: isOnline ? FontWeight.w600 : FontWeight.w500,
+            color: isOnline ? AppColors.green : AppColors.textSecondary,
           ),
         ),
       ],
@@ -597,6 +618,8 @@ class _FriendListItemState extends ConsumerState<FriendListItem> {
   }
 
   Widget _buildAvatar({double size = 46}) {
+    final isOnline = widget.friend.isCurrentlyOnline;
+
     return Stack(
       children: [
         Container(
@@ -637,9 +660,18 @@ class _FriendListItemState extends ConsumerState<FriendListItem> {
               width: 13,
               height: 13,
               decoration: BoxDecoration(
-                color: widget.friend.isOnline ? AppColors.green : AppColors.cardBorder,
+                color: isOnline ? AppColors.green : AppColors.cardBorder,
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 2),
+                boxShadow: isOnline
+                    ? [
+                        BoxShadow(
+                          color: AppColors.green.withValues(alpha: 0.5),
+                          blurRadius: 4,
+                          spreadRadius: 0.5,
+                        ),
+                      ]
+                    : null,
               ),
             ),
           ),

@@ -25,6 +25,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
   final TextEditingController _localFilterCtrl = TextEditingController();
   String _searchQuery = '';
   String _localFilterQuery = '';
+  bool _showOnlineOnly = false;
   Timer? _debounceTimer;
 
   @override
@@ -544,6 +545,9 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Subscribe to live Realtime presence pings
+    ref.watch(friendsRealtimePresenceProvider);
+
     final incomingRequests = ref.watch(incomingRequestsProvider);
     final requestCount = incomingRequests.value?.length ?? 0;
 
@@ -780,57 +784,110 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
             );
           }
 
-          // Filter friends locally by name or email
-          final filteredFriends = _localFilterQuery.isEmpty
-              ? friends
-              : friends
-                  .where((f) =>
-                      f.name.toLowerCase().contains(_localFilterQuery.toLowerCase()) ||
-                      (f.email != null &&
-                          f.email!.toLowerCase().contains(_localFilterQuery.toLowerCase())))
-                  .toList();
+          final onlineCount = friends.where((f) => f.isCurrentlyOnline).length;
 
-          final onlineCount = friends.where((f) => f.isOnline).length;
+          // Filter friends locally by name/email + online filter
+          final filteredFriends = friends.where((f) {
+            if (_showOnlineOnly && !f.isCurrentlyOnline) return false;
+            if (_localFilterQuery.isNotEmpty) {
+              final query = _localFilterQuery.toLowerCase();
+              final matchesName = f.name.toLowerCase().contains(query);
+              final matchesEmail = f.email != null && f.email!.toLowerCase().contains(query);
+              if (!matchesName && !matchesEmail) return false;
+            }
+            return true;
+          }).toList();
 
           return ListView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: EdgeInsets.fromLTRB(20, 4, 20, 24 + MediaQuery.of(context).padding.bottom),
             children: [
-              // Online Summary Banner & Filter
+              // Online Summary Banner with Interactive Filter Chips
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.cardBorder, width: 0.7),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.cardBorder, width: 0.8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.02),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: Row(
                   children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: AppColors.green,
-                        shape: BoxShape.circle,
+                    // All Friends Chip
+                    GestureDetector(
+                      onTap: () => setState(() => _showOnlineOnly = false),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: !_showOnlineOnly ? AppColors.primary : AppColors.surfaceLight,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          'All (${friends.length})',
+                          style: TextStyle(
+                            fontFamily: 'DM Sans',
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: !_showOnlineOnly ? Colors.white : AppColors.textSecondary,
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      '$onlineCount of ${friends.length} friends online',
-                      style: const TextStyle(
-                        fontFamily: 'DM Sans',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+
+                    // Online Friends Chip
+                    GestureDetector(
+                      onTap: () => setState(() => _showOnlineOnly = true),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: _showOnlineOnly
+                              ? AppColors.green
+                              : AppColors.green.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 7,
+                              height: 7,
+                              decoration: BoxDecoration(
+                                color: _showOnlineOnly ? Colors.white : AppColors.green,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              'Online ($onlineCount)',
+                              style: TextStyle(
+                                fontFamily: 'DM Sans',
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: _showOnlineOnly ? Colors.white : AppColors.green,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
+
                     const Spacer(),
+
+                    // Presence indicator text
                     Text(
-                      '${friends.length} Total',
-                      style: const TextStyle(
+                      onlineCount > 0 ? '$onlineCount active' : 'All offline',
+                      style: TextStyle(
                         fontFamily: 'DM Sans',
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: onlineCount > 0 ? AppColors.green : AppColors.muted,
                       ),
                     ),
                   ],
@@ -874,11 +931,33 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
               ],
 
               if (filteredFriends.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 40),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 40),
                   child: Center(
-                    child: Text('No friends match your filter.',
-                        style: TextStyle(fontFamily: 'DM Sans', color: AppColors.textSecondary)),
+                    child: Column(
+                      children: [
+                        Icon(
+                          _showOnlineOnly ? Icons.wifi_off_rounded : Icons.search_off_rounded,
+                          size: 36,
+                          color: AppColors.muted,
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          _showOnlineOnly
+                              ? 'No friends currently online.'
+                              : 'No friends match your filter.',
+                          style: const TextStyle(fontFamily: 'DM Sans', fontSize: 14, color: AppColors.textSecondary),
+                        ),
+                        if (_showOnlineOnly) ...[
+                          const SizedBox(height: 8),
+                          TextButton(
+                            onPressed: () => setState(() => _showOnlineOnly = false),
+                            child: const Text('Show all friends',
+                                style: TextStyle(fontFamily: 'DM Sans', color: AppColors.primary)),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
                 )
               else

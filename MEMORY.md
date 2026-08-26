@@ -439,6 +439,8 @@ Client Tier               Storage Tier                Transport Tier
 - **`ThreeLayerEncryptionService.instance`** (`lib/core/security/three_layer_encryption_service.dart`):
   - `init()`: Generates/loads client RSA-2048 and AES-256-GCM keys into Keystore.
   - `encryptData(String plainText)` / `decryptData(String cipherText)`: Protects PII (`phone`, `gcash_number`, `health_notes`).
+- **`UserPresenceService.instance`** (`lib/core/services/user_presence_service.dart`):
+  - `start([userId])` / `stop()`: Automatic lifecycle observer (`WidgetsBindingObserver`) setting `is_online = true` / `false` and 45s heartbeat pings.
 - **`SupaService.instance`** (`lib/core/services/supa_service.dart`):
   - Low-level direct table operations, device token registration, and presence pings.
 
@@ -463,6 +465,9 @@ Client Tier               Storage Tier                Transport Tier
 | `friendRequestsCountProvider` | `Provider<int>` | Badge counter for pending incoming requests. |
 | `searchUsersProvider(query)` | `FutureProvider.family<List<FriendModel>, String>` | Fuzzy user search with annotated relationship states (`none`, `pending`, `incoming`, `accepted`). |
 | `lookupUserProvider(query)` | `FutureProvider.family<FriendModel?, String>` | Live user resolution by ID/name/email with relationship preview. |
+| `friendsRealtimePresenceProvider` | `StreamProvider.autoDispose<void>` | Supabase Realtime subscription on `public.users` and `public.friends`, auto-invalidates friends/requests providers on changes + 30s periodic refresh. |
+| `onlineFriendsProvider` | `Provider<List<FriendModel>>` | Derived list of currently online friends (`isCurrentlyOnline == true`). |
+| `onlineFriendsCountProvider` | `Provider<int>` | Count of currently online friends. |
 | `realtimeNotifierProvider(tripId)`| `StateNotifierProvider<RealtimeNotifier, RealtimeState>` | Live GPS member location tracking, stop voting broadcasts. |
 | `exploreProvider` | `FutureProvider<List<DestinationModel>>` | Destination catalog with search, tags, and rating filters. |
 
