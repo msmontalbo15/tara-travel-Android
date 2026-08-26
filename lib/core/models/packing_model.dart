@@ -8,6 +8,7 @@ class PackingItem {
   bool isChecked;
   bool isAiSuggested;
   bool isCritical;
+  String? subCategory;
   // Primary multi-member assignment list.
   List<String> assignedMemberIds;
   // Legacy display-only fields — mirror the first assigned member.
@@ -23,6 +24,7 @@ class PackingItem {
     this.isChecked = false,
     this.isAiSuggested = false,
     this.isCritical = false,
+    this.subCategory,
     List<String>? assignedMemberIds,
     this.assignedMemberId,
     this.assignedMemberName,
@@ -42,6 +44,8 @@ class PackingItem {
     bool? isChecked,
     bool? isAiSuggested,
     bool? isCritical,
+    String? subCategory,
+    bool clearSubCategory = false,
     List<String>? assignedMemberIds,
     String? assignedMemberId,
     String? assignedMemberName,
@@ -56,6 +60,7 @@ class PackingItem {
       isChecked: isChecked ?? this.isChecked,
       isAiSuggested: isAiSuggested ?? this.isAiSuggested,
       isCritical: isCritical ?? this.isCritical,
+      subCategory: clearSubCategory ? null : (subCategory ?? this.subCategory),
       assignedMemberIds: clearAssignment ? [] : (assignedMemberIds ?? List<String>.from(this.assignedMemberIds)),
       assignedMemberId: clearAssignment ? null : (assignedMemberId ?? this.assignedMemberId),
       assignedMemberName: clearAssignment ? null : (assignedMemberName ?? this.assignedMemberName),
@@ -72,6 +77,7 @@ class PackingItem {
       'is_checked': isChecked,
       'is_ai_suggested': isAiSuggested,
       'is_critical': isCritical,
+      'sub_category': subCategory,
       'assigned_user_id': assignedMemberId,
       'assigned_user_name': assignedMemberName,
       'assigned_user_initials': assignedMemberInitials,
@@ -87,6 +93,7 @@ class PackingItem {
       isChecked: map['is_checked'] == true,
       isAiSuggested: map['is_ai_suggested'] == true,
       isCritical: map['is_critical'] == true,
+      subCategory: map['sub_category']?.toString(),
       assignedMemberId: map['assigned_user_id']?.toString(),
       assignedMemberName: map['assigned_user_name']?.toString(),
       assignedMemberInitials: map['assigned_user_initials']?.toString(),
@@ -126,6 +133,19 @@ class PackingCategory {
   double get progress => totalCount == 0 ? 0 : packedCount / totalCount;
   bool get allPacked => totalCount > 0 && packedCount == totalCount;
   bool get isEmpty => items.isEmpty;
+
+  /// Returns the sorted list of distinct sub-categories present in this category's items.
+  List<String> get subCategories {
+    final set = <String>{};
+    for (final item in items) {
+      if (item.subCategory != null && item.subCategory!.trim().isNotEmpty) {
+        set.add(item.subCategory!.trim());
+      }
+    }
+    final list = set.toList();
+    list.sort();
+    return list;
+  }
 
   PackingCategory copyWith({
     String? id,

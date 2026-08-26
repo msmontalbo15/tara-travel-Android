@@ -38,6 +38,7 @@
 | **`IMP-049`** | 2026-08-26 | Member Roles & Security RPC | Atomic member role assignment via `update_member_roles` RPC, `user_is_trip_organizer` RLS recursion helper, extended `trip_members_update` policy, and reactive UI state invalidation. |
 | **`IMP-050`** | 2026-08-26 | Social Graph & Friend Module | 3-tab modern Friends UI (My Friends, Requests, Find Friends), bidirectional friend status resolution, live user preview search, QR sharing, request management, and trip invitation integration. |
 | **`IMP-051`** | 2026-08-26 | Real-time Friend Presence | `UserPresenceService` with heartbeat & lifecycle observer, `friendsRealtimePresenceProvider`, dynamic online calculation (`isCurrentlyOnline`, `presenceStatusText`), and interactive online friend filtering. |
+| **`IMP-052`** | 2026-08-27 | Packing / Custom Sub-Categories | Custom sub-categories pill/tab filter system in `_PackingCategoryCard`, `sub_category` schema sync in `PackingRepository`, preset suggestions, item tag chips & inline add integration. |
 
 ---
 
@@ -687,6 +688,39 @@
     - Added green status dots with ambient glow shadows on online friend avatars and cards.
 - **Verification**:
   - `flutter analyze lib/` → 0 issues (ran in 5.4s, exit code 0).
+
+---
+
+### `IMP-052` · Custom Packing Sub-Categories & Filter Tab Engine
+- **Date**: August 27, 2026
+- **Target Files**:
+  - [lib/core/models/packing_model.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/models/packing_model.dart) **[MODIFIED]**
+  - [lib/core/repositories/packing_repository.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/repositories/packing_repository.dart) **[MODIFIED]**
+  - [lib/core/providers/packing_provider.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/providers/packing_provider.dart) **[MODIFIED]**
+  - [lib/features/packing/packing_screen.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/packing/packing_screen.dart) **[MODIFIED]**
+  - [MEMORY.md](file:///d:/Spencer/Downloads/tara_travel/MEMORY.md) **[MODIFIED]**
+  - [IMPLEMENTATION_MEMORY.md](file:///d:/Spencer/Downloads/tara_travel/IMPLEMENTATION_MEMORY.md) **[MODIFIED]**
+- **Scope & Objectives**:
+  - **Packing Model & Sub-Category Schema**:
+    - Added `subCategory` (`String?`) field to `PackingItem` with `copyWith`, `toMap` (`sub_category`), and `fromMap`.
+    - Added `PackingCategory.subCategories` getter computing distinct non-empty subcategories across items.
+    - Updated `PackingRepository.addItem` to accept `subCategory` and persist `sub_category` column in Supabase `packing_items`.
+    - Added `PackingRepository.updateItemSubCategory` and `PackingNotifier.updateItemSubCategory` for remote and local reassignment.
+  - **Horizontal Tab / Pill Sub-Category Filtering**:
+    - Built a horizontal scrolling pill filter row inside `_PackingCategoryCard` when expanded:
+      - **"All"** pill with total category item count.
+      - Dynamic custom sub-category pills (e.g. "Breakfast Menu", "Lunch Menu", "Dinner Menu", "Tops", "Swimwear") with live item count badges.
+      - **"+ Sub-category"** pill triggering the creation bottom sheet.
+    - Selecting a sub-category dynamically filters items and routes newly added items into the selected sub-category automatically.
+  - **Curated Preset Suggestions & Quick Input**:
+    - Added category-specific sub-category presets (`_kCategorySubCategoryPresets`) for all default categories (`food`, `clothing`, `essentials`, `toiletries`, `gadgets`, `documents`, `medicines`, `others`).
+    - Provided modal bottom sheet with one-tap suggestions + custom input field to create sub-categories instantly.
+  - **Item Row Tagging & Quick Reassignment**:
+    - Added sub-category tag badge chips with category accent styling in `_PackingItemRow`.
+    - Tap on badge opens `_showEditItemSubCategorySheet` allowing instantaneous reassignment, removal, or custom creation.
+- **Verification**:
+  - Full repo `flutter analyze` → 0 issues across entire project (ran in 12.3s, exit code 0).
+
 
 
 

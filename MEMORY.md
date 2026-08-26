@@ -162,11 +162,13 @@ public.stop_votes (
 public.packing_items (
   id uuid primary key default gen_random_uuid(),
   trip_id uuid references public.trips(id) on delete cascade,
-  item_name text not null,
-  category text not null check (category in ('essentials','clothing','toiletries','gadgets','documents','medicines','food','others')),
+  name text not null,                      -- DB: name / item_name
+  category text not null,                  -- essentials, clothing, toiletries, gadgets, documents, medicines, food, others, or custom
+  sub_category text,                       -- user-defined custom sub-category (e.g. Breakfast Menu, Tops, Skincare)
   is_checked boolean default false,
+  is_ai_suggested boolean default false,
   is_custom boolean default false,
-  assigned_to_user_id uuid references public.users(id) on delete set null,
+  assigned_user_id uuid references public.users(id) on delete set null,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );

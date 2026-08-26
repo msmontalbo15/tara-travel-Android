@@ -620,6 +620,7 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
 
           // ── Category Cards ─────────────────────────────────────────
           ...filteredCategories.map((cat) => _PackingCategoryCard(
+                key: ValueKey(cat.id),
                 category: cat,
                 members: trip.members,
                 onToggleItem: (itemId) =>
@@ -634,7 +635,10 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
                 ),
                 onDeleteItem: (itemId) => notifier.removeItem(cat.id, itemId),
                 onDeleteCategory: () => _confirmDeleteCategory(context, notifier, cat),
-                onAddItem: (name) => notifier.addItemToCategory(cat.id, name),
+                onAddItem: (name, [subCategory]) =>
+                    notifier.addItemToCategory(cat.id, name, subCategory: subCategory),
+                onUpdateItemSubCategory: (itemId, subCategory) =>
+                    notifier.updateItemSubCategory(cat.id, itemId, subCategory),
               )),
 
           const SizedBox(height: 16),
@@ -1707,6 +1711,68 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
   }
 }
 
+// ── Sub-Category Preset Suggestions ──────────────────────────────────────────
+
+const Map<String, List<String>> _kCategorySubCategoryPresets = {
+  'food': [
+    'Breakfast Menu',
+    'Lunch Menu',
+    'Dinner Menu',
+    'Snacks & Bites',
+    'Drinks & Bar',
+    'Cooking Gear & Utensils',
+  ],
+  'clothing': [
+    'Tops & Shirts',
+    'Bottoms & Pants',
+    'Swimwear & Rashguard',
+    'Innerwear & Undergarments',
+    'Outerwear & Jackets',
+    'Footwear & Sandals',
+    'Accessories & Hats',
+  ],
+  'essentials': [
+    'Travel Documents',
+    'Money & Cards',
+    'Bags & Dry Pouches',
+    'Comfort & Sleep',
+  ],
+  'toiletries': [
+    'Skincare & Sunblock',
+    'Bath & Shower',
+    'Oral Care',
+    'Grooming & Hair',
+    'Sanitizer & Hygiene',
+  ],
+  'gadgets': [
+    'Cables & Chargers',
+    'Power Banks & Batteries',
+    'Audio & Earphones',
+    'Cameras & Tripods',
+    'Adapters & Extension',
+  ],
+  'documents': [
+    'Tickets & Passes',
+    'Hotel & Airbnb Bookings',
+    'IDs & Insurance',
+    'Emergency Contacts',
+  ],
+  'medicines': [
+    'Daily Maintenance',
+    'First Aid & Bandages',
+    'Pain & Fever Relief',
+    'Stomach & Gut Care',
+    'Motion Sickness',
+    'Allergy & Cold',
+  ],
+  'others': [
+    'Outdoor & Camping Gear',
+    'Games & Entertainment',
+    'Eco & Reusable Items',
+    'Laundry & Care',
+  ],
+};
+
 // ── Category Card Component ──────────────────────────────────────────────────
 
 class _PackingCategoryCard extends StatefulWidget {
@@ -1717,9 +1783,11 @@ class _PackingCategoryCard extends StatefulWidget {
   final void Function(PackingItem item) onAssignMember;
   final void Function(String itemId) onDeleteItem;
   final VoidCallback onDeleteCategory;
-  final void Function(String itemName) onAddItem;
+  final void Function(String itemName, [String? subCategory]) onAddItem;
+  final void Function(String itemId, String? subCategory)? onUpdateItemSubCategory;
 
   const _PackingCategoryCard({
+    super.key,
     required this.category,
     required this.members,
     required this.onToggleItem,
@@ -1728,6 +1796,7 @@ class _PackingCategoryCard extends StatefulWidget {
     required this.onDeleteItem,
     required this.onDeleteCategory,
     required this.onAddItem,
+    this.onUpdateItemSubCategory,
   });
 
   @override
@@ -1737,6 +1806,8 @@ class _PackingCategoryCard extends StatefulWidget {
 class _PackingCategoryCardState extends State<_PackingCategoryCard> {
   bool _isAdding = false;
   final _addCtrl = TextEditingController();
+  String? _selectedSubCategory;
+  final Set<String> _localSubCategories = {};
 
   @override
   void dispose() {
@@ -1744,18 +1815,560 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
     super.dispose();
   }
 
+  List<String> get _allSubCategories {
+    final set = <String>{
+      ...widget.category.subCategories,
+      ..._localSubCategories,
+    };
+    final list = set.toList();
+    list.sort();
+    return list;
+  }
+
   void _submitAdd() {
     final text = _addCtrl.text.trim();
     if (text.isNotEmpty) {
-      widget.onAddItem(text);
+      widget.onAddItem(text, _selectedSubCategory);
       _addCtrl.clear();
       setState(() => _isAdding = false);
     }
   }
 
+  void _showAddSubCategorySheet(BuildContext context) {
+    final cat = widget.category;
+    final textCtrl = TextEditingController();
+    final presets = _kCategorySubCategoryPresets[cat.id] ?? [
+      'General',
+      'Priority',
+      'Group Shared',
+      'Personal',
+    ];
+    final existing = _allSubCategories.map((s) => s.toLowerCase()).toSet();
+    final availablePresets = presets.where((p) => !existing.contains(p.toLowerCase())).toList();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Handle
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE5E7EB),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: cat.color.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(Icons.playlist_add_rounded, size: 20, color: cat.color),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Add Sub-category to ${cat.name}',
+                              style: const TextStyle(
+                                fontFamily: 'DM Sans',
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.deepEarth,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            const Text(
+                              'Organize items into menus, groups, or sections.',
+                              style: TextStyle(
+                                fontFamily: 'DM Sans',
+                                fontSize: 12,
+                                color: AppColors.muted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+
+                  // Quick presets
+                  if (availablePresets.isNotEmpty) ...[
+                    const Text(
+                      'Suggested Sub-categories:',
+                      style: TextStyle(
+                        fontFamily: 'DM Sans',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.deepEarth,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: availablePresets.map((preset) {
+                        return GestureDetector(
+                          onTap: () {
+                            textCtrl.text = preset;
+                            setSheetState(() {});
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: textCtrl.text == preset
+                                  ? cat.color.withValues(alpha: 0.15)
+                                  : const Color(0xFFF3F4F6),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: textCtrl.text == preset
+                                    ? cat.color
+                                    : const Color(0xFFE5E7EB),
+                                width: textCtrl.text == preset ? 1.2 : 0.8,
+                              ),
+                            ),
+                            child: Text(
+                              '+ $preset',
+                              style: TextStyle(
+                                fontFamily: 'DM Sans',
+                                fontSize: 12,
+                                fontWeight: textCtrl.text == preset
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
+                                color: textCtrl.text == preset
+                                    ? cat.color
+                                    : AppColors.deepEarth,
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Input field
+                  TextField(
+                    controller: textCtrl,
+                    autofocus: availablePresets.isEmpty,
+                    style: const TextStyle(
+                      fontFamily: 'DM Sans',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'Sub-category name (e.g. Breakfast Menu)',
+                      hintStyle: const TextStyle(color: AppColors.muted, fontSize: 13),
+                      filled: true,
+                      fillColor: const Color(0xFFF9FAFB),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: cat.color, width: 1.5),
+                      ),
+                    ),
+                    onSubmitted: (val) {
+                      final name = val.trim();
+                      if (name.isNotEmpty) {
+                        Navigator.pop(ctx);
+                        setState(() {
+                          _localSubCategories.add(name);
+                          _selectedSubCategory = name;
+                          _isAdding = true;
+                        });
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Action Buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            side: const BorderSide(color: Color(0xFFE5E7EB)),
+                          ),
+                          child: const Text(
+                            'Cancel',
+                            style: TextStyle(
+                              fontFamily: 'DM Sans',
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.muted,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            final name = textCtrl.text.trim();
+                            if (name.isNotEmpty) {
+                              Navigator.pop(ctx);
+                              setState(() {
+                                _localSubCategories.add(name);
+                                _selectedSubCategory = name;
+                                _isAdding = true;
+                              });
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: cat.color,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text(
+                            'Create & Filter',
+                            style: TextStyle(
+                              fontFamily: 'DM Sans',
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showEditItemSubCategorySheet(BuildContext context, PackingItem item) {
+    final cat = widget.category;
+    final subCats = _allSubCategories;
+    final textCtrl = TextEditingController(text: item.subCategory ?? '');
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 20,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE5E7EB),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Sub-category for "${item.name}"',
+                style: const TextStyle(
+                  fontFamily: 'DM Sans',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.deepEarth,
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Assign this item to a specific menu or section.',
+                style: TextStyle(
+                  fontFamily: 'DM Sans',
+                  fontSize: 12,
+                  color: AppColors.muted,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              if (subCats.isNotEmpty) ...[
+                const Text(
+                  'Existing Sub-categories:',
+                  style: TextStyle(
+                    fontFamily: 'DM Sans',
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.deepEarth,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    // None / Clear option
+                    GestureDetector(
+                      onTap: () {
+                        widget.onUpdateItemSubCategory?.call(item.id, null);
+                        Navigator.pop(ctx);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: item.subCategory == null
+                              ? const Color(0xFFE5E7EB)
+                              : const Color(0xFFF9FAFB),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFFE5E7EB)),
+                        ),
+                        child: const Text(
+                          'None (General)',
+                          style: TextStyle(
+                            fontFamily: 'DM Sans',
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.muted,
+                          ),
+                        ),
+                      ),
+                    ),
+                    ...subCats.map((sc) {
+                      final isSelected = item.subCategory == sc;
+                      return GestureDetector(
+                        onTap: () {
+                          widget.onUpdateItemSubCategory?.call(item.id, sc);
+                          Navigator.pop(ctx);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? cat.color.withValues(alpha: 0.15)
+                                : const Color(0xFFF3F4F6),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: isSelected ? cat.color : const Color(0xFFE5E7EB),
+                              width: isSelected ? 1.2 : 0.8,
+                            ),
+                          ),
+                          child: Text(
+                            sc,
+                            style: TextStyle(
+                              fontFamily: 'DM Sans',
+                              fontSize: 12,
+                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                              color: isSelected ? cat.color : AppColors.deepEarth,
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // Custom input
+              TextField(
+                controller: textCtrl,
+                style: const TextStyle(
+                  fontFamily: 'DM Sans',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Or type custom sub-category...',
+                  hintStyle: const TextStyle(color: AppColors.muted, fontSize: 13),
+                  filled: true,
+                  fillColor: const Color(0xFFF9FAFB),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: cat.color, width: 1.5),
+                  ),
+                ),
+                onSubmitted: (val) {
+                  final trimmed = val.trim();
+                  widget.onUpdateItemSubCategory?.call(
+                    item.id,
+                    trimmed.isNotEmpty ? trimmed : null,
+                  );
+                  if (trimmed.isNotEmpty) {
+                    setState(() => _localSubCategories.add(trimmed));
+                  }
+                  Navigator.pop(ctx);
+                },
+              ),
+              const SizedBox(height: 16),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text('Cancel'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        final trimmed = textCtrl.text.trim();
+                        widget.onUpdateItemSubCategory?.call(
+                          item.id,
+                          trimmed.isNotEmpty ? trimmed : null,
+                        );
+                        if (trimmed.isNotEmpty) {
+                          setState(() => _localSubCategories.add(trimmed));
+                        }
+                        Navigator.pop(ctx);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: cat.color,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Save Sub-category',
+                        style: TextStyle(
+                          fontFamily: 'DM Sans',
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _confirmDeleteSubCategory(BuildContext context, String subCat) {
+    final cat = widget.category;
+    final affectedCount = cat.items.where((i) => i.subCategory == subCat).length;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Delete "$subCat"?',
+          style: const TextStyle(
+            fontFamily: 'DM Sans',
+            fontWeight: FontWeight.w700,
+            fontSize: 17,
+            color: AppColors.deepEarth,
+          ),
+        ),
+        content: Text(
+          affectedCount > 0
+              ? 'This will remove the "$subCat" sub-category tag from $affectedCount item${affectedCount == 1 ? '' : 's'}. The items will remain in ${cat.name}.'
+              : 'Remove the "$subCat" sub-category?',
+          style: const TextStyle(fontFamily: 'DM Sans', fontSize: 13, color: AppColors.deepEarth),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.muted, fontFamily: 'DM Sans')),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              setState(() {
+                _localSubCategories.remove(subCat);
+                if (_selectedSubCategory == subCat) {
+                  _selectedSubCategory = null;
+                }
+              });
+              for (final item in cat.items) {
+                if (item.subCategory == subCat) {
+                  widget.onUpdateItemSubCategory?.call(item.id, null);
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.red,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text(
+              'Remove Section',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontFamily: 'DM Sans'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final cat = widget.category;
+    final subCats = _allSubCategories;
+
+    // Filter items based on active sub-category pill
+    final displayedItems = _selectedSubCategory == null
+        ? cat.items
+        : cat.items.where((i) => i.subCategory == _selectedSubCategory).toList();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -1800,14 +2413,41 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          cat.name,
-                          style: const TextStyle(
-                            fontFamily: 'DM Sans',
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.deepEarth,
-                          ),
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                cat.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontFamily: 'DM Sans',
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.deepEarth,
+                                ),
+                              ),
+                            ),
+                            if (subCats.isNotEmpty) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: cat.color.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  '${subCats.length} sections',
+                                  style: TextStyle(
+                                    fontFamily: 'DM Sans',
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: cat.color,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                         const SizedBox(height: 2),
                         Text(
@@ -1894,6 +2534,85 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
           if (cat.isExpanded) ...[
             const Divider(height: 1, color: AppColors.dividerLight),
 
+            // ── Horizontal Sub-Category Tab/Pill Filter Row ──────────
+            Container(
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
+              decoration: const BoxDecoration(
+                color: Color(0xFFFAFBFC),
+                border: Border(
+                  bottom: BorderSide(color: Color(0xFFF1F2F4), width: 1),
+                ),
+              ),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                child: Row(
+                  children: [
+                    // "All" Pill
+                    _buildSubCategoryPill(
+                      label: 'All',
+                      count: cat.totalCount,
+                      isSelected: _selectedSubCategory == null,
+                      color: cat.color,
+                      onTap: () => setState(() => _selectedSubCategory = null),
+                    ),
+                    const SizedBox(width: 6),
+
+                    // Custom Sub-categories Pills
+                    ...subCats.map((subCat) {
+                      final count = cat.items.where((i) => i.subCategory == subCat).length;
+                      final isSelected = _selectedSubCategory == subCat;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 6),
+                        child: _buildSubCategoryPill(
+                          label: subCat,
+                          count: count,
+                          isSelected: isSelected,
+                          color: cat.color,
+                          onTap: () => setState(() {
+                            _selectedSubCategory = isSelected ? null : subCat;
+                          }),
+                          onLongPress: () => _confirmDeleteSubCategory(context, subCat),
+                        ),
+                      );
+                    }),
+
+                    // "+ Sub-category" action pill
+                    GestureDetector(
+                      onTap: () => _showAddSubCategorySheet(context),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: cat.color.withValues(alpha: 0.5),
+                            width: 1.0,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.add_rounded, size: 14, color: cat.color),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Sub-category',
+                              style: TextStyle(
+                                fontFamily: 'DM Sans',
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: cat.color,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
             // Empty state if no items
             if (cat.isEmpty)
               Padding(
@@ -1910,30 +2629,67 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    TextButton.icon(
-                      onPressed: () => setState(() => _isAdding = true),
-                      icon: const Icon(Icons.add_rounded, size: 16),
-                      label: const Text('Add Item'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: AppColors.primary,
-                        textStyle: const TextStyle(
-                          fontFamily: 'DM Sans',
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13,
+                    if (!_isAdding)
+                      TextButton.icon(
+                        onPressed: () => setState(() => _isAdding = true),
+                        icon: const Icon(Icons.add_rounded, size: 16),
+                        label: const Text('Add Item'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          textStyle: const TextStyle(
+                            fontFamily: 'DM Sans',
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                          ),
                         ),
                       ),
+                  ],
+                ),
+              )
+            else if (displayedItems.isEmpty && _selectedSubCategory != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                child: Column(
+                  children: [
+                    Text(
+                      'No items tagged under "$_selectedSubCategory" yet.',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontFamily: 'DM Sans',
+                        fontSize: 13,
+                        color: AppColors.muted,
+                      ),
                     ),
+                    if (!_isAdding) ...[
+                      const SizedBox(height: 8),
+                      TextButton.icon(
+                        onPressed: () => setState(() => _isAdding = true),
+                        icon: const Icon(Icons.add_rounded, size: 16),
+                        label: Text('Add to $_selectedSubCategory'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: cat.color,
+                          textStyle: const TextStyle(
+                            fontFamily: 'DM Sans',
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               )
             else
-              ...cat.items.map((item) => _PackingItemRow(
+              ...displayedItems.map((item) => _PackingItemRow(
                     item: item,
                     categoryColor: cat.color,
                     members: widget.members,
+                    showingInFilteredView: _selectedSubCategory != null,
+                    hasAvailableSubCategories: subCats.isNotEmpty,
                     onToggle: () => widget.onToggleItem(item.id),
                     onAssign: () => widget.onAssignMember(item),
                     onDelete: () => widget.onDeleteItem(item.id),
+                    onEditSubCategory: () => _showEditItemSubCategorySheet(context, item),
                   )),
 
             // Inline Add item bar
@@ -1951,7 +2707,9 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
                           fontSize: 13,
                         ),
                         decoration: InputDecoration(
-                          hintText: 'Item name (e.g. Rashguard)',
+                          hintText: _selectedSubCategory != null
+                              ? 'Add to $_selectedSubCategory (e.g. Eggs)'
+                              : 'Item name (e.g. Rashguard)',
                           isDense: true,
                           contentPadding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 10),
@@ -1964,8 +2722,8 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                                color: AppColors.primary, width: 1.5),
+                            borderSide: BorderSide(
+                                color: cat.color, width: 1.5),
                           ),
                         ),
                         onSubmitted: (_) => _submitAdd(),
@@ -1973,8 +2731,8 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
                     ),
                     const SizedBox(width: 8),
                     IconButton(
-                      icon: const Icon(Icons.check_rounded,
-                          color: AppColors.primary),
+                      icon: Icon(Icons.check_rounded,
+                          color: cat.color),
                       onPressed: _submitAdd,
                     ),
                     IconButton(
@@ -1996,19 +2754,21 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
                           color: AppColors.dividerLight, width: 0.5),
                     ),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(Icons.add_rounded,
-                          size: 16, color: AppColors.primary),
-                      SizedBox(width: 4),
+                          size: 16, color: cat.color),
+                      const SizedBox(width: 4),
                       Text(
-                        'Add item to this category',
+                        _selectedSubCategory != null
+                            ? 'Add item to "$_selectedSubCategory"'
+                            : 'Add item to this category',
                         style: TextStyle(
                           fontFamily: 'DM Sans',
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.primary,
+                          color: cat.color,
                         ),
                       ),
                     ],
@@ -2020,6 +2780,74 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
       ),
     );
   }
+
+  Widget _buildSubCategoryPill({
+    required String label,
+    required int count,
+    required bool isSelected,
+    required Color color,
+    required VoidCallback onTap,
+    VoidCallback? onLongPress,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      onLongPress: onLongPress,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? color : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? color : const Color(0xFFE5E7EB),
+            width: isSelected ? 1.2 : 0.8,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.25),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontFamily: 'DM Sans',
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                color: isSelected ? Colors.white : AppColors.deepEarth,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? Colors.white.withValues(alpha: 0.25)
+                    : const Color(0xFFF3F4F6),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                '$count',
+                style: TextStyle(
+                  fontFamily: 'DM Sans',
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: isSelected ? Colors.white : AppColors.muted,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 // ── Packing Item Row ─────────────────────────────────────────────────────────
@@ -2028,17 +2856,23 @@ class _PackingItemRow extends StatelessWidget {
   final PackingItem item;
   final Color categoryColor;
   final List<MemberModel> members;
+  final bool showingInFilteredView;
+  final bool hasAvailableSubCategories;
   final VoidCallback onToggle;
   final VoidCallback onAssign;
   final VoidCallback onDelete;
+  final VoidCallback? onEditSubCategory;
 
   const _PackingItemRow({
     required this.item,
     required this.categoryColor,
     required this.members,
+    this.showingInFilteredView = false,
+    this.hasAvailableSubCategories = false,
     required this.onToggle,
     required this.onAssign,
     required this.onDelete,
+    this.onEditSubCategory,
   });
 
   @override
@@ -2111,70 +2945,145 @@ class _PackingItemRow extends StatelessWidget {
             ),
             const SizedBox(width: 12),
 
-            // Item Name & Tags
+            // Item Name, Sub-category tag & Badges
             Expanded(
-              child: GestureDetector(
-                onTap: onToggle,
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        item.name,
-                        style: TextStyle(
-                          fontFamily: 'DM Sans',
-                          fontSize: 13,
-                          fontWeight: item.isCritical
-                              ? FontWeight.w700
-                              : FontWeight.w500,
-                          color: item.isChecked
-                              ? AppColors.muted
-                              : AppColors.deepEarth,
-                          decoration:
-                              item.isChecked ? TextDecoration.lineThrough : null,
-                          decorationColor: AppColors.muted,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  GestureDetector(
+                    onTap: onToggle,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            item.name,
+                            style: TextStyle(
+                              fontFamily: 'DM Sans',
+                              fontSize: 13,
+                              fontWeight: item.isCritical
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              color: item.isChecked
+                                  ? AppColors.muted
+                                  : AppColors.deepEarth,
+                              decoration:
+                                  item.isChecked ? TextDecoration.lineThrough : null,
+                              decorationColor: AppColors.muted,
+                            ),
+                          ),
+                        ),
+                        if (item.isAiSuggested)
+                          Container(
+                            margin: const EdgeInsets.only(left: 6),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 5, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.purple.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text(
+                              '✦ AI',
+                              style: TextStyle(
+                                fontFamily: 'DM Sans',
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.purple,
+                              ),
+                            ),
+                          ),
+                        if (item.isCritical && !item.isChecked)
+                          Container(
+                            margin: const EdgeInsets.only(left: 6),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 5, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.red.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text(
+                              'Missing!',
+                              style: TextStyle(
+                                fontFamily: 'DM Sans',
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.red,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+
+                  // Sub-category badge (shown in All view or clickable to edit)
+                  if (item.subCategory != null && item.subCategory!.isNotEmpty) ...[
+                    const SizedBox(height: 3),
+                    GestureDetector(
+                      onTap: onEditSubCategory,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: categoryColor.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: categoryColor.withValues(alpha: 0.25),
+                            width: 0.7,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.label_outline_rounded,
+                                size: 10, color: categoryColor),
+                            const SizedBox(width: 3),
+                            Text(
+                              item.subCategory!,
+                              style: TextStyle(
+                                fontFamily: 'DM Sans',
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: categoryColor,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                    if (item.isAiSuggested)
-                      Container(
-                        margin: const EdgeInsets.only(left: 6),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 5, vertical: 2),
+                  ] else if (hasAvailableSubCategories) ...[
+                    const SizedBox(height: 3),
+                    GestureDetector(
+                      onTap: onEditSubCategory,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: AppColors.purple.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: const Text(
-                          '✦ AI',
-                          style: TextStyle(
-                            fontFamily: 'DM Sans',
-                            fontSize: 9,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.purple,
+                          color: const Color(0xFFF3F4F6),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: const Color(0xFFE5E7EB),
+                            width: 0.7,
                           ),
                         ),
-                      ),
-                    if (item.isCritical && !item.isChecked)
-                      Container(
-                        margin: const EdgeInsets.only(left: 6),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 5, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppColors.red.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: const Text(
-                          'Missing!',
-                          style: TextStyle(
-                            fontFamily: 'DM Sans',
-                            fontSize: 9,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.red,
-                          ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.add_rounded,
+                                size: 10, color: AppColors.muted),
+                            SizedBox(width: 2),
+                            Text(
+                              'Tag section',
+                              style: TextStyle(
+                                fontFamily: 'DM Sans',
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.muted,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
+                    ),
                   ],
-                ),
+                ],
               ),
             ),
 

@@ -121,6 +121,7 @@ class PackingRepository {
     required String name,
     bool isAiSuggested = false,
     bool isCritical = false,
+    String? subCategory,
     String? assignedMemberId,
     String? assignedMemberName,
     String? assignedMemberInitials,
@@ -128,18 +129,40 @@ class PackingRepository {
     String? memberRole,
   }) async {
     try {
-      final inserted = await _supabase
-          .from('packing_items')
-          .insert({
-            'trip_id': tripId,
-            'name': name,
-            'category': category,
-            'is_checked': false,
-            'is_ai_suggested': isAiSuggested,
-            if (assignedMemberId != null) 'assigned_user_id': assignedMemberId,
-          })
-          .select()
-          .single();
+      final insertMap = <String, dynamic>{
+        'trip_id': tripId,
+        'name': name,
+        'category': category,
+        'is_checked': false,
+        'is_ai_suggested': isAiSuggested,
+        if (subCategory != null && subCategory.trim().isNotEmpty)
+          'sub_category': subCategory.trim(),
+        if (assignedMemberId != null) 'assigned_user_id': assignedMemberId,
+      };
+
+      Map<String, dynamic> inserted;
+      try {
+        final res = await _supabase
+            .from('packing_items')
+            .insert(insertMap)
+            .select()
+            .single();
+        inserted = res;
+      } on PostgrestException catch (e) {
+        // Fallback if 'sub_category' column is not yet present on remote DB schema
+        if (e.code == '42703' || e.message.toLowerCase().contains('sub_category')) {
+          debugPrint('[PackingRepository] sub_category column missing in DB, falling back to standard insert');
+          insertMap.remove('sub_category');
+          final fallback = await _supabase
+              .from('packing_items')
+              .insert(insertMap)
+              .select()
+              .single();
+          inserted = fallback;
+        } else {
+          rethrow;
+        }
+      }
 
       final remoteId = '${inserted['id']}';
 
@@ -148,6 +171,7 @@ class PackingRepository {
         name: name,
         isAiSuggested: isAiSuggested,
         isCritical: isCritical,
+        subCategory: subCategory?.trim(),
         assignedMemberId: assignedMemberId,
         assignedMemberName: assignedMemberName,
         assignedMemberInitials: assignedMemberInitials,
@@ -160,6 +184,29 @@ class PackingRepository {
     } catch (e) {
       debugPrint('[PackingRepository] addItem error: $e');
       rethrow;
+    }
+  }
+
+  /// Updates an item's sub-category in Supabase.
+  Future<void> updateItemSubCategory(String itemId, String? subCategory) async {
+    try {
+      await _supabase
+          .from('packing_items')
+          .update({
+            'sub_category': subCategory?.trim().isNotEmpty == true ? subCategory!.trim() : null,
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
+          })
+          .eq('id', itemId);
+    } on PostgrestException catch (e) {
+      debugPrint('[PackingRepository] updateItemSubCategory PostgrestException: ${e.message}');
+      // Non-fatal if remote column is not yet migrated
+      if (e.code == '42703' || e.message.toLowerCase().contains('sub_category')) {
+        debugPrint('[PackingRepository] remote sub_category column missing, handled gracefully in memory');
+        return;
+      }
+      rethrow;
+    } catch (e) {
+      debugPrint('[PackingRepository] updateItemSubCategory error: $e');
     }
   }
 

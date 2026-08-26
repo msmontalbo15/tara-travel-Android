@@ -261,16 +261,19 @@ class PackingNotifier extends Notifier<PackingState> {
     String itemName, {
     bool isAiSuggested = false,
     bool isCritical = false,
+    String? subCategory,
     MemberModel? assignedMember,
   }) async {
     final tripId = state.tripId;
     if (tripId == null) return;
 
-    // ── Duplicate guard: skip if item with same name already exists in category ──
+    // ── Duplicate guard: skip if item with same name already exists in same sub-category ──
     final normalizedNew = itemName.trim().toLowerCase();
+    final normalizedSub = subCategory?.trim().toLowerCase();
     final existingCat = state.categories.where((c) => c.id == categoryId).firstOrNull;
     final isDuplicate = existingCat?.items.any(
-          (i) => i.name.trim().toLowerCase() == normalizedNew,
+          (i) => i.name.trim().toLowerCase() == normalizedNew &&
+                 (i.subCategory?.trim().toLowerCase() == normalizedSub),
         ) ?? false;
     if (isDuplicate) return;
 
@@ -285,6 +288,7 @@ class PackingNotifier extends Notifier<PackingState> {
       name: itemName,
       isAiSuggested: isAiSuggested,
       isCritical: isCritical,
+      subCategory: subCategory,
       assignedMemberId: assignedMember?.id,
       assignedMemberName: assignedMember?.name,
       assignedMemberInitials: assignedMember?.initials,
@@ -302,6 +306,30 @@ class PackingNotifier extends Notifier<PackingState> {
     }).toList();
 
     state = state.copyWith(categories: cats);
+  }
+
+  Future<void> updateItemSubCategory(
+    String categoryId,
+    String itemId,
+    String? subCategory,
+  ) async {
+    final cats = _mapCategories(categoryId, (items) {
+      return items.map((i) {
+        if (i.id != itemId) return i;
+        return i.copyWith(
+          subCategory: subCategory?.trim().isNotEmpty == true ? subCategory!.trim() : null,
+          clearSubCategory: subCategory == null || subCategory.trim().isEmpty,
+        );
+      }).toList();
+    });
+    state = state.copyWith(categories: cats);
+
+    if (state.tripId != null) {
+      await ref.read(packingRepositoryProvider).updateItemSubCategory(
+            itemId,
+            subCategory,
+          );
+    }
   }
 
   Future<void> removeItem(String categoryId, String itemId) async {
