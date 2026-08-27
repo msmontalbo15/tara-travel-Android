@@ -262,11 +262,6 @@ class TripRepository {
   /// Returns a [JoinResult] indicating whether membership is now
   /// [JoinStatus.pending] (awaiting organizer approval) or
   /// [JoinStatus.approved] (instantly joined).
-  /// Joins a trip using a 6-character invite code.
-  ///
-  /// Returns a [JoinResult] indicating whether membership is now
-  /// [JoinStatus.pending] (awaiting organizer approval) or
-  /// [JoinStatus.approved] (instantly joined).
   Future<JoinResult> joinTripByCode(String code) async {
     final cleanCode = InviteCodeGenerator.sanitize(code);
     if (!InviteCodeGenerator.isValidFormat(cleanCode)) {
