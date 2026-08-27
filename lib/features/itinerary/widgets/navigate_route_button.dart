@@ -78,26 +78,15 @@ class _NavigateRouteButtonState extends State<NavigateRouteButton> {
     } catch (_) {}
 
     try {
-      final destination = stops.last;
+      final url = _buildDirectionsUrl(stops);
+      final uri = Uri.parse(url);
       bool launched = false;
-
-      // 1. Try standard geo navigation intent if coordinates exist
-      if (destination.lat != null && destination.lng != null && destination.lat != 0.0) {
-        final geoUri = Uri.parse(
-          'geo:${destination.lat},${destination.lng}?q=${destination.lat},${destination.lng}(${Uri.encodeComponent(destination.title)})',
-        );
-        try {
-          if (await canLaunchUrl(geoUri)) {
-            launched = await launchUrl(geoUri, mode: LaunchMode.externalApplication);
-          }
-        } catch (_) {}
-      }
-
-      // 2. Fallback: Full multi-stop directions URL
-      if (!launched) {
-        final url = _buildDirectionsUrl(stops);
-        final uri = Uri.parse(url);
+      try {
         launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } catch (_) {
+        try {
+          launched = await launchUrl(uri);
+        } catch (_) {}
       }
 
       if (!launched && mounted) {

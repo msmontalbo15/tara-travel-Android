@@ -42,6 +42,7 @@
 | **`IMP-053`** | 2026-08-27 | UI / Home Trip Budget Bar | Functional & interactive trip card budget bar, `QuickBudgetSheet` modal editor, dynamic warning states (Warning Amber 70%+, Exceeded Red 100%+), remaining/over budget calculation, and NextTripCard budget tracker integration. |
 | **`IMP-054`** | 2026-08-27 | Itinerary / Next Destination Banner | Made `ItineraryFulfillmentBanner` (the progress % and N of N stops visited card) interactive to open Google Maps for the next uncompleted stop, with fallback search and visual 'Go' navigation CTA button. |
 | **`IMP-055`** | 2026-08-27 | UI / Home Hero Clean-up | Removed budget tracker section and unused imports from homepage header hero (`NextTripCard`), recalibrating `_HomeHeaderDelegate` max extent height. |
+| **`IMP-056`** | 2026-08-27 | Itinerary / Multi-Stop Navigation | Fixed `NavigateRouteButton` multi-stop navigation to directly launch Google Maps with all intermediate waypoints and final destination instead of single-point `geo:` fallback. |
 
 ---
 
@@ -788,9 +789,18 @@
     - Cleaned up unused imports in `next_trip_card.dart` (`currency_utils.dart` and `quick_budget_sheet.dart`).
   - **Header Extents & Responsive Spacing Calibration**:
     - Adjusted `NextTripCard` vertical padding (`fromLTRB(18, 14, 18, 16)`) and tightened spacing between elements.
-    - Set `_HomeHeaderDelegate.maxExtent` in [home_screen.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/home/home_screen.dart) to `topPadding + 348.0`, ensuring the trip title at the bottom of the card is fully visible with comfortable bottom padding and zero clipping across varying screen sizes and text scaling.
+### `IMP-056` · Itinerary Multi-Stop Google Maps Navigation Resolution
+- **Date**: August 27, 2026
+- **Target Files**:
+  - [lib/features/itinerary/widgets/navigate_route_button.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/navigate_route_button.dart) **[MODIFIED]**
+  - [IMPLEMENTATION_MEMORY.md](file:///d:/Spencer/Downloads/tara_travel/IMPLEMENTATION_MEMORY.md) **[MODIFIED]**
+- **Scope & Objectives**:
+  - **Multi-Stop Route Construction**:
+    - Resolved bug where tapping "Start Route Navigation (N stops)" intercepted the action with a single-point `geo:` URI to the final destination whenever coordinates were present, bypassing all intermediate waypoints.
+    - Updated `_navigate()` in `NavigateRouteButton` to directly launch the universal Google Maps directions URI (`https://www.google.com/maps/dir/?api=1&destination=...&waypoints=...&travelmode=driving`).
+    - Correctly encodes intermediate waypoints separated by `|` (`%7C`), enabling Google Maps (both native app and web) to render the complete multi-stop turn-by-turn route connecting all day stops in order.
 - **Verification**:
-  - Project-wide `flutter analyze` completed with 0 errors / 0 warnings.
+  - Verified with `flutter analyze lib/features/itinerary/widgets/navigate_route_button.dart` (0 issues).
 
 
 
