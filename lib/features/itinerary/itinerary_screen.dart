@@ -622,7 +622,11 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                 const SizedBox(height: 12),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: NavigateRouteButton(stops: day.stops),
+                  child: NavigateRouteButton(
+                    stops: day.stops,
+                    transport: day.transport,
+                    dayNumber: day.dayNumber,
+                  ),
                 ),
               ],
 
@@ -1605,7 +1609,11 @@ class _MapViewSheet extends ConsumerWidget {
           // Navigate button
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: NavigateRouteButton(stops: day.stops),
+            child: NavigateRouteButton(
+              stops: day.stops,
+              transport: day.transport,
+              dayNumber: day.dayNumber,
+            ),
           ),
           const SizedBox(height: 24),
         ],

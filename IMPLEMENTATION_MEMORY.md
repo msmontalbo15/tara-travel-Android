@@ -43,6 +43,7 @@
 | **`IMP-054`** | 2026-08-27 | Itinerary / Next Destination Banner | Made `ItineraryFulfillmentBanner` (the progress % and N of N stops visited card) interactive to open Google Maps for the next uncompleted stop, with fallback search and visual 'Go' navigation CTA button. |
 | **`IMP-055`** | 2026-08-27 | UI / Home Hero Clean-up | Removed budget tracker section and unused imports from homepage header hero (`NextTripCard`), recalibrating `_HomeHeaderDelegate` max extent height. |
 | **`IMP-056`** | 2026-08-27 | Itinerary / Multi-Stop Navigation | Fixed `NavigateRouteButton` multi-stop navigation to directly launch Google Maps with all intermediate waypoints and final destination instead of single-point `geo:` fallback. |
+| **`IMP-057`** | 2026-08-27 | Itinerary / Multi-Stop Route Engine | Advanced Multi-Stop Route Construction engine: smart Title+Location target geocoding, GPS origin prefill, remaining-vs-all stops scope selector, dynamic travel mode mapping (car, motorcycle, walking, transit, bike), interactive timeline preview sheet, and one-tap link sharing. |
 
 ---
 
@@ -798,9 +799,29 @@
   - **Multi-Stop Route Construction**:
     - Resolved bug where tapping "Start Route Navigation (N stops)" intercepted the action with a single-point `geo:` URI to the final destination whenever coordinates were present, bypassing all intermediate waypoints.
     - Updated `_navigate()` in `NavigateRouteButton` to directly launch the universal Google Maps directions URI (`https://www.google.com/maps/dir/?api=1&destination=...&waypoints=...&travelmode=driving`).
-    - Correctly encodes intermediate waypoints separated by `|` (`%7C`), enabling Google Maps (both native app and web) to render the complete multi-stop turn-by-turn route connecting all day stops in order.
+### `IMP-057` · Advanced Multi-Stop Route Construction & Navigation Engine
+- **Date**: August 27, 2026
+- **Target Files**:
+  - [lib/features/itinerary/widgets/navigate_route_button.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/navigate_route_button.dart) **[MODIFIED]**
+  - [lib/features/itinerary/itinerary_screen.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/itinerary_screen.dart) **[MODIFIED]**
+  - [IMPLEMENTATION_MEMORY.md](file:///d:/Spencer/Downloads/tara_travel/IMPLEMENTATION_MEMORY.md) **[MODIFIED]**
+- **Scope & Objectives**:
+  - **Smart Target Geocoding (`formatStopTarget`)**:
+    - Coordinates (`lat,lng`) prioritized for pinpoint precision.
+    - If coordinates are absent, combines `Title` + `Location` (e.g. `"Burnham Park, Baguio City"`) to avoid generic city-only query pins.
+  - **GPS Origin Resolution**:
+    - Proactively resolves current GPS coordinates with a fast 2-second timeout to populate `origin=lat,lng` for instant turn-by-turn navigation initiation without location delays.
+  - **Intelligent Route Scoping**:
+    - Automatically filters to remaining uncompleted stops when some stops are already arrived/visited, with one-tap toggle between **Remaining Stops** and **All Stops**.
+  - **Dynamic Travel Mode Mapping**:
+    - Maps `TransportMode` directly to Google Maps transport modes (`driving`, `two-wheeler`, `walking`, `transit`, `bicycling`).
+  - **Interactive Route Options Modal Sheet (`_RouteOptionsSheet`)**:
+    - Features a visual timeline waypoint tree (GPS Origin ➔ Intermediate Stops ➔ Destination).
+    - Mode chips (🚗 Car, 🏍️ Motorcycle, 🚶 Walking, 🚌 Transit, 🚴 Cycling).
+    - "Copy Route Link" button for sharing multi-stop itineraries with group members.
+    - Fast quick-launch on the primary button + options button (`tune_rounded`).
 - **Verification**:
-  - Verified with `flutter analyze lib/features/itinerary/widgets/navigate_route_button.dart` (0 issues).
+  - `flutter analyze lib/features/itinerary/` passed with 0 errors / 0 warnings.
 
 
 
