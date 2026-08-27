@@ -7,26 +7,25 @@ import '../../../core/providers/trip_provider.dart';
 /// Opens a modal bottom-sheet that lets the user enter a 6-character trip
 /// invite code. On success, the `allTripsProvider` is refreshed and the sheet
 /// is dismissed with a success snackbar.
-void showJoinTripModal(BuildContext context, WidgetRef ref) {
+void showJoinTripModal(BuildContext context, [WidgetRef? ref]) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (context) => _JoinTripSheet(ref: ref),
+    builder: (context) => const _JoinTripSheet(),
   );
 }
 
 // ── Private Sheet Widget ─────────────────────────────────────────────────────
 
-class _JoinTripSheet extends StatefulWidget {
-  final WidgetRef ref;
-  const _JoinTripSheet({required this.ref});
+class _JoinTripSheet extends ConsumerStatefulWidget {
+  const _JoinTripSheet();
 
   @override
-  State<_JoinTripSheet> createState() => _JoinTripSheetState();
+  ConsumerState<_JoinTripSheet> createState() => _JoinTripSheetState();
 }
 
-class _JoinTripSheetState extends State<_JoinTripSheet> {
+class _JoinTripSheetState extends ConsumerState<_JoinTripSheet> {
   final _codeController = TextEditingController();
   bool _isLoading = false;
   String? _error;
@@ -38,7 +37,8 @@ class _JoinTripSheetState extends State<_JoinTripSheet> {
   }
 
   Future<void> _join() async {
-    final code = _codeController.text.trim().toUpperCase();
+    final rawText = _codeController.text;
+    final code = rawText.trim();
     if (code.isEmpty) {
       setState(() => _error = 'Please enter a 6-character invite code.');
       return;
@@ -50,16 +50,58 @@ class _JoinTripSheetState extends State<_JoinTripSheet> {
     });
 
     try {
-      final repo = widget.ref.read(tripRepositoryProvider);
+      final repo = ref.read(tripRepositoryProvider);
       final result = await repo.joinTripByCode(code);
 
-      // Always refresh trips list so approved members see the trip immediately,
-      // and pending members' requests are updated in the provider cache.
-      widget.ref.invalidate(allTripsProvider);
+      // Always refresh trips list and active trip cache
+      ref.invalidate(allTripsProvider);
+      ref.invalidate(activeTripProvider);
 
       if (mounted) {
         Navigator.pop(context);
-        if (result.isApproved) {
+        if (result.alreadyMember) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.info_outline_rounded, color: Colors.white, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'You are already a member of "${result.tripName}".',
+                      style: const TextStyle(fontFamily: 'DM Sans', fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: AppColors.deepEarth,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 3),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          );
+        } else if (result.alreadyPending) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.hourglass_top_rounded, color: Colors.white, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Your join request for "${result.tripName}" is currently pending approval.',
+                      style: const TextStyle(fontFamily: 'DM Sans', fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: AppColors.amber,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 4),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          );
+        } else if (result.isApproved) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Row(
@@ -169,7 +211,7 @@ class _JoinTripSheetState extends State<_JoinTripSheet> {
               TextField(
                 controller: _codeController,
                 textCapitalization: TextCapitalization.characters,
-                maxLength: 6,
+                maxLength: 12,
                 autofocus: true,
                 decoration: InputDecoration(
                   hintText: 'e.g. TAR4BC',

@@ -302,8 +302,8 @@ All PostgreSQL functions are implemented with `SECURITY DEFINER` where required 
   Updates the `updated_at` column to `now()` across all mutating tables (`users`, `trips`, `friends`, `expenses`, `itinerary_stops`).
 
 ### 3. Trip & Collaboration RPCs
-- **`public.join_trip_by_code(p_invite_code text) -> jsonb`** *(RPC, Migration 017)*  
-  Finds the trip by sanitized 6-character invite code, inserts `auth.uid()` into `trip_members` with `status = 'pending'`, fans out in-app notifications (`trip_join_request`) to all organizers/owners, logs activity, and returns `{ success, trip_id, trip_name, status }`.
+- **`public.join_trip_by_code(p_invite_code text) -> jsonb`** *(RPC, Migration 019)*  
+  Finds the trip by sanitized invite code (regex stripping hyphens/spaces), ensures caller's profile exists in `public.users` to prevent FK failures, handles re-application if previously rejected, detects already-approved and pending members returning exact status without duplicates, fans out in-app notifications (`trip_join_request`) to all organizers/owners, logs activity, and returns `{ success, trip_id, trip_name, status, already_member, already_pending }`.
 - **`public.approve_member(p_trip_id uuid, p_member_uid uuid) -> jsonb`** *(RPC, Migration 017)*  
   Allows organizers/owners to approve a pending member, updates `status = 'approved'`, inserts `trip_approved` notification to the applicant, and logs activity.
 - **`public.update_member_roles(p_trip_id uuid, p_member_uid uuid, p_roles text[]) -> jsonb`** *(RPC, Migration 018)*  

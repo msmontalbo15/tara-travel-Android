@@ -5,6 +5,7 @@
 /// authoritative remote state and eliminates count/deduplication drift.
 library;
 
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/trip_model.dart';
@@ -261,34 +262,175 @@ class TripRepository {
   /// Returns a [JoinResult] indicating whether membership is now
   /// [JoinStatus.pending] (awaiting organizer approval) or
   /// [JoinStatus.approved] (instantly joined).
+  /// Joins a trip using a 6-character invite code.
+  ///
+  /// Returns a [JoinResult] indicating whether membership is now
+  /// [JoinStatus.pending] (awaiting organizer approval) or
+  /// [JoinStatus.approved] (instantly joined).
   Future<JoinResult> joinTripByCode(String code) async {
     final cleanCode = InviteCodeGenerator.sanitize(code);
     if (!InviteCodeGenerator.isValidFormat(cleanCode)) {
       throw Exception('Invalid invite code format. Please check the 6-character code.');
     }
 
-    // RPC handles: pending status, notification fanout to organizers,
-    // and activity logging — all inside a SECURITY DEFINER transaction.
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) {
+      throw Exception('Must be logged in to join a trip.');
+    }
+
+    // 1. Ensure user exists in public.users to satisfy foreign keys
     try {
-      final rpcRes = await _supabase.rpc(
+      final existingUser = await _supabase
+          .from('users')
+          .select('id')
+          .eq('id', userId)
+          .maybeSingle();
+      if (existingUser == null) {
+        final email = _supabase.auth.currentUser?.email ?? '$userId@taratravel.app';
+        final name = (_supabase.auth.currentUser?.userMetadata?['full_name'] as String?) ??
+            (_supabase.auth.currentUser?.userMetadata?['name'] as String?) ??
+            email.split('@').first;
+        debugPrint('[TripRepository] Upserting public.users row for $userId before join');
+        await _supabase.from('users').upsert({
+          'id': userId,
+          'email': email,
+          'display_name': name,
+          'updated_at': DateTime.now().toIso8601String(),
+        });
+      }
+    } catch (userErr) {
+      debugPrint('[TripRepository] User upsert pre-join warning: $userErr');
+    }
+
+    // 2. Execute RPC (SECURITY DEFINER transaction)
+    try {
+      final rawRes = await _supabase.rpc(
         'join_trip_by_code',
         params: {'p_invite_code': cleanCode},
       );
-      if (rpcRes != null && rpcRes['trip_id'] != null) {
-        final status = rpcRes['status'] as String? ?? 'pending';
-        final tripName = rpcRes['trip_name'] as String? ?? '';
-        debugPrint('[TripRepository] Joined via RPC: ${rpcRes['trip_id']} — status=$status');
+
+      Map<String, dynamic>? rpcMap;
+      if (rawRes is Map) {
+        rpcMap = Map<String, dynamic>.from(rawRes);
+      } else if (rawRes is String) {
+        try {
+          final decoded = jsonDecode(rawRes);
+          if (decoded is Map) {
+            rpcMap = Map<String, dynamic>.from(decoded);
+          }
+        } catch (_) {}
+      }
+
+      if (rpcMap != null && rpcMap['trip_id'] != null) {
+        final status = (rpcMap['status'] as String? ?? 'pending').toLowerCase();
+        final tripName = rpcMap['trip_name'] as String? ?? '';
+        final alreadyMember = rpcMap['already_member'] == true;
+        final alreadyPending = rpcMap['already_pending'] == true;
+        debugPrint('[TripRepository] Joined via RPC: ${rpcMap['trip_id']} — status=$status (alreadyMember=$alreadyMember, alreadyPending=$alreadyPending)');
         return JoinResult(
           status: status == 'approved' ? JoinStatus.approved : JoinStatus.pending,
           tripName: tripName,
+          alreadyMember: alreadyMember,
+          alreadyPending: alreadyPending,
         );
       }
     } on PostgrestException catch (e) {
       final msg = e.message.isNotEmpty ? e.message : 'Failed to join trip.';
-      throw Exception(msg);
+      // If message is a clear business rule (e.g. organizer, invalid code), throw immediately
+      if (msg.contains('organizer') || msg.contains('not found') || msg.contains('Invalid')) {
+        throw Exception(msg);
+      }
+      debugPrint('[TripRepository] join_trip_by_code RPC error (${e.code}): ${e.message}. Attempting direct fallback.');
+    } catch (e) {
+      debugPrint('[TripRepository] join_trip_by_code unexpected exception: $e. Attempting direct fallback.');
     }
 
-    throw Exception('Unexpected error — could not join trip.');
+    // 3. Fallback: Direct table query & membership insertion
+    try {
+      final tripRow = await _supabase
+          .from('trips')
+          .select('id, name, owner_id')
+          .ilike('invite_code', cleanCode)
+          .maybeSingle();
+
+      if (tripRow == null) {
+        throw Exception('Trip not found. Please verify your invite code.');
+      }
+
+      final tripId = tripRow['id'] as String;
+      final tripName = tripRow['name'] as String? ?? 'Trip';
+      final ownerId = tripRow['owner_id'] as String?;
+
+      if (ownerId == userId) {
+        throw Exception('You are already the organizer of this trip.');
+      }
+
+      // Check existing membership
+      final existingMember = await _supabase
+          .from('trip_members')
+          .select('status')
+          .eq('trip_id', tripId)
+          .eq('user_id', userId)
+          .maybeSingle();
+
+      if (existingMember != null) {
+        final currentStatus = (existingMember['status'] as String? ?? 'pending').toLowerCase();
+        if (currentStatus == 'approved') {
+          return JoinResult(
+            status: JoinStatus.approved,
+            tripName: tripName,
+            alreadyMember: true,
+          );
+        } else if (currentStatus == 'pending') {
+          return JoinResult(
+            status: JoinStatus.pending,
+            tripName: tripName,
+            alreadyPending: true,
+          );
+        } else {
+          // Re-open rejected request
+          await _supabase
+              .from('trip_members')
+              .update({'status': 'pending', 'updated_at': DateTime.now().toIso8601String()})
+              .eq('trip_id', tripId)
+              .eq('user_id', userId);
+          return JoinResult(
+            status: JoinStatus.pending,
+            tripName: tripName,
+          );
+        }
+      }
+
+      // Insert new pending member
+      await _supabase.from('trip_members').insert({
+        'trip_id': tripId,
+        'user_id': userId,
+        'roles': ['member'],
+        'status': 'pending',
+      });
+
+      // Best-effort activity logging
+      try {
+        await _supabase.from('activity_log').insert({
+          'trip_id': tripId,
+          'user_id': userId,
+          'action_type': 'member_join_request',
+          'description': 'Requested to join the trip.',
+          'created_at': DateTime.now().toIso8601String(),
+        });
+      } catch (_) {}
+
+      return JoinResult(
+        status: JoinStatus.pending,
+        tripName: tripName,
+      );
+    } on PostgrestException catch (e) {
+      final msg = e.message.isNotEmpty ? e.message : 'Failed to join trip.';
+      throw Exception(msg);
+    } catch (e) {
+      if (e is Exception) rethrow;
+      throw Exception('Unexpected error — could not join trip.');
+    }
   }
 
   /// Updates roles for a member in a trip (organizer-only action).
@@ -434,8 +576,15 @@ enum JoinStatus { pending, approved }
 class JoinResult {
   final JoinStatus status;
   final String tripName;
+  final bool alreadyMember;
+  final bool alreadyPending;
 
-  const JoinResult({required this.status, required this.tripName});
+  const JoinResult({
+    required this.status,
+    required this.tripName,
+    this.alreadyMember = false,
+    this.alreadyPending = false,
+  });
 
   bool get isPending => status == JoinStatus.pending;
   bool get isApproved => status == JoinStatus.approved;

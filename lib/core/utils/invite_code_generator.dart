@@ -17,12 +17,12 @@ class InviteCodeGenerator {
     return buffer.toString();
   }
 
-  /// Sanitizes user input (trims whitespace, converts to uppercase).
+  /// Sanitizes user input (removes spaces, hyphens, non-alphanumeric noise, converts to uppercase).
   static String sanitize(String input) {
-    return input.trim().toUpperCase();
+    return input.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '').trim().toUpperCase();
   }
 
-  /// Validates whether [code] meets basic format rules (alphanumeric, length >= 4).
+  /// Validates whether [code] meets basic format rules (alphanumeric, length >= 4 and <= 12).
   static bool isValidFormat(String code) {
     final clean = sanitize(code);
     if (clean.length < 4 || clean.length > 12) return false;

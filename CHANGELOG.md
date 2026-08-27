@@ -1,7 +1,7 @@
 # Tara Travel — Version Changelog
 
 > Auto-generated from IMPLEMENTATION_MEMORY.md + git log
-> Last updated: **2026-08-28 01:53 PHT**
+> Last updated: **2026-08-28 02:19 PHT**
 
 ---
 
@@ -1155,6 +1155,46 @@
 
 ## 2026-08-28
 
+### IMP-059 - Hardened Join Trip by Invite Code Workflow & Resilience
+
+**Component**: Trips / Invite Code Join Flow
+
+**Summary**: Hardened Join Trip by Invite Code workflow: regex sanitization in `InviteCodeGenerator`, FK pre-flight user row provision in `TripRepository`, resilient RPC parsing & direct fallback, `019_fix_join_trip_by_code.sql` migration, and reactive `_JoinTripSheet` (ConsumerStatefulWidget).
+
+<details>
+<summary>Full implementation detail</summary>
+
+- **Date**: August 28, 2026
+- **Target Files**:
+  - [lib/core/utils/invite_code_generator.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/utils/invite_code_generator.dart) **[MODIFIED]**
+  - [lib/core/repositories/trip_repository.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/repositories/trip_repository.dart) **[MODIFIED]**
+  - [lib/features/trips/widgets/join_trip_modal.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/trips/widgets/join_trip_modal.dart) **[MODIFIED]**
+  - [supabase/migrations/019_fix_join_trip_by_code.sql](file:///d:/Spencer/Downloads/tara_travel/supabase/migrations/019_fix_join_trip_by_code.sql) **[NEW]**
+  - [MEMORY.md](file:///d:/Spencer/Downloads/tara_travel/MEMORY.md) **[MODIFIED]**
+  - [IMPLEMENTATION_MEMORY.md](file:///d:/Spencer/Downloads/tara_travel/IMPLEMENTATION_MEMORY.md) **[MODIFIED]**
+- **Scope & Objectives**:
+  - **Input Sanitization (`InviteCodeGenerator`)**:
+    - Hardened `InviteCodeGenerator.sanitize()` with regex `[^a-zA-Z0-9]` to automatically strip spaces, hyphens, and formatting noise when copying/pasting codes (e.g. `TAR-4BC` -> `TAR4BC`).
+    - Extended length validation to support clean codes between 4 and 12 characters.
+  - **Foreign Key Safeguard (`TripRepository.joinTripByCode`)**:
+    - Added pre-flight check and upsert for `public.users` before executing join logic to ensure new users without pre-existing profile rows never hit foreign key constraint violations on `trip_members` or `activity_log`.
+  - **RPC Parsing & Direct Fallback**:
+    - Added defensive type checking and JSON decoding for `_supabase.rpc('join_trip_by_code')` responses.
+    - Added a robust direct-table fallback path querying `trips` via `ilike` and inserting into `trip_members` if the remote RPC encounters issues.
+  - **Migration 019 (`019_fix_join_trip_by_code.sql`)**:
+    - Rewrote `join_trip_by_code(text)` to auto-create missing user records, check existing membership state (`already_member`, `already_pending`), handle re-application from `rejected` state, and wrap secondary notification and activity logging in exception blocks.
+  - **Reactive Modal UI (`_JoinTripSheet`)**:
+    - Migrated `_JoinTripSheet` to `ConsumerStatefulWidget` using Riverpod `ref`.
+    - Invalidates both `allTripsProvider` and `activeTripProvider` on join completion.
+    - Extended TextField `maxLength` to 12 to prevent clipping formatted pastes.
+    - Added contextual SnackBars for already-approved members, pending requests, and new approvals.
+- **Verification**:
+  - `flutter analyze` completed with 0 issues across all affected files.
+
+</details>
+
+---
+
 ### IMP-058 - Live Camera QR Scanner & Profile User ID Integration [commit:e610c86](https://github.com/msmontalbo15/tara-travel-Android/commit/e610c86)
 
 **Component**: Social / Camera QR & Profile ID
@@ -1185,7 +1225,7 @@
     - Added User ID row with one-tap copy and QR launch in the "Personal Info" card.
     - Added standalone `_showMyQrCodeModal` with personalized QR code generation and direct share functionality.
 - **Verification**:
-    - `flutter analyze` completed across all files with 0 errors and 0 warnings.
+  - `flutter analyze` completed across all files with 0 errors and 0 warnings.
 
 </details>
 

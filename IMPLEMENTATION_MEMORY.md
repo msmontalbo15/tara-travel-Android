@@ -45,6 +45,7 @@
 | **`IMP-056`** | 2026-08-27 | Itinerary / Multi-Stop Navigation | Fixed `NavigateRouteButton` multi-stop navigation to directly launch Google Maps with all intermediate waypoints and final destination instead of single-point `geo:` fallback. |
 | **`IMP-057`** | 2026-08-27 | Itinerary / Multi-Stop Route Engine | Advanced Multi-Stop Route Construction engine: smart Title+Location target geocoding, GPS origin prefill, remaining-vs-all stops scope selector, dynamic travel mode mapping (car, motorcycle, walking, transit, bike), interactive timeline preview sheet, and one-tap link sharing. |
 | **`IMP-058`** | 2026-08-28 | Social / Camera QR & Profile ID | Live Camera QR Scanner modal (`QrScannerModal`) via `mobile_scanner`, point-and-shoot camera friend scanning with auto-lookup and prefill in `friends_screen.dart`, and User ID / Friend Code badge chips and QR modal launch in `profile_screen.dart`. |
+| **`IMP-059`** | 2026-08-28 | Trips / Invite Code Join Flow | Hardened Join Trip by Invite Code workflow: regex sanitization in `InviteCodeGenerator`, FK pre-flight user row provision in `TripRepository`, resilient RPC parsing & direct fallback, `019_fix_join_trip_by_code.sql` migration, and reactive `_JoinTripSheet` (ConsumerStatefulWidget). |
 
 ---
 
@@ -846,7 +847,38 @@
     - Added User ID row with one-tap copy and QR launch in the "Personal Info" card.
     - Added standalone `_showMyQrCodeModal` with personalized QR code generation and direct share functionality.
 - **Verification**:
-    - `flutter analyze` completed across all files with 0 errors and 0 warnings.
+  - `flutter analyze` completed across all files with 0 errors and 0 warnings.
+
+---
+
+### `IMP-059` · Hardened Join Trip by Invite Code Workflow & Resilience
+- **Date**: August 28, 2026
+- **Target Files**:
+  - [lib/core/utils/invite_code_generator.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/utils/invite_code_generator.dart) **[MODIFIED]**
+  - [lib/core/repositories/trip_repository.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/repositories/trip_repository.dart) **[MODIFIED]**
+  - [lib/features/trips/widgets/join_trip_modal.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/trips/widgets/join_trip_modal.dart) **[MODIFIED]**
+  - [supabase/migrations/019_fix_join_trip_by_code.sql](file:///d:/Spencer/Downloads/tara_travel/supabase/migrations/019_fix_join_trip_by_code.sql) **[NEW]**
+  - [MEMORY.md](file:///d:/Spencer/Downloads/tara_travel/MEMORY.md) **[MODIFIED]**
+  - [IMPLEMENTATION_MEMORY.md](file:///d:/Spencer/Downloads/tara_travel/IMPLEMENTATION_MEMORY.md) **[MODIFIED]**
+- **Scope & Objectives**:
+  - **Input Sanitization (`InviteCodeGenerator`)**:
+    - Hardened `InviteCodeGenerator.sanitize()` with regex `[^a-zA-Z0-9]` to automatically strip spaces, hyphens, and formatting noise when copying/pasting codes (e.g. `TAR-4BC` -> `TAR4BC`).
+    - Extended length validation to support clean codes between 4 and 12 characters.
+  - **Foreign Key Safeguard (`TripRepository.joinTripByCode`)**:
+    - Added pre-flight check and upsert for `public.users` before executing join logic to ensure new users without pre-existing profile rows never hit foreign key constraint violations on `trip_members` or `activity_log`.
+  - **RPC Parsing & Direct Fallback**:
+    - Added defensive type checking and JSON decoding for `_supabase.rpc('join_trip_by_code')` responses.
+    - Added a robust direct-table fallback path querying `trips` via `ilike` and inserting into `trip_members` if the remote RPC encounters issues.
+  - **Migration 019 (`019_fix_join_trip_by_code.sql`)**:
+    - Rewrote `join_trip_by_code(text)` to auto-create missing user records, check existing membership state (`already_member`, `already_pending`), handle re-application from `rejected` state, and wrap secondary notification and activity logging in exception blocks.
+  - **Reactive Modal UI (`_JoinTripSheet`)**:
+    - Migrated `_JoinTripSheet` to `ConsumerStatefulWidget` using Riverpod `ref`.
+    - Invalidates both `allTripsProvider` and `activeTripProvider` on join completion.
+    - Extended TextField `maxLength` to 12 to prevent clipping formatted pastes.
+    - Added contextual SnackBars for already-approved members, pending requests, and new approvals.
+- **Verification**:
+  - `flutter analyze` completed with 0 issues across all affected files.
+
 
 
 
