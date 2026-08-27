@@ -22,6 +22,7 @@ import 'widgets/next_trip_card.dart';
 import 'widgets/quick_action_tile.dart';
 import 'widgets/trip_card.dart';
 import 'widgets/trip_action_sheet.dart';
+import 'widgets/quick_budget_sheet.dart';
 import 'widgets/empty_trip_hero_card.dart';
 import 'widgets/starter_templates_carousel.dart';
 
@@ -470,6 +471,18 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
                                                               .select(trip.id);
                                                           Navigator.pushNamed(
                                                               context, '/budget');
+                                                        },
+                                                        onBudgetTap: () {
+                                                          ref
+                                                              .read(selectedTripIdProvider
+                                                                  .notifier)
+                                                              .select(trip.id);
+                                                          Navigator.pushNamed(
+                                                              context, '/budget');
+                                                        },
+                                                        onSetBudget: () {
+                                                          QuickBudgetSheet.show(
+                                                              context, trip);
                                                         },
                                                         onChat: () {
                                                           ref
@@ -986,7 +999,7 @@ class _HomeHeaderDelegate extends SliverPersistentHeaderDelegate {
       // Same as minExtent — hero card is non-collapsible
       return topPadding + 290.0;
     }
-    return topPadding + 375.0;
+    return topPadding + 348.0;
   }
 
   @override

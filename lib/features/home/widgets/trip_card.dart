@@ -27,6 +27,8 @@ class TripCard extends StatelessWidget {
   final VoidCallback? onPacking;
   final VoidCallback? onMembers;
   final VoidCallback? onExpenses;
+  final VoidCallback? onBudgetTap;
+  final VoidCallback? onSetBudget;
   final VoidCallback? onChat;
   final VoidCallback? onMore;
 
@@ -52,6 +54,8 @@ class TripCard extends StatelessWidget {
     this.onPacking,
     this.onMembers,
     this.onExpenses,
+    this.onBudgetTap,
+    this.onSetBudget,
     this.onChat,
   })  : isUpcoming = true;
 
@@ -78,6 +82,8 @@ class TripCard extends StatelessWidget {
         onPacking = null,
         onMembers = null,
         onExpenses = null,
+        onBudgetTap = null,
+        onSetBudget = null,
         onChat = null;
 
   @override
@@ -123,6 +129,16 @@ class TripCard extends StatelessWidget {
         ? const Color(0xFF9E9A96)
         : hsl.withLightness((hsl.lightness + 0.08).clamp(0.0, 1.0)).toColor();
     final emojiDisplay = coverEmoji ?? AppTripTypes.getEmoji(tripType);
+
+    final budgetVal = totalBudget ?? 0.0;
+    final spentVal = totalSpent ?? 0.0;
+    final hasBudget = budgetVal > 0;
+    final pct = hasBudget ? (spentVal / budgetVal).clamp(0.0, 1.0) : 0.0;
+    final isOverBudget = hasBudget && spentVal > budgetVal;
+    final isWarning = hasBudget && !isOverBudget && (spentVal / budgetVal) >= 0.7;
+    final budgetText = hasBudget
+        ? '₱${CurrencyUtils.formatAmount(spentVal)} / ₱${CurrencyUtils.formatAmount(budgetVal)}'
+        : (spentVal > 0 ? '₱${CurrencyUtils.formatAmount(spentVal)} spent' : '₱0 / ₱0');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -274,78 +290,233 @@ class TripCard extends StatelessWidget {
                 children: [
                   Expanded(child: _statBox('DAYS', '${days ?? 0}')),
                   const SizedBox(width: 8),
-                  Expanded(child: _statBox('BUDGET', budget ?? '—')),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: hasBudget ? onBudgetTap : onSetBudget,
+                      behavior: HitTestBehavior.opaque,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+                        decoration: BoxDecoration(
+                          color: hasBudget
+                              ? (isOverBudget ? const Color(0xFFFEE2E2) : AppColors.surfaceLight)
+                              : const Color(0xFFFFF7ED),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: hasBudget
+                                ? (isOverBudget ? const Color(0xFFFCA5A5) : AppColors.cardBorder)
+                                : AppColors.primary.withValues(alpha: 0.3),
+                            width: hasBudget ? 1.0 : 1.2,
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'BUDGET',
+                                  style: TextStyle(
+                                    fontFamily: 'DM Sans',
+                                    fontSize: 10,
+                                    color: hasBudget
+                                        ? (isOverBudget ? const Color(0xFFDC2626) : AppColors.warmMuted)
+                                        : AppColors.primary,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.8,
+                                  ),
+                                ),
+                                const SizedBox(width: 3),
+                                Icon(
+                                  hasBudget ? Icons.chevron_right_rounded : Icons.add_circle_outline_rounded,
+                                  size: 11,
+                                  color: hasBudget
+                                      ? (isOverBudget ? const Color(0xFFDC2626) : AppColors.warmMuted)
+                                      : AppColors.primary,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              hasBudget ? (budget ?? '—') : 'Set',
+                              style: TextStyle(
+                                fontFamily: 'DM Sans',
+                                fontSize: hasBudget ? 20 : 16,
+                                fontWeight: FontWeight.w700,
+                                color: hasBudget
+                                    ? (isOverBudget ? const Color(0xFFDC2626) : AppColors.textPrimary)
+                                    : AppColors.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                   const SizedBox(width: 8),
                   Expanded(child: _statBox('PEOPLE', '${people ?? 0}')),
                 ],
               ),
               const SizedBox(height: 14),
 
-              // Budget bar
-              Builder(
-                builder: (context) {
-                  final budgetVal = totalBudget ?? 0.0;
-                  final spentVal = totalSpent ?? 0.0;
-                  final hasBudget = budgetVal > 0;
-                  final pct = hasBudget ? (spentVal / budgetVal).clamp(0.0, 1.0) : 0.0;
-                  final pctText = hasBudget ? '${(pct * 100).round()}% used' : 'No budget set';
-                  final budgetText = hasBudget
-                      ? '₱${CurrencyUtils.formatAmount(spentVal)} / ₱${CurrencyUtils.formatAmount(budgetVal)}'
-                      : (spentVal > 0 ? '₱${CurrencyUtils.formatAmount(spentVal)} spent' : '₱0 / ₱0');
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            hasBudget ? 'Budget used ($pctText)' : 'Budget used',
-                            style: const TextStyle(
-                              fontFamily: 'DM Sans',
-                              fontSize: 12,
-                              color: AppColors.textSecondary,
+              // Interactive Budget Bar & Tracker
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: hasBudget ? onBudgetTap : onSetBudget,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.account_balance_wallet_outlined,
+                                  size: 13,
+                                  color: isOverBudget
+                                      ? const Color(0xFFDC2626)
+                                      : (isWarning ? const Color(0xFFD97706) : AppColors.textSecondary),
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  hasBudget
+                                      ? (isOverBudget
+                                          ? 'Over budget (${(pct * 100).round()}%)'
+                                          : 'Budget used (${(pct * 100).round()}%)')
+                                      : 'No budget set',
+                                  style: TextStyle(
+                                    fontFamily: 'DM Sans',
+                                    fontSize: 12,
+                                    fontWeight: isOverBudget || isWarning ? FontWeight.w700 : FontWeight.w500,
+                                    color: isOverBudget
+                                        ? const Color(0xFFDC2626)
+                                        : (isWarning ? const Color(0xFFD97706) : AppColors.textSecondary),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (hasBudget)
+                              Text(
+                                budgetText,
+                                style: TextStyle(
+                                  fontFamily: 'DM Sans',
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: isOverBudget ? const Color(0xFFDC2626) : AppColors.textPrimary,
+                                ),
+                              )
+                            else
+                              GestureDetector(
+                                onTap: onSetBudget,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.add_rounded, size: 12, color: AppColors.primary),
+                                      SizedBox(width: 2),
+                                      Text(
+                                        'Set budget',
+                                        style: TextStyle(
+                                          fontFamily: 'DM Sans',
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.primary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 7),
+                        Container(
+                          height: 6,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceLight,
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                          child: FractionallySizedBox(
+                            alignment: Alignment.centerLeft,
+                            widthFactor: pct,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: isOverBudget
+                                      ? const [Color(0xFFEF4444), Color(0xFFB91C1C)]
+                                      : isWarning
+                                          ? const [Color(0xFFF59E0B), Color(0xFFD97706)]
+                                          : const [AppColors.primary, AppColors.primaryLight],
+                                ),
+                                borderRadius: BorderRadius.circular(3),
+                                boxShadow: [
+                                  if (pct > 0.05)
+                                    BoxShadow(
+                                      color: (isOverBudget
+                                              ? const Color(0xFFEF4444)
+                                              : (isWarning ? const Color(0xFFF59E0B) : AppColors.primary))
+                                          .withValues(alpha: 0.35),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 1),
+                                    ),
+                                ],
+                              ),
                             ),
                           ),
-                          Text(
-                            budgetText,
-                            style: const TextStyle(
-                              fontFamily: 'DM Sans',
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
-                            ),
+                        ),
+                        if (hasBudget) ...[
+                          const SizedBox(height: 5),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                isOverBudget
+                                    ? 'Exceeded by ₱${CurrencyUtils.formatAmount((spentVal - budgetVal).abs())}'
+                                    : '₱${CurrencyUtils.formatAmount((budgetVal - spentVal).clamp(0, double.infinity))} remaining',
+                                style: TextStyle(
+                                  fontFamily: 'DM Sans',
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: isOverBudget ? const Color(0xFFDC2626) : AppColors.warmMuted,
+                                ),
+                              ),
+                              const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'Manage',
+                                    style: TextStyle(
+                                      fontFamily: 'DM Sans',
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                  SizedBox(width: 1),
+                                  Icon(
+                                    Icons.arrow_forward_ios_rounded,
+                                    size: 9,
+                                    color: AppColors.primary,
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ],
-                      ),
-                      const SizedBox(height: 6),
-                      Container(
-                        height: 5,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceLight,
-                          borderRadius: BorderRadius.circular(3),
-                        ),
-                        child: FractionallySizedBox(
-                          alignment: Alignment.centerLeft,
-                          widthFactor: pct,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: pct >= 0.9
-                                    ? const [Color(0xFFEF4444), Color(0xFFDC2626)]
-                                    : pct > 0.7
-                                        ? const [AppColors.amber, Color(0xFFF59E0B)]
-                                        : const [AppColors.primary, AppColors.primaryLight],
-                              ),
-                              borderRadius: BorderRadius.circular(3),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                },
+                      ],
+                    ),
+                  ),
+                ),
               ),
               const SizedBox(height: 14),
 

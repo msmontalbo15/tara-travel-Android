@@ -39,6 +39,9 @@
 | **`IMP-050`** | 2026-08-26 | Social Graph & Friend Module | 3-tab modern Friends UI (My Friends, Requests, Find Friends), bidirectional friend status resolution, live user preview search, QR sharing, request management, and trip invitation integration. |
 | **`IMP-051`** | 2026-08-26 | Real-time Friend Presence | `UserPresenceService` with heartbeat & lifecycle observer, `friendsRealtimePresenceProvider`, dynamic online calculation (`isCurrentlyOnline`, `presenceStatusText`), and interactive online friend filtering. |
 | **`IMP-052`** | 2026-08-27 | Packing / Custom Sub-Categories | Custom sub-categories pill/tab filter system in `_PackingCategoryCard`, `sub_category` schema sync in `PackingRepository`, preset suggestions, item tag chips & inline add integration. |
+| **`IMP-053`** | 2026-08-27 | UI / Home Trip Budget Bar | Functional & interactive trip card budget bar, `QuickBudgetSheet` modal editor, dynamic warning states (Warning Amber 70%+, Exceeded Red 100%+), remaining/over budget calculation, and NextTripCard budget tracker integration. |
+| **`IMP-054`** | 2026-08-27 | Itinerary / Next Destination Banner | Made `ItineraryFulfillmentBanner` (the progress % and N of N stops visited card) interactive to open Google Maps for the next uncompleted stop, with fallback search and visual 'Go' navigation CTA button. |
+| **`IMP-055`** | 2026-08-27 | UI / Home Hero Clean-up | Removed budget tracker section and unused imports from homepage header hero (`NextTripCard`), recalibrating `_HomeHeaderDelegate` max extent height. |
 
 ---
 
@@ -720,6 +723,76 @@
     - Tap on badge opens `_showEditItemSubCategorySheet` allowing instantaneous reassignment, removal, or custom creation.
 - **Verification**:
   - Full repo `flutter analyze` → 0 issues across entire project (ran in 12.3s, exit code 0).
+
+---
+
+### `IMP-053` · Functional Home Trip Budget Bar & Interactive Budget Management
+- **Date**: August 27, 2026
+- **Target Files**:
+  - [lib/features/home/widgets/quick_budget_sheet.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/home/widgets/quick_budget_sheet.dart) **[NEW]**
+  - [lib/features/home/widgets/trip_card.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/home/widgets/trip_card.dart) **[MODIFIED]**
+  - [lib/features/home/widgets/next_trip_card.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/home/widgets/next_trip_card.dart) **[MODIFIED]**
+  - [lib/features/home/home_screen.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/home/home_screen.dart) **[MODIFIED]**
+  - [MEMORY.md](file:///d:/Spencer/Downloads/tara_travel/MEMORY.md) **[MODIFIED]**
+  - [IMPLEMENTATION_MEMORY.md](file:///d:/Spencer/Downloads/tara_travel/IMPLEMENTATION_MEMORY.md) **[MODIFIED]**
+- **Scope & Objectives**:
+  - **Interactive Budget Bar & Stat Box on TripCard**:
+    - Transformed static budget bar and stats cell into responsive, interactive touchpoints.
+    - Added `onBudgetTap` (routes directly to `/budget` for the active trip) and `onSetBudget` (opens `QuickBudgetSheet`).
+    - Added dynamic multi-stage alert coloring:
+      - Normal spend (<70%): App primary gradient with remaining budget summary (`₱X remaining`).
+      - Warning spend (70%-90%): Amber gradient and warning alert tint.
+      - Danger / Over-budget (>90% or >100%): Red gradient, over-budget badge (`Exceeded by ₱X`), and red tint on budget stat pill.
+    - If no budget is configured, renders a clean `+ Set budget` action pill and calls `QuickBudgetSheet.show`.
+  - **Quick Budget Editor Modal (`QuickBudgetSheet`)**:
+    - Created a modal bottom sheet allowing travelers to configure or adjust a trip's total budget on the fly without navigating away from the homepage.
+    - Integrated preset quick chips (`₱5,000`, `₱10,000`, `₱20,000`, `₱50,000`) and live spend summary display.
+    - Automatically persists changes through `TripRepository.updateTrip` and invalidates `allTripsProvider`, `activeTripProvider`, and `selectedTripProvider`.
+  - **NextTripCard Hero Budget Tracker Integration**:
+    - Embedded a compact budget tracker bar within the expanded view of the hero `NextTripCard`.
+    - Offers one-tap direct navigation to the Budget Hub or immediate quick budget configuration.
+- **Verification**:
+  - Verified static analysis with zero errors or warnings.
+
+---
+
+### `IMP-054` · Interactive Next Destination Progress Banner
+- **Date**: August 27, 2026
+- **Target Files**:
+  - [lib/features/itinerary/widgets/itinerary_fulfillment_banner.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/itinerary_fulfillment_banner.dart) **[MODIFIED]**
+  - [lib/features/itinerary/itinerary_screen.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/itinerary_screen.dart) **[MODIFIED]**
+  - [IMPLEMENTATION_MEMORY.md](file:///d:/Spencer/Downloads/tara_travel/IMPLEMENTATION_MEMORY.md) **[MODIFIED]**
+- **Scope & Objectives**:
+  - **Reverted Hero Subtitle**:
+    - Restored the trip destination subtitle in the dark top header back to clean static typography.
+  - **Interactive Itinerary Fulfillment Banner**:
+    - Converted the entire `ItineraryFulfillmentBanner` (the progress % + "N of N stops visited" card) into a clickable interactive card.
+    - When tapped, resolves the next uncompleted stop (`nextStop = day.stops.where((s) => !s.isCompleted).firstOrNull`).
+    - Opens Google Maps targeting the exact coordinates (`lat,lng`) or `stop.location` string directly (avoiding custom title mixing), falling back to `stop.title` only if location is absent.
+    - Also updated `NavigateRouteButton` (`_formatStopTarget` and `openGoogleMapsForStop`) to use `stop.location` directly for accurate map search resolution.
+    - Added an amber navigational CTA badge ("Go" + `near_me_rounded` icon) and interactive border highlight to clearly signal that the banner is active and tappable.
+- **Verification**:
+  - `flutter analyze lib/` passed with 0 issues.
+
+---
+
+### `IMP-055` · Homepage Header Hero Budget Section Removal
+- **Date**: August 27, 2026
+- **Target Files**:
+  - [lib/features/home/widgets/next_trip_card.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/home/widgets/next_trip_card.dart) **[MODIFIED]**
+  - [lib/features/home/home_screen.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/home/home_screen.dart) **[MODIFIED]**
+  - [IMPLEMENTATION_MEMORY.md](file:///d:/Spencer/Downloads/tara_travel/IMPLEMENTATION_MEMORY.md) **[MODIFIED]**
+- **Scope & Objectives**:
+  - **Header Hero Simplification**:
+    - Removed the budget tracker container (progress bar, spend ratio, and quick budget CTA) from the expanded view of [NextTripCard](file:///d:/Spencer/Downloads/tara_travel/lib/features/home/widgets/next_trip_card.dart).
+    - Cleaned up unused imports in `next_trip_card.dart` (`currency_utils.dart` and `quick_budget_sheet.dart`).
+  - **Header Extents & Responsive Spacing Calibration**:
+    - Adjusted `NextTripCard` vertical padding (`fromLTRB(18, 14, 18, 16)`) and tightened spacing between elements.
+    - Set `_HomeHeaderDelegate.maxExtent` in [home_screen.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/home/home_screen.dart) to `topPadding + 348.0`, ensuring the trip title at the bottom of the card is fully visible with comfortable bottom padding and zero clipping across varying screen sizes and text scaling.
+- **Verification**:
+  - Project-wide `flutter analyze` completed with 0 errors / 0 warnings.
+
+
 
 
 

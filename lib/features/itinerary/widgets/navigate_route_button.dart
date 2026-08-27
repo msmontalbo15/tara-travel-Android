@@ -29,19 +29,15 @@ class _NavigateRouteButtonState extends State<NavigateRouteButton> {
           s.title.trim().isNotEmpty)
       .toList();
 
-  /// Formats a stop target (combines Title + Location string or Lat/Lng).
+  /// Formats a stop target (uses Lat/Lng coordinates or Location string).
   static String _formatStopTarget(ItineraryStop s) {
     if (s.lat != null && s.lng != null && s.lat != 0.0 && s.lng != 0.0) {
       return '${s.lat},${s.lng}';
     }
     if (s.location != null && s.location!.trim().isNotEmpty) {
-      if (s.title.trim().isNotEmpty &&
-          !s.location!.toLowerCase().contains(s.title.toLowerCase())) {
-        return '${s.title}, ${s.location!}';
-      }
-      return s.location!;
+      return s.location!.trim();
     }
-    return s.title;
+    return s.title.trim();
   }
 
   /// Builds a universal directions navigation URL.
@@ -176,17 +172,9 @@ class _NavigateRouteButtonState extends State<NavigateRouteButton> {
 /// Opens turn-by-turn navigation mode for a specific single stop.
 Future<void> openGoogleMapsForStop(
     BuildContext context, ItineraryStop stop) async {
-  String destinationLabel;
-  if (stop.location != null && stop.location!.trim().isNotEmpty) {
-    if (stop.title.trim().isNotEmpty &&
-        !stop.location!.toLowerCase().contains(stop.title.toLowerCase())) {
-      destinationLabel = '${stop.title}, ${stop.location!}';
-    } else {
-      destinationLabel = stop.location!;
-    }
-  } else {
-    destinationLabel = stop.title;
-  }
+  final String destinationLabel = (stop.location != null && stop.location!.trim().isNotEmpty)
+      ? stop.location!.trim()
+      : stop.title.trim();
 
   final bool hasCoords = stop.lat != null &&
       stop.lng != null &&

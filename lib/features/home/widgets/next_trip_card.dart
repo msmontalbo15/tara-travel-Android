@@ -136,10 +136,7 @@ class _NextTripCardState extends State<NextTripCard>
               ),
 
               Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 14,
-                ),
+                padding: const EdgeInsets.fromLTRB(18, 14, 18, 16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
@@ -198,7 +195,7 @@ class _NextTripCardState extends State<NextTripCard>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 12),
 
                           // Days countdown
                           Row(
@@ -264,7 +261,7 @@ class _NextTripCardState extends State<NextTripCard>
                             ],
                           ),
 
-                          const SizedBox(height: 14),
+                          const SizedBox(height: 10),
 
                           // Destination + member count
                           Row(
@@ -335,9 +332,9 @@ class _NextTripCardState extends State<NextTripCard>
                             ],
                           ),
 
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 10),
 
-                          // Trip name
+                          // Trip name / title
                           Text(
                             widget.trip.name,
                             maxLines: 1,

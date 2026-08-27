@@ -1,11 +1,13 @@
 import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/models/itinerary_model.dart';
 import '../../../core/models/member_model.dart';
 import '../../../core/theme/app_colors.dart';
 
 /// Day progress + squad presence banner shown above the timeline.
+/// Tap the banner to open the next uncompleted stop in Google Maps.
 class ItineraryFulfillmentBanner extends StatelessWidget {
   final ItineraryDay day;
   final List<MemberModel> allMembers;
@@ -15,6 +17,39 @@ class ItineraryFulfillmentBanner extends StatelessWidget {
     required this.day,
     required this.allMembers,
   });
+
+  /// Builds a Google Maps URL for the given stop.
+  /// Uses coordinates if available, otherwise uses stop.location (falls back to title only if location is missing).
+  static String _buildMapsUrl(ItineraryStop stop) {
+    if (stop.lat != null && stop.lng != null &&
+        stop.lat != 0.0 && stop.lng != 0.0) {
+      return 'https://www.google.com/maps/search/?api=1&query=${stop.lat},${stop.lng}';
+    }
+    final target = (stop.location != null && stop.location!.trim().isNotEmpty)
+        ? stop.location!.trim()
+        : stop.title.trim();
+    final query = Uri.encodeComponent(target);
+    return 'https://www.google.com/maps/search/?api=1&query=$query';
+  }
+
+  Future<void> _openNextStopInMaps(BuildContext context, ItineraryStop stop) async {
+    final uri = Uri.parse(_buildMapsUrl(stop));
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Could not open Google Maps for "${stop.title}".',
+              style: const TextStyle(fontFamily: 'DM Sans'),
+            ),
+            backgroundColor: const Color(0xFF2C1A14),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,113 +75,149 @@ class ItineraryFulfillmentBanner extends StatelessWidget {
 
     if (total == 0) return const SizedBox.shrink();
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: Container(
-          margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1A0A04).withValues(alpha: 0.88),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.08),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.2),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
+    return GestureDetector(
+      onTap: nextStop != null ? () => _openNextStopInMaps(context, nextStop) : null,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: Container(
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A0A04).withValues(alpha: 0.88),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: nextStop != null
+                    ? AppColors.amber.withValues(alpha: 0.25)
+                    : Colors.white.withValues(alpha: 0.08),
               ),
-            ],
-          ),
-          child: Row(
-            children: [
-              // Progress ring
-              SizedBox(
-                width: 56,
-                height: 56,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    CustomPaint(
-                      size: const Size(56, 56),
-                      painter: _FulfillmentRingPainter(progress: progress),
-                    ),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          '$pct%',
-                          style: const TextStyle(
-                            fontFamily: 'DM Sans',
-                            fontSize: 14,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
                 ),
-              ),
-              const SizedBox(width: 14),
-
-              // Info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '$completed of $total stops visited',
-                      style: const TextStyle(
-                        fontFamily: 'DM Sans',
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
+              ],
+            ),
+            child: Row(
+              children: [
+                // Progress ring
+                SizedBox(
+                  width: 56,
+                  height: 56,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      CustomPaint(
+                        size: const Size(56, 56),
+                        painter: _FulfillmentRingPainter(progress: progress),
                       ),
-                    ),
-                    if (nextStop != null) ...[
-                      const SizedBox(height: 3),
-                      Row(
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.arrow_forward_ios_rounded,
-                              size: 10, color: AppColors.amber),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              'Next: ${nextStop.title}',
-                              style: const TextStyle(
-                                fontFamily: 'DM Sans',
-                                fontSize: 11,
-                                color: AppColors.amber,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                          Text(
+                            '$pct%',
+                            style: const TextStyle(
+                              fontFamily: 'DM Sans',
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
                             ),
                           ),
                         ],
                       ),
                     ],
-                    if (activeMembers.isNotEmpty) ...[
-                      const SizedBox(height: 6),
-                      _SquadPresenceRow(
-                        members: activeMembers,
-                        memberCurrentStop: memberCurrentStop,
-                      ),
-                    ],
-                  ],
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 14),
+
+                // Info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '$completed of $total stops visited',
+                        style: const TextStyle(
+                          fontFamily: 'DM Sans',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                      if (nextStop != null) ...[
+                        const SizedBox(height: 3),
+                        Row(
+                          children: [
+                            const Icon(Icons.arrow_forward_ios_rounded,
+                                size: 10, color: AppColors.amber),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                'Next: ${nextStop.title}',
+                                style: const TextStyle(
+                                  fontFamily: 'DM Sans',
+                                  fontSize: 11,
+                                  color: AppColors.amber,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      if (activeMembers.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        _SquadPresenceRow(
+                          members: activeMembers,
+                          memberCurrentStop: memberCurrentStop,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+
+                // Maps CTA — only shown when there's a next stop to navigate to
+                if (nextStop != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: AppColors.amber.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppColors.amber.withValues(alpha: 0.35),
+                        width: 0.8,
+                      ),
+                    ),
+                    child: const Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.near_me_rounded, color: AppColors.amber, size: 18),
+                        SizedBox(height: 2),
+                        Text(
+                          'Go',
+                          style: TextStyle(
+                            fontFamily: 'DM Sans',
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.amber,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 }
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 
