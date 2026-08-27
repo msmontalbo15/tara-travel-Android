@@ -44,6 +44,7 @@
 | **`IMP-055`** | 2026-08-27 | UI / Home Hero Clean-up | Removed budget tracker section and unused imports from homepage header hero (`NextTripCard`), recalibrating `_HomeHeaderDelegate` max extent height. |
 | **`IMP-056`** | 2026-08-27 | Itinerary / Multi-Stop Navigation | Fixed `NavigateRouteButton` multi-stop navigation to directly launch Google Maps with all intermediate waypoints and final destination instead of single-point `geo:` fallback. |
 | **`IMP-057`** | 2026-08-27 | Itinerary / Multi-Stop Route Engine | Advanced Multi-Stop Route Construction engine: smart Title+Location target geocoding, GPS origin prefill, remaining-vs-all stops scope selector, dynamic travel mode mapping (car, motorcycle, walking, transit, bike), interactive timeline preview sheet, and one-tap link sharing. |
+| **`IMP-058`** | 2026-08-28 | Social / Camera QR & Profile ID | Live Camera QR Scanner modal (`QrScannerModal`) via `mobile_scanner`, point-and-shoot camera friend scanning with auto-lookup and prefill in `friends_screen.dart`, and User ID / Friend Code badge chips and QR modal launch in `profile_screen.dart`. |
 
 ---
 
@@ -822,6 +823,31 @@
     - Fast quick-launch on the primary button + options button (`tune_rounded`).
 - **Verification**:
   - `flutter analyze lib/features/itinerary/` passed with 0 errors / 0 warnings.
+
+### `IMP-058` · Live Camera QR Scanner & Profile User ID Integration
+- **Date**: August 28, 2026
+- **Target Files**:
+  - [pubspec.yaml](file:///d:/Spencer/Downloads/tara_travel/pubspec.yaml) **[MODIFIED]**
+  - [lib/core/widgets/scanner/qr_scanner_modal.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/widgets/scanner/qr_scanner_modal.dart) **[NEW]**
+  - [lib/features/friends/friends_screen.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/friends/friends_screen.dart) **[MODIFIED]**
+  - [lib/features/profile/profile_screen.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/profile/profile_screen.dart) **[MODIFIED]**
+  - [MEMORY.md](file:///d:/Spencer/Downloads/tara_travel/MEMORY.md) **[MODIFIED]**
+  - [IMPLEMENTATION_MEMORY.md](file:///d:/Spencer/Downloads/tara_travel/IMPLEMENTATION_MEMORY.md) **[MODIFIED]**
+- **Scope & Objectives**:
+  - **Live Camera QR Scanner (`QrScannerModal`)**:
+    - Integrated `mobile_scanner: ^7.4.0` for hardware-accelerated on-device MLKit/AVFoundation camera scanning.
+    - Custom brand overlay painter (`_ScannerOverlayPainter`) with Coral (`#D85A30`) corner brackets, dark translucent frame, torch toggle, camera facing switcher, and haptic feedback.
+  - **Friends Screen Direct Camera Scanning**:
+    - Added `_scanFriendQr` action in Friends screen top bar and Find Friends tab quick action tiles.
+    - Added camera scan button directly inside the "Add Friend" dialog TextField suffix alongside paste button.
+    - Automatic UUID parsing and instant live profile preview lookup upon scan completion.
+  - **Profile Screen User ID & QR Integration**:
+    - Added interactive **User ID (Friend Code)** badge chip and **My QR** launch button in the profile header.
+    - Added User ID row with one-tap copy and QR launch in the "Personal Info" card.
+    - Added standalone `_showMyQrCodeModal` with personalized QR code generation and direct share functionality.
+- **Verification**:
+    - `flutter analyze` completed across all files with 0 errors and 0 warnings.
+
 
 
 

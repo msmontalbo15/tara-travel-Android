@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/providers/profile_provider.dart';
@@ -416,6 +418,89 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ],
                       ),
                     ),
+                  // User ID & My QR Badge Chips
+                  () {
+                    final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+                    if (currentUserId == null || currentUserId.isEmpty) return const SizedBox.shrink();
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 10),
+                      child: Wrap(
+                        alignment: WrapAlignment.center,
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          // Copy ID Chip
+                          GestureDetector(
+                            onTap: () {
+                              Clipboard.setData(ClipboardData(text: currentUserId));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('User ID copied to clipboard!', style: TextStyle(fontFamily: 'DM Sans')),
+                                  backgroundColor: AppColors.deepEarth,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.fingerprint_rounded, size: 14, color: AppColors.amber),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'ID: ${currentUserId.length > 12 ? "${currentUserId.substring(0, 8)}…" : currentUserId}',
+                                    style: const TextStyle(
+                                      fontFamily: 'DM Sans',
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  const Icon(Icons.copy_rounded, size: 12, color: Colors.white70),
+                                ],
+                              ),
+                            ),
+                          ),
+                          // My QR Button Chip
+                          GestureDetector(
+                            onTap: () => _showMyQrCodeModal(context, currentUserId, profile.effectiveName),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.85),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: AppColors.primary),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.qr_code_rounded, size: 14, color: Colors.white),
+                                  SizedBox(width: 6),
+                                  Text(
+                                    'My QR',
+                                    style: TextStyle(
+                                      fontFamily: 'DM Sans',
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }(),
                 ],
               ),
             ),
@@ -455,6 +540,53 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         _profileRow(Icons.payments_outlined, 'Preferred Currency', profile.preferredCurrency, onTap: () => _editCurrency(context, profile)),
                         _divider(),
                         _profileRow(Icons.call_outlined, 'Contact Number', profile.contactNumber ?? 'Add number', onTap: () => _editContactNumber(context, profile)),
+                        if (Supabase.instance.client.auth.currentUser?.id != null) ...[
+                          _divider(),
+                          _profileRow(
+                            Icons.fingerprint_rounded,
+                            'User ID (Friend Code)',
+                            '${Supabase.instance.client.auth.currentUser!.id.substring(0, 8)}…',
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.copy_rounded, size: 16, color: AppColors.warmMuted),
+                                  tooltip: 'Copy ID',
+                                  onPressed: () {
+                                    final id = Supabase.instance.client.auth.currentUser!.id;
+                                    Clipboard.setData(ClipboardData(text: id));
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('User ID copied to clipboard!', style: TextStyle(fontFamily: 'DM Sans')),
+                                        backgroundColor: AppColors.deepEarth,
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                  },
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.qr_code_rounded, size: 18, color: AppColors.primary),
+                                  tooltip: 'Show QR Code',
+                                  onPressed: () {
+                                    final id = Supabase.instance.client.auth.currentUser!.id;
+                                    _showMyQrCodeModal(context, id, profile.effectiveName);
+                                  },
+                                ),
+                              ],
+                            ),
+                            onTap: () {
+                              final id = Supabase.instance.client.auth.currentUser!.id;
+                              Clipboard.setData(ClipboardData(text: id));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('User ID copied to clipboard!', style: TextStyle(fontFamily: 'DM Sans')),
+                                  backgroundColor: AppColors.deepEarth,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            },
+                          ),
+                        ],
                       ],
                     ),
 
@@ -1078,7 +1210,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Widget _divider() => const Divider(height: 0.5, color: AppColors.dividerLight, indent: 14, endIndent: 14);
 
-  Widget _profileRow(IconData icon, String label, String value, {VoidCallback? onTap}) {
+  Widget _profileRow(IconData icon, String label, String value, {VoidCallback? onTap, Widget? trailing}) {
     return GestureDetector(
       onTap: onTap,
       child: Padding(
@@ -1104,7 +1236,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ],
               ),
             ),
-            if (onTap != null)
+            if (trailing != null)
+              trailing
+            else if (onTap != null)
               Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
@@ -1114,6 +1248,167 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 child: const Icon(Icons.chevron_right_rounded, size: 16, color: AppColors.warmMuted),
               ),
           ],
+        ),
+      ),
+    );
+  }
+
+  void _showMyQrCodeModal(BuildContext context, String userId, String displayName) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => SafeArea(
+        top: false,
+        child: Container(
+          padding: EdgeInsets.fromLTRB(24, 16, 24, 24 + MediaQuery.of(ctx).padding.bottom),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.cardBorder,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'My Friend Code & QR',
+                style: TextStyle(
+                  fontFamily: 'DM Sans',
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Share your personal QR or ID so friends can add you on Tara Travel',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'DM Sans',
+                  fontSize: 13,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      blurRadius: 20,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                  border: Border.all(color: AppColors.cardBorder),
+                ),
+                child: QrImageView(
+                  data: userId,
+                  version: QrVersions.auto,
+                  size: 200,
+                  backgroundColor: Colors.white,
+                  eyeStyle: const QrEyeStyle(
+                    eyeShape: QrEyeShape.square,
+                    color: AppColors.deepEarth,
+                  ),
+                  dataModuleStyle: const QrDataModuleStyle(
+                    dataModuleShape: QrDataModuleShape.square,
+                    color: AppColors.deepEarth,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                displayName.isNotEmpty ? displayName : 'Traveler',
+                style: const TextStyle(
+                  fontFamily: 'DM Sans',
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              GestureDetector(
+                onTap: () {
+                  Clipboard.setData(ClipboardData(text: userId));
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    const SnackBar(
+                      content: Text('Friend ID copied!', style: TextStyle(fontFamily: 'DM Sans')),
+                      backgroundColor: AppColors.green,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceLight,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: AppColors.cardBorder),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.copy_rounded, size: 14, color: AppColors.textSecondary),
+                      const SizedBox(width: 6),
+                      Text(
+                        userId.length > 12 ? '${userId.substring(0, 8)}…' : userId,
+                        style: const TextStyle(
+                          fontFamily: 'DM Sans',
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    SharePlus.instance.share(
+                      ShareParams(
+                        text:
+                            'Add me on Tara Travel! Use my friend code:\n$userId\n\nDownload Tara Travel to connect and plan trips together! 🌴',
+                        subject: 'Add me on Tara Travel',
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.share_rounded, size: 18),
+                  label: const Text(
+                    'Share Profile Code',
+                    style: TextStyle(
+                      fontFamily: 'DM Sans',
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

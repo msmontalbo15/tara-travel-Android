@@ -9,6 +9,7 @@ import '../../core/models/friend_model.dart';
 import '../../core/providers/friend_provider.dart';
 import '../../core/widgets/inputs/app_text_field.dart';
 import '../../core/widgets/shimmer_loading.dart';
+import '../../core/widgets/scanner/qr_scanner_modal.dart';
 import 'widgets/friend_list_item.dart';
 
 class FriendsScreen extends ConsumerStatefulWidget {
@@ -250,10 +251,28 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
     );
   }
 
+  // ── Scan Friend QR Code ──────────────────────────────────────────────────
+  Future<void> _scanFriendQr() async {
+    final scanned = await QrScannerModal.show(
+      context,
+      title: 'Scan Friend QR',
+      instruction: 'Point camera at your friend’s QR code',
+    );
+    if (scanned != null && scanned.isNotEmpty) {
+      String cleanedId = scanned.trim();
+      if (cleanedId.contains('taratravel://user/')) {
+        cleanedId = cleanedId.replaceAll('taratravel://user/', '').trim();
+      }
+      if (mounted) {
+        _showAddByCodeDialog(initialQuery: cleanedId);
+      }
+    }
+  }
+
   // ── Add by Code / Username Dialog with Live User Preview ─────────────────────
-  void _showAddByCodeDialog() {
-    final ctrl = TextEditingController();
-    bool isSearching = false;
+  void _showAddByCodeDialog({String? initialQuery}) {
+    final ctrl = TextEditingController(text: initialQuery);
+    bool isSearching = initialQuery != null && initialQuery.isNotEmpty;
     bool isSending = false;
     FriendModel? resolvedUser;
     String? lookupError;
@@ -263,6 +282,34 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) {
+          void doLookup(String query) async {
+            try {
+              final repo = ref.read(friendRepositoryProvider);
+              final found = await repo.lookupUser(query);
+              if (context.mounted) {
+                setDialogState(() {
+                  isSearching = false;
+                  resolvedUser = found;
+                  lookupError = found == null ? 'No user found' : null;
+                });
+              }
+            } catch (_) {
+              if (context.mounted) {
+                setDialogState(() {
+                  isSearching = false;
+                  resolvedUser = null;
+                  lookupError = 'User not found';
+                });
+              }
+            }
+          }
+
+          if (initialQuery != null && initialQuery.isNotEmpty && resolvedUser == null && lookupError == null && isSearching) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              doLookup(initialQuery);
+            });
+          }
+
           void onInputChanged(String text) {
             dialogDebounce?.cancel();
             final query = text.trim();
@@ -277,25 +324,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
 
             setDialogState(() => isSearching = true);
             dialogDebounce = Timer(const Duration(milliseconds: 350), () async {
-              try {
-                final repo = ref.read(friendRepositoryProvider);
-                final found = await repo.lookupUser(query);
-                if (context.mounted) {
-                  setDialogState(() {
-                    isSearching = false;
-                    resolvedUser = found;
-                    lookupError = found == null ? 'No user found' : null;
-                  });
-                }
-              } catch (_) {
-                if (context.mounted) {
-                  setDialogState(() {
-                    isSearching = false;
-                    resolvedUser = null;
-                    lookupError = 'User not found';
-                  });
-                }
-              }
+              doLookup(query);
             });
           }
 
@@ -333,7 +362,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                   const SizedBox(height: 14),
                   TextField(
                     controller: ctrl,
-                    autofocus: true,
+                    autofocus: initialQuery == null || initialQuery.isEmpty,
                     onChanged: onInputChanged,
                     style: const TextStyle(
                       fontFamily: 'DM Sans',
@@ -352,16 +381,30 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                                 onInputChanged('');
                               },
                             )
-                          : IconButton(
-                              icon: const Icon(Icons.paste_rounded, size: 18, color: AppColors.primary),
-                              tooltip: 'Paste from clipboard',
-                              onPressed: () async {
-                                final data = await Clipboard.getData('text/plain');
-                                if (data?.text != null && data!.text!.isNotEmpty) {
-                                  ctrl.text = data.text!.trim();
-                                  onInputChanged(ctrl.text);
-                                }
-                              },
+                          : Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.qr_code_scanner_rounded, size: 20, color: AppColors.primary),
+                                  tooltip: 'Scan Friend QR',
+                                  onPressed: () {
+                                    dialogDebounce?.cancel();
+                                    Navigator.pop(ctx);
+                                    _scanFriendQr();
+                                  },
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.paste_rounded, size: 18, color: AppColors.textSecondary),
+                                  tooltip: 'Paste from clipboard',
+                                  onPressed: () async {
+                                    final data = await Clipboard.getData('text/plain');
+                                    if (data?.text != null && data!.text!.isNotEmpty) {
+                                      ctrl.text = data.text!.trim();
+                                      onInputChanged(ctrl.text);
+                                    }
+                                  },
+                                ),
+                              ],
                             ),
                       filled: true,
                       fillColor: AppColors.surfaceLight,
@@ -592,6 +635,12 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       _headerIconBtn(
+                        icon: Icons.qr_code_scanner_rounded,
+                        tooltip: 'Scan Friend QR',
+                        onTap: _scanFriendQr,
+                      ),
+                      const SizedBox(width: 8),
+                      _headerIconBtn(
                         icon: Icons.qr_code_rounded,
                         tooltip: 'My QR Code',
                         onTap: _showMyQrCodeModal,
@@ -600,7 +649,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                       _headerIconBtn(
                         icon: Icons.person_add_rounded,
                         tooltip: 'Add Friend',
-                        onTap: _showAddByCodeDialog,
+                        onTap: () => _showAddByCodeDialog(),
                         isPrimary: true,
                       ),
                     ],
@@ -1166,20 +1215,30 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
             Expanded(
               child: _quickActionCard(
                 icon: Icons.qr_code_scanner_rounded,
-                label: 'My QR Code',
-                subtitle: 'Show & share',
+                label: 'Scan QR',
+                subtitle: 'Camera scan',
                 color: AppColors.primary,
+                onTap: _scanFriendQr,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _quickActionCard(
+                icon: Icons.qr_code_rounded,
+                label: 'My QR',
+                subtitle: 'Show & share',
+                color: AppColors.deepEarth,
                 onTap: _showMyQrCodeModal,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             Expanded(
               child: _quickActionCard(
                 icon: Icons.badge_rounded,
                 label: 'Add by ID',
                 subtitle: 'Code / username',
                 color: AppColors.blue,
-                onTap: _showAddByCodeDialog,
+                onTap: () => _showAddByCodeDialog(),
               ),
             ),
           ],

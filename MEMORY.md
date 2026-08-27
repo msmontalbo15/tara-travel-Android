@@ -18,6 +18,7 @@
 | **Cryptography** | `pointycastle`, `encrypt`, `crypto` | `^3.9.1`, `^5.0.3`, `^3.0.6` | 3-Layer RSA-2048 + AES-256-GCM + TLS 1.3 |
 | **API Client** | `dio` + `http` | `^5.9.2` / `^1.6.0` | Gateway interceptor, token rotation, audit logging |
 | **Maps & Geo** | `flutter_map`, `latlong2`, `geolocator`, `location` | `^7.0.2`, `^0.9.1`, `^14.0.1`, `^8.0.1` | Free OpenStreetMap rendering, PostGIS live ride tracking, Nominatim PH geocoding |
+| **Camera QR Scanner** | `mobile_scanner` | `^7.4.0` | Hardware-accelerated MLKit (Android) / AVFoundation (iOS) QR & barcode scanning |
 
 ---
 
