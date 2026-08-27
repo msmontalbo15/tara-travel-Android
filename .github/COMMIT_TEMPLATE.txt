@@ -1,0 +1,17 @@
+# Format: <type>(<scope>): IMP-XXX <short description (max 72 chars)>
+# Types: feat | fix | refactor | chore | docs | style | perf | test
+#
+# Body: summarize what changed and WHY (wrap at 72 chars)
+#
+# IMP-XXX | <Feature Name>
+# - <bullet: what was added/changed>
+# - <bullet: what was added/changed>
+#
+# Modified: <file1.dart>, <file2.dart>
+# Arch: <any provider, schema, or RLS changes>
+# Verified: <how you tested it>
+#
+# ─────────────────────────────────────────
+# MEMORY SYNC (delete line when done)
+# [ ] MEMORY.md updated
+# [ ] IMPLEMENTATION_MEMORY.md entry appended
