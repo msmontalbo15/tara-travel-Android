@@ -125,12 +125,14 @@ Declutter the visual presentation while retaining **100% of existing functionali
 ---
 
 ### 4. Implementation Steps
-1. [ ] **UX Architecture**: Create `DayInsightsHeader` consolidating weather, budget summary, and progress metrics into a collapsible accordion.
-2. [ ] **Action Consolidation**: Build `ItineraryActionSheet` to centralize Calendar sync, Sharing, Roll Call, and Day configuration.
-3. [ ] **Component Refactoring**: Modernize `StopCard` with swipe-actions / tap-to-expand for expense logging and navigation.
-4. [ ] **Bottom Dock**: Implement a sleek floating action bar for `Add Stop` and `Map View / Navigate Route`.
-5. [ ] **Automatic GPS Geofencing**: Hook real-time location stream into the active day's stops to automatically trigger `ArrivalPill` within a configurable radius ($\approx 100\text{m}$), with dismiss cooldowns and battery-efficient location sampling.
-6. [ ] **Screen Modularization**: Break `itinerary_screen.dart` into smaller, dedicated sub-widgets to improve maintainability and performance.
+1. [x] **UX Architecture**: Create `DayInsightsHeader` consolidating weather, budget summary, and progress metrics into a collapsible accordion.
+2. [x] **Action Consolidation**: Build `ItineraryActionSheet` to centralize Calendar sync, Sharing, Roll Call, and Day configuration.
+3. [x] **Component Refactoring**: Modernize `StopCard` with swipe-actions / tap-to-expand for expense logging and navigation.
+4. [x] **Bottom Dock**: Implement a sleek floating action bar for `Add Stop` and `Map View / Navigate Route`.
+5. [x] **Automatic GPS Geofencing**: Hook real-time location stream into the active day's stops to automatically trigger `ArrivalPill` within a configurable radius ($\approx 150\text{m}$), with dismiss cooldowns and battery-efficient location sampling.
+6. [x] **Screen Modularization**: Break `itinerary_screen.dart` into smaller, dedicated sub-widgets to improve maintainability and performance.
+
+> **Status**: Completed (`IMP-061`)
 
 ---
 

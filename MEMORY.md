@@ -811,7 +811,25 @@ Client Tier               Storage Tier                Transport Tier
 
 ---
 
+## 15. 🧭 STREAMLINED ITINERARY SUITE & PROGRESSIVE DISCLOSURE (IDEA-002 / IMP-061)
+
+- **Location**: `lib/features/itinerary/`
+- **Core Architecture & Components**:
+  - `DayInsightsHeader` (`lib/features/itinerary/widgets/day_insights_header.dart`): Collapsible accordion card consolidating day weather (`DayForecast`), budget burn rate (`DayBudgetBar`), progress ring, and squad presence (`ItineraryFulfillmentBanner`).
+  - `ItineraryActionSheet` (`lib/features/itinerary/widgets/itinerary_action_sheet.dart`): Unified bottom sheet consolidating secondary actions (Share, Calendar Export via `Add2Calendar`, Day Map View, Schedule Shifting, Stop Reassignment across days, Duplicate Day, Clear Stops, Delete Day).
+  - `ItineraryBottomDock` (`lib/features/itinerary/widgets/itinerary_bottom_dock.dart`): Floating bottom action bar providing 1-tap route navigation & map overview and primary `+ Add Stop` button.
+  - `StopDetailSheet` (`lib/features/itinerary/widgets/stop_detail_sheet.dart`): Modular detail sheet with photo gallery, 1-tap Google Maps directions, expense conversion, roll call presence, and group voting.
+  - `ItineraryMapSheet` (`lib/features/itinerary/widgets/itinerary_map_sheet.dart`): Modular map bottom sheet with live companion rider presence chips, interactive map, and multi-stop route directions.
+  - `SmartSuggestionChips` (`lib/features/itinerary/widgets/smart_suggestion_chips.dart`): Collapsible quick add template drawer.
+  - **Automated GPS Arrival Geofencing**:
+    - Connected to `LocationTrackingService.instance.snapshotStream`.
+    - Automatically checks proximity against active day's uncompleted stops with coordinates.
+    - Triggers floating `ArrivalPill` when user is within $150\text{m}$ geofence, with session dismiss cooldown tracking (`_dismissedStopIds`).
+
+---
+
 *This document is the single source of architectural truth for Tara Travel. Update this file whenever database schemas, RPC functions, core repositories, or system flows are modified.*
+
 
 
 

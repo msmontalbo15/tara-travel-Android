@@ -47,6 +47,7 @@
 | **`IMP-058`** | 2026-08-28 | Social / Camera QR & Profile ID | Live Camera QR Scanner modal (`QrScannerModal`) via `mobile_scanner`, point-and-shoot camera friend scanning with auto-lookup and prefill in `friends_screen.dart`, and User ID / Friend Code badge chips and QR modal launch in `profile_screen.dart`. |
 | **`IMP-059`** | 2026-08-28 | Trips / Invite Code Join Flow | Hardened Join Trip by Invite Code workflow: regex sanitization in `InviteCodeGenerator`, FK pre-flight user row provision in `TripRepository`, resilient RPC parsing & direct fallback, `019_fix_join_trip_by_code.sql` migration, and reactive `_JoinTripSheet` (ConsumerStatefulWidget). |
 | **`IMP-060`** | 2026-08-28 | UI / Standardized Feedback System | Unified Feedback System (IDEA-001): `AppFeedback`, `AppDialog`, `AppBanner`, semantic `FeedbackType`, brand token theme integration, and 100% migration across 11+ UI feature screens/widgets. |
+| **`IMP-061`** | 2026-08-28 | Itinerary / Progressive Disclosure & Action Hub | Streamlined Itinerary Architecture (IDEA-002): `DayInsightsHeader` collapsible accordion, `ItineraryActionSheet` unified "⋯" more hub, `ItineraryBottomDock` floating action bar, `StopDetailSheet`, `ItineraryMapSheet`, collapsible `SmartSuggestionChips`, and automated GPS arrival geofencing engine. |
 
 ---
 
@@ -923,6 +924,42 @@
     - Eliminated 100% of raw `ScaffoldMessenger.of(context).showSnackBar` and unstyled `AlertDialog` calls across all 11+ feature screens and widgets.
 - **Verification**:
   - `flutter analyze` completed with 0 errors and 0 warnings.
+
+---
+
+### `IMP-061` · Streamlined Itinerary Suite & Progressive Disclosure (IDEA-002)
+- **Date**: August 28, 2026
+- **Target Files**:
+  - [lib/features/itinerary/widgets/day_insights_header.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/day_insights_header.dart) **[NEW]**
+  - [lib/features/itinerary/widgets/itinerary_action_sheet.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/itinerary_action_sheet.dart) **[NEW]**
+  - [lib/features/itinerary/widgets/stop_detail_sheet.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/stop_detail_sheet.dart) **[NEW]**
+  - [lib/features/itinerary/widgets/itinerary_map_sheet.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/itinerary_map_sheet.dart) **[NEW]**
+  - [lib/features/itinerary/widgets/itinerary_bottom_dock.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/itinerary_bottom_dock.dart) **[NEW]**
+  - [lib/features/itinerary/widgets/smart_suggestion_chips.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/smart_suggestion_chips.dart) **[MODIFIED]**
+  - [lib/features/itinerary/widgets/stop_card.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/stop_card.dart) **[MODIFIED]**
+  - [lib/features/itinerary/itinerary_screen.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/itinerary_screen.dart) **[MODIFIED]**
+  - [DEV_IDEA.md](file:///d:/Spencer/Downloads/tara_travel/DEV_IDEA.md) **[MODIFIED]**
+  - [MEMORY.md](file:///d:/Spencer/Downloads/tara_travel/MEMORY.md) **[MODIFIED]**
+  - [IMPLEMENTATION_MEMORY.md](file:///d:/Spencer/Downloads/tara_travel/IMPLEMENTATION_MEMORY.md) **[MODIFIED]**
+- **Scope & Objectives**:
+  - **Expandable Day Insights Accordion (`DayInsightsHeader`)**:
+    - Consolidates weather forecast, day budget spend/limit, and completion fulfillment progress into a single collapsible card.
+    - Slim collapsed pill (`☀️ 29°C · ₱1,400 / ₱5,000 · 3/5 done ▾`) expands smoothly to reveal `ItineraryFulfillmentBanner` (progress ring, squad presence, Google Maps CTA) and `DayBudgetBar`.
+  - **Unified Action Hub (`ItineraryActionSheet`)**:
+    - Replaced the crowded top horizontal scrolling toolbar with a clean top header and a unified "⋯ More" action sheet.
+    - Centralizes Share (`ShareTripModal`), Calendar export (`Add2Calendar`), Day Map preview (`ItineraryMapSheet`), and Day Management (Schedule shifting $-60/-30/+30/+60\text{m}$, move stop to another day, duplicate day, clear stops, and delete day).
+  - **Floating Action Dock (`ItineraryBottomDock`)**:
+    - Integrated a glassmorphic floating bottom bar containing 1-tap route navigation & map overview alongside the primary coral `+ Add Stop` button.
+  - **Automated GPS Arrival Geofencing Engine**:
+    - Actively listens to `LocationTrackingService.instance.snapshotStream` when itinerary view is open.
+    - Computes distance against uncompleted stops with coordinates; automatically displays `ArrivalPill` when traveler arrives within $150\text{m}$ geofence.
+    - Tracks dismissed stop IDs in state (`_dismissedStopIds`) for session-level suppression.
+  - **Screen Modularization**:
+    - Extracted `StopDetailSheet` and `ItineraryMapSheet` into dedicated widgets.
+    - Refactored `itinerary_screen.dart` into a modular, clean controller under 400 lines while preserving 100% of existing functionality.
+- **Verification**:
+  - `flutter analyze` passed with 0 errors across all affected files.
+
 
 
 
