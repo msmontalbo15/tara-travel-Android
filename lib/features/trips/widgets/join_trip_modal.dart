@@ -4,6 +4,8 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/providers/repository_providers.dart';
 import '../../../core/providers/trip_provider.dart';
 
+import '../../../core/widgets/feedback/app_feedback.dart';
+
 /// Opens a modal bottom-sheet that lets the user enter a 6-character trip
 /// invite code. On success, the `allTripsProvider` is refreshed and the sheet
 /// is dismissed with a success snackbar.
@@ -60,89 +62,31 @@ class _JoinTripSheetState extends ConsumerState<_JoinTripSheet> {
       if (mounted) {
         Navigator.pop(context);
         if (result.alreadyMember) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  const Icon(Icons.info_outline_rounded, color: Colors.white, size: 20),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'You are already a member of "${result.tripName}".',
-                      style: const TextStyle(fontFamily: 'DM Sans', fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ],
-              ),
-              backgroundColor: AppColors.deepEarth,
-              behavior: SnackBarBehavior.floating,
-              duration: const Duration(seconds: 3),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
+          AppFeedback.showInfo(
+            context,
+            'You are already a member of "${result.tripName}".',
+            title: 'Already Joined',
           );
         } else if (result.alreadyPending) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  const Icon(Icons.hourglass_top_rounded, color: Colors.white, size: 20),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'Your join request for "${result.tripName}" is currently pending approval.',
-                      style: const TextStyle(fontFamily: 'DM Sans', fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ],
-              ),
-              backgroundColor: AppColors.amber,
-              behavior: SnackBarBehavior.floating,
-              duration: const Duration(seconds: 4),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
+          AppFeedback.showWarning(
+            context,
+            'Your join request for "${result.tripName}" is currently pending approval.',
+            title: 'Pending Request',
+            duration: const Duration(seconds: 4),
           );
         } else if (result.isApproved) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'You joined "${result.tripName}"! 🎉',
-                      style: const TextStyle(fontFamily: 'DM Sans', fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ],
-              ),
-              backgroundColor: AppColors.green,
-              behavior: SnackBarBehavior.floating,
-              duration: const Duration(seconds: 3),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
+          AppFeedback.showSuccess(
+            context,
+            'You joined "${result.tripName}"! 🎉',
+            title: 'Welcome Aboard!',
           );
         } else {
           // Status is pending — organizer needs to approve
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  const Icon(Icons.hourglass_top_rounded, color: Colors.white, size: 20),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'Join request sent for "${result.tripName}". Waiting for organizer approval.',
-                      style: const TextStyle(fontFamily: 'DM Sans', fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ],
-              ),
-              backgroundColor: AppColors.amber,
-              behavior: SnackBarBehavior.floating,
-              duration: const Duration(seconds: 5),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
+          AppFeedback.showWarning(
+            context,
+            'Join request sent for "${result.tripName}". Waiting for organizer approval.',
+            title: 'Request Sent',
+            duration: const Duration(seconds: 5),
           );
         }
       }

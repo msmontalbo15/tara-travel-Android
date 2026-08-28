@@ -14,6 +14,8 @@ import '../../core/widgets/profile_completion_banner.dart';
 import '../../core/auth/services/biometric_service.dart';
 import '../../core/auth/services/mpin_service.dart';
 import '../../core/widgets/npc_privacy_policy_sheet.dart';
+import '../../core/widgets/feedback/app_feedback.dart';
+import '../../core/widgets/feedback/app_dialog.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -79,36 +81,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         if (success) {
           await _loadSecurityStatus();
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Fingerprint login enabled!', style: TextStyle(fontFamily: 'DM Sans')),
-                backgroundColor: AppColors.deepEarth,
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
+            AppFeedback.showSuccess(context, 'Fingerprint login enabled!');
           }
         } else {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Fingerprint registration was cancelled or failed.', style: TextStyle(fontFamily: 'DM Sans')),
-                backgroundColor: AppColors.red,
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
+            AppFeedback.showError(context, 'Fingerprint registration was cancelled or failed.');
           }
         }
       } else {
         await service.unregisterBiometrics();
         await _loadSecurityStatus();
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Fingerprint login disabled.', style: TextStyle(fontFamily: 'DM Sans')),
-              backgroundColor: AppColors.deepEarth,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          AppFeedback.showInfo(context, 'Fingerprint login disabled.');
         }
       }
     } finally {
@@ -125,36 +109,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         if (success) {
           await _loadSecurityStatus();
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Face Verification (Face ID) enabled!', style: TextStyle(fontFamily: 'DM Sans')),
-                backgroundColor: AppColors.deepEarth,
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
+            AppFeedback.showSuccess(context, 'Face Verification (Face ID) enabled!');
           }
         } else {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Face verification was cancelled or failed.', style: TextStyle(fontFamily: 'DM Sans')),
-                backgroundColor: AppColors.red,
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
+            AppFeedback.showError(context, 'Face verification was cancelled or failed.');
           }
         }
       } else {
         await BiometricAuthService.instance.unregisterFaceVerification();
         await _loadSecurityStatus();
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Face Verification disabled.', style: TextStyle(fontFamily: 'DM Sans')),
-              backgroundColor: AppColors.deepEarth,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          AppFeedback.showInfo(context, 'Face Verification disabled.');
         }
       }
     } finally {
@@ -192,19 +158,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     await _loadSecurityStatus();
                     if (mounted) {
                       setState(() => _isMpinLoading = false);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            success
-                                ? '4-Digit MPIN set! 30-Day session is now active.'
-                                : 'Failed to set MPIN. Please try again.',
-                            style: const TextStyle(fontFamily: 'DM Sans'),
-                          ),
-                          backgroundColor:
-                              success ? AppColors.deepEarth : AppColors.red,
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
+                      if (success) {
+                        AppFeedback.showSuccess(context, '4-Digit MPIN set! 30-Day session is now active.');
+                      } else {
+                        AppFeedback.showError(context, 'Failed to set MPIN. Please try again.');
+                      }
                     }
                   } else {
                     HapticFeedback.vibrate();
@@ -433,13 +391,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           GestureDetector(
                             onTap: () {
                               Clipboard.setData(ClipboardData(text: currentUserId));
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('User ID copied to clipboard!', style: TextStyle(fontFamily: 'DM Sans')),
-                                  backgroundColor: AppColors.deepEarth,
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
+                              AppFeedback.showInfo(context, 'User ID copied to clipboard!');
                             },
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -555,13 +507,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   onPressed: () {
                                     final id = Supabase.instance.client.auth.currentUser!.id;
                                     Clipboard.setData(ClipboardData(text: id));
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('User ID copied to clipboard!', style: TextStyle(fontFamily: 'DM Sans')),
-                                        backgroundColor: AppColors.deepEarth,
-                                        behavior: SnackBarBehavior.floating,
-                                      ),
-                                    );
+                                    AppFeedback.showInfo(context, 'User ID copied to clipboard!');
                                   },
                                 ),
                                 IconButton(
@@ -577,13 +523,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             onTap: () {
                               final id = Supabase.instance.client.auth.currentUser!.id;
                               Clipboard.setData(ClipboardData(text: id));
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('User ID copied to clipboard!', style: TextStyle(fontFamily: 'DM Sans')),
-                                  backgroundColor: AppColors.deepEarth,
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
+                              AppFeedback.showInfo(context, 'User ID copied to clipboard!');
                             },
                           ),
                         ],
@@ -1726,24 +1666,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       if (image != null && context.mounted) {
         final currentGcash = ref.read(profileProvider).gcashNumber ?? '';
         ref.read(profileProvider.notifier).updateGCash(currentGcash, image.path);
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('GCash QR updated successfully!', style: TextStyle(fontFamily: 'DM Sans')),
-            backgroundColor: AppColors.deepEarth,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        AppFeedback.showSuccess(context, 'GCash QR updated successfully!');
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error picking image: $e', style: const TextStyle(fontFamily: 'DM Sans')),
-            backgroundColor: AppColors.red,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        AppFeedback.showError(context, 'Error picking image: $e');
       }
     }
   }
@@ -1789,12 +1716,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             onPressed: () async {
               final number = ctrl.text.trim();
               if (number.length < 7) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Please enter a valid phone number with country code'),
-                    backgroundColor: AppColors.red,
-                  ),
-                );
+                AppFeedback.showError(context, 'Please enter a valid phone number with country code.');
                 return;
               }
               Navigator.pop(context);
@@ -1925,12 +1847,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
                       if (dialogCtx.mounted) {
                         Navigator.pop(dialogCtx);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Phone number $phoneNumber verified and saved!'),
-                            backgroundColor: AppColors.primary,
-                            behavior: SnackBarBehavior.floating,
-                          ),
+                        AppFeedback.showSuccess(
+                          context,
+                          'Phone number $phoneNumber verified and saved!',
                         );
                       }
                     },
@@ -1945,36 +1864,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _signOut(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Sign Out',
-            style: TextStyle(fontFamily: 'Playfair Display')),
-        content: const Text(
-          'Are you sure you want to sign out?',
-          style: TextStyle(fontFamily: 'DM Sans'),
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.redAccent),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Sign Out',
-                style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
+    AppDialog.showDestructive(
+      context,
+      title: 'Sign Out',
+      message: 'Are you sure you want to sign out?',
+      confirmLabel: 'Sign Out',
+      onConfirm: () async {
+        await ref.read(profileProvider.notifier).signOut();
+        if (context.mounted) {
+          Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+        }
+      },
     );
-    if (confirmed == true && context.mounted) {
-      await ref.read(profileProvider.notifier).signOut();
-      if (context.mounted) {
-        Navigator.of(context)
-            .pushNamedAndRemoveUntil('/', (route) => false);
-      }
-    }
   }
 
   void _editGcash(BuildContext context) {
@@ -2217,26 +2118,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
         );
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Google account connected!',
-                  style: TextStyle(fontFamily: 'DM Sans')),
-              backgroundColor: AppColors.deepEarth,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          AppFeedback.showSuccess(context, 'Google account connected!');
         }
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to connect: $e',
-                style: const TextStyle(fontFamily: 'DM Sans')),
-            backgroundColor: AppColors.red,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        AppFeedback.showError(context, 'Failed to connect: $e');
       }
     }
   }

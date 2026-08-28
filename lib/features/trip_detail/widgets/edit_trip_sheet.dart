@@ -12,6 +12,7 @@ import '../../../core/providers/itinerary_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/inputs/app_text_field.dart';
 import '../../../core/widgets/inputs/location_picker.dart';
+import '../../../core/widgets/feedback/app_feedback.dart';
 
 class EditTripSheet extends ConsumerStatefulWidget {
   final TripModel trip;
@@ -139,23 +140,18 @@ class _EditTripSheetState extends ConsumerState<EditTripSheet> {
 
       if (mounted) {
         Navigator.pop(context, true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Trip details updated successfully! ✨'),
-            backgroundColor: AppColors.green,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
+        AppFeedback.showSuccess(
+          context,
+          'Trip details updated successfully! ✨',
+          title: 'Trip Updated',
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to update trip: $e'),
-            backgroundColor: Colors.redAccent,
-            behavior: SnackBarBehavior.floating,
-          ),
+        AppFeedback.showError(
+          context,
+          'Failed to update trip: $e',
+          title: 'Update Failed',
         );
       }
     } finally {

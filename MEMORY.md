@@ -796,6 +796,22 @@ Client Tier               Storage Tier                Transport Tier
 
 ---
 
+---
+
+## 14. 🎨 STANDARDIZED FEEDBACK SYSTEM (IDEA-001 / IMP-060)
+
+- **Location**: `lib/core/widgets/feedback/`
+- **Core Components**:
+  - `FeedbackType`: Semantic intent enum (`success`, `info`, `warning`, `error`, `destructive`) mapping to brand colors (`#FAECE7`, `#EAF3DE`, `#FFF8ED`, `#FEE2E2`) and iconography.
+  - `AppFeedback`: Centralized floating snackbars/toasts (`showSuccess`, `showError`, `showWarning`, `showInfo`) featuring 14px border radius, haptic feedback, and custom action callbacks.
+  - `AppDialog`: Centralized modal alerts & confirmation dialogs (`showConfirmation`, `showDestructive`, `showAlert`) featuring `Playfair Display` titles, `DM Sans` body text, 24px border radius, and async confirmation handlers.
+  - `AppBanner`: Contextual inline notification banner with status icons, custom backgrounds, and dismissibility.
+- **Architectural Invariant**:
+  - Direct calls to `ScaffoldMessenger.of(context).showSnackBar` and raw unstyled `AlertDialog` are strictly forbidden. All feedback must use `AppFeedback` or `AppDialog`.
+
+---
+
 *This document is the single source of architectural truth for Tara Travel. Update this file whenever database schemas, RPC functions, core repositories, or system flows are modified.*
+
 
 

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/models/itinerary_model.dart';
 import '../../../core/providers/itinerary_provider.dart';
+import '../../../core/widgets/feedback/app_feedback.dart';
+import '../../../core/widgets/feedback/app_dialog.dart';
 
 /// Bottom sheet presenting quick day actions: schedule shifting, duplication, stop moving, and clearing.
 class DayActionsSheet extends StatelessWidget {
@@ -40,26 +42,12 @@ class DayActionsSheet extends StatelessWidget {
 
   void _showMoveStopPicker(BuildContext context) {
     if (day.stops.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('No stops in this day to move.'),
-          backgroundColor: AppColors.primary,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
-      );
+      AppFeedback.showInfo(context, 'No stops in this day to move.');
       return;
     }
 
     if (allDays.length <= 1) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Add another day first to move stops across days.'),
-          backgroundColor: AppColors.primary,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
-      );
+      AppFeedback.showInfo(context, 'Add another day first to move stops across days.');
       return;
     }
 
@@ -119,13 +107,9 @@ class DayActionsSheet extends StatelessWidget {
                           notifier.moveStopToDay(activeDayIndex, targetIndex, stop.id);
                           Navigator.pop(ctx);
                           Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Moved "${stop.title}" to Day ${targetIndex + 1}! 🚀'),
-                              backgroundColor: AppColors.green,
-                              behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            ),
+                          AppFeedback.showSuccess(
+                            context,
+                            'Moved "${stop.title}" to Day ${targetIndex + 1}! 🚀',
                           );
                         },
                         itemBuilder: (_) => allDays.asMap().entries.where((e) => e.key != activeDayIndex).map((e) {
@@ -259,13 +243,9 @@ class DayActionsSheet extends StatelessWidget {
               if (context.mounted) {
                 Navigator.pop(context);
                 if (newDay != null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Added Day ${newDay.dayNumber} to your itinerary! 🗓️'),
-                      backgroundColor: AppColors.green,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
+                  AppFeedback.showSuccess(
+                    context,
+                    'Added Day ${newDay.dayNumber} to your itinerary! 🗓️',
                   );
                 }
               }
@@ -279,13 +259,9 @@ class DayActionsSheet extends StatelessWidget {
             onTap: () {
               notifier.duplicateDay(activeDayIndex);
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Duplicated Day ${day.dayNumber} into Day ${allDays.length + 1}! ✨'),
-                  backgroundColor: AppColors.green,
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
+              AppFeedback.showSuccess(
+                context,
+                'Duplicated Day ${day.dayNumber} into Day ${allDays.length + 1}! ✨',
               );
             },
           ),
@@ -302,24 +278,15 @@ class DayActionsSheet extends StatelessWidget {
             title: 'Clear Day Stops',
             subtitle: 'Remove all ${day.stops.length} stops from this day',
             onTap: () {
-              showDialog(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  title: const Text('Clear All Stops?'),
-                  content: Text('Are you sure you want to remove all ${day.stops.length} stops from Day ${day.dayNumber}?'),
-                  actions: [
-                    TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-                    ElevatedButton(
-                      onPressed: () {
-                        notifier.clearDay(activeDayIndex);
-                        Navigator.pop(ctx);
-                        Navigator.pop(context);
-                      },
-                      style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
-                      child: const Text('Clear All'),
-                    ),
-                  ],
-                ),
+              AppDialog.showDestructive(
+                context,
+                title: 'Clear All Stops?',
+                message: 'Are you sure you want to remove all ${day.stops.length} stops from Day ${day.dayNumber}?',
+                confirmLabel: 'Clear All',
+                onConfirm: () {
+                  notifier.clearDay(activeDayIndex);
+                  Navigator.pop(context);
+                },
               );
             },
           ),
@@ -330,24 +297,15 @@ class DayActionsSheet extends StatelessWidget {
               title: 'Delete Day ${day.dayNumber}',
               subtitle: 'Permanently remove this day and re-index remaining days',
               onTap: () {
-                showDialog(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    title: Text('Delete Day ${day.dayNumber}?'),
-                    content: const Text('This will delete all stops in this day and adjust subsequent day numbers.'),
-                    actions: [
-                      TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-                      ElevatedButton(
-                        onPressed: () {
-                          notifier.deleteDay(activeDayIndex);
-                          Navigator.pop(ctx);
-                          Navigator.pop(context);
-                        },
-                        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF4444), foregroundColor: Colors.white),
-                        child: const Text('Delete Day'),
-                      ),
-                    ],
-                  ),
+                AppDialog.showDestructive(
+                  context,
+                  title: 'Delete Day ${day.dayNumber}?',
+                  message: 'This will delete all stops in this day and adjust subsequent day numbers.',
+                  confirmLabel: 'Delete Day',
+                  onConfirm: () {
+                    notifier.deleteDay(activeDayIndex);
+                    Navigator.pop(context);
+                  },
                 );
               },
             ),
@@ -365,13 +323,9 @@ class DayActionsSheet extends StatelessWidget {
           notifier.shiftDaySchedule(activeDayIndex, minutes);
           Navigator.pop(context);
           final dir = minutes > 0 ? 'advanced by +$minutes' : 'delayed by $minutes';
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Day ${day.dayNumber} schedule $dir mins! ⏱️'),
-              backgroundColor: AppColors.green,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
+          AppFeedback.showSuccess(
+            context,
+            'Day ${day.dayNumber} schedule $dir mins! ⏱️',
           );
         },
         child: Container(

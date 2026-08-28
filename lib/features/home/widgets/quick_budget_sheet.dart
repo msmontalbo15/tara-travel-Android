@@ -7,6 +7,7 @@ import '../../../core/providers/selected_trip_provider.dart';
 import '../../../core/providers/trip_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/currency_utils.dart';
+import '../../../core/widgets/feedback/app_feedback.dart';
 
 class QuickBudgetSheet extends ConsumerStatefulWidget {
   final TripModel trip;
@@ -69,17 +70,11 @@ class _QuickBudgetSheetState extends ConsumerState<QuickBudgetSheet> {
 
       if (mounted) {
         Navigator.pop(context, true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              budget > 0
-                  ? 'Budget set to ₱${CurrencyUtils.formatAmount(budget)}'
-                  : 'Budget cleared',
-            ),
-            backgroundColor: AppColors.primary,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
+        AppFeedback.showSuccess(
+          context,
+          budget > 0
+              ? 'Budget set to ₱${CurrencyUtils.formatAmount(budget)}'
+              : 'Budget cleared',
         );
       }
     } catch (e) {

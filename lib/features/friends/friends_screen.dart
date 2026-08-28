@@ -10,6 +10,7 @@ import '../../core/providers/friend_provider.dart';
 import '../../core/widgets/inputs/app_text_field.dart';
 import '../../core/widgets/shimmer_loading.dart';
 import '../../core/widgets/scanner/qr_scanner_modal.dart';
+import '../../core/widgets/feedback/app_feedback.dart';
 import 'widgets/friend_list_item.dart';
 
 class FriendsScreen extends ConsumerStatefulWidget {
@@ -547,26 +548,15 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                             _refreshAll();
                             if (context.mounted) {
                               Navigator.pop(ctx);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Friend request sent to $targetName! 🎉',
-                                      style: const TextStyle(fontFamily: 'DM Sans')),
-                                  backgroundColor: AppColors.green,
-                                  behavior: SnackBarBehavior.floating,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                ),
+                              AppFeedback.showSuccess(
+                                context,
+                                'Friend request sent to $targetName! 🎉',
                               );
                             }
                           } catch (e) {
                             setDialogState(() => isSending = false);
                             if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('$e', style: const TextStyle(fontFamily: 'DM Sans')),
-                                  backgroundColor: AppColors.red,
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
+                              AppFeedback.showError(context, '$e');
                             }
                           }
                         },

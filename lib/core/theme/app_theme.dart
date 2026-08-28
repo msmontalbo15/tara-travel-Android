@@ -133,15 +133,26 @@ class AppTheme {
     // ── Dialog ───────────────────────────────────────────────
     dialogTheme: DialogThemeData(
       backgroundColor: Colors.white,
+      elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
+        side: const BorderSide(color: AppColors.cardBorder, width: 0.8),
       ),
       titleTextStyle: const TextStyle(
         fontFamily: 'Playfair Display',
         fontSize: 20,
         fontWeight: FontWeight.w700,
         color: AppColors.textPrimary,
+        letterSpacing: -0.2,
       ),
+      contentTextStyle: const TextStyle(
+        fontFamily: 'DM Sans',
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+        color: AppColors.textSecondary,
+        height: 1.4,
+      ),
+      actionsPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
     ),
 
     // ── Switch ───────────────────────────────────────────────
@@ -184,11 +195,12 @@ class AppTheme {
       backgroundColor: AppColors.deepEarth,
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
       ),
       contentTextStyle: const TextStyle(
         fontFamily: 'DM Sans',
-        fontSize: 14,
+        fontSize: 13.5,
+        fontWeight: FontWeight.w500,
         color: Colors.white,
       ),
     ),

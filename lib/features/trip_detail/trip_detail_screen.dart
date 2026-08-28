@@ -17,6 +17,8 @@ import '../../core/widgets/navigation/floating_nav_bar.dart';
 import '../../core/widgets/share/share_trip_modal.dart';
 import '../../core/constants/trip_types.dart';
 import '../../core/widgets/shimmer_loading.dart';
+import '../../core/widgets/feedback/app_feedback.dart';
+import '../../core/widgets/feedback/app_dialog.dart';
 import 'widgets/edit_trip_sheet.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -114,23 +116,18 @@ class _TripDashboardState extends ConsumerState<_TripDashboard> {
       ref.invalidate(selectedTripProvider);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Trip published successfully! 🎉'),
-            backgroundColor: AppColors.green,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
+        AppFeedback.showSuccess(
+          context,
+          'Your trip "${trip.name}" is now live and ready for your travel group!',
+          title: 'Trip Published! 🎉',
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to publish trip: $e'),
-            backgroundColor: Colors.redAccent,
-            behavior: SnackBarBehavior.floating,
-          ),
+        AppFeedback.showError(
+          context,
+          'Failed to publish trip: $e',
+          title: 'Publish Failed',
         );
       }
     } finally {
@@ -356,30 +353,14 @@ class _HeroHeader extends ConsumerWidget {
     final willArchive = !trip.isArchived;
     final actionLabel = willArchive ? 'Archive' : 'Unarchive';
 
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('$actionLabel Trip'),
-        content: Text(
-          willArchive
-              ? 'Archiving "${trip.name}" will move it to Past Trips.'
-              : 'Unarchiving "${trip.name}" will restore it to your active/upcoming trips.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(actionLabel),
-          ),
-        ],
-      ),
+    final confirm = await AppDialog.showConfirmation(
+      context,
+      title: '$actionLabel Trip',
+      message: willArchive
+          ? 'Archiving "${trip.name}" will move it to Past Trips.'
+          : 'Unarchiving "${trip.name}" will restore it to your active/upcoming trips.',
+      confirmLabel: actionLabel,
+      icon: willArchive ? Icons.archive_outlined : Icons.unarchive_outlined,
     );
 
     if (confirm == true && context.mounted) {
@@ -390,13 +371,10 @@ class _HeroHeader extends ConsumerWidget {
       ref.invalidate(selectedTripProvider);
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(willArchive ? 'Trip archived and closed 📦' : 'Trip unarchived ✨'),
-            backgroundColor: AppColors.green,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
+        AppFeedback.showSuccess(
+          context,
+          willArchive ? 'Trip archived and closed.' : 'Trip unarchived and active.',
+          title: willArchive ? 'Trip Archived 📦' : 'Trip Restored ✨',
         );
 
         // Automatically close the trip detail screen when archived
@@ -1239,15 +1217,10 @@ class _InviteCardState extends ConsumerState<_InviteCard> {
   void _copy() {
     Clipboard.setData(ClipboardData(text: widget.trip.inviteCode));
     setState(() => _copied = true);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Invite code copied!',
-            style: TextStyle(fontFamily: 'DM Sans')),
-        backgroundColor: AppColors.green,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(14))),
-      ),
+    AppFeedback.showSuccess(
+      context,
+      'Invite code copied: ${widget.trip.inviteCode}',
+      title: 'Copied to Clipboard 📋',
     );
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) setState(() => _copied = false);

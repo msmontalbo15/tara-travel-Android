@@ -12,6 +12,8 @@ import '../../core/models/packing_model.dart';
 import '../../core/models/member_model.dart';
 import '../../core/widgets/share/share_trip_modal.dart';
 import '../../core/widgets/shimmer_loading.dart';
+import '../../core/widgets/feedback/app_feedback.dart';
+import '../../core/widgets/feedback/app_dialog.dart';
 import 'widgets/member_assignment_sheet.dart';
 import 'widgets/packing_template_modals.dart';
 import 'widgets/ai_packing_dialog.dart';
@@ -1479,67 +1481,23 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
     PackingNotifier notifier,
     PackingCategory category,
   ) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          'Delete "${category.name}"?',
-          style: const TextStyle(
-            fontFamily: 'Playfair Display',
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        content: Text(
-          category.totalCount > 0
-              ? 'This will remove the "${category.name}" category and its ${category.totalCount} packing item${category.totalCount == 1 ? '' : 's'}. This cannot be undone.'
-              : 'Are you sure you want to remove the "${category.name}" category?',
-          style: const TextStyle(
-            fontFamily: 'DM Sans',
-            fontSize: 14,
-            color: AppColors.muted,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(fontFamily: 'DM Sans', color: AppColors.muted),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              notifier.removeCategory(category.id);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Deleted "${category.name}" category'),
-                  backgroundColor: AppColors.deepEarth,
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFEF4444),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text(
-              'Delete',
-              style: TextStyle(
-                fontFamily: 'DM Sans',
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ),
+    final message = category.totalCount > 0
+        ? 'This will remove the "${category.name}" category and its ${category.totalCount} packing item${category.totalCount == 1 ? '' : 's'}. This cannot be undone.'
+        : 'Are you sure you want to remove the "${category.name}" category?';
+
+    AppDialog.showDestructive(
+      context,
+      title: 'Delete "${category.name}"?',
+      message: message,
+      confirmLabel: 'Delete',
+      onConfirm: () {
+        notifier.removeCategory(category.id);
+        AppFeedback.showInfo(
+          context,
+          'Deleted "${category.name}" category.',
+          title: 'Category Removed',
+        );
+      },
     );
   }
 
@@ -1651,15 +1609,10 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: reminderText));
                     Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          '📋 Copied reminder message to clipboard! Paste into Messenger/Chat.',
-                          style: TextStyle(fontFamily: 'DM Sans'),
-                        ),
-                        backgroundColor: AppColors.primary,
-                        behavior: SnackBarBehavior.floating,
-                      ),
+                    AppFeedback.showSuccess(
+                      context,
+                      '📋 Copied reminder message! Paste into Messenger/Chat.',
+                      title: 'Reminder Copied',
                     );
                   },
                   icon: const Icon(Icons.copy_rounded, size: 18),
@@ -1698,15 +1651,10 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
 
     if (!context.mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '🔔 Packing reminder sent to all ${members.length} members for $tripName!',
-          style: const TextStyle(fontFamily: 'DM Sans'),
-        ),
-        backgroundColor: AppColors.primary,
-        behavior: SnackBarBehavior.floating,
-      ),
+    AppFeedback.showSuccess(
+      context,
+      '🔔 Packing reminder sent to all ${members.length} members for $tripName!',
+      title: 'Reminder Sent',
     );
   }
 }
@@ -2306,57 +2254,29 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
   void _confirmDeleteSubCategory(BuildContext context, String subCat) {
     final cat = widget.category;
     final affectedCount = cat.items.where((i) => i.subCategory == subCat).length;
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          'Delete "$subCat"?',
-          style: const TextStyle(
-            fontFamily: 'DM Sans',
-            fontWeight: FontWeight.w700,
-            fontSize: 17,
-            color: AppColors.deepEarth,
-          ),
-        ),
-        content: Text(
-          affectedCount > 0
-              ? 'This will remove the "$subCat" sub-category tag from $affectedCount item${affectedCount == 1 ? '' : 's'}. The items will remain in ${cat.name}.'
-              : 'Remove the "$subCat" sub-category?',
-          style: const TextStyle(fontFamily: 'DM Sans', fontSize: 13, color: AppColors.deepEarth),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.muted, fontFamily: 'DM Sans')),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              setState(() {
-                _localSubCategories.remove(subCat);
-                if (_selectedSubCategory == subCat) {
-                  _selectedSubCategory = null;
-                }
-              });
-              for (final item in cat.items) {
-                if (item.subCategory == subCat) {
-                  widget.onUpdateItemSubCategory?.call(item.id, null);
-                }
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.red,
-              elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            child: const Text(
-              'Remove Section',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontFamily: 'DM Sans'),
-            ),
-          ),
-        ],
-      ),
+
+    final message = affectedCount > 0
+        ? 'This will remove the "$subCat" sub-category tag from $affectedCount item${affectedCount == 1 ? '' : 's'}. The items will remain in ${cat.name}.'
+        : 'Remove the "$subCat" sub-category?';
+
+    AppDialog.showDestructive(
+      context,
+      title: 'Delete "$subCat"?',
+      message: message,
+      confirmLabel: 'Remove Section',
+      onConfirm: () {
+        setState(() {
+          _localSubCategories.remove(subCat);
+          if (_selectedSubCategory == subCat) {
+            _selectedSubCategory = null;
+          }
+        });
+        for (final item in cat.items) {
+          if (item.subCategory == subCat) {
+            widget.onUpdateItemSubCategory?.call(item.id, null);
+          }
+        }
+      },
     );
   }
 

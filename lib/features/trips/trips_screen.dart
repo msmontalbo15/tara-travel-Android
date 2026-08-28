@@ -9,6 +9,8 @@ import '../../core/models/trip_model.dart';
 import '../../core/utils/jit_guard.dart';
 import '../../core/constants/trip_types.dart';
 import '../../core/widgets/shimmer_loading.dart';
+import '../../core/widgets/feedback/app_feedback.dart';
+import '../../core/widgets/feedback/app_dialog.dart';
 import '../trip_detail/widgets/edit_trip_sheet.dart';
 import 'widgets/join_trip_modal.dart';
 
@@ -448,37 +450,21 @@ class _TripListCardState extends ConsumerState<_TripListCard>
     ref.invalidate(selectedTripProvider);
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(willArchive ? 'Trip archived 📦' : 'Trip restored ✨'),
-          backgroundColor: AppColors.green,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
+      AppFeedback.showSuccess(
+        context,
+        willArchive ? 'Trip moved to archive.' : 'Trip restored to your active list.',
+        title: willArchive ? 'Trip Archived 📦' : 'Trip Restored ✨',
       );
     }
   }
 
   Future<void> _handleDelete() async {
     _close();
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Trip',
-            style: TextStyle(fontFamily: 'Playfair Display', fontWeight: FontWeight.w700)),
-        content: Text('Are you sure you want to delete "${widget.trip.name}"? This action cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+    final confirm = await AppDialog.showDestructive(
+      context,
+      title: 'Delete Trip',
+      message: 'Are you sure you want to delete "${widget.trip.name}"? This action cannot be undone.',
+      confirmLabel: 'Delete Trip',
     );
 
     if (confirm == true) {
@@ -486,6 +472,13 @@ class _TripListCardState extends ConsumerState<_TripListCard>
       await repo.deleteTrip(widget.trip.id);
       ref.read(selectedTripIdProvider.notifier).clear();
       ref.invalidate(allTripsProvider);
+      if (mounted) {
+        AppFeedback.showInfo(
+          context,
+          'Trip "${widget.trip.name}" has been deleted.',
+          title: 'Trip Deleted',
+        );
+      }
     }
   }
 

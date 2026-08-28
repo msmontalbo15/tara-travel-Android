@@ -5,6 +5,8 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/models/friend_model.dart';
 import '../../../core/providers/friend_provider.dart';
 import '../../../core/providers/trip_provider.dart';
+import '../../../core/widgets/feedback/app_feedback.dart';
+import '../../../core/widgets/feedback/app_dialog.dart';
 
 class FriendListItem extends ConsumerStatefulWidget {
   final FriendModel friend;
@@ -44,26 +46,14 @@ class _FriendListItemState extends ConsumerState<FriendListItem> {
       await repo.acceptRequest(widget.friend.id);
       _invalidateAllFriendProviders();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('You are now friends with ${widget.friend.name}! 🎉',
-                style: const TextStyle(fontFamily: 'DM Sans')),
-            backgroundColor: AppColors.green,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
+        AppFeedback.showSuccess(
+          context,
+          'You are now friends with ${widget.friend.name}! 🎉',
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to accept: $e',
-                style: const TextStyle(fontFamily: 'DM Sans')),
-            backgroundColor: AppColors.red,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        AppFeedback.showError(context, 'Failed to accept: $e');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -78,27 +68,14 @@ class _FriendListItemState extends ConsumerState<FriendListItem> {
       await repo.rejectRequest(widget.friend.id);
       _invalidateAllFriendProviders();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              isCancel ? 'Friend request cancelled.' : 'Friend request declined.',
-              style: const TextStyle(fontFamily: 'DM Sans'),
-            ),
-            backgroundColor: AppColors.deepEarth,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
+        AppFeedback.showInfo(
+          context,
+          isCancel ? 'Friend request cancelled.' : 'Friend request declined.',
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e', style: const TextStyle(fontFamily: 'DM Sans')),
-            backgroundColor: AppColors.red,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        AppFeedback.showError(context, 'Error: $e');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -113,25 +90,14 @@ class _FriendListItemState extends ConsumerState<FriendListItem> {
       await repo.sendRequest(widget.friend.id);
       _invalidateAllFriendProviders();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Friend request sent to ${widget.friend.name}! 🚀',
-                style: const TextStyle(fontFamily: 'DM Sans')),
-            backgroundColor: AppColors.green,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
+        AppFeedback.showSuccess(
+          context,
+          'Friend request sent to ${widget.friend.name}! 🚀',
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('$e', style: const TextStyle(fontFamily: 'DM Sans')),
-            backgroundColor: AppColors.red,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        AppFeedback.showError(context, '$e');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -247,13 +213,9 @@ class _FriendListItemState extends ConsumerState<FriendListItem> {
                 onTap: () {
                   Clipboard.setData(ClipboardData(text: widget.friend.id));
                   Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Friend ID copied to clipboard!',
-                          style: TextStyle(fontFamily: 'DM Sans')),
-                      backgroundColor: AppColors.deepEarth,
-                      behavior: SnackBarBehavior.floating,
-                    ),
+                  AppFeedback.showInfo(
+                    context,
+                    'Friend ID copied to clipboard!',
                   );
                 },
               ),
@@ -282,13 +244,9 @@ class _FriendListItemState extends ConsumerState<FriendListItem> {
     final trips = tripsAsync.value ?? [];
 
     if (trips.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('You don\'t have any active trips yet. Create one first!',
-              style: TextStyle(fontFamily: 'DM Sans')),
-          backgroundColor: AppColors.deepEarth,
-          behavior: SnackBarBehavior.floating,
-        ),
+      AppFeedback.showInfo(
+        context,
+        'You don\'t have any active trips yet. Create one first!',
       );
       return;
     }
@@ -350,11 +308,7 @@ class _FriendListItemState extends ConsumerState<FriendListItem> {
                       ),
                       subtitle: Text(
                         'Code: ${trip.inviteCode.isNotEmpty ? trip.inviteCode : 'N/A'}',
-                        style: const TextStyle(
-                          fontFamily: 'DM Sans',
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                        ),
+                        style: const TextStyle(fontFamily: 'DM Sans', fontSize: 12, color: AppColors.textSecondary),
                       ),
                       trailing: const Icon(Icons.send_rounded, size: 16, color: AppColors.primary),
                       onTap: () {
@@ -362,13 +316,9 @@ class _FriendListItemState extends ConsumerState<FriendListItem> {
                           Clipboard.setData(ClipboardData(
                               text: 'Join my trip "${trip.name}" on Tara Travel! Invite code: ${trip.inviteCode}'));
                           Navigator.pop(ctx);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Trip invite code copied for "${trip.name}"! 📋',
-                                  style: const TextStyle(fontFamily: 'DM Sans')),
-                              backgroundColor: AppColors.green,
-                              behavior: SnackBarBehavior.floating,
-                            ),
+                          AppFeedback.showSuccess(
+                            context,
+                            'Trip invite code copied for "${trip.name}"! 📋',
                           );
                         }
                       },
@@ -390,67 +340,31 @@ class _FriendListItemState extends ConsumerState<FriendListItem> {
   }
 
   void _confirmRemoveFriend() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          'Remove Friend?',
-          style: TextStyle(
-            fontFamily: 'DM Sans',
-            fontSize: 17,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        content: Text(
-          'Are you sure you want to remove ${widget.friend.name} from your friends list?',
-          style: const TextStyle(fontFamily: 'DM Sans', fontSize: 14, color: AppColors.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(fontFamily: 'DM Sans', color: AppColors.textSecondary)),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              setState(() => _isLoading = true);
-              try {
-                final repo = ref.read(friendRepositoryProvider);
-                await repo.removeFriend(widget.friend.id);
-                _invalidateAllFriendProviders();
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Removed ${widget.friend.name} from friends.',
-                          style: const TextStyle(fontFamily: 'DM Sans')),
-                      backgroundColor: AppColors.deepEarth,
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                }
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.red),
-                  );
-                }
-              } finally {
-                if (mounted) setState(() => _isLoading = false);
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.red,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            child: const Text('Remove', style: TextStyle(fontFamily: 'DM Sans', fontWeight: FontWeight.w600)),
-          ),
-        ],
-      ),
+    AppDialog.showDestructive(
+      context,
+      title: 'Remove Friend?',
+      message: 'Are you sure you want to remove ${widget.friend.name} from your friends list?',
+      confirmLabel: 'Remove',
+      onConfirm: () async {
+        setState(() => _isLoading = true);
+        try {
+          final repo = ref.read(friendRepositoryProvider);
+          await repo.removeFriend(widget.friend.id);
+          _invalidateAllFriendProviders();
+          if (mounted) {
+            AppFeedback.showInfo(
+              context,
+              'Removed ${widget.friend.name} from friends.',
+            );
+          }
+        } catch (e) {
+          if (mounted) {
+            AppFeedback.showError(context, 'Error: $e');
+          }
+        } finally {
+          if (mounted) setState(() => _isLoading = false);
+        }
+      },
     );
   }
 

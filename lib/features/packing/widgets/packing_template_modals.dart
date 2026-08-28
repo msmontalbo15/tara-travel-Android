@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/models/packing_model.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/feedback/app_feedback.dart';
 
 // ── Save Template Dialog / Modal ─────────────────────────────────────────────
 
@@ -68,25 +69,19 @@ class _SaveTemplateModalState extends State<SaveTemplateModal> {
       await widget.onSave(name, _selectedIcon);
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '🎉 Template "$name" saved successfully!',
-              style: const TextStyle(fontFamily: 'DM Sans'),
-            ),
-            backgroundColor: AppColors.primary,
-            behavior: SnackBarBehavior.floating,
-          ),
+        AppFeedback.showSuccess(
+          context,
+          '🎉 Template "$name" saved successfully!',
+          title: 'Template Saved',
         );
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isSaving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to save template: $e'),
-            backgroundColor: AppColors.red,
-          ),
+        AppFeedback.showError(
+          context,
+          'Failed to save template: $e',
+          title: 'Save Failed',
         );
       }
     }
@@ -679,16 +674,10 @@ class _LoadTemplateSheetState extends State<LoadTemplateSheet>
                                 await widget.onApplyTemplate(tpl);
                                 if (context.mounted) {
                                   Navigator.pop(context);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        '✨ Applied "${tpl.name}" to your packing list!',
-                                        style:
-                                            const TextStyle(fontFamily: 'DM Sans'),
-                                      ),
-                                      backgroundColor: AppColors.primary,
-                                      behavior: SnackBarBehavior.floating,
-                                    ),
+                                  AppFeedback.showSuccess(
+                                    context,
+                                    '✨ Applied "${tpl.name}" to your packing list!',
+                                    title: 'Template Applied',
                                   );
                                 }
                               } finally {

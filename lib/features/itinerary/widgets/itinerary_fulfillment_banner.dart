@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/models/itinerary_model.dart';
 import '../../../core/models/member_model.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/feedback/app_feedback.dart';
 
 /// Day progress + squad presence banner shown above the timeline.
 /// Tap the banner to open the next uncompleted stop in Google Maps.
@@ -36,16 +37,9 @@ class ItineraryFulfillmentBanner extends StatelessWidget {
     final uri = Uri.parse(_buildMapsUrl(stop));
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Could not open Google Maps for "${stop.title}".',
-              style: const TextStyle(fontFamily: 'DM Sans'),
-            ),
-            backgroundColor: const Color(0xFF2C1A14),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
+        AppFeedback.showError(
+          context,
+          'Could not open Google Maps for "${stop.title}".',
         );
       }
     }

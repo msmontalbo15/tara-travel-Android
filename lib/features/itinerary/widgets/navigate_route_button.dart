@@ -4,6 +4,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/models/itinerary_model.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/feedback/app_feedback.dart';
 
 /// Builds and opens a turn-by-turn navigation route from the user's
 /// **current GPS position** through every waypoint in order,
@@ -159,14 +160,9 @@ class _NavigateRouteButtonState extends State<NavigateRouteButton> {
     }
 
     if (!launched && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            '📍 Could not launch map navigation application.',
-            style: TextStyle(fontFamily: 'DM Sans'),
-          ),
-          behavior: SnackBarBehavior.floating,
-        ),
+      AppFeedback.showError(
+        context,
+        '📍 Could not launch map navigation application.',
       );
     }
     return launched;
@@ -196,12 +192,7 @@ class _NavigateRouteButtonState extends State<NavigateRouteButton> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e', style: const TextStyle(fontFamily: 'DM Sans')),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        AppFeedback.showError(context, 'Error: $e');
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -392,12 +383,9 @@ class _RouteOptionsSheetState extends State<_RouteOptionsSheet> {
       travelMode: _travelMode,
     );
     Clipboard.setData(ClipboardData(text: url));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('📋 Route link copied to clipboard!', style: TextStyle(fontFamily: 'DM Sans')),
-        behavior: SnackBarBehavior.floating,
-        duration: Duration(seconds: 2),
-      ),
+    AppFeedback.showSuccess(
+      context,
+      '📋 Route link copied to clipboard!',
     );
   }
 
@@ -935,14 +923,9 @@ Future<void> openGoogleMapsForStop(
   }
 
   if (!launched && context.mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          '📍 Could not open map navigation application.',
-          style: TextStyle(fontFamily: 'DM Sans'),
-        ),
-        behavior: SnackBarBehavior.floating,
-      ),
+    AppFeedback.showError(
+      context,
+      '📍 Could not open map navigation application.',
     );
   }
 }

@@ -6,6 +6,8 @@ import '../../../core/providers/repository_providers.dart';
 import '../../../core/providers/selected_trip_provider.dart';
 import '../../../core/providers/trip_provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/feedback/app_feedback.dart';
+import '../../../core/widgets/feedback/app_dialog.dart';
 import '../../../core/widgets/share/share_trip_modal.dart';
 import '../../trip_detail/widgets/edit_trip_sheet.dart';
 
@@ -59,67 +61,37 @@ class TripActionSheet extends StatelessWidget {
     ref.invalidate(selectedTripProvider);
 
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(willArchive ? 'Trip archived 📦' : 'Trip restored ✨'),
-          backgroundColor: AppColors.green,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
+      AppFeedback.showSuccess(
+        context,
+        willArchive ? 'Trip archived 📦' : 'Trip restored ✨',
       );
     }
   }
 
   Future<void> _handleDelete(BuildContext context) async {
     Navigator.pop(context);
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          'Delete Trip',
-          style: TextStyle(
-            fontFamily: 'Playfair Display',
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        content: Text(
-          'Are you sure you want to delete "${trip.name}"? This action cannot be undone.',
-          style: const TextStyle(fontFamily: 'DM Sans'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel', style: TextStyle(fontFamily: 'DM Sans', color: AppColors.textSecondary)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
-            child: const Text('Delete', style: TextStyle(fontFamily: 'DM Sans', fontWeight: FontWeight.w700)),
-          ),
-        ],
-      ),
+    AppDialog.showDestructive(
+      context,
+      title: 'Delete Trip',
+      message: 'Are you sure you want to delete "${trip.name}"? This action cannot be undone.',
+      confirmLabel: 'Delete',
+      onConfirm: () async {
+        final repo = ref.read(tripRepositoryProvider);
+        await repo.deleteTrip(trip.id);
+        ref.read(selectedTripIdProvider.notifier).clear();
+        ref.invalidate(allTripsProvider);
+        ref.invalidate(activeTripProvider);
+        ref.invalidate(selectedTripProvider);
+
+        if (context.mounted) {
+          AppFeedback.showInfo(
+            context,
+            'Trip "${trip.name}" deleted.',
+            title: 'Trip Deleted',
+          );
+        }
+      },
     );
-
-    if (confirm == true) {
-      final repo = ref.read(tripRepositoryProvider);
-      await repo.deleteTrip(trip.id);
-      ref.read(selectedTripIdProvider.notifier).clear();
-      ref.invalidate(allTripsProvider);
-      ref.invalidate(activeTripProvider);
-      ref.invalidate(selectedTripProvider);
-
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Trip "${trip.name}" deleted.'),
-            backgroundColor: AppColors.textPrimary,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        );
-      }
-    }
   }
 
   @override

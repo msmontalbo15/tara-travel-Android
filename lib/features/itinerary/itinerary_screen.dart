@@ -34,6 +34,7 @@ import '../../core/models/expense_model.dart';
 import '../../core/providers/expense_provider.dart';
 import '../../core/providers/repository_providers.dart';
 import '../../core/widgets/buttons/app_back_button.dart';
+import '../../core/widgets/feedback/app_feedback.dart';
 
 // ── View mode toggle ─────────────────────────────────────────────────────────
 enum _StopViewMode { list, timeline }
@@ -178,15 +179,9 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                 ref.invalidate(activeTripProvider);
                 if (ctx.mounted) Navigator.pop(ctx);
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                          'Logged "${expense.description}" (₱${expense.amount.toStringAsFixed(0)}) as trip expense! 💰'),
-                      backgroundColor: AppColors.green,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                    ),
+                  AppFeedback.showSuccess(
+                    context,
+                    'Logged "${expense.description}" (₱${expense.amount.toStringAsFixed(0)}) as trip expense! 💰',
                   );
                 }
               },
@@ -896,11 +891,7 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
   // Feature 9 — Calendar export
   void _showCalendarSnack(BuildContext context, ItineraryDay? day) {
     if (day == null || day.stops.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('No stops to export for this day',
-                style: TextStyle(fontFamily: 'DM Sans'))),
-      );
+      AppFeedback.showInfo(context, 'No stops to export for this day.');
       return;
     }
 
@@ -932,14 +923,9 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
     }
 
     final count = day.stops.length;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-            '📅 $count stop${count == 1 ? '' : 's'} exported to Calendar!',
-            style: const TextStyle(fontFamily: 'DM Sans')),
-        backgroundColor: AppColors.green,
-        behavior: SnackBarBehavior.floating,
-      ),
+    AppFeedback.showSuccess(
+      context,
+      '📅 $count stop${count == 1 ? '' : 's'} exported to Calendar!',
     );
   }
 }

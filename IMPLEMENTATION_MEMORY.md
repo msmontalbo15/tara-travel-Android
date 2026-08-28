@@ -46,6 +46,7 @@
 | **`IMP-057`** | 2026-08-27 | Itinerary / Multi-Stop Route Engine | Advanced Multi-Stop Route Construction engine: smart Title+Location target geocoding, GPS origin prefill, remaining-vs-all stops scope selector, dynamic travel mode mapping (car, motorcycle, walking, transit, bike), interactive timeline preview sheet, and one-tap link sharing. |
 | **`IMP-058`** | 2026-08-28 | Social / Camera QR & Profile ID | Live Camera QR Scanner modal (`QrScannerModal`) via `mobile_scanner`, point-and-shoot camera friend scanning with auto-lookup and prefill in `friends_screen.dart`, and User ID / Friend Code badge chips and QR modal launch in `profile_screen.dart`. |
 | **`IMP-059`** | 2026-08-28 | Trips / Invite Code Join Flow | Hardened Join Trip by Invite Code workflow: regex sanitization in `InviteCodeGenerator`, FK pre-flight user row provision in `TripRepository`, resilient RPC parsing & direct fallback, `019_fix_join_trip_by_code.sql` migration, and reactive `_JoinTripSheet` (ConsumerStatefulWidget). |
+| **`IMP-060`** | 2026-08-28 | UI / Standardized Feedback System | Unified Feedback System (IDEA-001): `AppFeedback`, `AppDialog`, `AppBanner`, semantic `FeedbackType`, brand token theme integration, and 100% migration across 11+ UI feature screens/widgets. |
 
 ---
 
@@ -878,6 +879,51 @@
     - Added contextual SnackBars for already-approved members, pending requests, and new approvals.
 - **Verification**:
   - `flutter analyze` completed with 0 issues across all affected files.
+
+---
+
+### `IMP-060` · Standardized & Brand-Unified Feedback System (IDEA-001)
+- **Date**: August 28, 2026
+- **Target Files**:
+  - [lib/core/widgets/feedback/feedback_type.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/widgets/feedback/feedback_type.dart) **[NEW]**
+  - [lib/core/widgets/feedback/app_feedback.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/widgets/feedback/app_feedback.dart) **[NEW]**
+  - [lib/core/widgets/feedback/app_dialog.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/widgets/feedback/app_dialog.dart) **[NEW]**
+  - [lib/core/widgets/feedback/app_banner.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/widgets/feedback/app_banner.dart) **[NEW]**
+  - [lib/core/widgets/feedback/feedback.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/widgets/feedback/feedback.dart) **[NEW]**
+  - [lib/core/theme/app_theme.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/theme/app_theme.dart) **[MODIFIED]**
+  - [lib/features/budget/widgets/alert_banner.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/budget/widgets/alert_banner.dart) **[MODIFIED]**
+  - [lib/features/trips/widgets/join_trip_modal.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/trips/widgets/join_trip_modal.dart) **[MODIFIED]**
+  - [lib/features/trips/trips_screen.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/trips/trips_screen.dart) **[MODIFIED]**
+  - [lib/features/trip_detail/trip_detail_screen.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/trip_detail/trip_detail_screen.dart) **[MODIFIED]**
+  - [lib/features/trip_detail/widgets/edit_trip_sheet.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/trip_detail/widgets/edit_trip_sheet.dart) **[MODIFIED]**
+  - [lib/features/members/members_screen.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/members/members_screen.dart) **[MODIFIED]**
+  - [lib/features/packing/packing_screen.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/packing/packing_screen.dart) **[MODIFIED]**
+  - [lib/features/packing/widgets/packing_template_modals.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/packing/widgets/packing_template_modals.dart) **[MODIFIED]**
+  - [lib/features/home/widgets/trip_action_sheet.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/home/widgets/trip_action_sheet.dart) **[MODIFIED]**
+  - [lib/features/home/widgets/quick_budget_sheet.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/home/widgets/quick_budget_sheet.dart) **[MODIFIED]**
+  - [lib/features/itinerary/widgets/itinerary_fulfillment_banner.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/itinerary_fulfillment_banner.dart) **[MODIFIED]**
+  - [lib/features/itinerary/widgets/day_actions_sheet.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/day_actions_sheet.dart) **[MODIFIED]**
+  - [lib/features/itinerary/widgets/navigate_route_button.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/navigate_route_button.dart) **[MODIFIED]**
+  - [lib/features/itinerary/itinerary_screen.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/itinerary_screen.dart) **[MODIFIED]**
+  - [lib/features/friends/friends_screen.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/friends/friends_screen.dart) **[MODIFIED]**
+  - [lib/features/friends/widgets/friend_list_item.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/friends/widgets/friend_list_item.dart) **[MODIFIED]**
+  - [lib/features/profile/profile_screen.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/profile/profile_screen.dart) **[MODIFIED]**
+  - [DEV_IDEA.md](file:///d:/Spencer/Downloads/tara_travel/DEV_IDEA.md) **[MODIFIED]**
+  - [MEMORY.md](file:///d:/Spencer/Downloads/tara_travel/MEMORY.md) **[MODIFIED]**
+  - [IMPLEMENTATION_MEMORY.md](file:///d:/Spencer/Downloads/tara_travel/IMPLEMENTATION_MEMORY.md) **[MODIFIED]**
+- **Scope & Objectives**:
+  - **Core Component Infrastructure (`lib/core/widgets/feedback/`)**:
+    - `FeedbackType`: Semantic intent enum (`success`, `info`, `warning`, `error`, `destructive`) with unified color/icon mappings.
+    - `AppFeedback`: Centralized toast/snackbar helper (`showSuccess`, `showError`, `showWarning`, `showInfo`) rendering floating, rounded (14px radius), haptic-enabled, brand-styled SnackBars.
+    - `AppDialog`: Centralized confirmation and alert modal helper (`showConfirmation`, `showDestructive`, `showAlert`) featuring `Playfair Display` titles, `DM Sans` descriptions, 24px border radius, and haptic feedback.
+    - `AppBanner`: Inline contextual alert widget with dismissibility, icon branding, and action button support.
+  - **Theme Configuration**:
+    - Updated `dialogTheme` and `snackBarTheme` in `app_theme.dart` to match Tara Travel design tokens globally.
+  - **Comprehensive Codebase Migration**:
+    - Eliminated 100% of raw `ScaffoldMessenger.of(context).showSnackBar` and unstyled `AlertDialog` calls across all 11+ feature screens and widgets.
+- **Verification**:
+  - `flutter analyze` completed with 0 errors and 0 warnings.
+
 
 
 

@@ -12,6 +12,8 @@ import '../../core/models/member_model.dart';
 import '../../core/models/trip_model.dart';
 import '../../core/widgets/buttons/app_back_button.dart';
 import '../../core/widgets/shimmer_loading.dart';
+import '../../core/widgets/feedback/app_feedback.dart';
+import '../../core/widgets/feedback/app_dialog.dart';
 
 class MembersScreen extends ConsumerStatefulWidget {
   final bool showHeader;
@@ -194,20 +196,19 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
       ref.invalidate(selectedTripProvider);
       ref.invalidate(allTripsProvider);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('${member.name} approved! 🎉', style: const TextStyle(fontFamily: 'DM Sans', fontWeight: FontWeight.w600)),
-          backgroundColor: AppColors.green,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ));
+        AppFeedback.showSuccess(
+          context,
+          '${member.name} has been added to the trip! 🎉',
+          title: 'Member Approved',
+        );
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Failed to approve: $e', style: const TextStyle(fontFamily: 'DM Sans')),
-          backgroundColor: AppColors.red,
-          behavior: SnackBarBehavior.floating,
-        ));
+        AppFeedback.showError(
+          context,
+          'Failed to approve: $e',
+          title: 'Approval Failed',
+        );
       }
     }
   }
@@ -218,43 +219,29 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
       ref.invalidate(selectedTripProvider);
       ref.invalidate(allTripsProvider);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Request from ${member.name} declined.', style: const TextStyle(fontFamily: 'DM Sans')),
-          backgroundColor: AppColors.warmMuted,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ));
+        AppFeedback.showInfo(
+          context,
+          'Request from ${member.name} was declined.',
+          title: 'Request Declined',
+        );
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Failed to reject: $e', style: const TextStyle(fontFamily: 'DM Sans')),
-          backgroundColor: AppColors.red,
-          behavior: SnackBarBehavior.floating,
-        ));
+        AppFeedback.showError(
+          context,
+          'Failed to decline request: $e',
+          title: 'Decline Failed',
+        );
       }
     }
   }
 
   Future<void> _confirmRemoveMember(BuildContext context, String tripId, String tripName, MemberModel member) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Remove Member', style: TextStyle(fontFamily: 'Playfair Display', fontWeight: FontWeight.w700)),
-        content: Text(
-          'Remove ${member.name} from "$tripName"?\n\nTheir assigned tasks and expenses will remain recorded.',
-          style: const TextStyle(fontFamily: 'DM Sans', fontSize: 14),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.red),
-            child: const Text('Remove', style: TextStyle(fontWeight: FontWeight.w700)),
-          ),
-        ],
-      ),
+    final confirm = await AppDialog.showDestructive(
+      context,
+      title: 'Remove Member',
+      message: 'Remove ${member.name} from "$tripName"?\n\nTheir assigned tasks and expenses will remain recorded.',
+      confirmLabel: 'Remove Member',
     );
     if (confirm != true || !context.mounted) return;
 
@@ -263,43 +250,30 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
       ref.invalidate(selectedTripProvider);
       ref.invalidate(allTripsProvider);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('${member.name} was removed from the trip.', style: const TextStyle(fontFamily: 'DM Sans')),
-          backgroundColor: AppColors.warmMuted,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ));
+        AppFeedback.showInfo(
+          context,
+          '${member.name} was removed from the trip.',
+          title: 'Member Removed',
+        );
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Failed to remove: $e', style: const TextStyle(fontFamily: 'DM Sans')),
-          backgroundColor: AppColors.red,
-          behavior: SnackBarBehavior.floating,
-        ));
+        AppFeedback.showError(
+          context,
+          'Failed to remove: $e',
+          title: 'Action Failed',
+        );
       }
     }
   }
 
   Future<void> _confirmLeaveTrip(BuildContext context, String tripId, String tripName) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Leave Trip', style: TextStyle(fontFamily: 'Playfair Display', fontWeight: FontWeight.w700)),
-        content: Text(
-          'Are you sure you want to leave "$tripName"? You will need a new invite code to rejoin.',
-          style: const TextStyle(fontFamily: 'DM Sans', fontSize: 14),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.red),
-            child: const Text('Leave Trip', style: TextStyle(fontWeight: FontWeight.w700)),
-          ),
-        ],
-      ),
+    final confirm = await AppDialog.showDestructive(
+      context,
+      title: 'Leave Trip',
+      message: 'Are you sure you want to leave "$tripName"? You will need a new invite code to rejoin.',
+      confirmLabel: 'Leave Trip',
+      icon: Icons.exit_to_app_rounded,
     );
     if (confirm != true || !context.mounted) return;
 
@@ -310,20 +284,19 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
       if (context.mounted) {
         // Pop back to previous screen since user is no longer in this trip
         if (Navigator.canPop(context)) Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('You left "$leftTripName".', style: const TextStyle(fontFamily: 'DM Sans')),
-          backgroundColor: AppColors.warmMuted,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ));
+        AppFeedback.showInfo(
+          context,
+          'You left "$leftTripName".',
+          title: 'Trip Exited',
+        );
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(e.toString().replaceAll('Exception: ', ''), style: const TextStyle(fontFamily: 'DM Sans')),
-          backgroundColor: AppColors.red,
-          behavior: SnackBarBehavior.floating,
-        ));
+        AppFeedback.showError(
+          context,
+          e.toString().replaceAll('Exception: ', ''),
+          title: 'Failed to Leave Trip',
+        );
       }
     }
   }
@@ -398,13 +371,10 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                         _iconBtn(Icons.copy_rounded, () {
                           if (trip.inviteCode.isNotEmpty) {
                             Clipboard.setData(ClipboardData(text: trip.inviteCode));
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Invite code copied to clipboard!',
-                                    style: TextStyle(fontFamily: 'DM Sans')),
-                                backgroundColor: AppColors.green,
-                                behavior: SnackBarBehavior.floating,
-                              ),
+                            AppFeedback.showSuccess(
+                              context,
+                              'Invite code copied: ${trip.inviteCode}',
+                              title: 'Copied to Clipboard 📋',
                             );
                           }
                         }),
@@ -421,26 +391,12 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                         }),
                         const SizedBox(width: 8),
                         _iconBtn(Icons.refresh_rounded, () async {
-                          final confirm = await showDialog<bool>(
-                            context: context,
-                            builder: (ctx) => AlertDialog(
-                              title: const Text('Regenerate Invite Code?'),
-                              content: const Text(
-                                  'This will invalidate the existing invite code. Previous invites will no longer work.'),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(ctx, false),
-                                  child: const Text('Cancel'),
-                                ),
-                                ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppColors.primary),
-                                  onPressed: () => Navigator.pop(ctx, true),
-                                  child: const Text('Regenerate',
-                                      style: TextStyle(color: Colors.white)),
-                                ),
-                              ],
-                            ),
+                          final confirm = await AppDialog.showConfirmation(
+                            context,
+                            title: 'Regenerate Invite Code?',
+                            message: 'This will invalidate the existing invite code. Previous invites will no longer work.',
+                            confirmLabel: 'Regenerate',
+                            icon: Icons.refresh_rounded,
                           );
 
                           if (confirm == true && context.mounted) {
@@ -450,13 +406,10 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                             ref.invalidate(selectedTripProvider);
                             ref.invalidate(allTripsProvider);
                             if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('New invite code generated: $newCode',
-                                      style: const TextStyle(fontFamily: 'DM Sans')),
-                                  backgroundColor: AppColors.green,
-                                  behavior: SnackBarBehavior.floating,
-                                ),
+                              AppFeedback.showSuccess(
+                                context,
+                                'New invite code generated: $newCode',
+                                title: 'Code Regenerated ✨',
                               );
                             }
                           }
@@ -883,23 +836,20 @@ class _RoleEditorSheetState extends ConsumerState<_RoleEditorSheet> {
                         ref.invalidate(activeTripProvider);
                         if (context.mounted) {
                           Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                            content: Text('Updated roles for ${widget.member.name}!',
-                                style: const TextStyle(fontFamily: 'DM Sans')),
-                            backgroundColor: AppColors.green,
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ));
+                          AppFeedback.showSuccess(
+                            context,
+                            'Updated roles for ${widget.member.name}!',
+                            title: 'Roles Updated ✨',
+                          );
                         }
                       } catch (e) {
                         if (context.mounted) {
                           setState(() => _isSaving = false);
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                            content: Text('Failed to update roles: ${e.toString().replaceAll('Exception: ', '')}',
-                                style: const TextStyle(fontFamily: 'DM Sans')),
-                            backgroundColor: AppColors.red,
-                            behavior: SnackBarBehavior.floating,
-                          ));
+                          AppFeedback.showError(
+                            context,
+                            'Failed to update roles: ${e.toString().replaceAll('Exception: ', '')}',
+                            title: 'Update Failed',
+                          );
                         }
                       }
                     },
@@ -1014,22 +964,18 @@ class _ContactSheet extends ConsumerWidget {
                 await friendRepo.sendRequest(member.id);
                 if (context.mounted) {
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Friend request sent to ${member.name}!', style: const TextStyle(fontFamily: 'DM Sans')),
-                      backgroundColor: AppColors.green,
-                      behavior: SnackBarBehavior.floating,
-                    ),
+                  AppFeedback.showSuccess(
+                    context,
+                    'Friend request sent to ${member.name}!',
+                    title: 'Request Sent',
                   );
                 }
               } catch (e) {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Could not send request: $e', style: const TextStyle(fontFamily: 'DM Sans')),
-                      backgroundColor: AppColors.red,
-                      behavior: SnackBarBehavior.floating,
-                    ),
+                  AppFeedback.showError(
+                    context,
+                    'Could not send request: $e',
+                    title: 'Request Failed',
                   );
                 }
               }
@@ -1320,32 +1266,19 @@ class _BatchRoleEditorSheetState extends ConsumerState<_BatchRoleEditorSheet> {
                         ref.invalidate(activeTripProvider);
                         if (context.mounted) {
                           Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                'Roles updated for ${_selectedMemberIds.length} members!',
-                                style: const TextStyle(fontFamily: 'DM Sans'),
-                              ),
-                              backgroundColor: AppColors.green,
-                              behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
+                          AppFeedback.showSuccess(
+                            context,
+                            'Roles updated for ${_selectedMemberIds.length} members!',
+                            title: 'Batch Update Complete ✨',
                           );
                         }
                       } catch (e) {
                         if (context.mounted) {
                           setState(() => _isSaving = false);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                'Failed to batch update roles: ${e.toString().replaceAll('Exception: ', '')}',
-                                style: const TextStyle(fontFamily: 'DM Sans'),
-                              ),
-                              backgroundColor: AppColors.red,
-                              behavior: SnackBarBehavior.floating,
-                            ),
+                          AppFeedback.showError(
+                            context,
+                            'Failed to batch update roles: ${e.toString().replaceAll('Exception: ', '')}',
+                            title: 'Update Failed',
                           );
                         }
                       }
