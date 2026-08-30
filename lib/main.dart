@@ -11,7 +11,7 @@ import 'features/create_trip/create_trip_flow.dart';
 import 'features/notifications/notifications_screen.dart';
 import 'features/budget/budget_screen.dart';
 import 'features/itinerary/itinerary_screen.dart';
-import 'features/navigation/navigation_screen.dart';
+import 'features/navigation/live_navigation_screen.dart';
 import 'features/packing/packing_screen.dart';
 import 'features/members/members_screen.dart';
 import 'features/explore/explore_screen.dart';
@@ -96,7 +96,7 @@ class TaraApp extends StatelessWidget {
           '/notifications':(_) => const NotificationsScreen(),
           '/budget':       (_) => const BudgetScreen(),
           '/itinerary':    (_) => const ItineraryScreen(),
-          '/navigation':   (_) => const NavigationScreen(),
+          '/navigation':   (_) => const LiveNavigationScreen(),
           '/packing':      (_) => const PackingScreen(),
           '/members':      (_) => const MembersScreen(),
           '/explore':      (_) => const ExploreScreen(),

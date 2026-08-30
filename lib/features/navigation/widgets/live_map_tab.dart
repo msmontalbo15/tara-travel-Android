@@ -1,10 +1,17 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:latlong2/latlong.dart' hide Path;
+import '../../../core/constants/map_tile_config.dart';
 import '../../../core/theme/app_colors.dart';
 import '../models/navigation_models.dart';
 import '../providers/navigation_provider.dart';
-import 'shared/member_avatar.dart';
-import 'shared/mock_map_painter.dart';
+import 'convoy_alert_banner.dart';
+import 'navigate_to_member_sheet.dart';
+import 'privacy_control_sheet.dart';
+import 'sos_emergency_modal.dart';
 
 class LiveMapTab extends ConsumerStatefulWidget {
   const LiveMapTab({super.key});
@@ -13,23 +20,59 @@ class LiveMapTab extends ConsumerStatefulWidget {
   ConsumerState<LiveMapTab> createState() => _LiveMapTabState();
 }
 
-class _LiveMapTabState extends ConsumerState<LiveMapTab>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _routeController;
+class _LiveMapTabState extends ConsumerState<LiveMapTab> {
+  final MapController _mapController = MapController();
+  bool _didFitInitialBounds = false;
 
   @override
   void initState() {
     super.initState();
-    _routeController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    )..repeat();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fitGroupBounds();
+    });
   }
 
-  @override
-  void dispose() {
-    _routeController.dispose();
-    super.dispose();
+  void _centerOnMe() {
+    final nav = ref.read(navigationProvider);
+    final me = nav.members.firstWhere((m) => m.isMe, orElse: () => nav.members.first);
+    if (me.latitude != null && me.longitude != null) {
+      _mapController.move(LatLng(me.latitude!, me.longitude!), 15.5);
+      HapticFeedback.selectionClick();
+    }
+  }
+
+  void _fitGroupBounds() {
+    final nav = ref.read(navigationProvider);
+    final points = <LatLng>[];
+
+    for (final m in nav.members) {
+      if (m.latitude != null && m.longitude != null) {
+        points.add(LatLng(m.latitude!, m.longitude!));
+      }
+    }
+
+    if (nav.destination.latitude != null && nav.destination.longitude != null) {
+      points.add(LatLng(nav.destination.latitude!, nav.destination.longitude!));
+    }
+
+    if (points.isEmpty) {
+      // Default fallback (Manila coordinates)
+      _mapController.move(const LatLng(14.5995, 120.9842), 14);
+      return;
+    }
+
+    if (points.length == 1) {
+      _mapController.move(points.first, 15);
+      return;
+    }
+
+    final bounds = LatLngBounds.fromPoints(points);
+    _mapController.fitCamera(
+      CameraFit.bounds(
+        bounds: bounds,
+        padding: const EdgeInsets.all(56),
+      ),
+    );
   }
 
   @override
@@ -37,252 +80,576 @@ class _LiveMapTabState extends ConsumerState<LiveMapTab>
     final nav = ref.watch(navigationProvider);
     final notifier = ref.read(navigationProvider.notifier);
 
+    final me = nav.members.firstWhere(
+      (m) => m.isMe,
+      orElse: () => const NavMember(
+        id: 'me',
+        name: 'You',
+        initials: 'Y',
+        color: AppColors.primary,
+        status: MemberStatus.enRoute,
+        role: 'You',
+        isMe: true,
+        latitude: 14.5995,
+        longitude: 120.9842,
+      ),
+    );
+
+    final myLatLng = LatLng(
+      me.latitude ?? 14.5995,
+      me.longitude ?? 120.9842,
+    );
+
+    final destLatLng = LatLng(
+      nav.destination.latitude ?? (myLatLng.latitude + 0.02),
+      nav.destination.longitude ?? (myLatLng.longitude + 0.015),
+    );
+
+    // Dynamic route points for polyline
+    final List<LatLng> routePoints = [myLatLng];
+    if (nav.activeMemberRoute != null &&
+        nav.activeMemberRoute!.latitude != null &&
+        nav.activeMemberRoute!.longitude != null) {
+      routePoints.add(LatLng(
+        nav.activeMemberRoute!.latitude!,
+        nav.activeMemberRoute!.longitude!,
+      ));
+    } else {
+      routePoints.add(destLatLng);
+    }
+
+    if (!_didFitInitialBounds && nav.members.isNotEmpty) {
+      _didFitInitialBounds = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _fitGroupBounds());
+    }
+
     return Column(
       children: [
-        // ── MAP AREA ──────────────────────────────────────────
+        // ── ACTIVE SOS BEACON BANNER ──────────────────────────
+        const ActiveSosAlertBanner(),
+
+        // ── CONVOY SEPARATION ALERTS ──────────────────────────
+        const ConvoyAlertBanner(),
+
+        // ── INTERACTIVE MAP AREA ──────────────────────────────
         Expanded(
           child: Stack(
             children: [
-              // Map background
-              AnimatedBuilder(
-                animation: _routeController,
-                builder: (_, __) => CustomPaint(
-                  painter: MockMapPainter(
-                    showRoute: true,
-                    animationValue: _routeController.value,
+              FlutterMap(
+                mapController: _mapController,
+                options: MapOptions(
+                  initialCenter: myLatLng,
+                  initialZoom: 14.5,
+                  interactionOptions: const InteractionOptions(
+                    flags: InteractiveFlag.all,
                   ),
-                  size: Size.infinite,
                 ),
-              ),
+                children: [
+                  // ── Map Tile Layer (Mapbox Streets / CartoDB Voyager) ──
+                  MapTileConfig.buildTileLayer(),
 
-              // Member pins
-              ..._buildMemberPins(nav),
+                  // ── Live Routing Polyline ───────────────────────────
+                  if (routePoints.length > 1)
+                    PolylineLayer(
+                      polylines: [
+                        // Ambient glow stroke
+                        Polyline(
+                          points: routePoints,
+                          color: AppColors.primary.withValues(alpha: 0.35),
+                          strokeWidth: 9,
+                          strokeCap: StrokeCap.round,
+                          strokeJoin: StrokeJoin.round,
+                        ),
+                        // Sharp inner route line
+                        Polyline(
+                          points: routePoints,
+                          color: AppColors.primary,
+                          strokeWidth: 4.5,
+                          strokeCap: StrokeCap.round,
+                          strokeJoin: StrokeJoin.round,
+                        ),
+                      ],
+                    ),
 
-              // Destination pin
-              _DestinationPin(name: nav.destination.name),
+                  // ── Real Marker Layer ───────────────────────────────
+                  MarkerLayer(
+                    markers: [
+                      // 1. Destination Marker
+                      Marker(
+                        point: destLatLng,
+                        width: 140,
+                        height: 60,
+                        alignment: Alignment.topCenter,
+                        child: _RealDestinationMarker(
+                          name: nav.destination.name,
+                          eta: nav.destination.eta,
+                        ),
+                      ),
 
-              // LIVE badge
-              Positioned(
-                top: 16,
-                left: 14,
-                child: _MapBadge(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _BlinkingDot(),
-                      const SizedBox(width: 5),
-                      const Text(
-                        'LIVE',
-                        style: TextStyle(
-                          fontFamily: 'DM Sans',
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                          letterSpacing: 0.5,
+                      // 2. Active SOS Panic Marker (if active)
+                      if (nav.activeSos != null)
+                        Marker(
+                          point: LatLng(nav.activeSos!.lat, nav.activeSos!.lng),
+                          width: 80,
+                          height: 80,
+                          child: _RealSosMarker(beacon: nav.activeSos!),
+                        ),
+
+                      // 3. Companion Markers (from real Supabase members)
+                      ...nav.members.where((m) => !m.isMe).map((m) {
+                        final lat = m.latitude ?? (myLatLng.latitude + (m.id.hashCode % 100 - 50) * 0.0003);
+                        final lng = m.longitude ?? (myLatLng.longitude + (m.id.hashCode % 90 - 45) * 0.0003);
+
+                        return Marker(
+                          point: LatLng(lat, lng),
+                          width: 60,
+                          height: 70,
+                          alignment: Alignment.topCenter,
+                          child: GestureDetector(
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              NavigateToMemberSheet.show(context, m);
+                            },
+                            child: _RealPeerMarker(member: m),
+                          ),
+                        );
+                      }),
+
+                      // 4. Local User Marker ('Me')
+                      Marker(
+                        point: myLatLng,
+                        width: 70,
+                        height: 70,
+                        alignment: Alignment.center,
+                        child: _RealUserMarker(
+                          member: me,
+                          isGhost: nav.isGhostActive,
                         ),
                       ),
                     ],
                   ),
-                ),
+                ],
               ),
 
-              // Group view toggle
+              // ── LIVE & PRIVACY BADGES (Top Left) ─────────────────
               Positioned(
-                top: 46,
-                left: 14,
-                child: GestureDetector(
-                  onTap: notifier.toggleGroupView,
-                  child: _MapBadge(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.group_rounded, color: Colors.white, size: 12),
-                        const SizedBox(width: 5),
-                        Text(
-                          'Group view ${nav.isGroupViewOn ? 'ON' : 'OFF'}',
-                          style: const TextStyle(
-                            fontFamily: 'DM Sans',
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
-              // Map controls (right)
-              const Positioned(
                 top: 16,
-                right: 12,
+                left: 14,
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _MapControl(icon: Icons.my_location_rounded, color: AppColors.primary),
-                    SizedBox(height: 6),
-                    _MapControl(icon: Icons.add_rounded, color: AppColors.textPrimary),
-                    SizedBox(height: 6),
-                    _MapControl(icon: Icons.arrow_forward_rounded, color: AppColors.textPrimary),
+                    _MapBadge(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _BlinkingDot(),
+                          const SizedBox(width: 5),
+                          Text(
+                            nav.isGhostActive ? 'GHOST MODE' : 'LIVE GPS',
+                            style: TextStyle(
+                              fontFamily: 'DM Sans',
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: nav.isGhostActive
+                                  ? const Color(0xFFEF9F27)
+                                  : Colors.white,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    GestureDetector(
+                      onTap: () {
+                        notifier.toggleGroupView();
+                        _fitGroupBounds();
+                      },
+                      child: _MapBadge(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.group_rounded,
+                                color: Colors.white, size: 12),
+                            const SizedBox(width: 5),
+                            Text(
+                              'Group view ${nav.isGroupViewOn ? 'ON' : 'OFF'}',
+                              style: const TextStyle(
+                                fontFamily: 'DM Sans',
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    if (nav.activeMemberRoute != null) ...[
+                      const SizedBox(height: 6),
+                      _MapBadge(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.navigation_rounded,
+                                color: AppColors.amber, size: 12),
+                            const SizedBox(width: 5),
+                            Text(
+                              'Navigating to ${nav.activeMemberRoute!.name}',
+                              style: const TextStyle(
+                                fontFamily: 'DM Sans',
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            GestureDetector(
+                              onTap: notifier.cancelMemberNavigation,
+                              child: const Icon(Icons.close_rounded,
+                                  color: Colors.white70, size: 14),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
 
-              // Scale indicator
-              const Positioned(
-                bottom: 12,
-                left: 14,
-                child: _ScaleBar(),
+              // ── MAP CONTROLS (Top Right) ─────────────────────────
+              Positioned(
+                top: 16,
+                right: 12,
+                child: Column(
+                  children: [
+                    // Center My GPS
+                    GestureDetector(
+                      onTap: _centerOnMe,
+                      child: const _MapControl(
+                        icon: Icons.my_location_rounded,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    // Fit Group Bounds
+                    GestureDetector(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        _fitGroupBounds();
+                      },
+                      child: const _MapControl(
+                        icon: Icons.fullscreen_rounded,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    // Zoom In
+                    GestureDetector(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        _mapController.move(
+                          _mapController.camera.center,
+                          _mapController.camera.zoom + 1,
+                        );
+                      },
+                      child: const _MapControl(
+                        icon: Icons.add_rounded,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    // Zoom Out
+                    GestureDetector(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        _mapController.move(
+                          _mapController.camera.center,
+                          _mapController.camera.zoom - 1,
+                        );
+                      },
+                      child: const _MapControl(
+                        icon: Icons.remove_rounded,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    // Privacy Control Sheet
+                    GestureDetector(
+                      onTap: () => PrivacyControlSheet.show(context),
+                      child: _MapControl(
+                        icon: nav.isGhostActive
+                            ? Icons.visibility_off_rounded
+                            : Icons.shield_outlined,
+                        color: nav.isGhostActive
+                            ? const Color(0xFFEF9F27)
+                            : AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    // SOS Emergency Modal
+                    GestureDetector(
+                      onTap: () => SosEmergencyModal.show(context),
+                      child: const _MapControl(
+                        icon: Icons.sos_rounded,
+                        color: Color(0xFFE24A4A),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
         ),
 
-        // ── TURN-BY-TURN ──────────────────────────────────────
-        if (nav.currentTurn != null)
-          _TurnCard(turn: nav.currentTurn!),
+        // ── TURN-BY-TURN CARD ─────────────────────────────────
+        if (nav.currentTurn != null) _TurnCard(turn: nav.currentTurn!),
 
-        // ── BOTTOM STRIP ─────────────────────────────────────
+        // ── BOTTOM STATS STRIP ────────────────────────────────
         _BottomStrip(nav: nav),
       ],
     );
   }
-
-  List<Widget> _buildMemberPins(NavigationState nav) {
-    return nav.members.map((m) {
-      // Calculate pixel position from normalized map coords
-      // The map area is 'Expanded', so we use LayoutBuilder below via Positioned.fill
-      String label;
-      if (m.isMe) {
-        return _buildUserPin(m);
-      } else if (m.status == MemberStatus.offline) {
-        label = 'offline';
-      } else if ((m.distanceKm ?? 0) > 0) {
-        label = '${m.distanceKm!.abs().toStringAsFixed(1)} km ahead';
-      } else {
-        label = '${m.distanceKm!.abs().toStringAsFixed(1)} km behind';
-      }
-
-      return Positioned(
-        // Use approximate positions based on mockup
-        left: _mapX(m.mapPosition.dx),
-        top: _mapY(m.mapPosition.dy, context),
-        child: MapMemberPin(member: m, labelText: label),
-      );
-    }).toList();
-  }
-
-  Widget _buildUserPin(NavMember m) {
-    return Positioned(
-      left: _mapX(m.mapPosition.dx) - 5,
-      top: _mapY(m.mapPosition.dy, context) - 5,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Heading cone
-          CustomPaint(
-            painter: _HeadingConePainter(),
-            size: const Size(36, 36),
-          ),
-          // Pulse ring
-          const _PulseRing(color: AppColors.primary),
-          // Avatar
-          Container(
-            width: 28,
-            height: 28,
-            decoration: BoxDecoration(
-              color: m.color,
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 3),
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              m.initials,
-              style: const TextStyle(
-                fontFamily: 'DM Sans',
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  double _mapX(double normalized) {
-    final w = MediaQuery.of(context).size.width;
-    return normalized * w;
-  }
-
-  double _mapY(double normalized, BuildContext ctx) {
-    // Map takes ~60% of screen height
-    final screenH = MediaQuery.of(ctx).size.height;
-    final mapH = screenH * 0.50;
-    return normalized * mapH;
-  }
 }
 
-// ── Destination pin ─────────────────────────────────────────────
-class _DestinationPin extends StatelessWidget {
+// ── Real Destination Marker ───────────────────────────────────────────
+class _RealDestinationMarker extends StatelessWidget {
   final String name;
-  const _DestinationPin({required this.name});
+  final String eta;
+
+  const _RealDestinationMarker({
+    required this.name,
+    required this.eta,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Positioned(
-      top: 28,
-      left: MediaQuery.of(context).size.width * 0.42,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-            decoration: const BoxDecoration(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(10),
-                topRight: Radius.circular(10),
-                bottomRight: Radius.circular(10),
-                bottomLeft: Radius.circular(2),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: AppColors.deepEarth,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: AppColors.primary, width: 1.5),
+            boxShadow: const [
+              BoxShadow(
+                color: Colors.black38,
+                blurRadius: 6,
+                offset: Offset(0, 2),
               ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(name,
-                    style: const TextStyle(
-                        fontFamily: 'DM Sans',
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white)),
-                const Text('Destination',
-                    style: TextStyle(
-                        fontFamily: 'DM Sans',
-                        fontSize: 9,
-                        color: Colors.white60)),
-              ],
-            ),
+            ],
           ),
-          Container(width: 2, height: 6, color: AppColors.primary),
-          Container(
-            width: 10,
-            height: 10,
-            decoration: BoxDecoration(
-              color: AppColors.primary,
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 2),
-            ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontFamily: 'DM Sans',
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+              Text(
+                'ETA $eta',
+                style: const TextStyle(
+                  fontFamily: 'DM Sans',
+                  fontSize: 9,
+                  color: AppColors.sand,
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+        const Icon(Icons.location_on_rounded, color: AppColors.primary, size: 24),
+      ],
     );
   }
 }
 
-// ── Map badge (semi-transparent pill) ───────────────────────────
+// ── Real Peer Marker ──────────────────────────────────────────────────
+class _RealPeerMarker extends StatelessWidget {
+  final NavMember member;
+
+  const _RealPeerMarker({required this.member});
+
+  @override
+  Widget build(BuildContext context) {
+    final statusColor = member.status == MemberStatus.enRoute
+        ? const Color(0xFF10B981)
+        : (member.status == MemberStatus.arrived
+            ? const Color(0xFF3B82F6)
+            : AppColors.warmMuted);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.75),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Text(
+            member.name.split(' ').first,
+            maxLines: 1,
+            style: const TextStyle(
+              fontFamily: 'DM Sans',
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+          ),
+        ),
+        const SizedBox(height: 2),
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: member.color,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2.5),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                member.initials,
+                style: const TextStyle(
+                  fontFamily: 'DM Sans',
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            Positioned(
+              right: 0,
+              bottom: 0,
+              child: Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: statusColor,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 1.5),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+// ── Real Local User Marker ────────────────────────────────────────────
+class _RealUserMarker extends StatelessWidget {
+  final NavMember member;
+  final bool isGhost;
+
+  const _RealUserMarker({
+    required this.member,
+    required this.isGhost,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        // Heading Direction Cone
+        if (member.heading != null && member.heading! > 0)
+          Transform.rotate(
+            angle: (member.heading! * math.pi) / 180,
+            child: CustomPaint(
+              painter: _HeadingConePainter(),
+              size: const Size(48, 48),
+            ),
+          ),
+        // Pulse ripple
+        _PulseRing(color: isGhost ? AppColors.amber : AppColors.primary),
+        // Center Avatar
+        Container(
+          width: 30,
+          height: 30,
+          decoration: BoxDecoration(
+            color: member.color,
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 3),
+            boxShadow: const [
+              BoxShadow(
+                color: Colors.black38,
+                blurRadius: 6,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            member.initials,
+            style: const TextStyle(
+              fontFamily: 'DM Sans',
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Real SOS Marker ───────────────────────────────────────────────────
+class _RealSosMarker extends StatelessWidget {
+  final SosBeacon beacon;
+
+  const _RealSosMarker({required this.beacon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        const _PulseRing(color: Color(0xFFDC2626)),
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: const Color(0xFFDC2626),
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 3),
+            boxShadow: const [
+              BoxShadow(
+                color: Colors.black45,
+                blurRadius: 8,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          alignment: Alignment.center,
+          child: const Icon(Icons.sos_rounded, color: Colors.white, size: 20),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Badges & Buttons ──────────────────────────────────────────────────
 class _MapBadge extends StatelessWidget {
   final Widget child;
   const _MapBadge({required this.child});
@@ -290,17 +657,17 @@ class _MapBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.6),
+        color: Colors.black.withValues(alpha: 0.70),
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
       ),
       child: child,
     );
   }
 }
 
-// ── Map control button ───────────────────────────────────────────
 class _MapControl extends StatelessWidget {
   final IconData icon;
   final Color color;
@@ -309,47 +676,25 @@ class _MapControl extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 32,
-      height: 32,
+      width: 36,
+      height: 36,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.92),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Icon(icon, size: 16, color: color),
-    );
-  }
-}
-
-// ── Scale bar ────────────────────────────────────────────────────
-class _ScaleBar extends StatelessWidget {
-  const _ScaleBar();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 40,
-          height: 3,
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(2),
+        color: Colors.white.withValues(alpha: 0.95),
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 6,
+            offset: Offset(0, 2),
           ),
-        ),
-        const SizedBox(width: 5),
-        const Text('500m',
-            style: TextStyle(
-                fontFamily: 'DM Sans',
-                fontSize: 9,
-                color: Colors.white54,
-                fontWeight: FontWeight.w500)),
-      ],
+        ],
+      ),
+      child: Icon(icon, size: 18, color: color),
     );
   }
 }
 
-// ── Turn instruction card ────────────────────────────────────────
+// ── Turn instruction card ─────────────────────────────────────────────
 class _TurnCard extends StatelessWidget {
   final TurnInstruction turn;
   const _TurnCard({required this.turn});
@@ -379,36 +724,48 @@ class _TurnCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(turn.distanceLabel,
-                    style: const TextStyle(
-                        fontFamily: 'DM Sans',
-                        fontSize: 12,
-                        color: Colors.white54)),
+                Text(
+                  turn.distanceLabel,
+                  style: const TextStyle(
+                    fontFamily: 'DM Sans',
+                    fontSize: 12,
+                    color: Colors.white54,
+                  ),
+                ),
                 const SizedBox(height: 2),
-                Text(turn.instruction,
-                    style: const TextStyle(
-                        fontFamily: 'DM Sans',
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                        letterSpacing: -0.3)),
+                Text(
+                  turn.instruction,
+                  style: const TextStyle(
+                    fontFamily: 'DM Sans',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    letterSpacing: -0.3,
+                  ),
+                ),
               ],
             ),
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(turn.kmLeft.toStringAsFixed(1),
-                  style: const TextStyle(
-                      fontFamily: 'DM Sans',
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white)),
-              const Text('km left',
-                  style: TextStyle(
-                      fontFamily: 'DM Sans',
-                      fontSize: 10,
-                      color: Colors.white38)),
+              Text(
+                turn.kmLeft.toStringAsFixed(1),
+                style: const TextStyle(
+                  fontFamily: 'DM Sans',
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+              const Text(
+                'km left',
+                style: TextStyle(
+                  fontFamily: 'DM Sans',
+                  fontSize: 10,
+                  color: Colors.white38,
+                ),
+              ),
             ],
           ),
         ],
@@ -417,7 +774,7 @@ class _TurnCard extends StatelessWidget {
   }
 }
 
-// ── Bottom stats strip ───────────────────────────────────────────
+// ── Bottom stats strip ────────────────────────────────────────────────
 class _BottomStrip extends StatelessWidget {
   final NavigationState nav;
   const _BottomStrip({required this.nav});
@@ -431,22 +788,28 @@ class _BottomStrip extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           _StatCell(label: 'ETA', value: nav.etaLabel),
-          _StatCell(label: 'Distance', value: '${nav.distanceKm.toStringAsFixed(1)} km'),
+          _StatCell(
+            label: 'Distance',
+            value: '${nav.distanceKm.toStringAsFixed(1)} km',
+          ),
           _StatCell(label: 'Duration', value: '${nav.durationMin} min'),
           GestureDetector(
-            onTap: () {},
+            onTap: () => Navigator.maybePop(context),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
               decoration: BoxDecoration(
                 color: AppColors.primary,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Text('End',
-                  style: TextStyle(
-                      fontFamily: 'DM Sans',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white)),
+              child: const Text(
+                'Exit',
+                style: TextStyle(
+                  fontFamily: 'DM Sans',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
             ),
           ),
         ],
@@ -465,21 +828,29 @@ class _StatCell extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(label,
-            style: const TextStyle(
-                fontFamily: 'DM Sans', fontSize: 10, color: Color(0xFF8E8E93))),
-        Text(value,
-            style: const TextStyle(
-                fontFamily: 'DM Sans',
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: Colors.black)),
+        Text(
+          label,
+          style: const TextStyle(
+            fontFamily: 'DM Sans',
+            fontSize: 10,
+            color: Color(0xFF8E8E93),
+          ),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            fontFamily: 'DM Sans',
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: Colors.black,
+          ),
+        ),
       ],
     );
   }
 }
 
-// ── Blinking LIVE dot ────────────────────────────────────────────
+// ── Blinking LIVE dot ─────────────────────────────────────────────────
 class _BlinkingDot extends StatefulWidget {
   @override
   State<_BlinkingDot> createState() => _BlinkingDotState();
@@ -494,8 +865,9 @@ class _BlinkingDotState extends State<_BlinkingDot>
   void initState() {
     super.initState();
     _ctrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 1400))
-      ..repeat(reverse: true);
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat(reverse: true);
     _opacity = Tween(begin: 1.0, end: 0.25).animate(_ctrl);
   }
 
@@ -513,13 +885,15 @@ class _BlinkingDotState extends State<_BlinkingDot>
         width: 7,
         height: 7,
         decoration: const BoxDecoration(
-            color: Color(0xFF34A853), shape: BoxShape.circle),
+          color: Color(0xFF34A853),
+          shape: BoxShape.circle,
+        ),
       ),
     );
   }
 }
 
-// ── Pulse ring ───────────────────────────────────────────────────
+// ── Pulse ring ────────────────────────────────────────────────────────
 class _PulseRing extends StatefulWidget {
   final Color color;
   const _PulseRing({required this.color});
@@ -538,12 +912,15 @@ class _PulseRingState extends State<_PulseRing>
   void initState() {
     super.initState();
     _ctrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 2000))
-      ..repeat();
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    )..repeat();
     _scale = Tween(begin: 0.9, end: 1.8).animate(
-        CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeOut),
+    );
     _opacity = Tween(begin: 0.4, end: 0.0).animate(
-        CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeOut),
+    );
   }
 
   @override
@@ -559,8 +936,8 @@ class _PulseRingState extends State<_PulseRing>
       builder: (_, __) => Transform.scale(
         scale: _scale.value,
         child: Container(
-          width: 36,
-          height: 36,
+          width: 44,
+          height: 44,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(
@@ -574,7 +951,7 @@ class _PulseRingState extends State<_PulseRing>
   }
 }
 
-// ── Heading cone painter ─────────────────────────────────────────
+// ── Heading cone painter ──────────────────────────────────────────────
 class _HeadingConePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -584,10 +961,11 @@ class _HeadingConePainter extends CustomPainter {
       ..lineTo(size.width * 0.8, 0)
       ..close();
     canvas.drawPath(
-        path,
-        Paint()
-          ..color = const Color(0xFFD85A30).withValues(alpha: 0.3)
-          ..style = PaintingStyle.fill);
+      path,
+      Paint()
+        ..color = const Color(0xFFD85A30).withValues(alpha: 0.35)
+        ..style = PaintingStyle.fill,
+    );
   }
 
   @override

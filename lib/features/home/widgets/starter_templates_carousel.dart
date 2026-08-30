@@ -107,7 +107,6 @@ class StarterTemplatesCarousel extends ConsumerWidget {
                     tripType: t.tripType,
                     fromDate: now.add(const Duration(days: 7)),
                     toDate: now.add(Duration(days: 7 + t.durationDays - 1)),
-                    coverColor: t.accentColor.toARGB32(),
                   );
 
                   if (context.mounted) {

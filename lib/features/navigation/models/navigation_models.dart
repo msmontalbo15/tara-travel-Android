@@ -4,6 +4,52 @@ import 'package:flutter/material.dart';
 
 enum MemberStatus { enRoute, arrived, offline, paused }
 
+// ── Privacy Mode ──────────────────────────────────────────────────────────────
+
+enum LocationPrivacyMode { exact, approximate, ghost }
+
+// ── Convoy Separation Alert ───────────────────────────────────────────────────
+
+class ConvoyAlert {
+  final String memberId;
+  final String memberName;
+  final double gapKm;
+  final int estimatedMinutesBehind;
+  final DateTime timestamp;
+
+  const ConvoyAlert({
+    required this.memberId,
+    required this.memberName,
+    required this.gapKm,
+    required this.estimatedMinutesBehind,
+    required this.timestamp,
+  });
+}
+
+// ── SOS Panic Beacon ──────────────────────────────────────────────────────────
+
+class SosBeacon {
+  final String id;
+  final String memberId;
+  final String memberName;
+  final double lat;
+  final double lng;
+  final int batteryLevel;
+  final String message;
+  final DateTime timestamp;
+
+  const SosBeacon({
+    required this.id,
+    required this.memberId,
+    required this.memberName,
+    required this.lat,
+    required this.lng,
+    required this.batteryLevel,
+    required this.message,
+    required this.timestamp,
+  });
+}
+
 // ── NavMember ─────────────────────────────────────────────────────────────────
 
 class NavMember {
@@ -22,6 +68,16 @@ class NavMember {
   final String? lastSeenLabel;
   final bool isLocationSharingPaused;
   final Offset mapPosition;      // Normalized 0–1 map coordinates
+  final double? latitude;
+  final double? longitude;
+  final double? heading;
+  final double? altitude;
+  final int? batteryLevel;       // e.g. 85 (85%)
+  final bool isGhostMode;
+  final bool isApproximate;
+  final bool isSos;
+  final String? sosMessage;
+  final DateTime? lastPingTime;
 
   const NavMember({
     required this.id,
@@ -39,12 +95,22 @@ class NavMember {
     this.lastSeenLabel,
     this.isLocationSharingPaused = false,
     this.mapPosition = const Offset(0.5, 0.5),
+    this.latitude,
+    this.longitude,
+    this.heading,
+    this.altitude,
+    this.batteryLevel,
+    this.isGhostMode = false,
+    this.isApproximate = false,
+    this.isSos = false,
+    this.sosMessage,
+    this.lastPingTime,
   });
 
   // ── Convenience getters (for backward compat with widgets) ────
   String? get etaLabel => eta;
-  bool get isLocationPaused => isLocationSharingPaused;
-  bool get isOnline => status != MemberStatus.offline;
+  bool get isLocationPaused => isLocationSharingPaused || isGhostMode;
+  bool get isOnline => status != MemberStatus.offline && !isLocationPaused;
 
   NavMember copyWith({
     String? id,
@@ -62,6 +128,16 @@ class NavMember {
     String? lastSeenLabel,
     bool? isLocationSharingPaused,
     Offset? mapPosition,
+    double? latitude,
+    double? longitude,
+    double? heading,
+    double? altitude,
+    int? batteryLevel,
+    bool? isGhostMode,
+    bool? isApproximate,
+    bool? isSos,
+    String? sosMessage,
+    DateTime? lastPingTime,
   }) {
     return NavMember(
       id: id ?? this.id,
@@ -80,6 +156,16 @@ class NavMember {
       isLocationSharingPaused:
           isLocationSharingPaused ?? this.isLocationSharingPaused,
       mapPosition: mapPosition ?? this.mapPosition,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      heading: heading ?? this.heading,
+      altitude: altitude ?? this.altitude,
+      batteryLevel: batteryLevel ?? this.batteryLevel,
+      isGhostMode: isGhostMode ?? this.isGhostMode,
+      isApproximate: isApproximate ?? this.isApproximate,
+      isSos: isSos ?? this.isSos,
+      sosMessage: sosMessage ?? this.sosMessage,
+      lastPingTime: lastPingTime ?? this.lastPingTime,
     );
   }
 }
@@ -98,6 +184,14 @@ class NavigationState {
   final String nextItineraryLabel;
   final String nextItineraryTime;
   final double groupSpreadKm;
+  final NavMember? activeMemberRoute;
+  final Offset? meetHalfwayPoint;
+  final List<ConvoyAlert> convoyAlerts;
+  final SosBeacon? activeSos;
+  final LocationPrivacyMode privacyMode;
+  final DateTime? ghostUntil;
+  final bool isBatterySaver;
+  final Set<String> nearbyFoundMembers;
 
   const NavigationState({
     required this.members,
@@ -111,15 +205,31 @@ class NavigationState {
     this.nextItineraryLabel = 'Sunset at White Beach',
     this.nextItineraryTime = '5:30 PM',
     this.groupSpreadKm = 2.1,
+    this.activeMemberRoute,
+    this.meetHalfwayPoint,
+    this.convoyAlerts = const [],
+    this.activeSos,
+    this.privacyMode = LocationPrivacyMode.exact,
+    this.ghostUntil,
+    this.isBatterySaver = false,
+    this.nearbyFoundMembers = const {},
   });
 
   // ── Convenience getters (for backward compat with widgets) ────
-  String get destinationName => destination.name;
+  String get destinationName => activeMemberRoute != null
+      ? 'To ${activeMemberRoute!.name}'
+      : destination.name;
   bool get groupViewOn => isGroupViewOn;
   bool get isLive => isNavigating;
-  String get etaLabel => destination.eta;
-  double get distanceKm => destination.distanceKm;
+  String get etaLabel => activeMemberRoute != null
+      ? (activeMemberRoute!.eta ?? destination.eta)
+      : destination.eta;
+  double get distanceKm => activeMemberRoute != null
+      ? (activeMemberRoute!.distanceKm?.abs() ?? destination.distanceKm)
+      : destination.distanceKm;
   int get durationMin => destination.durationMin;
+  bool get isGhostActive => privacyMode == LocationPrivacyMode.ghost ||
+      (ghostUntil != null && ghostUntil!.isAfter(DateTime.now()));
 
   NavigationState copyWith({
     List<NavMember>? members,
@@ -133,6 +243,18 @@ class NavigationState {
     String? nextItineraryLabel,
     String? nextItineraryTime,
     double? groupSpreadKm,
+    NavMember? activeMemberRoute,
+    bool clearActiveMemberRoute = false,
+    Offset? meetHalfwayPoint,
+    bool clearMeetHalfwayPoint = false,
+    List<ConvoyAlert>? convoyAlerts,
+    SosBeacon? activeSos,
+    bool clearActiveSos = false,
+    LocationPrivacyMode? privacyMode,
+    DateTime? ghostUntil,
+    bool clearGhostUntil = false,
+    bool? isBatterySaver,
+    Set<String>? nearbyFoundMembers,
   }) {
     return NavigationState(
       members: members ?? this.members,
@@ -147,6 +269,19 @@ class NavigationState {
       nextItineraryLabel: nextItineraryLabel ?? this.nextItineraryLabel,
       nextItineraryTime: nextItineraryTime ?? this.nextItineraryTime,
       groupSpreadKm: groupSpreadKm ?? this.groupSpreadKm,
+      activeMemberRoute: clearActiveMemberRoute
+          ? null
+          : (activeMemberRoute ?? this.activeMemberRoute),
+      meetHalfwayPoint: clearMeetHalfwayPoint
+          ? null
+          : (meetHalfwayPoint ?? this.meetHalfwayPoint),
+      convoyAlerts: convoyAlerts ?? this.convoyAlerts,
+      activeSos: clearActiveSos ? null : (activeSos ?? this.activeSos),
+      privacyMode: privacyMode ?? this.privacyMode,
+      ghostUntil:
+          clearGhostUntil ? null : (ghostUntil ?? this.ghostUntil),
+      isBatterySaver: isBatterySaver ?? this.isBatterySaver,
+      nearbyFoundMembers: nearbyFoundMembers ?? this.nearbyFoundMembers,
     );
   }
 }
@@ -162,6 +297,8 @@ class NavDestination {
   final int durationMin;
   final String nextStopName;
   final String nextStopTime;
+  final double? latitude;
+  final double? longitude;
 
   const NavDestination({
     required this.name,
@@ -172,6 +309,8 @@ class NavDestination {
     required this.durationMin,
     required this.nextStopName,
     required this.nextStopTime,
+    this.latitude,
+    this.longitude,
   });
 }
 
@@ -214,3 +353,4 @@ const defaultTurn = TurnInstruction(
 );
 
 const defaultMembers = <NavMember>[];
+

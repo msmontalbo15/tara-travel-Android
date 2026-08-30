@@ -8,6 +8,8 @@ import 'widgets/live_map_tab.dart';
 import 'widgets/group_tracker_tab.dart';
 import 'widgets/proximity_alert_tab.dart';
 import 'widgets/arrived_tab.dart';
+import 'widgets/privacy_control_sheet.dart';
+import 'widgets/sos_emergency_modal.dart';
 
 /// Entry point for the Live Navigation feature.
 /// Can be pushed via Navigator.push or embedded inside a tab shell.
@@ -127,7 +129,7 @@ class _LiveNavigationScreenState extends ConsumerState<LiveNavigationScreen>
 
 // ── Header ───────────────────────────────────────────────────────────────────
 
-class _NavHeader extends StatelessWidget {
+class _NavHeader extends ConsumerWidget {
   final NavigationState nav;
   final TabController tabController;
   final List<_TabDef> tabs;
@@ -141,7 +143,7 @@ class _NavHeader extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final topPad = MediaQuery.of(context).padding.top;
 
     return Container(
@@ -209,6 +211,14 @@ class _NavHeader extends StatelessWidget {
                     ],
                   ),
                 ),
+                // SOS Panic Button
+                _SosPanicButton(isDark: isDark),
+                const SizedBox(width: 8),
+                // Privacy / Ghost Mode toggle
+                _PrivacyToggleButton(
+                    isDark: isDark,
+                    isGhost: nav.privacyMode == LocationPrivacyMode.ghost),
+                const SizedBox(width: 8),
                 _LiveBadge(isArrived: nav.isArrived, isLive: nav.isNavigating),
               ],
             ),
@@ -363,3 +373,93 @@ class _TabDef {
   final IconData icon;
   const _TabDef({required this.label, required this.icon});
 }
+
+// ── SOS Panic Button ─────────────────────────────────────────────────────────
+
+class _SosPanicButton extends StatelessWidget {
+  final bool isDark;
+  const _SosPanicButton({required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.heavyImpact();
+        SosEmergencyModal.show(context);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+        decoration: BoxDecoration(
+          color: const Color(0xFFE24A4A).withValues(alpha: isDark ? 0.25 : 0.15),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: const Color(0xFFE24A4A).withValues(alpha: 0.6),
+            width: 1,
+          ),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.warning_amber_rounded,
+              color: Color(0xFFE24A4A),
+              size: 13,
+            ),
+            SizedBox(width: 4),
+            Text(
+              'SOS',
+              style: TextStyle(
+                fontFamily: 'DM Sans',
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFFE24A4A),
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Privacy Toggle Button ───────────────────────────────────────────────────
+
+class _PrivacyToggleButton extends StatelessWidget {
+  final bool isDark;
+  final bool isGhost;
+  const _PrivacyToggleButton({
+    required this.isDark,
+    required this.isGhost,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        PrivacyControlSheet.show(context);
+      },
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: isGhost
+              ? const Color(0xFF9C27B0).withValues(alpha: isDark ? 0.3 : 0.15)
+              : (isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF2F2F7)),
+          shape: BoxShape.circle,
+          border: isGhost
+              ? Border.all(color: const Color(0xFF9C27B0), width: 1)
+              : null,
+        ),
+        child: Icon(
+          isGhost ? Icons.visibility_off_rounded : Icons.shield_outlined,
+          size: 14,
+          color: isGhost
+              ? const Color(0xFFBA68C8)
+              : (isDark ? Colors.white70 : AppColors.textSecondary),
+        ),
+      ),
+    );
+  }
+}
+

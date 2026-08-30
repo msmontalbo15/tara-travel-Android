@@ -90,7 +90,7 @@ class _QuickBudgetSheetState extends ConsumerState<QuickBudgetSheet> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    final themeColor = AppColors.parseTripColor(widget.trip.coverColor);
+    final themeColor = widget.trip.coverColor;
 
     return Container(
       decoration: const BoxDecoration(

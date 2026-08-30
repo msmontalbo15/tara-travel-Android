@@ -15,7 +15,6 @@ class NewTripModel {
   String splitMode; // 'equal', 'fixed', 'percentage', 'treat'
   List<BudgetCategory> budgetBreakdown;
   TransportDetail? transportDetail;
-  int? coverColor;
   String? departurePoint;
   double? departureLat;
   double? departureLng;
@@ -28,7 +27,7 @@ class NewTripModel {
     this.destinationLng,
     this.fromDate,
     this.toDate,
-    this.tripType = 'Beach',
+    this.tripType = 'beach',
     List<TravelerModel>? travelers,
     this.totalBudget,
     this.currency = 'Philippine Peso (₱)',
@@ -36,7 +35,6 @@ class NewTripModel {
     this.splitMode = 'equal',
     List<BudgetCategory>? budgetBreakdown,
     this.transportDetail,
-    this.coverColor,
     this.departurePoint,
     this.departureLat,
     this.departureLng,

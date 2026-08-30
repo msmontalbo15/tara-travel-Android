@@ -53,7 +53,6 @@ class _CreateTripFlowState extends ConsumerState<CreateTripFlow> {
       if (args.tripType.isNotEmpty) _draft.tripType = args.tripType;
       if (args.fromDate != null) _draft.fromDate = args.fromDate;
       if (args.toDate != null) _draft.toDate = args.toDate;
-      if (args.coverColor != null) _draft.coverColor = args.coverColor;
     }
   }
 
@@ -84,10 +83,6 @@ class _CreateTripFlowState extends ConsumerState<CreateTripFlow> {
 
     try {
       final tripId = const Uuid().v4();
-      // Convert int ARGB color → '#AARRGGBB' hex string expected by TripModel
-      final coverColorHex = _draft.coverColor != null
-          ? '#${_draft.coverColor!.toRadixString(16).padLeft(8, '0').toUpperCase()}'
-          : null;
 
       // Encode TransportDetail into transport_mode + transport_meta
       final td = _draft.transportDetail;
@@ -118,7 +113,6 @@ class _CreateTripFlowState extends ConsumerState<CreateTripFlow> {
         totalBudget: _draft.totalBudget ?? 0,
         splitEqually: _draft.splitEqually,
         inviteCode: InviteCodeGenerator.generate(),
-        coverColor: coverColorHex,
         departurePoint: _draft.transportDetail?.departurePoint,
         departureLat: _draft.departureLat,
         departureLng: _draft.departureLng,
@@ -190,9 +184,6 @@ class _CreateTripFlowState extends ConsumerState<CreateTripFlow> {
 
     try {
       final tripId = const Uuid().v4();
-      final coverColorHex = _draft.coverColor != null
-          ? '#${_draft.coverColor!.toRadixString(16).padLeft(8, '0').toUpperCase()}'
-          : null;
 
       // Encode TransportDetail into transport_mode + transport_meta
       final td = _draft.transportDetail;
@@ -222,7 +213,6 @@ class _CreateTripFlowState extends ConsumerState<CreateTripFlow> {
         totalBudget: _draft.totalBudget ?? 0,
         splitEqually: _draft.splitEqually,
         inviteCode: InviteCodeGenerator.generate(),
-        coverColor: coverColorHex,
         departurePoint: _draft.transportDetail?.departurePoint,
         departureLat: _draft.departureLat,
         departureLng: _draft.departureLng,

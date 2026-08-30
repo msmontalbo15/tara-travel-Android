@@ -154,14 +154,8 @@ class TripRepository {
 
   /// Updates an existing trip.
   Future<void> updateTrip(TripModel trip) async {
-    const validTypes = {
-      'beach', 'city', 'adventure', 'nature', 'cultural',
-      'heritage', 'pilgrimage', 'business', 'other'
-    };
     final normalizedType =
-        trip.tripType.toLowerCase().replaceAll('-', '_').replaceAll(' ', '_');
-    final safeType =
-        validTypes.contains(normalizedType) ? normalizedType : 'other';
+        trip.tripType.toLowerCase().trim().replaceAll('-', '_').replaceAll(' ', '_');
 
     final payload = {
       'name': trip.name,
@@ -169,13 +163,11 @@ class TripRepository {
       'start_date': trip.fromDate.toIso8601String().split('T').first,
       'end_date': trip.toDate.toIso8601String().split('T').first,
       'budget': trip.totalBudget,
-      'type': safeType,
+      'type': normalizedType.isEmpty ? 'beach' : normalizedType,
       'split_method': trip.splitEqually ? 'equal' : 'fixed',
       'invite_code': trip.inviteCode,
       'status': trip.isDraft ? 'draft' : (trip.isArchived ? 'archived' : 'planned'),
       'updated_at': DateTime.now().toUtc().toIso8601String(),
-      if (trip.coverColor != null) 'cover_color': trip.coverColor,
-      if (trip.coverEmoji != null) 'cover_emoji': trip.coverEmoji,
       if (trip.departurePoint != null) 'departure_point': trip.departurePoint,
       if (trip.departureLat != null) 'departure_lat': trip.departureLat,
       if (trip.departureLng != null) 'departure_lng': trip.departureLng,

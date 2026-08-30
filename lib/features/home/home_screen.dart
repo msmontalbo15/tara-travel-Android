@@ -304,6 +304,8 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
                     tourStep: _tourStep,
                     greeting: _greeting(),
                     buildAvatar: _buildAvatar,
+                    onTapTrip: trip == null ? null : () { ref.read(selectedTripIdProvider.notifier).select(trip.id); Navigator.pushNamed(context, '/trip-detail'); },
+                    onNavigateTrip: trip == null ? null : () { ref.read(selectedTripIdProvider.notifier).select(trip.id); Navigator.pushNamed(context, '/navigation'); },
                   ),
                 ),
                 SliverToBoxAdapter(
@@ -418,9 +420,7 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
                                                             1,
                                                         people: trip.members.length,
                                                         tripType: trip.tripType,
-                                                        coverColor:
-                                                            AppColors.parseTripColor(
-                                                                trip.coverColor),
+                                                        coverColor: trip.coverColor,
                                                         coverEmoji: trip.coverEmoji,
                                                         onMore: () => TripActionSheet.show(context, ref, trip),
                                                         travelers: trip.members
@@ -491,6 +491,14 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
                                                               .select(trip.id);
                                                           Navigator.pushNamed(
                                                               context, '/chat');
+                                                        },
+                                                        onNavigation: () {
+                                                          ref
+                                                              .read(selectedTripIdProvider
+                                                                  .notifier)
+                                                              .select(trip.id);
+                                                          Navigator.pushNamed(
+                                                              context, '/navigation');
                                                         },
                                                       ),
                                               )
@@ -970,6 +978,8 @@ class _HomeHeaderDelegate extends SliverPersistentHeaderDelegate {
   final int tourStep;
   final String greeting;
   final Widget Function(ProfileState) buildAvatar;
+  final VoidCallback? onTapTrip;
+  final VoidCallback? onNavigateTrip;
 
   const _HomeHeaderDelegate({
     required this.profile,
@@ -982,6 +992,8 @@ class _HomeHeaderDelegate extends SliverPersistentHeaderDelegate {
     required this.tourStep,
     required this.greeting,
     required this.buildAvatar,
+    this.onTapTrip,
+    this.onNavigateTrip,
   });
 
   @override
@@ -1191,6 +1203,8 @@ class _HomeHeaderDelegate extends SliverPersistentHeaderDelegate {
                     child: NextTripCard(
                       trip: activeTrip!,
                       collapsed: isCollapsed,
+                      onTap: onTapTrip,
+                      onNavigation: onNavigateTrip,
                     ),
                   ),
                 ),

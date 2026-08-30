@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/constants/trip_types.dart';
 import '../models/new_trip_model.dart';
 
 enum TripCreationLoadingMode {
@@ -70,12 +71,7 @@ class _TripCreationLoadingOverlayState extends State<TripCreationLoadingOverlay>
     super.dispose();
   }
 
-  Color get _accentColor {
-    if (widget.trip.coverColor != null) {
-      return Color(widget.trip.coverColor!);
-    }
-    return AppColors.primary;
-  }
+  Color get _accentColor => AppTripTypes.getColor(widget.trip.tripType);
 
   String _formatDateRange(DateTime? from, DateTime? to) {
     if (from == null) return '';

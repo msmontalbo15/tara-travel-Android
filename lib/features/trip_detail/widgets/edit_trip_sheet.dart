@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../../core/constants/trip_types.dart';
+import '../../../shared/widgets/trip_type_carousel.dart';
 import '../../../core/models/trip_model.dart';
 import '../../../core/providers/repository_providers.dart';
 import '../../../core/providers/selected_trip_provider.dart';
@@ -41,7 +41,6 @@ class _EditTripSheetState extends ConsumerState<EditTripSheet> {
   late DateTime _fromDate;
   late DateTime _toDate;
   late String _selectedTripType;
-  late String? _coverColor;
   bool _isSaving = false;
 
   String? _nameError;
@@ -60,7 +59,6 @@ class _EditTripSheetState extends ConsumerState<EditTripSheet> {
     _fromDate = t.fromDate;
     _toDate = t.toDate;
     _selectedTripType = t.tripType.toLowerCase();
-    _coverColor = t.coverColor;
   }
 
   @override
@@ -130,7 +128,6 @@ class _EditTripSheetState extends ConsumerState<EditTripSheet> {
         toDate: _toDate,
         tripType: _selectedTripType,
         totalBudget: budget,
-        coverColor: _coverColor,
       );
 
       await ref.read(tripRepositoryProvider).updateTrip(updatedTrip);
@@ -399,12 +396,11 @@ class _EditTripSheetState extends ConsumerState<EditTripSheet> {
                         ),
                       ),
                       const SizedBox(height: 10),
-                      _EditTripTypeCarousel(
+                      TripTypeCarousel(
                         selectedTripType: _selectedTripType,
                         onTypeSelected: (option) {
                           setState(() {
                             _selectedTripType = option.id.toLowerCase();
-                            _coverColor = '#${option.accentColor.toARGB32().toRadixString(16).padLeft(8, '0').toUpperCase()}';
                           });
                         },
                       ),
@@ -427,7 +423,7 @@ class _EditTripSheetState extends ConsumerState<EditTripSheet> {
                       foregroundColor: Colors.white,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(14),
                       ),
                     ),
                     child: _isSaving
@@ -435,8 +431,8 @@ class _EditTripSheetState extends ConsumerState<EditTripSheet> {
                             width: 22,
                             height: 22,
                             child: CircularProgressIndicator(
-                              color: Colors.white,
                               strokeWidth: 2.5,
+                              color: Colors.white,
                             ),
                           )
                         : const Text(
@@ -458,218 +454,3 @@ class _EditTripSheetState extends ConsumerState<EditTripSheet> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Trip Type Carousel Matching CreateTrip DetailsStep
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _EditTripTypeCarousel extends StatefulWidget {
-  final String selectedTripType;
-  final ValueChanged<TripTypeOption> onTypeSelected;
-
-  const _EditTripTypeCarousel({
-    required this.selectedTripType,
-    required this.onTypeSelected,
-  });
-
-  @override
-  State<_EditTripTypeCarousel> createState() => _EditTripTypeCarouselState();
-}
-
-class _EditTripTypeCarouselState extends State<_EditTripTypeCarousel> {
-  static const int _kCenter = 1000;
-  late PageController _pageController;
-  int _currentRealIndex = 0;
-
-  int get _count => AppTripTypes.all.length;
-
-  @override
-  void initState() {
-    super.initState();
-    final activeOpt = AppTripTypes.getOption(widget.selectedTripType);
-    final idx = AppTripTypes.all.indexWhere((o) => o.id == activeOpt.id);
-    _currentRealIndex = idx >= 0 ? idx : 0;
-    _pageController = PageController(
-      initialPage: (_kCenter * _count) + _currentRealIndex,
-      viewportFraction: 0.76,
-    );
-  }
-
-  @override
-  void didUpdateWidget(_EditTripTypeCarousel oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.selectedTripType != widget.selectedTripType) {
-      final activeOpt = AppTripTypes.getOption(widget.selectedTripType);
-      final targetIdx = AppTripTypes.all.indexWhere((o) => o.id == activeOpt.id);
-      if (targetIdx >= 0 &&
-          targetIdx != _currentRealIndex &&
-          _pageController.hasClients) {
-        final curPage = _pageController.page?.round() ?? _pageController.initialPage;
-        final curOffset = curPage % _count;
-        final diff = targetIdx - curOffset;
-        _currentRealIndex = targetIdx;
-        _pageController.animateToPage(
-          curPage + diff,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOutCubic,
-        );
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  void _onPageChanged(int index) {
-    final realIdx = index % _count;
-    if (realIdx != _currentRealIndex) {
-      setState(() => _currentRealIndex = realIdx);
-      widget.onTypeSelected(AppTripTypes.all[realIdx]);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 155,
-      child: PageView.builder(
-        controller: _pageController,
-        onPageChanged: _onPageChanged,
-        itemBuilder: (context, index) {
-          final realIndex = index % _count;
-          final option = AppTripTypes.all[realIndex];
-          final isSelected = realIndex == _currentRealIndex;
-
-          final accentLight = HSLColor.fromColor(option.accentColor)
-              .withLightness(
-                (HSLColor.fromColor(option.accentColor).lightness + 0.18).clamp(0.0, 1.0),
-              )
-              .toColor();
-
-          return AnimatedBuilder(
-            animation: _pageController,
-            builder: (context, child) {
-              double value = 1.0;
-              if (_pageController.position.haveDimensions) {
-                value = (_pageController.page! - index).abs();
-                value = (1 - (value * 0.15)).clamp(0.85, 1.0);
-              } else {
-                value = isSelected ? 1.0 : 0.88;
-              }
-
-              return Transform.scale(
-                scale: value,
-                child: GestureDetector(
-                  onTap: () {
-                    if (_pageController.hasClients) {
-                      final curPage = _pageController.page?.round() ?? index;
-                      if (curPage != index) {
-                        _pageController.animateToPage(
-                          index,
-                          duration: const Duration(milliseconds: 350),
-                          curve: Curves.easeInOutCubic,
-                        );
-                      }
-                    }
-                  },
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(22),
-                      gradient: LinearGradient(
-                        colors: [option.accentColor, accentLight],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: option.accentColor.withValues(alpha: isSelected ? 0.38 : 0.15),
-                          blurRadius: isSelected ? 16 : 8,
-                          spreadRadius: isSelected ? 2 : 0,
-                          offset: Offset(0, isSelected ? 8 : 4),
-                        ),
-                      ],
-                      border: Border.all(
-                        color: isSelected ? Colors.white : Colors.transparent,
-                        width: isSelected ? 2.5 : 0,
-                      ),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(18),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                option.emoji,
-                                style: const TextStyle(fontSize: 32),
-                              ),
-                              if (isSelected)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.25),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: const Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.check, size: 12, color: Colors.white),
-                                      SizedBox(width: 4),
-                                      Text(
-                                        'Selected',
-                                        style: TextStyle(
-                                          fontFamily: 'DM Sans',
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w700,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                            ],
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                option.label,
-                                style: const TextStyle(
-                                  fontFamily: 'DM Sans',
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                option.subtitle,
-                                style: TextStyle(
-                                  fontFamily: 'DM Sans',
-                                  fontSize: 12,
-                                  color: Colors.white.withValues(alpha: 0.85),
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
-          );
-        },
-      ),
-    );
-  }
-}

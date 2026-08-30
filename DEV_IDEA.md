@@ -210,11 +210,13 @@ During group travels (road trips, island hopping, crowded markets, hiking), comp
 ---
 
 ### 4. Implementation Steps
-1. [ ] **Realtime Infrastructure**: Implement `LocationBroadcastService` over Supabase Realtime broadcast channels for zero-latency peer location streaming.
-2. [ ] **Navigate-to-Member Action**: Add "Navigate to Member" bottom-sheet and quick action button in `GroupTrackerTab` and `LiveMapTab`, supporting both in-app routing and external GPS intents (Google Maps / Waze).
-3. [ ] **Adaptive Location Engine**: Create Riverpod `LiveLocationNotifier` with speed-adaptive sampling and battery saver modes.
-4. [ ] **Convoy Alert System**: Add background/foreground separation detection that alerts trip members when someone drifts outside the convoy perimeter.
-5. [ ] **Privacy Controls**: Implement Ghost Mode, duration-based sharing timers, and approximate location fuzzing.
+1. [x] **Realtime Infrastructure**: Implement `LocationBroadcastService` over Supabase Realtime broadcast channels for zero-latency peer location streaming.
+2. [x] **Navigate-to-Member Action**: Add "Navigate to Member" bottom-sheet and quick action button in `GroupTrackerTab` and `LiveMapTab`, supporting both in-app routing and external GPS intents (Google Maps / Waze).
+3. [x] **Adaptive Location Engine**: Create Riverpod `LiveLocationNotifier` with speed-adaptive sampling and battery saver modes.
+4. [x] **Convoy Alert System**: Add background/foreground separation detection that alerts trip members when someone drifts outside the convoy perimeter.
+5. [x] **Privacy Controls**: Implement Ghost Mode, duration-based sharing timers, and approximate location fuzzing.
+
+> **Status**: Completed (`IMP-062`)
 
 ---
 

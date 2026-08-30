@@ -76,12 +76,7 @@ class ConfirmStep extends StatelessWidget {
     return AppTripTypes.getOption(trip.tripType);
   }
 
-  Color get _themeColor {
-    if (trip.coverColor != null) {
-      return Color(trip.coverColor!);
-    }
-    return _tripTypeOption.accentColor;
-  }
+  Color get _themeColor => _tripTypeOption.accentColor;
 
   // ── Readiness & Validation ──────────────────────────────────────────────────
 

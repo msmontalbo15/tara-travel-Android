@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:latlong2/latlong.dart' hide Path;
+import '../../../core/constants/map_tile_config.dart';
 import '../../../core/theme/app_colors.dart';
 import '../models/navigation_models.dart';
 import '../providers/navigation_provider.dart';
+import 'convoy_alert_banner.dart';
+import 'navigate_to_member_sheet.dart';
 import 'shared/member_avatar.dart';
-import 'shared/mock_map_painter.dart';
+import 'sos_emergency_modal.dart';
 
 class GroupTrackerTab extends ConsumerWidget {
   const GroupTrackerTab({super.key});
@@ -55,6 +61,14 @@ class GroupTrackerTab extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
 
+          // ── Convoy alerts ─────────────────────────────────────
+          const ConvoyAlertBanner(),
+          const SizedBox(height: 8),
+
+          // ── SOS Alert ──────────────────────────────────────────
+          const ActiveSosAlertBanner(),
+          const SizedBox(height: 8),
+
           // ── Group spread warning ─────────────────────────────
           _GroupSpreadBanner(spreadKm: nav.groupSpreadKm),
         ],
@@ -70,6 +84,25 @@ class _MiniMap extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final me = members.firstWhere(
+      (m) => m.isMe,
+      orElse: () => members.isNotEmpty
+          ? members.first
+          : const NavMember(
+              id: 'me',
+              name: 'You',
+              initials: 'Y',
+              color: AppColors.primary,
+              status: MemberStatus.enRoute,
+              role: 'You',
+            ),
+    );
+
+    final center = LatLng(
+      me.latitude ?? 14.5995,
+      me.longitude ?? 120.9842,
+    );
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(14),
       child: Container(
@@ -81,56 +114,52 @@ class _MiniMap extends StatelessWidget {
         ),
         child: Stack(
           children: [
-            // Map roads (mini version)
-            CustomPaint(
-              painter: const MockMapPainter(showRoute: true),
-              size: Size(MediaQuery.of(context).size.width - 32, 150),
-            ),
-
-            // Member pins (simplified for mini map)
-            ...members.map((m) {
-              final x = m.mapPosition.dx *
-                      (MediaQuery.of(context).size.width - 32) -
-                  11;
-              final y = m.mapPosition.dy * 150 - 11;
-              return Positioned(
-                left: x.clamp(0.0, MediaQuery.of(context).size.width - 55),
-                top: y.clamp(0.0, 128.0),
-                child: Container(
-                  width: 22,
-                  height: 22,
-                  decoration: BoxDecoration(
-                    color: m.color,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(m.initials,
-                      style: const TextStyle(
-                          fontFamily: 'DM Sans',
-                          fontSize: 8,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white)),
-                ),
-              );
-            }),
-
-            // Destination dot
-            Positioned(
-              top: 6,
-              left: MediaQuery.of(context).size.width * 0.44,
-              child: Container(
-                width: 12,
-                height: 12,
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
+            FlutterMap(
+              options: MapOptions(
+                initialCenter: center,
+                initialZoom: 13.5,
+                interactionOptions: const InteractionOptions(
+                  flags: InteractiveFlag.none,
                 ),
               ),
+              children: [
+                MapTileConfig.buildTileLayer(),
+                MarkerLayer(
+                  markers: members.map((m) {
+                    final lat = m.latitude ?? (center.latitude + (m.id.hashCode % 100 - 50) * 0.0003);
+                    final lng = m.longitude ?? (center.longitude + (m.id.hashCode % 90 - 45) * 0.0003);
+
+                    return Marker(
+                      point: LatLng(lat, lng),
+                      width: 24,
+                      height: 24,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: m.color,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                          boxShadow: const [
+                            BoxShadow(color: Colors.black26, blurRadius: 4),
+                          ],
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          m.initials,
+                          style: const TextStyle(
+                            fontFamily: 'DM Sans',
+                            fontSize: 8,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
             ),
 
-            // "View full map" pill
+            // "Live Group Radar" pill
             Positioned(
               bottom: 8,
               right: 10,
@@ -138,15 +167,25 @@ class _MiniMap extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.6),
+                  color: Colors.black.withValues(alpha: 0.65),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Text('View full map',
-                    style: TextStyle(
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.radar_rounded, color: AppColors.primary, size: 11),
+                    SizedBox(width: 4),
+                    Text(
+                      'Live Group Radar',
+                      style: TextStyle(
                         fontFamily: 'DM Sans',
                         fontSize: 9,
                         fontWeight: FontWeight.w600,
-                        color: Colors.white)),
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -157,16 +196,23 @@ class _MiniMap extends StatelessWidget {
 }
 
 // ── Individual member row ─────────────────────────────────────────
-class _MemberRow extends StatelessWidget {
+class _MemberRow extends ConsumerWidget {
   final NavMember member;
   final bool isLast;
   const _MemberRow({required this.member, required this.isLast});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isOffline = member.status == MemberStatus.offline;
 
-    return Container(
+    return GestureDetector(
+      onTap: member.isMe
+          ? null
+          : () {
+              HapticFeedback.selectionClick();
+              NavigateToMemberSheet.show(context, member);
+            },
+      child: Container(
       padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
         border: isLast
@@ -223,10 +269,10 @@ class _MemberRow extends StatelessWidget {
                   ],
                 ),
               ),
-              if (member.speedKmh != null)
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  if (member.speedKmh != null) ...[
                     Text(
                       '${member.speedKmh!.toInt()} km/h',
                       style: const TextStyle(
@@ -241,7 +287,34 @@ class _MemberRow extends StatelessWidget {
                             fontSize: 10,
                             color: Color(0xFF8E8E93))),
                   ],
-                ),
+                  if (member.batteryLevel != null) ...[
+                    const SizedBox(height: 2),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          member.batteryLevel! > 20
+                              ? Icons.battery_std_rounded
+                              : Icons.battery_alert_rounded,
+                          size: 12,
+                          color: member.batteryLevel! > 20
+                              ? const Color(0xFF34A853)
+                              : const Color(0xFFE24A4A),
+                        ),
+                        const SizedBox(width: 2),
+                        Text(
+                          '${member.batteryLevel}%',
+                          style: const TextStyle(
+                            fontFamily: 'DM Sans',
+                            fontSize: 10,
+                            color: Color(0xFF8E8E93),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
             ],
           ),
 
@@ -260,6 +333,40 @@ class _MemberRow extends StatelessWidget {
                       isLate: member.status == MemberStatus.offline ||
                           member.id == 'carlo',
                     ),
+                  if (!member.isMe) ...[
+                    const Spacer(),
+                    GestureDetector(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        NavigateToMemberSheet.show(context, member);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.navigation_rounded,
+                                size: 11, color: AppColors.primary),
+                            SizedBox(width: 3),
+                            Text(
+                              'Navigate',
+                              style: TextStyle(
+                                fontFamily: 'DM Sans',
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -298,6 +405,7 @@ class _MemberRow extends StatelessWidget {
           ],
         ],
       ),
+    ),
     );
   }
 

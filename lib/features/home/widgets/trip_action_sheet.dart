@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/constants/trip_types.dart';
 import '../../../core/models/trip_model.dart';
 import '../../../core/providers/repository_providers.dart';
 import '../../../core/providers/selected_trip_provider.dart';
@@ -32,6 +31,12 @@ class TripActionSheet extends StatelessWidget {
       isScrollControlled: true,
       builder: (ctx) => TripActionSheet(trip: trip, ref: ref),
     );
+  }
+
+  Future<void> _handleNavigation(BuildContext context) async {
+    Navigator.pop(context);
+    ref.read(selectedTripIdProvider.notifier).select(trip.id);
+    Navigator.pushNamed(context, '/navigation');
   }
 
   Future<void> _handleEdit(BuildContext context) async {
@@ -96,7 +101,7 @@ class TripActionSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final emoji = trip.coverEmoji ?? AppTripTypes.getEmoji(trip.tripType);
+    final emoji = trip.coverEmoji;
     final isArchived = trip.isArchived;
 
     return Container(
@@ -182,6 +187,14 @@ class TripActionSheet extends StatelessWidget {
           const SizedBox(height: 10),
 
           // Action Items
+          _ActionItem(
+            icon: Icons.navigation_rounded,
+            iconColor: AppColors.primary,
+            title: 'Live Navigation & Radar',
+            subtitle: 'Real-time group location sharing & convoy alerts',
+            onTap: () => _handleNavigation(context),
+          ),
+
           _ActionItem(
             icon: Icons.edit_outlined,
             iconColor: const Color(0xFF2E86DE),

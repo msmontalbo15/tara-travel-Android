@@ -15,7 +15,6 @@ import '../../core/models/expense_model.dart';
 import '../../core/widgets/buttons/app_back_button.dart';
 import '../../core/widgets/navigation/floating_nav_bar.dart';
 import '../../core/widgets/share/share_trip_modal.dart';
-import '../../core/constants/trip_types.dart';
 import '../../core/widgets/shimmer_loading.dart';
 import '../../core/widgets/feedback/app_feedback.dart';
 import '../../core/widgets/feedback/app_dialog.dart';
@@ -63,10 +62,6 @@ class _TripDashboard extends ConsumerStatefulWidget {
 
 class _TripDashboardState extends ConsumerState<_TripDashboard> {
   bool _isPublishing = false;
-
-  /// Parse cover color string/int with AppColors.parseTripColor
-  Color _parseCoverColor(String? raw) =>
-      AppColors.parseTripColor(raw, defaultColor: const Color(0xFF2C1A14));
 
   Future<void> _handlePublishTrip(TripModel trip) async {
     if (_isPublishing) return;
@@ -140,7 +135,7 @@ class _TripDashboardState extends ConsumerState<_TripDashboard> {
   @override
   Widget build(BuildContext context) {
     final trip = widget.trip;
-    final coverColor = _parseCoverColor(trip.coverColor);
+    final coverColor = trip.coverColor;
 
     // ── Expenses ─────────────────────────────────────────────────
     final expensesAsync = ref.watch(expenseProvider(trip.id));
@@ -395,7 +390,7 @@ class _HeroHeader extends ConsumerWidget {
         .withLightness((HSLColor.fromColor(coverColor).lightness + 0.18).clamp(0.0, 1.0))
         .toColor();
 
-    final emoji = trip.coverEmoji ?? AppTripTypes.getEmoji(trip.tripType);
+    final emoji = trip.coverEmoji;
     final imageUrl = trip.destinationDetails?['image'] ??
         trip.destinationDetails?['cover_image'] ??
         trip.destinationDetails?['image_url'];

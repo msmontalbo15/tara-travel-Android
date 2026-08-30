@@ -93,8 +93,6 @@ public.trips (
   owner_id uuid references public.users(id) on delete cascade,
   status text not null default 'planned' check (status in ('draft','planned','ongoing','completed','archived')),
   invite_code text unique,
-  cover_color text,
-  cover_emoji text,
   departure_point text,
   departure_lat double precision,
   departure_lng double precision,
@@ -328,7 +326,7 @@ All PostgreSQL functions are implemented with `SECURITY DEFINER` where required 
 | :--- | :--- | :--- |
 | `trips` | `destination_lat`, `destination_lng` | Dropped. Use `departure_lat/lng` or `destination_details` (jsonb). |
 | `trips` | `invite_expires_at` | Dropped. Invite codes are permanent per trip. |
-| `trips` | `cover_image_url`, `discord_channel_id` | Dropped. Use `cover_emoji` and `cover_color`. |
+| `trips` | `cover_image_url`, `discord_channel_id`, `cover_color`, `cover_emoji` | Dropped. Theme color & emoji derived dynamically from `type` / `trip_type` via `AppTripTypes`. |
 | `itinerary_stops` | `duration_min`, `google_place_id`, `photo_url`, `created_by` | Dropped. Use `location`, `booking_ref`, `time_start`, `time_end`. |
 | `packing_items` | `quantity`, `notes`, `created_by`, `checked_by`, `checked_at` | Dropped. Use `is_checked`, `is_custom`, `assigned_to_user_id`. |
 | `expenses` | `split_meta`, `rejected_by` | Dropped. Use `rejection_note`, `approved_by`. |
@@ -444,6 +442,11 @@ Client Tier               Storage Tier                Transport Tier
   - `encryptData(String plainText)` / `decryptData(String cipherText)`: Protects PII (`phone`, `gcash_number`, `health_notes`).
 - **`UserPresenceService.instance`** (`lib/core/services/user_presence_service.dart`):
   - `start([userId])` / `stop()`: Automatic lifecycle observer (`WidgetsBindingObserver`) setting `is_online = true` / `false` and 45s heartbeat pings.
+- **`LocationBroadcastService.instance`** (`lib/core/services/location_broadcast_service.dart`):
+  - `startSession(...)` / `stopSession()`: Manages ephemeral Supabase Realtime broadcast channel (`trip:location:{tripId}`) for low-latency peer location streaming with zero database I/O overhead.
+  - Speed-adaptive GPS sampling (Stationary 60s/25m, Walking 15s/10m, Driving 5s/30m) with battery saver mode.
+  - Privacy modes: `exact`, `approximate` (~500m fuzzy bubble), `ghost` (broadcast suppression with duration timers).
+  - Priority SOS panic beacon broadcasting (`broadcastSos`) and periodic PostGIS checkpointing.
 - **`SupaService.instance`** (`lib/core/services/supa_service.dart`):
   - Low-level direct table operations, device token registration, and presence pings.
 
@@ -471,6 +474,7 @@ Client Tier               Storage Tier                Transport Tier
 | `friendsRealtimePresenceProvider` | `StreamProvider.autoDispose<void>` | Supabase Realtime subscription on `public.users` and `public.friends`, auto-invalidates friends/requests providers on changes + 30s periodic refresh. |
 | `onlineFriendsProvider` | `Provider<List<FriendModel>>` | Derived list of currently online friends (`isCurrentlyOnline == true`). |
 | `onlineFriendsCountProvider` | `Provider<int>` | Count of currently online friends. |
+| `navigationProvider` | `NotifierProvider<NavigationNotifier, NavigationState>` | Live group navigation state, telemetry streaming, member-as-waypoint routing, convoy separation alarms, SOS beacons, and privacy modes. |
 | `realtimeNotifierProvider(tripId)`| `StateNotifierProvider<RealtimeNotifier, RealtimeState>` | Live GPS member location tracking, stop voting broadcasts. |
 | `exploreProvider` | `FutureProvider<List<DestinationModel>>` | Destination catalog with search, tags, and rating filters. |
 
@@ -511,6 +515,14 @@ Client Tier               Storage Tier                Transport Tier
 - Sembast-backed `OfflineSyncQueue` for offline writes (create stop, check packing item, log expense).
 - `SyncManager` auto-flushes queued transactions in FIFO order upon network reconnection.
 - Global `OfflineBanner` widget indicating active offline mode.
+
+### 7. Live Navigation & Realtime Convoy Radar
+- **Mapbox & OpenStreetMap HD Tile Engine**: Rendered via `flutter_map` with `MapTileConfig` (Mapbox Streets v12 via `MAPBOX_ACCESS_TOKEN` with CartoDB Voyager fallback) and interactive camera controls (Center My GPS, Fit Group Bounds, Zoom +/-).
+- **Zero-Disk Broadcast Streaming**: Ephemeral sub-150ms WebSocket telemetry streaming via `trip:location:{trip_id}` channels in `LocationBroadcastService`.
+- **Database Telemetry & Hydration**: Initial member location hydration from Supabase `member_locations` table and 45s PostGIS checkpointing (`update_member_location` RPC).
+- **Dynamic Member Roster**: Dynamic sync with `activeTrip.members` respecting `hideSurname` privacy rules.
+- **Member-as-Waypoint & Meet Halfway**: Dynamic in-app routing to separated companions, midpoint rendezvous calculation, and external GPS app deep linking (Google Maps/Apple Maps/Waze).
+- **Convoy & SOS Intelligence**: Automated convoy separation alarm (>2.0 km) and emergency SOS panic beacon broadcast.
 
 ---
 

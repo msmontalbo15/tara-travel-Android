@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+import '../constants/trip_types.dart';
 import 'member_model.dart';
 import 'expense_model.dart';
 
@@ -14,11 +16,9 @@ class TripModel {
   final List<ExpenseModel> expenses;
   final bool isArchived;
   final bool isDraft;
-  final String? coverEmoji;
   final String inviteCode;
   final String? ownerId;
   // Visual / metadata
-  final String? coverColor;
   final String? departurePoint;
   final double? departureLat;
   final double? departureLng;
@@ -41,10 +41,8 @@ class TripModel {
     this.expenses = const [],
     this.isArchived = false,
     this.isDraft = false,
-    this.coverEmoji,
     this.inviteCode = '',
     this.ownerId,
-    this.coverColor,
     this.departurePoint,
     this.departureLat,
     this.departureLng,
@@ -53,6 +51,15 @@ class TripModel {
     this.transportMode,
     this.transportMeta,
   });
+
+  /// Unified theme emoji resolved dynamically from tripType
+  String get coverEmoji => AppTripTypes.getEmoji(tripType);
+
+  /// Unified theme accent color resolved dynamically from tripType
+  Color get coverColor => AppTripTypes.getColor(tripType);
+
+  /// Full TripTypeOption object (label, emoji, accentColor, category, subtitle)
+  TripTypeOption get tripTypeOption => AppTripTypes.getOption(tripType);
 
   double get totalSpent => expenses
       .where((e) => e.status == ExpenseStatus.approved)
@@ -82,10 +89,8 @@ class TripModel {
     List<ExpenseModel>? expenses,
     bool? isArchived,
     bool? isDraft,
-    String? coverEmoji,
     String? inviteCode,
     String? ownerId,
-    String? coverColor,
     String? departurePoint,
     double? departureLat,
     double? departureLng,
@@ -107,10 +112,8 @@ class TripModel {
       expenses: expenses ?? this.expenses,
       isArchived: isArchived ?? this.isArchived,
       isDraft: isDraft ?? this.isDraft,
-      coverEmoji: coverEmoji ?? this.coverEmoji,
       inviteCode: inviteCode ?? this.inviteCode,
       ownerId: ownerId ?? this.ownerId,
-      coverColor: coverColor ?? this.coverColor,
       departurePoint: departurePoint ?? this.departurePoint,
       departureLat: departureLat ?? this.departureLat,
       departureLng: departureLng ?? this.departureLng,
@@ -161,10 +164,8 @@ class TripModel {
           status == 'archived' ||
           status == 'completed',
       isDraft: isDraft,
-      coverEmoji: map['cover_emoji']?.toString(),
       inviteCode: map['invite_code']?.toString() ?? '',
       ownerId: map['owner_id']?.toString() ?? map['ownerId']?.toString(),
-      coverColor: map['cover_color']?.toString(),
       departurePoint: map['departure_point']?.toString(),
       departureLat: map['departure_lat'] != null
           ? double.tryParse('${map['departure_lat']}')
@@ -198,10 +199,8 @@ class TripModel {
       'is_archived': isArchived,
       'is_draft': isDraft,
       'status': isDraft ? 'draft' : (isArchived ? 'archived' : 'planned'),
-      'cover_emoji': coverEmoji,
       'invite_code': inviteCode,
       'owner_id': ownerId,
-      'cover_color': coverColor,
       'departure_point': departurePoint,
       'departure_lat': departureLat,
       'departure_lng': departureLng,
@@ -214,10 +213,7 @@ class TripModel {
 
   /// Produces the exact payload expected by Supabase (no nested objects)
   Map<String, dynamic> toSupabaseInsert(String ownerId) {
-    // Map non-standard trip types to a valid enum option allowed by trips_type_check constraint
-    const validTypes = {'beach', 'city', 'adventure', 'nature', 'cultural', 'heritage', 'pilgrimage', 'business', 'other'};
-    final normalizedType = tripType.toLowerCase().replaceAll('-', '_').replaceAll(' ', '_');
-    final safeType = validTypes.contains(normalizedType) ? normalizedType : 'other';
+    final normalizedType = tripType.toLowerCase().trim().replaceAll('-', '_').replaceAll(' ', '_');
 
     return {
       'id': id,
@@ -225,14 +221,12 @@ class TripModel {
       'destination': destination,
       'start_date': fromDate.toIso8601String(),
       'end_date': toDate.toIso8601String(),
-      'type': safeType,
+      'type': normalizedType.isEmpty ? 'beach' : normalizedType,
       'budget': totalBudget,
       'split_method': splitEqually ? 'equal' : 'fixed',
       'owner_id': ownerId,
       'status': isDraft ? 'draft' : (isArchived ? 'archived' : 'planned'),
       if (inviteCode.isNotEmpty) 'invite_code': inviteCode,
-      if (coverColor != null) 'cover_color': coverColor,
-      if (coverEmoji != null) 'cover_emoji': coverEmoji,
       if (departurePoint != null) 'departure_point': departurePoint,
       if (departureLat != null) 'departure_lat': departureLat,
       if (departureLng != null) 'departure_lng': departureLng,

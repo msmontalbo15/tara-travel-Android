@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' hide Path;
+import '../../../core/constants/map_tile_config.dart';
 import '../../../core/models/itinerary_model.dart';
 import '../../../core/services/group_ride_sync_service.dart';
 import '../../../core/theme/app_colors.dart';
@@ -144,14 +145,8 @@ class _ItineraryMapState extends State<ItineraryMap> {
         ),
       ),
       children: [
-        // ── Tile Layer (OpenStreetMap / CartoDB Voyager) ──────────────
-        TileLayer(
-          urlTemplate:
-              'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
-          subdomains: const ['a', 'b', 'c', 'd'],
-          userAgentPackageName: 'ph.taratravel.app',
-          maxZoom: 19,
-        ),
+        // ── Map Tile Layer (Mapbox Streets / CartoDB Voyager) ─────────
+        MapTileConfig.buildTileLayer(),
 
         // ── Route Polyline ──────────────────────────────────────────
         if (routePoints.length > 1)

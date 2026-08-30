@@ -17,6 +17,7 @@
 -- ── 0. EXTENSIONS ────────────────────────────────────────────────────────────
 create extension if not exists "uuid-ossp";
 create extension if not exists "pgcrypto";
+create extension if not exists postgis schema public;
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- SECTION 1 · USERS & IDENTITY
@@ -93,7 +94,6 @@ create table if not exists public.user_settings (
   language                  text        not null default 'en',
   -- Notifications
   push_notifications        boolean     not null default true,
-  email_notifications       boolean     not null default true,
   trip_invites_notify       boolean     not null default true,
   expense_notify            boolean     not null default true,
   chat_notify               boolean     not null default true,
@@ -101,12 +101,8 @@ create table if not exists public.user_settings (
   biometric_enabled         boolean     not null default false,
   biometric_type            text,                                   -- 'fingerprint' | 'face' | null
   mpin_enabled              boolean     not null default false,
-  mpin_hash                 text,                                   -- bcrypt hash stored server-side
-  mpin_salt                 text,                                   -- salt for client-side KDF
   -- Privacy
   location_sharing_default  boolean     not null default true,
-  profile_visibility        text        not null default 'friends'
-                            check (profile_visibility in ('public', 'friends', 'private')),
   hide_surname              boolean     not null default false,
   -- Metadata
   created_at                timestamptz not null default now(),
@@ -241,8 +237,7 @@ create table if not exists public.trips (
   end_date            date        not null,
   budget              numeric(12,2) not null default 0,
   currency            text        not null default 'PHP',
-  type                text        not null default 'beach'
-                      check (type in ('beach','city','adventure','nature','cultural','heritage','pilgrimage','business','other')),
+  type                text        not null default 'beach',
   transport_mode      text        not null default 'car',
   transport_meta      jsonb       not null default '{}',
   split_method        text        not null default 'equal'
@@ -258,11 +253,6 @@ create table if not exists public.trips (
   departure_point     text,
   departure_lat       double precision,
   departure_lng       double precision,
-  cover_color         text,
-  cover_emoji         text,
-  cover_image_url     text,
-  -- External integrations
-  discord_channel_id  text,
   -- Metadata
   created_at          timestamptz not null default now(),
   updated_at          timestamptz not null default now()
@@ -297,8 +287,7 @@ create table if not exists public.trip_members (
 
 alter table public.trip_members enable row level security;
 
--- Helper function: avoids recursive RLS by using SECURITY DEFINER
--- (replaces broken self-referential policy from migration 010).
+-- Helper 1: avoids recursive RLS by using SECURITY DEFINER
 create or replace function public.is_trip_member(p_trip_id uuid)
 returns boolean
 language sql
@@ -318,9 +307,49 @@ $$;
 
 grant execute on function public.is_trip_member(uuid) to authenticated;
 
+-- Helper 2: can current user access this trip (avoids querying trip_members directly in trips RLS)
+create or replace function public.user_can_access_trip(p_trip_id uuid)
+returns boolean
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.trips
+    where id = p_trip_id
+      and owner_id = auth.uid()
+  )
+  or exists (
+    select 1 from public.trip_members
+    where trip_id = p_trip_id
+      and user_id  = auth.uid()
+  );
+$$;
+
+grant execute on function public.user_can_access_trip(uuid) to authenticated;
+
+-- Helper 3: is current user the trip owner (avoids querying trips directly in trip_members RLS)
+create or replace function public.user_owns_trip(p_trip_id uuid)
+returns boolean
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.trips
+    where id = p_trip_id
+      and owner_id = auth.uid()
+  );
+$$;
+
+grant execute on function public.user_owns_trip(uuid) to authenticated;
+
 drop policy if exists "trip_members_select"       on public.trip_members;
 drop policy if exists "trip_members_update_own"   on public.trip_members;
 drop policy if exists "trip_members_owner_all"    on public.trip_members;
+drop policy if exists "Members can view other members" on public.trip_members;
 
 create policy "trip_members_select"
   on public.trip_members for select
@@ -332,41 +361,47 @@ create policy "trip_members_update_own"
 
 create policy "trip_members_owner_all"
   on public.trip_members for all
-  using (exists (select 1 from public.trips where id = trip_id and owner_id = auth.uid()));
+  using (public.user_owns_trip(trip_id));
 
--- Now we can create the trips member-view policy that depends on trip_members
+-- Non-recursive trips member view policy using SECURITY DEFINER
 drop policy if exists "trips_members_select" on public.trips;
 create policy "trips_members_select"
   on public.trips for select
-  using (
-    auth.uid() = owner_id
-    or exists (
-      select 1 from public.trip_members
-      where trip_id = trips.id and user_id = auth.uid()
-    )
-  );
+  using (public.user_can_access_trip(id));
 
--- ── 3c. MEMBER LOCATIONS VIEW ────────────────────────────────────────────────
--- High-read-frequency virtual table. Clients query this instead of the full
--- trip_members table to get live location data.
-create or replace view public.member_locations as
-select
-  tm.id,
-  tm.trip_id,
-  tm.user_id,
-  u.display_name,
-  u.avatar_url,
-  tm.last_lat      as latitude,
-  tm.last_lng      as longitude,
-  tm.last_speed    as speed,
-  tm.last_seen,
-  tm.location_sharing,
-  tm.roles
-from public.trip_members tm
-join public.users u on u.id = tm.user_id
-where tm.location_sharing = true
-  and tm.last_lat is not null
-  and tm.last_lng is not null;
+-- ── 3c. MEMBER LOCATIONS TABLE ────────────────────────────────────────────────
+-- Physical table for live GPS telemetry and real-time companion tracking.
+create table if not exists public.member_locations (
+  id           uuid primary key default gen_random_uuid(),
+  member_id    uuid not null references public.users(id) on delete cascade,
+  trip_id      uuid not null references public.trips(id) on delete cascade,
+  latitude     double precision not null,
+  longitude    double precision not null,
+  heading      double precision not null default 0,
+  speed        double precision not null default 0,
+  altitude     double precision not null default 0,
+  is_online    boolean not null default true,
+  geom         geometry(Point, 4326),
+  last_updated timestamptz not null default now(),
+  constraint uq_member_locations_trip_member unique (trip_id, member_id)
+);
+
+create index if not exists idx_member_locations_geom
+  on public.member_locations using gist (geom);
+
+alter table public.member_locations enable row level security;
+
+drop policy if exists "member_locations_select" on public.member_locations;
+drop policy if exists "member_locations_all_own" on public.member_locations;
+
+create policy "member_locations_select"
+  on public.member_locations for select
+  using (public.is_trip_member(trip_id));
+
+create policy "member_locations_all_own"
+  on public.member_locations for all
+  using (auth.uid() = member_id)
+  with check (auth.uid() = member_id);
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- SECTION 4 · ITINERARY
@@ -380,22 +415,18 @@ create table if not exists public.itinerary_stops (
   sort_order       int         not null default 0,
   time_start       text,
   time_end         text,
-  duration_min     int,
   title            text        not null,
   type             text        not null default 'activity'
                    check (type in ('hotel','activity','food','transport','custom')),
   notes            text,
   cost_estimate    numeric(10,2),
   assigned_user_id uuid        references public.users(id),
-  google_place_id  text,
   lat              double precision,
   lng              double precision,
   address          text,
-  photo_url        text,
   booking_ref      text,
   status           text        not null default 'planned'
                    check (status in ('planned','arrived','completed','skipped')),
-  created_by       uuid        references public.users(id),
   created_at       timestamptz not null default now(),
   updated_at       timestamptz not null default now()
 );
@@ -416,37 +447,13 @@ create policy "stops_insert"
   on public.itinerary_stops for insert
   with check (public.is_trip_member(trip_id));
 
--- Organizer / Navigator / creator may update
 create policy "stops_update_nav"
   on public.itinerary_stops for update
-  using (
-    public.is_trip_member(trip_id)
-    and (
-      auth.uid() = created_by
-      or exists (
-        select 1 from public.trip_members
-        where trip_id = itinerary_stops.trip_id
-          and user_id = auth.uid()
-          and roles && '{"organizer","navigator"}'
-      )
-    )
-  );
+  using (public.is_trip_member(trip_id));
 
--- Organizer / Navigator / creator may delete
 create policy "stops_delete_nav"
   on public.itinerary_stops for delete
-  using (
-    public.is_trip_member(trip_id)
-    and (
-      auth.uid() = created_by
-      or exists (
-        select 1 from public.trip_members
-        where trip_id = itinerary_stops.trip_id
-          and user_id = auth.uid()
-          and roles && '{"organizer","navigator"}'
-      )
-    )
-  );
+  using (public.is_trip_member(trip_id));
 
 -- ── 4b. STOP VOTES ───────────────────────────────────────────────────────────
 create table if not exists public.stop_votes (
@@ -491,14 +498,9 @@ create table if not exists public.packing_items (
   trip_id          uuid        not null references public.trips(id) on delete cascade,
   name             text        not null,
   category         text        not null default 'Essentials',
-  quantity         int         not null default 1,
   is_checked       boolean     not null default false,
   assigned_user_id uuid        references public.users(id),
   is_ai_suggested  boolean     not null default false,
-  notes            text,
-  created_by       uuid        references public.users(id),
-  checked_by       uuid        references public.users(id),
-  checked_at       timestamptz,
   created_at       timestamptz not null default now(),
   updated_at       timestamptz not null default now()
 );
@@ -529,11 +531,9 @@ create table if not exists public.expenses (
   category         text        not null default 'other',
   paid_by_user_id  uuid        not null references public.users(id),
   receipt_url      text,
-  split_meta       jsonb       not null default '{}',              -- per-user split shares
   status           text        not null default 'pending'
                    check (status in ('pending','approved','rejected')),
   approved_by      uuid        references public.users(id),
-  rejected_by      uuid        references public.users(id),
   rejection_note   text,
   created_at       timestamptz not null default now(),
   updated_at       timestamptz not null default now()
@@ -611,7 +611,7 @@ create policy "settlements_payee_confirm"
 
 create policy "settlements_owner_all"
   on public.settlements for all
-  using (exists (select 1 from public.trips where id = trip_id and owner_id = auth.uid()));
+  using (public.user_owns_trip(trip_id));
 
 -- Trip members may create settlement entries
 create policy "settlements_insert"
@@ -670,10 +670,6 @@ create table if not exists public.trip_messages (
   sender_name   text        not null default 'Anonymous',
   content       text        not null check (char_length(content) > 0),
   media_url     text,                                              -- image/file attachment
-  media_type    text        check (media_type in ('image','file','audio') or media_type is null),
-  reply_to_id   uuid        references public.trip_messages(id),  -- thread support
-  is_edited     boolean     not null default false,
-  edited_at     timestamptz,
   created_at    timestamptz not null default now()
 );
 

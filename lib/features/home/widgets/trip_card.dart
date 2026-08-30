@@ -30,6 +30,7 @@ class TripCard extends StatelessWidget {
   final VoidCallback? onBudgetTap;
   final VoidCallback? onSetBudget;
   final VoidCallback? onChat;
+  final VoidCallback? onNavigation;
   final VoidCallback? onMore;
 
   const TripCard.upcoming({
@@ -57,6 +58,7 @@ class TripCard extends StatelessWidget {
     this.onBudgetTap,
     this.onSetBudget,
     this.onChat,
+    this.onNavigation,
   })  : isUpcoming = true;
 
   const TripCard.draft({
@@ -84,7 +86,8 @@ class TripCard extends StatelessWidget {
         onExpenses = null,
         onBudgetTap = null,
         onSetBudget = null,
-        onChat = null;
+        onChat = null,
+        onNavigation = null;
 
   @override
   Widget build(BuildContext context) {
@@ -120,7 +123,7 @@ class TripCard extends StatelessWidget {
   Widget _buildUpcoming() {
     final accent = isIncomplete
         ? AppColors.warmMuted
-        : (coverColor ?? AppColors.primary);
+        : (coverColor ?? AppTripTypes.getColor(tripType));
     final HSLColor hsl = HSLColor.fromColor(accent);
     final darkGrad = isIncomplete
         ? const Color(0xFF6E6A67)
@@ -570,6 +573,8 @@ class TripCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
+                  _actionButton(Icons.navigation_rounded, 'Live Nav',
+                      AppColors.primary, onNavigation),
                   _actionButton(Icons.calendar_today_outlined, 'Itinerary',
                       const Color(0xFF5B8DEF), onItinerary),
                   _actionButton(Icons.inventory_2_outlined, 'Packing',

@@ -7,7 +7,6 @@ import '../../core/providers/selected_trip_provider.dart';
 import '../../core/providers/repository_providers.dart';
 import '../../core/models/trip_model.dart';
 import '../../core/utils/jit_guard.dart';
-import '../../core/constants/trip_types.dart';
 import '../../core/widgets/shimmer_loading.dart';
 import '../../core/widgets/feedback/app_feedback.dart';
 import '../../core/widgets/feedback/app_dialog.dart';
@@ -569,10 +568,10 @@ class _TripListCardState extends ConsumerState<_TripListCard>
   Widget _buildCardContent() {
     final trip = widget.trip;
     final daysLeft = trip.fromDate.difference(DateTime.now()).inDays;
-    final emoji = trip.coverEmoji ?? AppTripTypes.getEmoji(trip.tripType);
-    final typeOpt = AppTripTypes.getOption(trip.tripType);
+    final emoji = trip.coverEmoji;
+    final typeOpt = trip.tripTypeOption;
 
-    final themeColor = AppColors.parseTripColor(trip.coverColor);
+    final themeColor = trip.coverColor;
     final hsl = HSLColor.fromColor(themeColor);
     final isMuted = widget.isArchived || trip.isIncomplete;
     final darkGrad = isMuted

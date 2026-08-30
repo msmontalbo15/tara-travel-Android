@@ -8,8 +8,8 @@ Enforces factual ground truth across all Flutter and Supabase development in Tar
 
 ## 1. Ground-Truth Schema & Forbidden Columns
 
-- **`trips` Table**: Has `start_date`, `end_date`, `budget`, `split_method`, `owner_id`, `status`, `invite_code`, `cover_color`, `cover_emoji`, `departure_point`, `departure_lat`, `departure_lng`, `departure_map_url`, `destination_details`, `transport_mode`, `transport_meta`.
-  - **NEVER QUERY / INSERT**: `destination_lat`, `destination_lng`, `invite_expires_at`, `cover_image_url`, `discord_channel_id` (permanently dropped).
+- **`trips` Table**: Has `start_date`, `end_date`, `budget`, `split_method`, `owner_id`, `status`, `invite_code`, `type` / `trip_type`, `departure_point`, `departure_lat`, `departure_lng`, `departure_map_url`, `destination_details`, `transport_mode`, `transport_meta`.
+  - **NEVER QUERY / INSERT**: `destination_lat`, `destination_lng`, `invite_expires_at`, `cover_image_url`, `discord_channel_id`, `cover_color`, `cover_emoji` (permanently dropped — styling/emoji derived from `trip_type` via `AppTripTypes`).
 - **`itinerary_stops` Table**: Has `id`, `trip_id`, `name`, `description`, `stop_date`, `start_time`, `end_time`, `location_name`, `latitude`, `longitude`, `cost`, `stop_type`, `status`, `booking_ref`, `order_index`.
   - **NEVER QUERY**: `duration_min`, `google_place_id`, `photo_url`, `created_by`.
 - **`packing_items` Table**: Has `id`, `trip_id`, `item_name`, `category`, `is_packed`, `is_custom`, `assigned_to_user_id`.

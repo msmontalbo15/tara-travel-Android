@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import '../../constants/map_tile_config.dart';
 import '../../services/philippine_geocoding_service.dart';
 import '../../theme/app_colors.dart';
 import 'location_picker.dart';
@@ -227,13 +228,7 @@ class _MapPinPickerModalState extends State<MapPinPickerModal> {
               ),
             ),
             children: [
-              TileLayer(
-                urlTemplate:
-                    'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
-                subdomains: const ['a', 'b', 'c', 'd'],
-                userAgentPackageName: 'ph.taratravel.app',
-                maxZoom: 19,
-              ),
+              MapTileConfig.buildTileLayer(),
             ],
           ),
 

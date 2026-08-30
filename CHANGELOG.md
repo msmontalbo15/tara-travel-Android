@@ -1,7 +1,7 @@
 # Tara Travel — Version Changelog
 
 > Auto-generated from IMPLEMENTATION_MEMORY.md + git log
-> Last updated: **2026-08-28 15:36 PHT**
+> Last updated: **2026-08-31 02:48 PHT**
 
 ---
 
@@ -532,9 +532,9 @@
 
 ### IMP-047 - Itinerary Day Deletion & Supabase Synchronization
 
-**Component**: Itinerary Functional Add Day & Date Extension
+**Component**: Itinerary / Supabase Sync
 
-**Summary**: Fully functional Add Day action via DayStrip (+ Day) and DayActionsSheet, with dynamic date calculation and trip end_date auto-extension.
+**Summary**: Permission-gated Itinerary Day Deletion (Organizers & Navigators), multi-day check, batch stop deletion (`deleteStops`), and remote day re-indexing synchronization.
 
 <details>
 <summary>Full implementation detail</summary>
@@ -580,9 +580,9 @@
 
 ### IMP-047 - Itinerary Day Deletion & Supabase Synchronization
 
-**Component**: Itinerary / Supabase Sync
+**Component**: Itinerary Functional Add Day & Date Extension
 
-**Summary**: Permission-gated Itinerary Day Deletion (Organizers & Navigators), multi-day check, batch stop deletion (`deleteStops`), and remote day re-indexing synchronization.
+**Summary**: Fully functional Add Day action via DayStrip (+ Day) and DayActionsSheet, with dynamic date calculation and trip end_date auto-extension.
 
 <details>
 <summary>Full implementation detail</summary>
@@ -1155,6 +1155,53 @@
 
 ## 2026-08-28
 
+### IMP-062 - Real-Time Group Live Location Sharing, Convoy Tracking & Direct Member Navigation (IDEA-003)
+
+**Component**: Navigation / Live Location & Convoy Tracking
+
+**Summary**: Real-Time Group Live Location Sharing, Convoy Tracking & Direct Member Navigation (IDEA-003): `LocationBroadcastService` over Supabase Realtime ephemeral broadcast channels, adaptive GPS polling (5s/15s/60s), `NavigateToMemberSheet` (in-app routing & external GPS launch), `ConvoyAlertBanner` separation warnings, `SosEmergencyModal` panic beacons, and `PrivacyControlSheet` (Ghost Mode & approximate location fuzzing).
+
+<details>
+<summary>Full implementation detail</summary>
+
+- **Date**: August 28, 2026
+- **Target Files**:
+  - [lib/core/services/location_broadcast_service.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/services/location_broadcast_service.dart) **[NEW]**
+  - [lib/features/navigation/models/navigation_models.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/navigation/models/navigation_models.dart) **[MODIFIED]**
+  - [lib/features/navigation/providers/navigation_provider.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/navigation/providers/navigation_provider.dart) **[MODIFIED]**
+  - [lib/features/navigation/widgets/navigate_to_member_sheet.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/navigation/widgets/navigate_to_member_sheet.dart) **[NEW]**
+  - [lib/features/navigation/widgets/convoy_alert_banner.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/navigation/widgets/convoy_alert_banner.dart) **[NEW]**
+  - [lib/features/navigation/widgets/sos_emergency_modal.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/navigation/widgets/sos_emergency_modal.dart) **[NEW]**
+  - [lib/features/navigation/widgets/privacy_control_sheet.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/navigation/widgets/privacy_control_sheet.dart) **[NEW]**
+  - [lib/features/navigation/widgets/live_map_tab.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/navigation/widgets/live_map_tab.dart) **[MODIFIED]**
+  - [lib/features/navigation/widgets/group_tracker_tab.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/navigation/widgets/group_tracker_tab.dart) **[MODIFIED]**
+  - [lib/features/navigation/live_navigation_screen.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/navigation/live_navigation_screen.dart) **[MODIFIED]**
+  - [DEV_IDEA.md](file:///d:/Spencer/Downloads/tara_travel/DEV_IDEA.md) **[MODIFIED]**
+  - [MEMORY.md](file:///d:/Spencer/Downloads/tara_travel/MEMORY.md) **[MODIFIED]**
+  - [IMPLEMENTATION_MEMORY.md](file:///d:/Spencer/Downloads/tara_travel/IMPLEMENTATION_MEMORY.md) **[MODIFIED]**
+- **Scope & Objectives**:
+  - **Zero-Latency Ephemeral Broadcast Service (`LocationBroadcastService`)**:
+    - Leverages Supabase Realtime broadcast channels (`trip:location:{trip_id}`) for $<150\text{ms}$ peer location streaming without database disk I/O bottlenecks.
+    - Speed-adaptive GPS sampling engine: Stationary ($60\text{s} / 25\text{m}$), Walking ($15\text{s} / 10\text{m}$), Driving/Transit ($5\text{s} / 30\text{m}$) plus a low-power Battery Saver mode ($60\text{s} / 50\text{m}$).
+    - Periodic PostGIS background checkpointing ($45\text{s}$ interval) to `update_member_location` RPC for offline recovery and session persistence.
+  - **Direct "Navigate to Member" / Member-as-Waypoint Routing (`NavigateToMemberSheet`)**:
+    - 1-tap navigation to separated companions from `GroupTrackerTab` and `LiveMapTab`.
+    - Supports in-app dynamic waypoint routing (`_DirectMemberRoutePin`, heading cone, distance delta) and deep linking to external turn-by-turn navigation apps (Google Maps, Apple Maps, Waze via `geo:` and universal URL schemes).
+    - Intelligent "Meet Halfway" midpoint calculator calculating exact geographic bisector coordinates between companions with interactive map pins.
+  - **Convoy Intelligence & Separation Radar (`ConvoyAlertBanner`)**:
+    - Automated convoy perimeter monitoring alerting companions when a traveler drifts $>2.0\text{km}$ behind with estimated delay times, quick locate action, and dismissible state.
+  - **Emergency Panic Beacon & Haptic SOS Engine (`SosEmergencyModal` & `ActiveSosAlertBanner`)**:
+    - High-priority real-time SOS broadcast with exact coordinates, timestamp, custom distress note, and remaining battery percentage.
+    - Red pulsating top alert banner with 1-tap Google Maps directions to distressed member.
+  - **Privacy & Local-First Battery Controls (`PrivacyControlSheet`)**:
+    - Three-tier privacy governance: *Exact Location*, *Approximate Neighborhood* ($\approx 500\text{m}$ fuzzy bubble), and *Ghost Mode* (complete broadcast pause with custom 30m/1h/2h/end-of-day countdown timers).
+    - Top bar quick-toggle buttons for SOS and Privacy controls in `LiveNavigationScreen`.
+- **Verification**:
+
+</details>
+
+---
+
 ### IMP-061 - Streamlined Itinerary Suite & Progressive Disclosure (IDEA-002)
 
 **Component**: Itinerary / Progressive Disclosure & Action Hub
@@ -1325,6 +1372,90 @@
     - Added standalone `_showMyQrCodeModal` with personalized QR code generation and direct share functionality.
 - **Verification**:
   - `flutter analyze` completed across all files with 0 errors and 0 warnings.
+
+</details>
+
+---
+
+## 2026-08-31
+
+### IMP-066 - Shared TripTypeCarousel & Full-Spectrum Trip Types Support
+
+**Component**: UI / Shared TripTypeCarousel & Type Precision
+
+**Summary**: Extracted shared `TripTypeCarousel` widget (DRY) for both Create and Edit Trip flows; dropped PostgreSQL and Dart enum whitelists to support all 16 `AppTripTypes`.
+
+<details>
+<summary>Full implementation detail</summary>
+
+- **Date**: August 31, 2026
+- **Target Files**:
+  - [lib/shared/widgets/trip_type_carousel.dart](file:///d:/Spencer/Downloads/tara_travel/lib/shared/widgets/trip_type_carousel.dart) **[NEW]**
+  - [lib/features/create_trip/steps/details_step.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/create_trip/steps/details_step.dart) **[MODIFIED]**
+  - [lib/features/trip_detail/widgets/edit_trip_sheet.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/trip_detail/widgets/edit_trip_sheet.dart) **[MODIFIED]**
+  - [lib/core/models/trip_model.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/models/trip_model.dart) **[MODIFIED]**
+  - [lib/core/repositories/trip_repository.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/repositories/trip_repository.dart) **[MODIFIED]**
+  - [supabase/migrations/020_consolidate_trip_theme_fields.sql](file:///d:/Spencer/Downloads/tara_travel/supabase/migrations/020_consolidate_trip_theme_fields.sql) **[MODIFIED]**
+  - [supabase/migrations/000_master_schema.sql](file:///d:/Spencer/Downloads/tara_travel/supabase/migrations/000_master_schema.sql) **[MODIFIED]**
+- **Scope & Objectives**:
+  - **Shared UI Component (DRY Principle)**:
+    - Extracted the infinite-scroll card carousel from `details_step.dart` into a reusable, standalone [`TripTypeCarousel`](file:///d:/Spencer/Downloads/tara_travel/lib/shared/widgets/trip_type_carousel.dart) widget.
+    - Integrated `TripTypeCarousel` into both `DetailsStep` (Create Trip) and `EditTripSheet` (Edit Trip), eliminating ~400 lines of duplicated carousel code.
+  - **Full-Spectrum Trip Type Precision**:
+    - Removed the legacy 9-value whitelist constraint (`trips_type_check`) in PostgreSQL and Dart (`toSupabaseInsert` & `updateTrip`).
+    - Enabled all 16 `AppTripTypes` options (Road Trip, Foodie, Cruise, Backpacking, Wellness, Festival, Solo, Family, Romantic, Luxury, etc.) to round-trip and persist accurately.
+- **Verification**:
+  - Ran `flutter analyze lib/` with 0 errors and 0 warnings.
+
+</details>
+
+---
+
+### IMP-065 - Consolidate Trip Theme & Drop Redundant Cover Fields
+
+**Component**: Trips / Theme & Visual Consolidation
+
+**Summary**: Unified trip type, theme accent color, and emoji under canonical `tripType` and `AppTripTypes`. Dropped redundant `cover_color` and `cover_emoji` columns via migration 020.
+
+<details>
+<summary>Full implementation detail</summary>
+
+- **Date**: August 31, 2026
+- **Target Files**:
+  - [supabase/migrations/020_consolidate_trip_theme_fields.sql](file:///d:/Spencer/Downloads/tara_travel/supabase/migrations/020_consolidate_trip_theme_fields.sql) **[NEW]**
+  - [supabase/migrations/000_master_schema.sql](file:///d:/Spencer/Downloads/tara_travel/supabase/migrations/000_master_schema.sql) **[MODIFIED]**
+  - [lib/core/models/trip_model.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/models/trip_model.dart) **[MODIFIED]**
+  - [lib/core/repositories/trip_repository.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/repositories/trip_repository.dart) **[MODIFIED]**
+  - [lib/features/create_trip/models/new_trip_model.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/create_trip/models/new_trip_model.dart) **[MODIFIED]**
+  - [lib/features/create_trip/create_trip_flow.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/create_trip/create_trip_flow.dart) **[MODIFIED]**
+  - [lib/features/create_trip/steps/details_step.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/create_trip/steps/details_step.dart) **[MODIFIED]**
+  - [lib/features/create_trip/steps/confirm_step.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/create_trip/steps/confirm_step.dart) **[MODIFIED]**
+  - [lib/features/create_trip/widgets/trip_creation_loading_overlay.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/create_trip/widgets/trip_creation_loading_overlay.dart) **[MODIFIED]**
+  - [lib/features/trip_detail/widgets/edit_trip_sheet.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/trip_detail/widgets/edit_trip_sheet.dart) **[MODIFIED]**
+  - [lib/features/trip_detail/trip_detail_screen.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/trip_detail/trip_detail_screen.dart) **[MODIFIED]**
+  - [lib/features/home/widgets/trip_card.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/home/widgets/trip_card.dart) **[MODIFIED]**
+  - [lib/features/home/widgets/next_trip_card.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/home/widgets/next_trip_card.dart) **[MODIFIED]**
+  - [lib/features/home/widgets/quick_budget_sheet.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/home/widgets/quick_budget_sheet.dart) **[MODIFIED]**
+  - [lib/features/home/widgets/starter_templates_carousel.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/home/widgets/starter_templates_carousel.dart) **[MODIFIED]**
+  - [lib/features/home/widgets/trip_action_sheet.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/home/widgets/trip_action_sheet.dart) **[MODIFIED]**
+  - [lib/features/trips/trips_screen.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/trips/trips_screen.dart) **[MODIFIED]**
+  - [lib/features/home/home_screen.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/home/home_screen.dart) **[MODIFIED]**
+  - [MEMORY.md](file:///d:/Spencer/Downloads/tara_travel/MEMORY.md) **[MODIFIED]**
+  - [.agents/rules/architecture-memory.md](file:///d:/Spencer/Downloads/tara_travel/.agents/rules/architecture-memory.md) **[MODIFIED]**
+  - [IMPLEMENTATION_MEMORY.md](file:///d:/Spencer/Downloads/tara_travel/IMPLEMENTATION_MEMORY.md) **[MODIFIED]**
+- **Scope & Objectives**:
+  - **Single Source of Truth Consolidation**:
+    - Unified trip type, theme accent color, and emoji under the canonical `tripType` property and [`AppTripTypes`](file:///d:/Spencer/Downloads/tara_travel/lib/core/constants/trip_types.dart) registry.
+    - Updated `TripModel` to resolve `coverEmoji` (`AppTripTypes.getEmoji(tripType)`), `coverColor` (`AppTripTypes.getColor(tripType)`), and `tripTypeOption` dynamically without storing redundant strings.
+  - **Database Migration & Schema Cleanup**:
+    - Created migration `020_consolidate_trip_theme_fields.sql` to permanently drop redundant `cover_color` and `cover_emoji` columns from `public.trips`.
+    - Cleaned up master schema and updated hallucination blacklists in architectural memory.
+  - **Creation & Edit Flows Streamlined**:
+    - Simplified `DetailsStep`, `EditTripSheet`, `CreateTripFlow`, `StarterTemplatesCarousel`, and `TripCreationLoadingOverlay` to remove manual color/emoji conversions and ARGB string serializations.
+  - **UI Standardized**:
+    - Streamlined `TripCard`, `NextTripCard`, `TripDetailScreen`, `TripsScreen`, `QuickBudgetSheet`, and `TripActionSheet` to consume unified `trip.coverColor` and `trip.coverEmoji` getters cleanly.
+- **Verification**:
+  - `flutter analyze` verified 0 compilation errors across the workspace.
 
 </details>
 
