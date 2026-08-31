@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart' hide Path;
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/map_tile_config.dart';
 import '../../../core/theme/app_colors.dart';
 import '../models/navigation_models.dart';
@@ -403,7 +404,11 @@ class _LiveMapTabState extends ConsumerState<LiveMapTab> {
         ),
 
         // ── TURN-BY-TURN CARD ─────────────────────────────────
-        if (nav.currentTurn != null) _TurnCard(turn: nav.currentTurn!),
+        if (nav.currentTurn != null)
+          _TurnCard(
+            turn: nav.currentTurn!,
+            destination: nav.destination,
+          ),
 
         // ── BOTTOM STATS STRIP ────────────────────────────────
         _BottomStrip(nav: nav),
@@ -694,80 +699,175 @@ class _MapControl extends StatelessWidget {
   }
 }
 
-// ── Turn instruction card ─────────────────────────────────────────────
+// ── Turn instruction card & Driver Quick Action ─────────────────────────────
 class _TurnCard extends StatelessWidget {
   final TurnInstruction turn;
-  const _TurnCard({required this.turn});
+  final NavDestination? destination;
+
+  const _TurnCard({required this.turn, this.destination});
+
+  Future<void> _openExternalTurnByTurn(BuildContext context) async {
+    HapticFeedback.heavyImpact();
+    if (destination != null &&
+        destination!.latitude != null &&
+        destination!.longitude != null) {
+      final lat = destination!.latitude!;
+      final lng = destination!.longitude!;
+      final uri = Uri.parse('google.navigation:q=$lat,$lng&mode=d');
+      final webFallback = Uri.parse(
+          'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving');
+
+      try {
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+          return;
+        }
+      } catch (_) {}
+
+      try {
+        await launchUrl(webFallback, mode: LaunchMode.externalApplication);
+      } catch (_) {
+        await launchUrl(webFallback);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.fromLTRB(14, 0, 14, 10),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: const Color(0xFF1A0A04),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.35),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.35),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(Icons.turn_right_rounded, color: Colors.white, size: 24),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  turn.distanceLabel,
-                  style: const TextStyle(
-                    fontFamily: 'DM Sans',
-                    fontSize: 12,
-                    color: Colors.white54,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  turn.instruction,
-                  style: const TextStyle(
-                    fontFamily: 'DM Sans',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                    letterSpacing: -0.3,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          Row(
             children: [
-              Text(
-                turn.kmLeft.toStringAsFixed(1),
-                style: const TextStyle(
-                  fontFamily: 'DM Sans',
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.4),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.turn_right_rounded,
+                    color: Colors.white, size: 24),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      turn.distanceLabel,
+                      style: const TextStyle(
+                        fontFamily: 'DM Sans',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primaryLight,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      turn.instruction,
+                      style: const TextStyle(
+                        fontFamily: 'DM Sans',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        letterSpacing: -0.3,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
               ),
-              const Text(
-                'km left',
-                style: TextStyle(
-                  fontFamily: 'DM Sans',
-                  fontSize: 10,
-                  color: Colors.white38,
-                ),
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    turn.kmLeft.toStringAsFixed(1),
+                    style: const TextStyle(
+                      fontFamily: 'DM Sans',
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const Text(
+                    'km left',
+                    style: TextStyle(
+                      fontFamily: 'DM Sans',
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white38,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
+          if (destination != null) ...[
+            const SizedBox(height: 10),
+            InkWell(
+              onTap: () => _openExternalTurnByTurn(context),
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.12),
+                  ),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.navigation_rounded,
+                      color: AppColors.primaryLight,
+                      size: 14,
+                    ),
+                    SizedBox(width: 6),
+                    Text(
+                      'Launch Google Maps Turn-by-Turn',
+                      style: TextStyle(
+                        fontFamily: 'DM Sans',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -783,7 +883,7 @@ class _BottomStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -796,16 +896,23 @@ class _BottomStrip extends StatelessWidget {
           GestureDetector(
             onTap: () => Navigator.maybePop(context),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
               decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(10),
+                color: AppColors.deepEarth,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
+                  ),
+                ],
               ),
               child: const Text(
-                'Exit',
+                'Exit Nav',
                 style: TextStyle(
                   fontFamily: 'DM Sans',
-                  fontSize: 12,
+                  fontSize: 12.5,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
                 ),

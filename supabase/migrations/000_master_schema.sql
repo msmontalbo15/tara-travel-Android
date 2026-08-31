@@ -425,6 +425,8 @@ create table if not exists public.itinerary_stops (
   lng              double precision,
   address          text,
   booking_ref      text,
+  visited_at       timestamptz,                                    -- stop-level arrival timestamp
+  checked_in_data  jsonb       not null default '{}'::jsonb,       -- {userId: ISO timestamp} per-member arrival map
   created_at       timestamptz not null default now(),
   updated_at       timestamptz not null default now()
 );

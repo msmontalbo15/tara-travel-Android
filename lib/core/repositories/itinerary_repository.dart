@@ -149,6 +149,8 @@ class ItineraryRepository {
           'address': stop.location,
           'assigned_user_id': assignedUserId,
           'booking_ref': stop.confirmationNumber,
+          'visited_at': stop.visitedAt?.toUtc().toIso8601String(),
+          'checked_in_data': _encodeCheckedInData(stop.checkedInMembers),
           'updated_at': DateTime.now().toUtc().toIso8601String(),
         };
       }).toList();
@@ -233,7 +235,33 @@ class ItineraryRepository {
       endTime: _decodeTime(json['time_end']?.toString()),
       assignedMemberId: json['assigned_user_id']?.toString(),
       confirmationNumber: json['booking_ref']?.toString(),
+      visitedAt: json['visited_at'] != null
+          ? DateTime.tryParse(json['visited_at'].toString())
+          : null,
+      checkedInMembers: _decodeCheckedInData(json['checked_in_data']),
     );
+  }
+
+  /// Encodes per-member arrival map to JSONB-compatible format.
+  /// Input: {userId: DateTime} → Output: {userId: "ISO8601"}
+  Map<String, String> _encodeCheckedInData(Map<String, DateTime> data) {
+    return data.map((k, v) => MapEntry(k, v.toUtc().toIso8601String()));
+  }
+
+  /// Decodes JSONB checked_in_data from Supabase.
+  /// Input: {userId: "ISO8601"} → Output: {userId: DateTime}
+  Map<String, DateTime> _decodeCheckedInData(dynamic raw) {
+    if (raw == null || raw is! Map) return const {};
+    final result = <String, DateTime>{};
+    for (final entry in raw.entries) {
+      final userId = entry.key?.toString();
+      if (userId == null || userId.isEmpty) continue;
+      final ts = DateTime.tryParse(entry.value?.toString() ?? '');
+      if (ts != null) {
+        result[userId] = ts;
+      }
+    }
+    return result;
   }
 
   String? _encodeTime(TimeOfDay? t) {

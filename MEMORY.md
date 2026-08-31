@@ -138,6 +138,8 @@ public.itinerary_stops (
   cost_estimate numeric(10,2) default 0,
   type text not null check (type in ('hotel','activity','food','transport','custom')),
   booking_ref text,
+  visited_at timestamptz,
+  checked_in_data jsonb default '{}'::jsonb,
   day_number integer default 1,
   sort_order integer default 0,
   assigned_user_id uuid references public.users(id) on delete set null,
@@ -850,6 +852,23 @@ Client Tier               Storage Tier                Transport Tier
   - `votes` map and `voteScore` removed from `ItineraryStop` model.
   - `Group Vote` section and `Approve / Mark Done` status action rows removed from `StopDetailSheet`.
   - Canonical stop completion and arrival is exclusively tracked via `visitedAt` timestamp and `checkedInMemberIds`.
+
+---
+
+## 18. 🚘 DRIVER-READY SLIDE TO CONFIRM ARRIVAL & FULL SUPABASE PERSISTENCE (IMP-070)
+
+- **Location**: `lib/features/itinerary/widgets/`, `lib/core/models/itinerary_model.dart`, `lib/core/repositories/itinerary_repository.dart`
+- **Database & Persistence**:
+  - `visited_at` (`timestamptz`): Tracks stop-level arrival timestamp in `public.itinerary_stops` (Migration 022).
+  - `checked_in_data` (`jsonb`): Stores a map of `{ [userId]: ISO8601_Timestamp }` for per-member arrival tracking.
+  - `ItineraryRepository.saveItineraryDay()` encodes and synchronizes both `visited_at` and `checked_in_data` to Supabase on every arrival or undo toggle.
+- **Core Components & UX**:
+  - `SlideToArriveButton` (`lib/features/itinerary/widgets/slide_to_arrive_button.dart`): High-contrast, tactile horizontal slider requiring a $\ge 75\%$ swipe gesture to confirm stop arrival, preventing accidental bumpy-road or pocket taps while driving.
+  - **Haptic & Spring Physics**: Features `HapticFeedback.selectionClick()` on drag start, progressive color fill track, and `HapticFeedback.heavyImpact()` on confirmation trigger, with smooth spring reset animation if released early.
+  - **Fixed Bottom Dock**: Positioned persistently at the bottom of `StopDetailSheet` above the safe area for immediate 1-tap/swipe driver access.
+  - **Arrived Confirmation Bar & Undo**: Displays an emerald green status banner with the user's arrival timestamp and a high-visibility `[ Undo ]` button that clears the arrival timestamp in Supabase and resets state.
+  - **Floating Post-Arrival Undo Banner**: Upon sliding to arrive and auto-navigating back to the main itinerary list, a floating branded banner (`AppFeedback.show`) remains visible for 6 seconds with an instant `[ Undo ]` action button, giving travelers immediate opportunity to reverse accidental check-ins without having to re-open the detail sheet.
+  - **Per-Member Arrival Timestamps**: Companion roster displays individual arrival times (e.g. `✓ Arrived 3:42 PM`) beside each member.
 
 ---
 

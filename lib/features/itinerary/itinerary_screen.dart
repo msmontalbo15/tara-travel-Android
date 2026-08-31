@@ -18,6 +18,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/widgets/buttons/app_back_button.dart';
 import '../../core/widgets/feedback/app_dialog.dart';
 import '../../core/widgets/feedback/app_feedback.dart';
+import '../../core/widgets/feedback/feedback_type.dart';
 import '../../core/widgets/shimmer_loading.dart';
 import '../budget/widgets/add_expense_form.dart';
 import 'utils/transit_conflict_helper.dart';
@@ -290,7 +291,24 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
           _openLogExpenseForm(context, stop, members, tripId, stopDate);
         },
         onCheckIn: () {
+          final isCurrentlyCompleted = stop.isCompleted;
           notifier.toggleStopVisited(dayIndex, stop.id, selfId);
+
+          // If stop was marked as arrived, display floating confirmed banner with Undo action on the main screen
+          if (!isCurrentlyCompleted && context.mounted) {
+            AppFeedback.show(
+              context,
+              type: FeedbackType.success,
+              title: '✓ Arrived at ${stop.title}',
+              message: 'Arrival recorded in itinerary · Stop completed',
+              customIcon: Icons.check_circle_rounded,
+              actionLabel: 'Undo',
+              duration: const Duration(seconds: 6),
+              onAction: () {
+                notifier.toggleStopVisited(dayIndex, stop.id, selfId);
+              },
+            );
+          }
         },
         onMemberToggle: (memberId) {
           notifier.toggleStopVisited(dayIndex, stop.id, memberId);

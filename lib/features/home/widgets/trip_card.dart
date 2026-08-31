@@ -573,8 +573,6 @@ class TripCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _actionButton(Icons.navigation_rounded, 'Live Nav',
-                      AppColors.primary, onNavigation),
                   _actionButton(Icons.calendar_today_outlined, 'Itinerary',
                       const Color(0xFF5B8DEF), onItinerary),
                   _actionButton(Icons.inventory_2_outlined, 'Packing',

@@ -1,7 +1,7 @@
 # Tara Travel — Version Changelog
 
 > Auto-generated from IMPLEMENTATION_MEMORY.md + git log
-> Last updated: **2026-09-01 02:56 PHT**
+> Last updated: **2026-09-01 03:45 PHT**
 
 ---
 
@@ -1521,6 +1521,49 @@
 ---
 
 ## 2026-09-01
+
+### IMP-070 - Driver-Ready Slide to Confirm Arrival, Per-Member Arrival Timestamps & Full Supabase Persistence [commit:9a3ced9](https://github.com/msmontalbo15/tara-travel-Android/commit/9a3ced9)
+
+**Component**: UI & Itinerary / Driver-Ready Slide-to-Arrive Bottom Dock
+
+**Summary**: Relocated arrival control to a fixed bottom dock in StopDetailSheet featuring SlideToArriveButton with spring physics, haptics, and high-contrast confirmed arrival status with Undo.
+
+<details>
+<summary>Full implementation detail</summary>
+
+- **Date**: September 1, 2026
+- **Files Modified / Created**:
+  - [supabase/migrations/022_add_arrival_tracking.sql](file:///d:/Spencer/Downloads/tara_travel/supabase/migrations/022_add_arrival_tracking.sql) **[NEW]**
+  - [supabase/migrations/000_master_schema.sql](file:///d:/Spencer/Downloads/tara_travel/supabase/migrations/000_master_schema.sql) **[MODIFIED]**
+  - [lib/core/models/itinerary_model.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/models/itinerary_model.dart) **[MODIFIED]**
+  - [lib/core/repositories/itinerary_repository.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/repositories/itinerary_repository.dart) **[MODIFIED]**
+  - [lib/core/providers/itinerary_provider.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/providers/itinerary_provider.dart) **[MODIFIED]**
+  - [lib/features/itinerary/widgets/slide_to_arrive_button.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/slide_to_arrive_button.dart) **[NEW]**
+  - [lib/features/itinerary/widgets/stop_detail_sheet.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/stop_detail_sheet.dart) **[MODIFIED]**
+- **Scope & Objectives**:
+  - **Database & Schema Updates**:
+    - Created migration `022_add_arrival_tracking.sql` adding `visited_at` (`timestamptz`) and `checked_in_data` (`jsonb` map of `{userId: ISO_timestamp}`).
+    - Updated `000_master_schema.sql` accordingly.
+  - **Full Supabase Persistence & Mappers**:
+    - Updated `ItineraryRepository.saveItineraryDay()` to serialize `visited_at` and `checked_in_data`.
+    - Updated `_stopFromSupabaseRow()` with `_encodeCheckedInData()` and `_decodeCheckedInData()` helpers.
+  - **Model & Provider Enhancements**:
+    - Refactored `ItineraryStop` to store `Map<String, DateTime> checkedInMembers` for individual arrival timestamps.
+    - Added `memberArrivedAtLabel(memberId)` for formatted per-member arrival times (e.g. `3:45 PM`).
+    - Added `clearVisitedAt` flag to `copyWith` to reliably null out timestamps on undo.
+    - Updated `toggleStopVisited()`, `checkInMember()`, and `updateCheckedInMembers()` to persist immediately to Supabase on arrival and undo.
+  - **UI & Driver-Ready Bottom Dock**:
+    - Added `SlideToArriveButton` in a fixed bottom dock of `StopDetailSheet`.
+    - Displayed arrival time in Metadata Info rows when arrived (`✓ Arrived 3:45 PM (Stop Completed)`).
+    - Displayed per-member arrival times in the companion roster (`✓ Arrived 3:45 PM`).
+    - Added responsive `[ Undo ]` buttons on both the bottom dock and per-member items.
+    - Integrated floating 6-second post-arrival confirmation banner on the main itinerary screen with an instant `[ Undo ]` action button.
+- **Verification**:
+  - `dart analyze lib/` completed with 0 errors and 0 warnings.
+
+</details>
+
+---
 
 ### IMP-069 - Retirement of Stop Votes & Legacy Status Lifecycle
 

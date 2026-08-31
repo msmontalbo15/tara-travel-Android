@@ -220,17 +220,18 @@ class ItineraryNotifier extends AsyncNotifier<ItineraryState> {
     final day = currentState.days[dayIndex];
     final updatedStops = day.stops.map((s) {
       if (s.id != stopId) return s;
-      final ids = List<String>.from(s.checkedInMemberIds);
-      if (ids.contains(memberId)) {
-        ids.remove(memberId);
+      final members = Map<String, DateTime>.from(s.checkedInMembers);
+      if (members.containsKey(memberId)) {
+        members.remove(memberId);
       } else {
-        ids.add(memberId);
+        members[memberId] = DateTime.now();
       }
-      // If no one is checked in, remove arrived timestamp
-      final nowVisited = ids.isNotEmpty ? (s.visitedAt ?? DateTime.now()) : null;
+      // If no one is checked in, clear the stop-level arrival timestamp
+      final nowVisited = members.isNotEmpty ? (s.visitedAt ?? DateTime.now()) : null;
       return s.copyWith(
-        checkedInMemberIds: ids,
+        checkedInMembers: members,
         visitedAt: nowVisited,
+        clearVisitedAt: members.isEmpty,
       );
     }).toList();
 
@@ -242,7 +243,7 @@ class ItineraryNotifier extends AsyncNotifier<ItineraryState> {
     await repo.saveItineraryDay(_tripId, updatedDay);
   }
 
-  // ── Toggle entire stop as visited (own account check-in) ─────
+  // ── Toggle entire stop as visited (own account check-in / undo) ─────
   Future<void> toggleStopVisited(
     int dayIndex,
     String stopId,
@@ -256,15 +257,16 @@ class ItineraryNotifier extends AsyncNotifier<ItineraryState> {
     final updatedStops = day.stops.map((s) {
       if (s.id != stopId) return s;
       final isNowVisited = !s.isCompleted;
-      final ids = List<String>.from(s.checkedInMemberIds);
-      if (isNowVisited && !ids.contains(memberId)) {
-        ids.add(memberId);
+      final members = Map<String, DateTime>.from(s.checkedInMembers);
+      if (isNowVisited && !members.containsKey(memberId)) {
+        members[memberId] = DateTime.now();
       } else if (!isNowVisited) {
-        ids.remove(memberId);
+        members.remove(memberId);
       }
       return s.copyWith(
         visitedAt: isNowVisited ? DateTime.now() : null,
-        checkedInMemberIds: ids,
+        clearVisitedAt: !isNowVisited,
+        checkedInMembers: members,
       );
     }).toList();
 
@@ -276,7 +278,7 @@ class ItineraryNotifier extends AsyncNotifier<ItineraryState> {
     await repo.saveItineraryDay(_tripId, updatedDay);
   }
 
-  // ── Update checked-in members directly (Roll Call Sheet) ─────────
+  // ── Update checked-in members directly (batch check-in) ─────────
   Future<void> updateCheckedInMembers(
     int dayIndex,
     String stopId,
@@ -289,10 +291,17 @@ class ItineraryNotifier extends AsyncNotifier<ItineraryState> {
     final day = currentState.days[dayIndex];
     final updatedStops = day.stops.map((s) {
       if (s.id != stopId) return s;
-      final nowVisited = memberIds.isNotEmpty ? (s.visitedAt ?? DateTime.now()) : null;
+      // Build new map, preserving existing timestamps for already-arrived members
+      final now = DateTime.now();
+      final newMembers = <String, DateTime>{};
+      for (final id in memberIds) {
+        newMembers[id] = s.checkedInMembers[id] ?? now;
+      }
+      final nowVisited = newMembers.isNotEmpty ? (s.visitedAt ?? now) : null;
       return s.copyWith(
-        checkedInMemberIds: memberIds,
+        checkedInMembers: newMembers,
         visitedAt: nowVisited,
+        clearVisitedAt: newMembers.isEmpty,
       );
     }).toList();
 
@@ -349,8 +358,8 @@ class ItineraryNotifier extends AsyncNotifier<ItineraryState> {
     final clonedStops = sourceDay.stops.map((s) {
       return s.copyWith(
         id: const Uuid().v4(),
-        visitedAt: null,
-        checkedInMemberIds: const [],
+        clearVisitedAt: true,
+        checkedInMembers: const {},
       );
     }).toList();
 

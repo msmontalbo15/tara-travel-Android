@@ -724,11 +724,39 @@ To achieve clean visual hierarchy and an effortless user experience:
    - Display member avatars with status badges (`Arrived` vs `Not Arrived`) and direct check-in toggles.
    - Include batch `"Mark All as Arrived"` button for organizers.
 5. [x] **Deprecate Separate `RollCallSheet`**: Merge its presence logic and member lists directly into the `StopDetailSheet` "Members" component.
-6. [x] **Arrival Pill & Notification Sync**: Ensure `ArrivalPill` swipe-to-check-in seamlessly updates the same state and links to the newly structured detail sheet.
+7. [x] **Driver-Ready Slide to Confirm Arrival**: Implemented `SlideToArriveButton` and per-member arrival timestamps in `StopDetailSheet` (`IMP-070`).
 
+> **Status**: Completed (`IMP-069`, `IMP-070`)
 
+---
 
+## ✅ IDEA-008: Relocating Live Nav to Itinerary Floating Dock & Driver-Optimized Navigation HUD [COMPLETED]
 
+### 1. Context & Motivation
+- **Home Screen Clutter**: Displaying "Live Nav" across multiple home cards (`NextTripCard` header and `TripCard` action rows) cluttered primary trip exploration and squeezed other high-frequency actions (`Itinerary`, `Packing`, `Members`, `Expenses`, `Chat`).
+- **Traveling & Driving Context**: When users are actively traveling or driving, they are in the **Itinerary** screen managing their day schedule and waypoints. Having the primary Live Navigation trigger directly docked on the Itinerary floating action bar gives drivers 1-tap access to live telemetry, convoy radar, and turn-by-turn routing without navigating back and forth to the home screen.
 
+### 2. Core Architectural & UX Redesign
 
+#### A. Clean Home Experience
+- Removed small `Live Nav` pill from the top header row of `NextTripCard`.
+- Removed `Live Nav` from `TripCard` bottom action rows, giving ample breathing room to `Itinerary`, `Packing`, `Members`, `Expenses`, and `Chat`.
 
+#### B. Tri-Action Itinerary Floating Dock (`ItineraryBottomDock`)
+- Docked at the bottom of the Itinerary view:
+  1. **`[ 🧭 Live Nav ]` (Primary Hero Action)**: 1-tap instant entry into live telemetry, real-time GPS broadcast, and convoy radar.
+  2. **`[ 🗺️ Day Map ]`**: Opens interactive route overview and companion pins sheet.
+  3. **`[ ＋ Stop ]`**: Fast modal entry for adding itinerary stops.
+
+#### C. Driver-Optimized Navigation HUD
+- High-contrast, large-font turn guidance card in `LiveMapTab`.
+- **1-Tap Google Maps Integration**: Direct button on the turn card launching native turn-by-turn external navigation (`google.navigation:q=lat,lng`) with seamless web fallback.
+- Large-touch target `[ Exit Nav ]` button for easy operation while vehicle is parked or en-route.
+
+### 3. Implementation Steps
+1. [x] **Home Card Decluttering**: Removed `Live Nav` CTA from `next_trip_card.dart` and `trip_card.dart`.
+2. [x] **Itinerary Dock Redesign**: Integrated prominent `Live Nav` gradient button into `itinerary_bottom_dock.dart`.
+3. [x] **Turn-by-Turn External Handoff**: Added 1-tap Google Maps Navigation launch to `_TurnCard` in `live_map_tab.dart`.
+4. [x] **Compilation Verification**: Confirmed clean build via `dart analyze lib/`.
+
+> **Status**: Completed (`IMP-071`)

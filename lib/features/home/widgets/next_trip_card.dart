@@ -146,7 +146,7 @@ class _NextTripCardState extends State<NextTripCard>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // ── Header row: NEXT TRIP badge + date pill + Live Nav CTA ──
+                      // ── Header row: NEXT TRIP badge + date pill ──
                       Row(
                         children: [
                           Container(
@@ -169,46 +169,7 @@ class _NextTripCardState extends State<NextTripCard>
                               ),
                             ),
                           ),
-                          if (widget.onNavigation != null) ...[
-                            const Spacer(),
-                            GestureDetector(
-                              onTap: widget.onNavigation,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary,
-                                  borderRadius: BorderRadius.circular(10),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: AppColors.primary.withValues(alpha: 0.4),
-                                      blurRadius: 6,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: const Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.navigation_rounded,
-                                        color: Colors.white, size: 12),
-                                    SizedBox(width: 4),
-                                    Text(
-                                      'Live Nav',
-                                      style: TextStyle(
-                                        fontFamily: 'DM Sans',
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w700,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                          ] else
-                            const Spacer(),
+                          const Spacer(),
                           Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 5),

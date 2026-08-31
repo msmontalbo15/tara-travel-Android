@@ -4,13 +4,16 @@ import '../../../core/models/member_model.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/multi_member_picker_sheet.dart';
 import 'navigate_route_button.dart';
+import 'slide_to_arrive_button.dart';
 
 /// Full-detail bottom sheet for an itinerary stop (IDEA-007).
 ///
 /// Features:
 /// - Top-right Edit and Dismiss actions in header
-/// - Hero "Mark as Arrived" self check-in CTA with arrival time & undo
-/// - Dedicated "Members" arrival hub with interactive companion arrival roster & batch check-in
+/// - Fixed bottom driver-ready "Slide to Confirm Arrival" confirmation bar
+/// - Auto-dismiss back to itinerary upon arrival confirmation
+/// - Responsive Undo support with immediate Supabase sync
+/// - Dedicated "Members" arrival hub with interactive companion arrival roster & per-member arrival times
 /// - 1-tap Google Maps navigation & expense logging shortcut
 /// - Booking reference & attachments
 class StopDetailSheet extends StatefulWidget {
@@ -45,18 +48,106 @@ class StopDetailSheet extends StatefulWidget {
 }
 
 class _StopDetailSheetState extends State<StopDetailSheet> {
+  late ItineraryStop _currentStop;
   bool _isRosterExpanded = false;
 
+  @override
+  void initState() {
+    super.initState();
+    _currentStop = widget.stop;
+  }
+
+  @override
+  void didUpdateWidget(covariant StopDetailSheet oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.stop != oldWidget.stop) {
+      _currentStop = widget.stop;
+    }
+  }
+
+  String get _effectiveSelfId =>
+      widget.currentUserId ??
+      (widget.members.isNotEmpty ? widget.members.first.id : 'me');
+
   bool get _isSelfArrived {
-    final selfId = widget.currentUserId ??
-        (widget.members.isNotEmpty ? widget.members.first.id : 'me');
-    return widget.stop.checkedInMemberIds.contains(selfId) ||
-        widget.stop.isCompleted;
+    return _currentStop.checkedInMemberIds.contains(_effectiveSelfId) ||
+        _currentStop.isCompleted;
+  }
+
+  void _handleSelfArrivalToggle() {
+    final selfId = _effectiveSelfId;
+    final isNowVisited = !_isSelfArrived;
+    final updatedMembers =
+        Map<String, DateTime>.from(_currentStop.checkedInMembers);
+
+    if (isNowVisited) {
+      updatedMembers[selfId] = DateTime.now();
+    } else {
+      updatedMembers.remove(selfId);
+    }
+
+    final newVisitedAt = isNowVisited
+        ? (_currentStop.visitedAt ?? DateTime.now())
+        : (updatedMembers.isNotEmpty ? _currentStop.visitedAt : null);
+
+    setState(() {
+      _currentStop = _currentStop.copyWith(
+        visitedAt: newVisitedAt,
+        clearVisitedAt: newVisitedAt == null,
+        checkedInMembers: updatedMembers,
+      );
+    });
+
+    widget.onCheckIn?.call();
+  }
+
+  void _handleMemberToggle(String memberId) {
+    final updatedMembers =
+        Map<String, DateTime>.from(_currentStop.checkedInMembers);
+    final isNowPresent = !updatedMembers.containsKey(memberId);
+
+    if (isNowPresent) {
+      updatedMembers[memberId] = DateTime.now();
+    } else {
+      updatedMembers.remove(memberId);
+    }
+
+    final newVisitedAt = updatedMembers.isNotEmpty
+        ? (_currentStop.visitedAt ?? DateTime.now())
+        : null;
+
+    setState(() {
+      _currentStop = _currentStop.copyWith(
+        checkedInMembers: updatedMembers,
+        visitedAt: newVisitedAt,
+        clearVisitedAt: newVisitedAt == null,
+      );
+    });
+
+    widget.onMemberToggle?.call(memberId);
+  }
+
+  void _handleMarkAllArrived() {
+    final now = DateTime.now();
+    final updatedMembers = <String, DateTime>{};
+    for (final m in widget.members) {
+      updatedMembers[m.id] = _currentStop.checkedInMembers[m.id] ?? now;
+    }
+
+    setState(() {
+      _currentStop = _currentStop.copyWith(
+        checkedInMembers: updatedMembers,
+        visitedAt: _currentStop.visitedAt ?? now,
+        clearVisitedAt: updatedMembers.isEmpty,
+      );
+    });
+
+    widget.onMarkAllArrived?.call();
   }
 
   @override
   Widget build(BuildContext context) {
-    final stop = widget.stop;
+    final stop = _currentStop;
     final members = widget.members;
     final hasPhotos = stop.photoUrls.isNotEmpty;
     final totalMembers = members.length;
@@ -215,25 +306,13 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                     const SizedBox(height: 16),
                   ],
 
-                  // 2. Canonical "Mark as Arrived" Hero CTA (Self Check-In)
-                  if (widget.onCheckIn != null) ...[
-                    _buildHeroArrivalButton(),
-                    const SizedBox(height: 14),
-                  ],
-
-                  // 3. Dedicated "Members" Arrival Hub & Roster (for group trips)
-                  if (members.length > 1) ...[
-                    _buildMembersArrivalHub(totalMembers, checkedInCount, allArrived),
-                    const SizedBox(height: 14),
-                  ],
-
-                  // 4. Primary Actions (Navigate & Log Expense)
+                  // 2. Primary Navigation & Expense Actions
                   Row(
                     children: [
                       Expanded(
                         flex: 3,
                         child: SizedBox(
-                          height: 44,
+                          height: 46,
                           child: ElevatedButton.icon(
                             onPressed: () =>
                                 openGoogleMapsForStop(context, stop),
@@ -262,7 +341,7 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                         Expanded(
                           flex: 2,
                           child: SizedBox(
-                            height: 44,
+                            height: 46,
                             child: OutlinedButton.icon(
                               onPressed: widget.onLogExpense,
                               style: OutlinedButton.styleFrom(
@@ -291,7 +370,19 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                   ),
                   const SizedBox(height: 16),
 
-                  // 5. Metadata Info Rows (Location, Cost, Booking Ref)
+                  // 3. Dedicated "Members" Arrival Hub & Roster (for group trips)
+                  if (members.length > 1) ...[
+                    _buildMembersArrivalHub(totalMembers, checkedInCount, allArrived),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // 4. Metadata Info Rows (Arrival Time, Location, Cost, Booking Ref)
+                  if (stop.arrivedAtLabel != null)
+                    _infoRow(
+                      Icons.check_circle_rounded,
+                      '${stop.arrivedAtLabel!} (Stop Completed)',
+                      color: AppColors.greenBright,
+                    ),
                   if (stop.location != null)
                     _infoRow(Icons.place_outlined, stop.location!),
                   if (stop.estimatedCost != null)
@@ -305,7 +396,7 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                       'Booking Reference: ${stop.confirmationNumber}',
                     ),
 
-                  // 6. Notes
+                  // 5. Notes
                   if (stop.notes != null && stop.notes!.isNotEmpty) ...[
                     const SizedBox(height: 12),
                     const Text(
@@ -338,7 +429,7 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                     ),
                   ],
 
-                  // 7. Booking Attachments
+                  // 6. Booking Attachments
                   if (stop.attachmentUrls.isNotEmpty) ...[
                     const SizedBox(height: 14),
                     const Text(
@@ -396,70 +487,134 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
               ),
             ),
           ),
+
+          // ── Fixed Bottom Driver-Ready Arrival Dock ───────────────────
+          if (widget.onCheckIn != null) ...[
+            const Divider(height: 1),
+            Container(
+              padding: EdgeInsets.fromLTRB(
+                20,
+                12,
+                20,
+                MediaQuery.of(context).padding.bottom > 0
+                    ? MediaQuery.of(context).padding.bottom + 8
+                    : 16,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 10,
+                    offset: const Offset(0, -3),
+                  ),
+                ],
+              ),
+              child: _isSelfArrived
+                  ? _buildArrivedDriverStatus()
+                  : SlideToArriveButton(
+                      onConfirmed: () async {
+                        _handleSelfArrivalToggle();
+                        final nav = Navigator.of(context);
+                        // Driver-ready: brief confirmation animation then auto-navigate back to itinerary
+                        await Future.delayed(const Duration(milliseconds: 380));
+                        if (mounted && nav.canPop()) {
+                          nav.pop();
+                        }
+                      },
+                      label: 'Slide to Confirm Arrival',
+                      confirmedLabel: '✓ Arrival Confirmed',
+                    ),
+            ),
+          ],
         ],
       ),
     );
   }
 
-  // ── Hero "Mark as Arrived" Button ──────────────────────────────────────────
+  // ── Driver-Ready Arrived Status Dock ────────────────────────────────────────
 
-  Widget _buildHeroArrivalButton() {
-    final arrived = _isSelfArrived;
-    final stop = widget.stop;
+  Widget _buildArrivedDriverStatus() {
+    final stop = _currentStop;
 
-    return GestureDetector(
-      onTap: widget.onCheckIn,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 280),
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        decoration: BoxDecoration(
-          color: arrived
-              ? AppColors.greenBright.withValues(alpha: 0.12)
-              : AppColors.primary,
-          borderRadius: BorderRadius.circular(14),
-          border: arrived
-              ? Border.all(
-                  color: AppColors.greenBright.withValues(alpha: 0.4),
-                  width: 1.5,
-                )
-              : null,
-          boxShadow: arrived
-              ? null
-              : [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.25),
-                    blurRadius: 10,
-                    offset: const Offset(0, 3),
+    return Container(
+      height: 56,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: AppColors.greenBright.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: AppColors.greenBright.withValues(alpha: 0.4),
+          width: 1.5,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: const BoxDecoration(
+              color: AppColors.greenBright,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.check_rounded, color: Colors.white, size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  stop.arrivedAtLabel != null
+                      ? '✓ You ${stop.arrivedAtLabel!}'
+                      : '✓ You Arrived',
+                  style: const TextStyle(
+                    fontFamily: 'DM Sans',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.greenBright,
+                  ),
+                ),
+                const Text(
+                  'Arrival recorded · Stop completed',
+                  style: TextStyle(
+                    fontFamily: 'DM Sans',
+                    fontSize: 11,
+                    color: AppColors.muted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          GestureDetector(
+            onTap: _handleSelfArrivalToggle,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.dividerLight),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.undo_rounded, size: 13, color: AppColors.muted),
+                  SizedBox(width: 4),
+                  Text(
+                    'Undo',
+                    style: TextStyle(
+                      fontFamily: 'DM Sans',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.deepEarth,
+                    ),
                   ),
                 ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              arrived
-                  ? Icons.check_circle_rounded
-                  : Icons.location_on_rounded,
-              size: 18,
-              color: arrived ? AppColors.greenBright : Colors.white,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              arrived
-                  ? (stop.arrivedAtLabel != null
-                      ? '✓ You ${stop.arrivedAtLabel!} · Tap to Undo'
-                      : '✓ You Arrived · Tap to Undo')
-                  : '📍 Mark as Arrived (You)',
-              style: TextStyle(
-                fontFamily: 'DM Sans',
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: arrived ? AppColors.greenBright : Colors.white,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -468,7 +623,7 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
 
   Widget _buildMembersArrivalHub(
       int totalMembers, int checkedInCount, bool allArrived) {
-    final stop = widget.stop;
+    final stop = _currentStop;
     final members = widget.members;
 
     return Container(
@@ -572,6 +727,8 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                       final member = members[idx];
                       final isPresent =
                           stop.checkedInMemberIds.contains(member.id);
+                      final memberArrivalLabel =
+                          stop.memberArrivedAtLabel(member.id);
                       final formattedName = MemberModel.formatDisplayName(
                         member.name,
                         hideSurname: member.hideSurname,
@@ -637,7 +794,9 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                                   ),
                                   Text(
                                     isPresent
-                                        ? '✓ Arrived'
+                                        ? (memberArrivalLabel != null
+                                            ? '✓ Arrived $memberArrivalLabel'
+                                            : '✓ Arrived')
                                         : 'Not yet arrived',
                                     style: TextStyle(
                                       fontFamily: 'DM Sans',
@@ -656,8 +815,7 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                             // 1-Tap Toggle Action Button
                             if (widget.onMemberToggle != null)
                               GestureDetector(
-                                onTap: () =>
-                                    widget.onMemberToggle!(member.id),
+                                onTap: () => _handleMemberToggle(member.id),
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 10, vertical: 5),
@@ -715,7 +873,7 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                     SizedBox(
                       width: double.infinity,
                       child: TextButton.icon(
-                        onPressed: widget.onMarkAllArrived,
+                        onPressed: _handleMarkAllArrived,
                         icon: const Icon(Icons.done_all_rounded,
                             size: 16, color: AppColors.primary),
                         label: const Text(
@@ -747,20 +905,22 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
     );
   }
 
-  Widget _infoRow(IconData icon, String text) {
+  Widget _infoRow(IconData icon, String text, {Color? color}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: AppColors.muted),
+          Icon(icon, size: 16, color: color ?? AppColors.muted),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'DM Sans',
                 fontSize: 13,
-                color: AppColors.textSecondary,
+                fontWeight:
+                    color != null ? FontWeight.w600 : FontWeight.normal,
+                color: color ?? AppColors.textSecondary,
               ),
             ),
           ),

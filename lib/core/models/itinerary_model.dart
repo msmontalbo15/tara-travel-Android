@@ -185,8 +185,9 @@ class ItineraryStop {
   final List<String> photoUrls;
   // Booking attachments
   final List<String> attachmentUrls;
-  // Member presence & fulfillment
-  final List<String> checkedInMemberIds;
+  /// Per-member arrival map: { userId → arrival DateTime }.
+  /// Replaces the old flat `checkedInMemberIds` list.
+  final Map<String, DateTime> checkedInMembers;
   final DateTime? visitedAt;
   final List<String> checkInPhotoUrls;
 
@@ -208,9 +209,11 @@ class ItineraryStop {
     this.transportMode,
     this.photoUrls = const [],
     this.attachmentUrls = const [],
-    this.checkedInMemberIds = const [],
+    this.checkedInMembers = const {},
     this.visitedAt,
     this.checkInPhotoUrls = const [],
+    // Legacy compat: accept flat list and convert to map with DateTime.now()
+    @Deprecated('Use checkedInMembers') List<String>? checkedInMemberIds,
   }) : assignedMemberIds = assignedMemberIds ??
            (assignedMemberId != null && assignedMemberId.isNotEmpty
                ? [assignedMemberId]
@@ -222,11 +225,14 @@ class ItineraryStop {
 
   bool get isAssigned => assignedMemberIds.isNotEmpty;
 
+  /// Flat list of checked-in member IDs (backward compat for UI code).
+  List<String> get checkedInMemberIds => checkedInMembers.keys.toList();
+
   /// Whether this stop is fully fulfilled (at least one member arrived or timestamp logged).
-  bool get isCompleted => visitedAt != null || checkedInMemberIds.isNotEmpty;
+  bool get isCompleted => visitedAt != null || checkedInMembers.isNotEmpty;
 
   /// Whether this stop has any member currently checked in.
-  bool get hasArrived => checkedInMemberIds.isNotEmpty;
+  bool get hasArrived => checkedInMembers.isNotEmpty;
 
   /// Formatted arrival timestamp (e.g. "Arrived 3:42 PM").
   String? get arrivedAtLabel {
@@ -236,6 +242,18 @@ class ItineraryStop {
     final period = h >= 12 ? 'PM' : 'AM';
     final displayHour = h % 12 == 0 ? 12 : h % 12;
     return 'Arrived $displayHour:$m $period';
+  }
+
+  /// Formatted arrival time for a specific member.
+  String? memberArrivedAtLabel(String memberId) {
+    final ts = checkedInMembers[memberId];
+    if (ts == null) return null;
+    final local = ts.toLocal();
+    final h = local.hour;
+    final m = local.minute.toString().padLeft(2, '0');
+    final period = h >= 12 ? 'PM' : 'AM';
+    final displayHour = h % 12 == 0 ? 12 : h % 12;
+    return '$displayHour:$m $period';
   }
 
   String get duration {
@@ -250,6 +268,8 @@ class ItineraryStop {
     if (m == 0) return '${h}h';
     return '${h}h ${m}min';
   }
+
+
 
   ItineraryStop copyWith({
     String? id,
@@ -267,9 +287,11 @@ class ItineraryStop {
     TransportMode? transportMode,
     List<String>? photoUrls,
     List<String>? attachmentUrls,
-    List<String>? checkedInMemberIds,
+    Map<String, DateTime>? checkedInMembers,
     DateTime? visitedAt,
     List<String>? checkInPhotoUrls,
+    /// Set to true to explicitly clear [visitedAt] to null.
+    bool clearVisitedAt = false,
   }) {
     return ItineraryStop(
       id: id ?? this.id,
@@ -287,8 +309,8 @@ class ItineraryStop {
       transportMode: transportMode ?? this.transportMode,
       photoUrls: photoUrls ?? this.photoUrls,
       attachmentUrls: attachmentUrls ?? this.attachmentUrls,
-      checkedInMemberIds: checkedInMemberIds ?? this.checkedInMemberIds,
-      visitedAt: visitedAt ?? this.visitedAt,
+      checkedInMembers: checkedInMembers ?? this.checkedInMembers,
+      visitedAt: clearVisitedAt ? null : (visitedAt ?? this.visitedAt),
       checkInPhotoUrls: checkInPhotoUrls ?? this.checkInPhotoUrls,
     );
   }

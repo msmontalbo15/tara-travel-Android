@@ -54,6 +54,7 @@
 | **`IMP-067`** | 2026-08-31 | Auth / Onboarding Bypass & Account State Guard | Fixed onboarding resurfacing for existing accounts by adding `isAccountFullySet` fallback checks, auto-recovering `hasCompletedOnboarding` in `ProfileNotifier`, and updating `AuthGate` & `OnboardingScreen` lifecycle guards. |
 | **`IMP-068`** | 2026-08-31 | Itinerary / Ultra-Simplified Stop Cards & Presence Hub | Ultra-Simplified Itinerary Stop Cards & Unified "Mark as Arrived" Presence Hub (IDEA-007): stripped StopCard to single Navigate CTA, added top-right edit & hero self check-in to StopDetailSheet, built inline companion arrival roster with batch toggle, and retired RollCallSheet. |
 | **`IMP-069`** | 2026-09-01 | Database & Itinerary / Stop Votes & Status Retirement | Dropped public.stop_votes table and status column on itinerary_stops (Migration 021). Removed StopStatus enum, voting models/repositories/providers, and status action bars. |
+| **`IMP-070`** | 2026-09-01 | UI & Itinerary / Driver-Ready Slide-to-Arrive Bottom Dock | Relocated arrival control to a fixed bottom dock in StopDetailSheet featuring SlideToArriveButton with spring physics, haptics, and high-contrast confirmed arrival status with Undo. |
 
 ---
 
@@ -1185,6 +1186,68 @@
 - **Verification**:
   - `dart analyze lib/` completed with 0 errors and 0 warnings.
   - Verification confirmed zero remaining references to `StopStatus` or `stop_votes` across the entire project.
+
+---
+
+### `IMP-070` · Driver-Ready Slide to Confirm Arrival, Per-Member Arrival Timestamps & Full Supabase Persistence
+- **Date**: September 1, 2026
+- **Files Modified / Created**:
+  - [supabase/migrations/022_add_arrival_tracking.sql](file:///d:/Spencer/Downloads/tara_travel/supabase/migrations/022_add_arrival_tracking.sql) **[NEW]**
+  - [supabase/migrations/000_master_schema.sql](file:///d:/Spencer/Downloads/tara_travel/supabase/migrations/000_master_schema.sql) **[MODIFIED]**
+  - [lib/core/models/itinerary_model.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/models/itinerary_model.dart) **[MODIFIED]**
+  - [lib/core/repositories/itinerary_repository.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/repositories/itinerary_repository.dart) **[MODIFIED]**
+  - [lib/core/providers/itinerary_provider.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/providers/itinerary_provider.dart) **[MODIFIED]**
+  - [lib/features/itinerary/widgets/slide_to_arrive_button.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/slide_to_arrive_button.dart) **[NEW]**
+  - [lib/features/itinerary/widgets/stop_detail_sheet.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/stop_detail_sheet.dart) **[MODIFIED]**
+- **Scope & Objectives**:
+  - **Database & Schema Updates**:
+    - Created migration `022_add_arrival_tracking.sql` adding `visited_at` (`timestamptz`) and `checked_in_data` (`jsonb` map of `{userId: ISO_timestamp}`).
+    - Updated `000_master_schema.sql` accordingly.
+  - **Full Supabase Persistence & Mappers**:
+    - Updated `ItineraryRepository.saveItineraryDay()` to serialize `visited_at` and `checked_in_data`.
+    - Updated `_stopFromSupabaseRow()` with `_encodeCheckedInData()` and `_decodeCheckedInData()` helpers.
+  - **Model & Provider Enhancements**:
+    - Refactored `ItineraryStop` to store `Map<String, DateTime> checkedInMembers` for individual arrival timestamps.
+    - Added `memberArrivedAtLabel(memberId)` for formatted per-member arrival times (e.g. `3:45 PM`).
+    - Added `clearVisitedAt` flag to `copyWith` to reliably null out timestamps on undo.
+    - Updated `toggleStopVisited()`, `checkInMember()`, and `updateCheckedInMembers()` to persist immediately to Supabase on arrival and undo.
+  - **UI & Driver-Ready Bottom Dock**:
+    - Added `SlideToArriveButton` in a fixed bottom dock of `StopDetailSheet`.
+    - Displayed arrival time in Metadata Info rows when arrived (`✓ Arrived 3:45 PM (Stop Completed)`).
+    - Displayed per-member arrival times in the companion roster (`✓ Arrived 3:45 PM`).
+    - Added responsive `[ Undo ]` buttons on both the bottom dock and per-member items.
+    - Integrated floating 6-second post-arrival confirmation banner on the main itinerary screen with an instant `[ Undo ]` action button.
+- **Verification**:
+  - `dart analyze lib/` completed with 0 errors and 0 warnings.
+
+---
+
+### `IMP-071` · Relocating Live Nav to Itinerary Floating Dock & Driver Navigation Optimization
+- **Date**: September 1, 2026
+- **Files Modified**:
+  - [lib/features/home/widgets/next_trip_card.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/home/widgets/next_trip_card.dart) **[MODIFIED]**
+  - [lib/features/home/widgets/trip_card.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/home/widgets/trip_card.dart) **[MODIFIED]**
+  - [lib/features/itinerary/widgets/itinerary_bottom_dock.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/itinerary_bottom_dock.dart) **[MODIFIED]**
+  - [lib/features/navigation/widgets/live_map_tab.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/navigation/widgets/live_map_tab.dart) **[MODIFIED]**
+  - [DEV_IDEA.md](file:///d:/Spencer/Downloads/tara_travel/DEV_IDEA.md) **[MODIFIED]**
+- **Scope & Objectives**:
+  - **Home Screen Surface Decluttering**:
+    - Removed `Live Nav` badge button from the top header row of `NextTripCard`.
+    - Removed `Live Nav` action button from `TripCard` bottom action bar, balancing spacing for `Itinerary`, `Packing`, `Members`, `Expenses`, and `Chat`.
+  - **Itinerary Floating Dock Redesign**:
+    - Replaced the 2-button layout in `ItineraryBottomDock` with a 3-button tri-action bar:
+      - Primary Hero Action: `[ 🧭 Live Nav ]` (Gradient coral button with medium impact haptics, opening in-app live navigation).
+      - Secondary Action: `[ 🗺️ Day Map ]` (Frosted pill opening interactive route sheet).
+      - Tertiary Action: `[ ＋ Stop ]` (Quick modal trigger for itinerary managers).
+  - **Driver-Focused Navigation HUD**:
+    - Added direct 1-tap **"Launch Google Maps Turn-by-Turn"** (`google.navigation:q=lat,lng&mode=d`) external handoff to `_TurnCard` in `LiveMapTab`.
+    - Enhanced `_BottomStrip` with higher contrast `[ Exit Nav ]` button for ease of operation.
+- **Verification**:
+  - `dart analyze lib/` passed with 0 errors and 0 warnings.
+
+
+
+
 
 
 
