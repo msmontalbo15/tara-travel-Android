@@ -22,7 +22,7 @@
 
 ---
 
-## 2. 🗄️ SUPABASE DATABASE SCHEMAS (17 ACTIVE TABLES)
+## 2. 🗄️ SUPABASE DATABASE SCHEMAS (16 ACTIVE TABLES)
 
 ```sql
 -- 1. USERS
@@ -137,7 +137,6 @@ public.itinerary_stops (
   lng double precision,
   cost_estimate numeric(10,2) default 0,
   type text not null check (type in ('hotel','activity','food','transport','custom')),
-  status text not null default 'planned' check (status in ('planned','completed','skipped','arrived')),
   booking_ref text,
   day_number integer default 1,
   sort_order integer default 0,
@@ -146,18 +145,7 @@ public.itinerary_stops (
   updated_at timestamptz default now()
 );
 
--- 8. STOP VOTES
-public.stop_votes (
-  id uuid primary key default gen_random_uuid(),
-  stop_id uuid references public.itinerary_stops(id) on delete cascade,
-  user_id uuid references public.users(id) on delete cascade,
-  vote text not null check (vote in ('up', 'down')),
-  created_at timestamptz default now(),
-  updated_at timestamptz default now(),
-  unique (stop_id, user_id)
-);
-
--- 9. PACKING ITEMS
+-- 8. PACKING ITEMS
 public.packing_items (
   id uuid primary key default gen_random_uuid(),
   trip_id uuid references public.trips(id) on delete cascade,
@@ -412,11 +400,10 @@ Client Tier               Storage Tier                Transport Tier
 ### 6. `ItineraryRepository` (`lib/core/repositories/itinerary_repository.dart`)
 - `Future<List<ItineraryStop>> getStops(String tripId)` — Direct Supabase query ordered by `day_number`, `sort_order`.
 - `Future<List<ItineraryDay>> getItinerary(String tripId, {startDate, endDate})` — Builds accurate chronological days aligned to the trip's date range (`fromDate` to `toDate`) and groups stops into day clusters.
-- `Future<void> updateStopStatus(String stopId, StopStatus status)` — Syncs stop status (`planned`, `completed`, `skipped`, `arrived`) to Supabase.
 - `Future<void> saveItineraryDay(String tripId, ItineraryDay day)` — Direct PostgREST upsert to `itinerary_stops`.
 - `Future<void> deleteStop(String stopId)` — Direct delete from `itinerary_stops`.
-- `Future<void> voteOnStop({tripId, stopId, memberId, upvote})` — Collaborative vote upsert into `public.stop_votes`.
-- `Future<void> removeVote({stopId, memberId})` — Removes member vote from `public.stop_votes`.
+- `Future<void> deleteStops(List<String> stopIds)` — Direct batch delete from `itinerary_stops`.
+- `Future<void> deleteStopsBeyondDay(String tripId, int maxDayNumber)` — Cleans up remote orphaned stops when trip duration is shortened.
 
 ### 7. `PackingRepository` (`lib/core/repositories/packing_repository.dart`)
 - `Future<List<PackingCategory>> getCategories(String tripId)` — Direct fetch from `public.packing_items` + auto default seed.
@@ -460,7 +447,7 @@ Client Tier               Storage Tier                Transport Tier
 | `tripProvider` | `StateNotifierProvider<TripNotifier, AsyncValue<List<TripModel>>>` | Global list of user trips, add/edit/archive/delete/join actions. |
 | `selectedTripProvider` | `StateProvider<TripModel?>` | Active trip context across Detail, Itinerary, Budget, Packing, Chat. |
 | `activeTripProvider` | `FutureProvider<TripModel?>` | Returns the first non-draft, non-archived trip (or selected trip if unarchived); returns `null` when only archived trips exist. |
-| `profileProvider` | `StateNotifierProvider<ProfileNotifier, ProfileState>` | User profile state, surname privacy toggle, encrypted data sync. |
+| `profileProvider` | `StateNotifierProvider<ProfileNotifier, ProfileState>` | User profile state, surname privacy toggle, encrypted data sync, `isAccountFullySet` onboarding guard & auto-recovery. |
 | `chatNotifierProvider(tripId)`| `StateNotifierProvider<ChatNotifier, ChatState>` | Live chat messages, presence typing indicators, optimistic send. |
 | `itineraryNotifierProvider(tripId)` | `StateNotifierProvider<ItineraryNotifier, AsyncValue<List<ItineraryDay>>>` | Multi-day stops, voting counters, drag-and-drop ordering. |
 | `packingNotifierProvider(tripId)` | `StateNotifierProvider<PackingNotifier, PackingState>` | Categorized packing list, progress percentage, member assignment. |
@@ -797,9 +784,9 @@ Client Tier               Storage Tier                Transport Tier
   - `TransitConflictHelper`: Computes Haversine geodesic distance, estimated travel time by speed profile, and detects schedule collisions (start before previous end) or tight buffers (< 15 mins).
   - `InterStopTransitBadge`: Displays inter-stop transit duration, distance, and collision/tight buffer warning badges.
 - **Cost-to-Expense Handoff**:
-  - 1-tap conversion from `StopCard` / `_StopDetailSheet` pre-populating `AddExpenseForm` (description, cost, category, date).
-- **Group Roll Call**:
-  - `RollCallSheet` allows organizers to toggle companion check-ins per stop; updates `checkedInMemberIds` and syncs real-time state.
+  - 1-tap conversion from `StopDetailSheet` pre-populating `AddExpenseForm` (description, cost, category, date).
+- **Group Presence & Companion Arrival Hub**:
+  - `StopDetailSheet` houses the consolidated "Members" arrival hub with inline interactive roster and batch "Mark Everyone as Arrived" (`RollCallSheet` retired).
 - **Day Management**:
   - `shiftDaySchedule(dayIndex, minutesOffset)`: Adjusts all start/end times forward or backward by 30m or 60m.
   - `duplicateDay(dayIndex)`: Clones day and all stops into a new appended itinerary day.
@@ -830,13 +817,39 @@ Client Tier               Storage Tier                Transport Tier
   - `DayInsightsHeader` (`lib/features/itinerary/widgets/day_insights_header.dart`): Collapsible accordion card consolidating day weather (`DayForecast`), budget burn rate (`DayBudgetBar`), progress ring, and squad presence (`ItineraryFulfillmentBanner`).
   - `ItineraryActionSheet` (`lib/features/itinerary/widgets/itinerary_action_sheet.dart`): Unified bottom sheet consolidating secondary actions (Share, Calendar Export via `Add2Calendar`, Day Map View, Schedule Shifting, Stop Reassignment across days, Duplicate Day, Clear Stops, Delete Day).
   - `ItineraryBottomDock` (`lib/features/itinerary/widgets/itinerary_bottom_dock.dart`): Floating bottom action bar providing 1-tap route navigation & map overview and primary `+ Add Stop` button.
-  - `StopDetailSheet` (`lib/features/itinerary/widgets/stop_detail_sheet.dart`): Modular detail sheet with photo gallery, 1-tap Google Maps directions, expense conversion, roll call presence, and group voting.
+  - `StopDetailSheet` (`lib/features/itinerary/widgets/stop_detail_sheet.dart`): Modular detail sheet with photo gallery, 1-tap Google Maps directions, expense conversion, companion arrival roster, and group voting.
   - `ItineraryMapSheet` (`lib/features/itinerary/widgets/itinerary_map_sheet.dart`): Modular map bottom sheet with live companion rider presence chips, interactive map, and multi-stop route directions.
   - `SmartSuggestionChips` (`lib/features/itinerary/widgets/smart_suggestion_chips.dart`): Collapsible quick add template drawer.
   - **Automated GPS Arrival Geofencing**:
     - Connected to `LocationTrackingService.instance.snapshotStream`.
     - Automatically checks proximity against active day's uncompleted stops with coordinates.
     - Triggers floating `ArrivalPill` when user is within $150\text{m}$ geofence, with session dismiss cooldown tracking (`_dismissedStopIds`).
+
+---
+
+## 16. 🎴 ULTRA-SIMPLIFIED STOP CARDS & UNIFIED PRESENCE HUB (IDEA-007 / IMP-068)
+
+- **Location**: `lib/features/itinerary/widgets/`
+- **Core Architectural Invariants**:
+  - **Ultra-Clean `StopCard`**: Reduced to pure essential metadata (Time, Title, Location, Type chip, Cost, Reference ID, and read-only checked-in member avatar preview). Single prominent CTA: `[ 🧭 Navigate ]`. Multi-button action rows (Check-in, Roll call, Expense) completely removed from the card face.
+  - **Top-Right Sheet Controls**: `StopDetailSheet` places the `[ ✏️ Edit ]` button and dismiss `[ ✕ ]` in the top-right header for clean administrative separation.
+  - **Canonical "Mark as Arrived" Hero CTA**: Replaces confusing multi-button check-ins with a 1-tap self-check-in hero button (`[ 📍 Mark as Arrived (You) ]` / `[ ✓ You Arrived at ... · Tap to Undo ]`).
+  - **Unified "Members" Arrival Hub**: Completely retires "Roll Call" terminology. `StopDetailSheet` includes an interactive expandable "Members (X/Y Arrived)" hub with per-companion status badges, 1-tap arrival toggles, and batch "Mark Everyone as Arrived" for organizers.
+  - **`RollCallSheet` Deprecation**: `RollCallSheet` is permanently deleted; its presence logic is fully unified inside `StopDetailSheet`.
+
+---
+
+## 17. 🗑️ RETIREMENT OF STOP VOTES & LEGACY STATUS LIFECYCLE (IMP-069)
+
+- **Database / Backend**:
+  - `public.stop_votes` table permanently dropped via Migration 021 (`021_drop_stop_votes_and_stop_status.sql`).
+  - `status` column dropped from `public.itinerary_stops` table.
+  - Realtime publication `stop_votes` and `stopVotesRealtimeProvider` removed.
+- **Client Architecture**:
+  - `StopStatus` enum and all related mappers (`_fromDbStatus`, `_toDbStatus`) deleted.
+  - `votes` map and `voteScore` removed from `ItineraryStop` model.
+  - `Group Vote` section and `Approve / Mark Done` status action rows removed from `StopDetailSheet`.
+  - Canonical stop completion and arrival is exclusively tracked via `visitedAt` timestamp and `checkedInMemberIds`.
 
 ---
 

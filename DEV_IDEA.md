@@ -4,7 +4,7 @@ This document tracks developer proposals, feature concepts, and architectural en
 
 ---
 
-## 💡 IDEA-001: Standardized & Brand-Unified Feedback System (Alerts, SnackBars & Modals)
+## ✅ IDEA-001: Standardized & Brand-Unified Feedback System (Alerts, SnackBars & Modals) [COMPLETED]
 
 ### 1. Context & Motivation
 Currently, alerts, error messages, action confirmations, and floating SnackBars across screens (`trip_detail_screen.dart`, `join_trip_modal.dart`, `profile_screen.dart`, etc.) are implemented ad-hoc using raw `ScaffoldMessenger.of(context).showSnackBar(SnackBar(...))` or standard alert dialogs with varying styling, borders, and durations.
@@ -67,7 +67,7 @@ Create reusable, type-safe feedback services and widgets:
 
 ---
 
-## 💡 IDEA-002: Streamlined Itinerary Experience via Progressive Disclosure & Unified Action Hub
+## ✅ IDEA-002: Streamlined Itinerary Experience via Progressive Disclosure & Unified Action Hub [COMPLETED]
 
 ### 1. Context & Pain Points
 The current Itinerary screen (`itinerary_screen.dart`, ~1,600+ lines) is packed with features:
@@ -136,7 +136,7 @@ Declutter the visual presentation while retaining **100% of existing functionali
 
 ---
 
-## 💡 IDEA-003: Real-Time Group Live Location Sharing, Convoy Tracking & Direct Member Navigation
+## ✅ IDEA-003: Real-Time Group Live Location Sharing, Convoy Tracking & Direct Member Navigation [COMPLETED]
 
 ### 1. Context & Motivation
 During group travels (road trips, island hopping, crowded markets, hiking), companions frequently get separated, take different transport routes, or need to regroup quickly. While Tara Travel currently has mock live telemetry models and radar widgets (`lib/features/navigation/`), it lacks:
@@ -413,3 +413,322 @@ As Tara Travel scales, two critical architectural requirements emerge:
 4. [ ] **Helpdesk & Ticket Management**: Implement user feedback triage table with response dispatching to mobile notifications.
 5. [ ] **Remote Config API**: Expose cached JSON endpoints (`/api/v1/config`, `/api/v1/templates`) with Cloudflare edge caching.
 6. [ ] **Deployment Manifests**: Configure Dockerfile and deployment scripts for zero-cost hosting on **Fly.io** or **Render** with Cloudflare DNS/SSL.
+
+---
+
+## 💡 IDEA-006: Cloud-Native Avatar Storage & CDN Cache Architecture (Supabase Storage + PostgreSQL)
+
+### 1. Problem Statement & Motivation
+Currently:
+- When a user picks a photo from the gallery or camera in [profile_screen.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/profile/profile_screen.dart#L2080-L2094), the local file path (e.g. `/data/user/0/.../image_picker_xxx.jpg`) is saved into the local state.
+- **Flaws**:
+  1. **Device Isolation**: Other trip members or friends cannot see the user's avatar (`NetworkImage` fails or falls back to initials).
+  2. **Storage Bloat & Loss**: If the app clears its cache or the user logs in from a different device, the local path becomes invalid.
+  3. **Performance Degradation**: Large uncompressed raw camera images ($5\text{MB}+$) consume excessive device memory and bandwidth.
+
+### 2. Architectural Solution Overview
+Adopt a **Cloud-Native Avatar Pipeline** that pairs **Client-Side Compression** + **Supabase Storage Bucket (`avatars`)** + **PostgreSQL Public URL Persistence** + **Cached Network Fallback**.
+
+```
+┌─────────────────┐       ┌─────────────────┐       ┌──────────────────────┐       ┌────────────────────────┐
+│ Image Picker /  │ ----> │ Client-Side     │ ----> │ Supabase Storage     │ ----> │ PostgreSQL public.users│
+│ Camera (XFile)  │       │ WebP/JPEG Comp. │       │ Bucket ('avatars')   │       │ avatar_url = CDN URL   │
+└─────────────────┘       └─────────────────┘       └──────────────────────┘       └────────────────────────┘
+                                                                                                │
+                                                                                                ▼
+                                                                                   ┌────────────────────────┐
+                                                                                   │ Tara Universal UI      │
+                                                                                   │ (CachedNetworkImage)   │
+                                                                                   └────────────────────────┘
+```
+
+---
+
+### 3. Detailed Technical Architecture
+
+#### A. Supabase Storage Infrastructure & RLS Policies
+1. **Dedicated Public Bucket**: `avatars`
+2. **Object Path Convention**:
+   - `avatars/{user_id}/avatar_{timestamp}.webp` or `avatars/{user_id}/avatar.webp` (upsert = `true` to replace existing).
+3. **Storage RLS Security Policy**:
+   ```sql
+   -- Allow public read access to avatar images
+   create policy "Public Avatar Read Access"
+     on storage.objects for select
+     using (bucket_id = 'avatars');
+
+   -- Allow authenticated users to upload and overwrite ONLY their own avatar folder
+   create policy "User Avatar Write Access"
+     on storage.objects for insert to authenticated
+     with check (
+       bucket_id = 'avatars' 
+       and (storage.foldername(name))[1] = auth.uid()::text
+     );
+
+   create policy "User Avatar Update Access"
+     on storage.objects for update to authenticated
+     using (
+       bucket_id = 'avatars' 
+       and (storage.foldername(name))[1] = auth.uid()::text
+     );
+
+   create policy "User Avatar Delete Access"
+     on storage.objects for delete to authenticated
+     using (
+       bucket_id = 'avatars' 
+       and (storage.foldername(name))[1] = auth.uid()::text
+     );
+   ```
+
+#### B. Client-Side Image Optimization Pipeline
+- **Resize & Compress**:
+  - Max dimensions: $512 \times 512\text{px}$ (square avatar crop).
+  - Target file size: $\le 60\text{KB}$ with WebP / JPEG 85% quality.
+- **Eliminate Local Storage Bloat**:
+  - Remove raw picked image temp files from app sandbox cache once uploaded.
+
+#### C. Database Synchronization & Reactive State
+1. **Upload File to Supabase Storage**:
+   ```dart
+   final fileBytes = await compressedFile.readAsBytes();
+   final path = '${user.id}/avatar.webp';
+   await supabase.storage.from('avatars').uploadBinary(
+     path,
+     fileBytes,
+     fileOptions: const FileOptions(upsert: true, contentType: 'image/webp'),
+   );
+   final publicUrl = supabase.storage.from('avatars').getPublicUrl(path);
+   // Append cache-buster timestamp query param to bypass stale CDN caches
+   final freshUrl = '$publicUrl?t=${DateTime.now().millisecondsSinceEpoch}';
+   ```
+2. **Persist in `public.users` & `auth.users`**:
+   - Update `public.users.avatar_url` via [profile_repository.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/repositories/profile_repository.dart).
+   - Sync `auth.updateUser(UserAttributes(data: {'avatar_url': freshUrl}))`.
+3. **Propagate via Riverpod**:
+   - `ref.read(profileProvider.notifier).updatePhoto(freshUrl)`.
+   - Automatically reflects in trip member lists, friend lists, and chat cards.
+
+#### D. Unified UI Component (`AppAvatar`)
+Create a single reusable widget [app_avatar.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/widgets/app_avatar.dart) handling:
+- **HTTP / CDN URLs**: Loaded via `CachedNetworkImage` with memory cache and disk cache limits.
+- **Initial Fallbacks**: Renders stylized Initials with deterministic brand color when `avatar_url` is null/empty or network fails.
+- **Offline Mode**: Uses local memory cache before falling back to initials.
+
+---
+
+### 4. Implementation Steps
+1. [ ] **Supabase Storage Migration**: Create `021_storage_avatars_bucket.sql` creating the `avatars` bucket and strict RLS owner policies.
+2. [ ] **Storage Upload Service**: Create `StorageService` or add `uploadAvatar(File file, String userId)` to `ProfileRepository`.
+3. [ ] **Client Compression**: Integrate image compression before upload to keep uploads $< 60\text{KB}$.
+4. [ ] **Profile Screen Integration**: Update `_pickAndSavePhoto()` in `profile_screen.dart` and `onboarding_screen.dart` to upload to cloud storage before saving.
+5. [ ] **Unified `AppAvatar` Component**: Refactor `profile_screen.dart`, `friend_list_item.dart`, and `details_step.dart` to use unified `AppAvatar` with `CachedNetworkImage`.
+
+---
+
+## 🤖 IDEA-006: In-App AI Travel Assistant & Copilot ("Tara AI")
+
+### 1. Context & Motivation
+Group travelers and solo adventurers often face logistical overhead during trip execution: budgeting questions ("How much have we spent on food?"), itinerary optimization ("What should we visit next between 2 PM and 5 PM near BGC?"), packing advice ("What essentials do I need for Sagada spelunking?"), and local cultural / transit tips.
+
+Integrating **Tara AI** provides an intelligent, context-aware companion inside the app that understands the user's active trip state (itinerary stops, budget, expenses, packing items, companions, weather) and can execute automated assistant actions (e.g., adding stops, generating packing lists, summarizing expenses).
+
+---
+
+### 2. Core Feature Specifications & Best Practice Proposals
+
+#### A. 🧠 Context-Aware Trip Copilot Engine
+- **In-Memory Trip Injection**:
+  - The AI assistant is automatically grounded with the active trip context:
+    - Destination & Dates
+    - Group size & companions
+    - Current itinerary schedule and stops
+    - Budget cap and categorized expenses logged so far
+    - Weather forecast for the destination
+- **Local Filipino & Regional Travel Intelligence**:
+  - Built-in prompt awareness of local Philippine transit (jeepney routes, tricycles, RORO ferries, tollways), local customs, tipping norms, peak seasons, and emergency hotlines (PNP, Coast Guard, NDRRMC).
+
+#### B. 💬 Chat UI & Conversational Capabilities
+- **Access Points**:
+  - Global Floating Action Pill / FAB on Home Screen and Trip Detail Screen.
+  - Dedicated "Tara AI" tab or drawer sheet with full-screen conversation view.
+  - **"Create Trip with Tara AI"** prompt card in the Trip Creation / Home Screen flow.
+- **Quick Action Starter Chips**:
+  - *"🏖️ Plan a 3-day weekend trip to Siargao for 4 people under ₱25k"*
+  - *"✨ Suggest day 2 afternoon activities"*
+  - *"📊 Summarize our current spending vs budget"*
+  - *"🎒 What packing items are we missing?"*
+  - *"🌧️ What's an indoor backup plan if it rains?"*
+- **Streaming Response & Markdown Rendering**:
+  - Token-by-token streaming response with rich markdown formatting (bolding, bullet points, budget tables).
+- **Haptic & Visual Feedback**:
+  - Subtle typing indicators and brand-themed bubble avatars (`#D85A30` coral accents).
+
+#### C. ⚡ Interactive Tool Calling & Autonomous Actions
+Tara AI can output structured function-call intents that the Flutter client parses to directly execute app actions:
+1. **`create_trip_proposal` (AI Full-Trip Generator)**:
+   - User types: *"Plan a 4-day food and beach trip to Cebu for 3 friends next month, budget ₱30k total"*.
+   - Tara AI outputs a complete trip proposal:
+     - Title, Destination, Trip Type (`Beach`, `Food`, `Adventure`, etc.), Estimated Dates, and Budget.
+     - Day-by-day Itinerary breakdown with suggested stops (name, time, location, estimated cost).
+     - Recommended starter packing items.
+   - User reviews the generated proposal card with a single tap: **"🚀 Create & Launch This Trip"** $\rightarrow$ writes to `trips`, batches `itinerary_stops`, and populates `packing_items` via `TripRepository`.
+2. **`add_itinerary_stop`**:
+   - Suggests a spot $\rightarrow$ User taps **"Add to Itinerary"** button $\rightarrow$ automatically opens pre-filled stop modal with name, time, estimated cost, and notes.
+3. **`add_packing_items`**:
+   - Generates tailored checklist items $\rightarrow$ User taps **"Add all to Packing List"** $\rightarrow$ bulk-inserts into `packing_items`.
+4. **`calculate_split_summary`**:
+   - Computes multi-person debt settlements on the fly based on current `expenses` table data.
+
+#### D. 🔒 Security, Privacy & API Key Governance
+- **Zero Client-Side API Key Exposure**:
+  - Calls routed via Supabase Edge Function (`supabase/functions/tara-copilot`) or secure backend proxy.
+  - Client sends JWT auth token + context JSON payload.
+- **Privacy Enforcement**:
+  - User names masked to display format (`Juan D.`).
+  - Sensitive personal data stripped before forwarding to LLM endpoints.
+- **Offline / Rate-Limit Fallback**:
+  - Graceful fallback with offline pre-cached travel tips and rule-based canned responses when network is unavailable.
+
+---
+
+### 3. Architecture & State Management
+
+```
+┌────────────────────────────────────────────────────────┐
+│                   Tara AI Chat Screen                  │
+│              (lib/features/ai_assistant/)              │
+└───────────────────────────┬────────────────────────────┘
+                            │ (Riverpod State)
+                            ▼
+┌────────────────────────────────────────────────────────┐
+│              AiAssistantNotifier / State               │
+│          (Chat History, Stream State, Actions)         │
+└───────────────────────────┬────────────────────────────┘
+                            │
+              ┌─────────────┴─────────────┐
+              ▼                           ▼
+┌───────────────────────────┐   ┌────────────────────────┐
+│   TripContextSerializer   │   │  AiAssistantRepository │
+│  (Stops, Budget, Packing) │   │ (Supabase Edge / API)  │
+└───────────────────────────┘   └───────────┬────────────┘
+                                            │ (POST /stream)
+                                            ▼
+                                ┌────────────────────────┐
+                                │  Supabase Edge Func    │
+                                │    `tara-copilot`      │
+                                └────────────────────────┘
+```
+
+---
+
+### 4. Implementation Steps
+1. [ ] **Domain & State Design**: Create `AiMessage` model with support for roles (`user`, `assistant`, `system`), tool call actions (`create_trip`, `add_stop`, `add_packing`), and timestamping in `lib/features/ai_assistant/models/`.
+2. [ ] **AI Trip Proposal Generator**: Design structured schema & parser for full trip creation payloads (`title`, `dates`, `budget`, `trip_type`, `itinerary_stops`, `packing_items`).
+3. [ ] **Context Serializer**: Create `TripContextSerializer` in `lib/features/ai_assistant/services/` to extract and compact active trip data into structured LLM system prompts.
+4. [ ] **Repository & Edge Function Service**: Create `AiAssistantRepository` implementing secure streaming inference (Gemini / OpenAI API via Supabase Edge Function).
+5. [ ] **Riverpod State Management**: Build `aiAssistantProvider` (`AiAssistantState` / `AiAssistantNotifier`) handling message history, streaming tokens, error states, and tool execution callbacks.
+6. [ ] **Interactive Chat Screen & Trip Preview Card**: Implement `TaraAiChatScreen`, `AiTripProposalCard`, and `AiActionCard` components with starter prompts, markdown parsing, and one-tap creation actions (**"🚀 Create & Launch This Trip"**, **"Add Stop"**, **"Add Packing Items"**).
+
+---
+
+## 📍 IDEA-007: Ultra-Simplified Itinerary Stop Cards & Unified "Mark as Arrived" Presence Hub
+
+### 1. Context & Motivation
+Currently, each `StopCard` on the Itinerary screen contains multiple competing action buttons (Check-In button, Roll Call button with counters, expense trigger, and navigation actions). This creates visual clutter and information overload on the main itinerary feed. Furthermore, "Check In" and "Roll Call" are conceptually redundant since both manipulate the exact same arrival state (`checkedInMemberIds`, `visitedAt`, `status`).
+
+To achieve clean visual hierarchy and an effortless user experience:
+1. **Stop Card Simplification**: Strip the `StopCard` down to its essential information (time, title, category/location, cost, and a clean arrival badge) with **only one single primary CTA**: **"🗺️ Map" / "🧭 Navigate"**.
+2. **Move Actions Inside `StopDetailSheet`**: Tapping any stop opens the comprehensive detail sheet, where the user can access secondary actions (Log Expense, Edit/Delete Stop, and Group Arrival Management).
+3. **Unified Presence & Member Arrival Roster in Detail Sheet**: Completely retire "Roll Call" in favor of **"Mark as Arrived"**. Inside the detail sheet, show a clear live breakdown of **"Companions Arrived"** vs. **"Not Yet Arrived"** with 1-tap toggles.
+
+---
+
+### 2. Core Feature Specifications & Best Practice Proposals
+
+#### A. 🎴 Ultra-Clean `StopCard` Design (Single CTA)
+- **Visual Hierarchy**:
+  - **Left**: Time slot & stop category icon.
+  - **Center**: Stop title, location subtitle, budget/cost chip, and a subtle status indicator (e.g. green check pill `✓ Arrived` if visited).
+  - **Right / Primary CTA**: A single, prominent action button:
+    - **`[ 🧭 Navigate ]` / `[ 🗺️ Map ]`**: Instantly launches Google Maps/Apple Maps or in-app route preview.
+  - **Removed from Card Surface**: All multi-button rows (Check-In button, Roll Call button, and Expense shortcut) are removed from the card face, keeping the feed minimal and readable.
+- **Card Tap Interaction**: Tapping anywhere on the card body opens the `StopDetailSheet`.
+
+#### B. 👥 "Members" Arrival Button & Interactive Avatar Roster in `StopDetailSheet`
+- **Top-Right Edit & Action Header**:
+  - The **`[ ✏️ Edit ]`** button (and overflow/delete menu) is placed prominently in the **top-right corner** of the sheet header, keeping administrative actions cleanly separated from the primary travel flow.
+- **Canonical "Mark as Arrived" Hero Action**:
+  - Prominent 1-tap button for the current user:
+    - Default state: `[ 📍 Mark as Arrived ]` (Coral brand button)
+    - Arrived state: `[ ✓ You Arrived at 2:30 PM ]` (Soft green surface, tap to undo)
+- **Dedicated "Members" Arrival Trigger & Avatar Preview**:
+  - In `StopDetailSheet`, for group trips, a sleek **"Members (3/5 Arrived)"** card/button:
+    - Displays an **overlapping avatar stack** of arrived companions + badge of total arrived (`✓ 3/5`).
+    - Tapping this button expands or reveals the **Companion Arrival List**:
+      1. **Arrived Companions (`✓`)**:
+         - Member avatar with green arrival ring, formatted name (`Juan D.`), and timestamp (`Arrived 2:15 PM`).
+         - 1-tap undo option.
+      2. **Not Yet Arrived (`⏳`)**:
+         - Muted member avatar, formatted name, and direct `[ + Mark Arrived ]` button.
+      3. **Batch Shortcut**: `"Mark Everyone as Arrived"` button for group organizers.
+
+#### C. 🚀 Geofence & GPS `ArrivalPill` Harmony
+- The automated background GPS geofence retains its high-utility popup:
+  - When within 150m of a stop, the floating `ArrivalPill` appears with swipe-to-check-in.
+  - Tapping the pill body opens the `StopDetailSheet` directly with the arrival roster ready.
+
+---
+
+### 3. Architecture & Interaction Flow
+
+```
+┌────────────────────────────────────────────────────────┐
+│                   Itinerary Stop Card                  │
+│   [Time] [Title & Location]        [🧭 Navigate (Only)]│
+└───────────────────────────┬────────────────────────────┘
+                            │ (Tap card body)
+                            ▼
+┌────────────────────────────────────────────────────────┐
+│                    StopDetailSheet                     │
+├────────────────────────────────────────────────────────┤
+│  [Drag Handle]                          [✏️ Edit] [✕]  │
+│  • Stop Title & Photo Gallery                          │
+│                                                        │
+│  • [ 📍 Mark as Arrived (You) ] (Primary Hero CTA)     │
+│                                                        │
+│  • [ 👥 Members (3/5 Arrived)  [Avatars Stack]  ▼ ]   │
+│    └─► Expands / Opens Member Arrival Roster:          │
+│        ✓ Maria S. (Arrived 2:15 PM)                    │
+│        ✓ Juan D.  (Arrived 2:20 PM)                    │
+│        ⏳ Carlos T.               [+ Mark Arrived]      │
+│                                                        │
+│  • [ 💵 Log Expense ]                                  │
+└───────────────────────────┬────────────────────────────┘
+                            │
+                            ▼
+┌────────────────────────────────────────────────────────┐
+│             ItineraryNotifier / Repository             │
+│        Updates `checkedInMemberIds` & `status`         │
+└────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 4. Implementation Steps
+1. [x] **`StopCard` Simplification**: Remove `_CheckInButton` and `_RollCallPillButton` from `stop_card.dart`. Ensure the sole visible CTA is `[ 🧭 Navigate ]` / `[ 🗺️ Map ]`.
+2. [x] **Top-Right Edit Placement**: Position the `[ ✏️ Edit ]` button on the top-right header of `StopDetailSheet` alongside the close/dismiss action.
+3. [x] **Retire "Roll Call" Terminology**: Replace all occurrences of "Roll Call" in code, labels, tooltips, and action sheets with "Mark as Arrived" / "Members".
+4. [x] **Detail Sheet "Members" Button & Avatar Roster**: In `StopDetailSheet` (`lib/features/itinerary/widgets/stop_detail_sheet.dart`):
+   - Add primary `Mark as Arrived` button for self-check-in.
+   - Add a dedicated `[ 👥 Members (3/5 Arrived) ]` button with avatar stack that opens/expands the companion arrival roster.
+   - Display member avatars with status badges (`Arrived` vs `Not Arrived`) and direct check-in toggles.
+   - Include batch `"Mark All as Arrived"` button for organizers.
+5. [x] **Deprecate Separate `RollCallSheet`**: Merge its presence logic and member lists directly into the `StopDetailSheet` "Members" component.
+6. [x] **Arrival Pill & Notification Sync**: Ensure `ArrivalPill` swipe-to-check-in seamlessly updates the same state and links to the newly structured detail sheet.
+
+
+
+
+
+
+

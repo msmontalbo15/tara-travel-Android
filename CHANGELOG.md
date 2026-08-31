@@ -1,7 +1,7 @@
 # Tara Travel — Version Changelog
 
 > Auto-generated from IMPLEMENTATION_MEMORY.md + git log
-> Last updated: **2026-08-31 02:48 PHT**
+> Last updated: **2026-09-01 02:56 PHT**
 
 ---
 
@@ -1379,6 +1379,69 @@
 
 ## 2026-08-31
 
+### IMP-068 - Ultra-Simplified Stop Cards & Unified Presence Hub (IDEA-007)
+
+**Component**: Itinerary / Ultra-Simplified Stop Cards & Presence Hub
+
+**Summary**: Ultra-Simplified Itinerary Stop Cards & Unified "Mark as Arrived" Presence Hub (IDEA-007): stripped StopCard to single Navigate CTA, added top-right edit & hero self check-in to StopDetailSheet, built inline companion arrival roster with batch toggle, and retired RollCallSheet.
+
+<details>
+<summary>Full implementation detail</summary>
+
+- **Date**: August 31, 2026
+- **Files Modified / Deleted**:
+  - [lib/features/itinerary/widgets/stop_card.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/stop_card.dart) **[MODIFIED]**
+  - [lib/features/itinerary/widgets/stop_detail_sheet.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/stop_detail_sheet.dart) **[MODIFIED]**
+  - [lib/features/itinerary/itinerary_screen.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/itinerary_screen.dart) **[MODIFIED]**
+  - [lib/features/itinerary/widgets/roll_call_sheet.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/roll_call_sheet.dart) **[DELETED]**
+- **Scope & Objectives**:
+  - **Ultra-Simplified `StopCard`**:
+    - Stripped competing and redundant action buttons (Check-In button, Roll Call pill button, Expense shortcut chip, Edit button) from the card surface.
+    - Set single prominent CTA: `[ 🧭 Navigate ]` which launches Google Maps route navigation.
+    - Cleaned up presence info to display a subtle read-only avatar stack and count (`3/5 present`) when companions have arrived.
+  - **`StopDetailSheet` Presence & Action Hub Overhaul**:
+    - Re-positioned `[ ✏️ Edit ]` button and dismiss `[ ✕ ]` to the top-right header.
+    - Implemented Canonical "Mark as Arrived" hero button with reactive state (`[ 📍 Mark as Arrived (You) ]` / `[ ✓ You Arrived at ... · Tap to Undo ]`).
+    - Added dedicated expandable "Members (X/Y Arrived)" presence card with companion avatar stack preview.
+    - Created inline interactive `_MemberArrivalRoster` with per-member status indicators (`✓ Arrived` vs `⏳ Not yet arrived`), 1-tap toggles, formatted privacy-safe names, and batch `"Mark Everyone as Arrived"` button.
+  - **Terminology Standardization**:
+    - Completely retired legacy "Roll Call" terminology across all widgets, tooltips, and action handlers in favor of "Members" and "Mark as Arrived".
+  - **Clean Code & Deprecation**:
+    - Permanently removed obsolete standalone `roll_call_sheet.dart`.
+- **Verification**:
+  - `dart analyze lib/` passed with 0 errors and 0 warnings.
+  - `flutter analyze` completed with 0 errors and 0 warnings.
+
+</details>
+
+---
+
+### IMP-067 - Auth Onboarding Bypass & Account State Guard
+
+**Component**: Auth / Onboarding Bypass & Account State Guard
+
+**Summary**: Fixed onboarding resurfacing for existing accounts by adding `isAccountFullySet` fallback checks, auto-recovering `hasCompletedOnboarding` in `ProfileNotifier`, and updating `AuthGate` & `OnboardingScreen` lifecycle guards.
+
+<details>
+<summary>Full implementation detail</summary>
+
+- **Date**: August 31, 2026
+- **Files Modified**:
+  - [lib/core/providers/profile_provider.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/providers/profile_provider.dart) **[MODIFIED]**
+  - [lib/core/widgets/auth_gate.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/widgets/auth_gate.dart) **[MODIFIED]**
+  - [lib/features/onboarding/onboarding_screen.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/onboarding/onboarding_screen.dart) **[MODIFIED]**
+- **Scope & Objectives**:
+  - **Account Completeness Guard (`isAccountFullySet`)**: Added `isAccountFullySet` getter on `ProfileState` to check whether onboarding is flagged completed or if fundamental profile attributes (`homeCity` or configured `displayName`/`firstName`) are already present.
+  - **Auto-Recovery on Hydration**: Updated `ProfileNotifier._loadProfile()` to automatically detect existing user accounts and normalize `hasCompletedOnboarding: true` during remote profile hydration, preventing false-negative onboarding redirection.
+  - **AuthGate Robust Destination Routing**: Routed authenticated users using `profile.isAccountFullySet ? '/home' : '/onboarding'`.
+  - **OnboardingScreen Post-Frame Interceptor**: Added early bypass check in `OnboardingScreen.didChangeDependencies()` to immediately transition authenticated existing users directly to `/home`.
+- **Verification**:
+  - `dart analyze lib/` passed with 0 errors and 0 warnings.
+
+</details>
+
+---
+
 ### IMP-066 - Shared TripTypeCarousel & Full-Spectrum Trip Types Support
 
 **Component**: UI / Shared TripTypeCarousel & Type Precision
@@ -1402,10 +1465,6 @@
     - Extracted the infinite-scroll card carousel from `details_step.dart` into a reusable, standalone [`TripTypeCarousel`](file:///d:/Spencer/Downloads/tara_travel/lib/shared/widgets/trip_type_carousel.dart) widget.
     - Integrated `TripTypeCarousel` into both `DetailsStep` (Create Trip) and `EditTripSheet` (Edit Trip), eliminating ~400 lines of duplicated carousel code.
   - **Full-Spectrum Trip Type Precision**:
-    - Removed the legacy 9-value whitelist constraint (`trips_type_check`) in PostgreSQL and Dart (`toSupabaseInsert` & `updateTrip`).
-    - Enabled all 16 `AppTripTypes` options (Road Trip, Foodie, Cruise, Backpacking, Wellness, Festival, Solo, Family, Romantic, Luxury, etc.) to round-trip and persist accurately.
-- **Verification**:
-  - Ran `flutter analyze lib/` with 0 errors and 0 warnings.
 
 </details>
 
@@ -1456,6 +1515,53 @@
     - Streamlined `TripCard`, `NextTripCard`, `TripDetailScreen`, `TripsScreen`, `QuickBudgetSheet`, and `TripActionSheet` to consume unified `trip.coverColor` and `trip.coverEmoji` getters cleanly.
 - **Verification**:
   - `flutter analyze` verified 0 compilation errors across the workspace.
+
+</details>
+
+---
+
+## 2026-09-01
+
+### IMP-069 - Retirement of Stop Votes & Legacy Status Lifecycle
+
+**Component**: Database & Itinerary / Stop Votes & Status Retirement
+
+**Summary**: Dropped public.stop_votes table and status column on itinerary_stops (Migration 021). Removed StopStatus enum, voting models/repositories/providers, and status action bars.
+
+<details>
+<summary>Full implementation detail</summary>
+
+- **Date**: September 1, 2026
+- **Files Modified / Created**:
+  - [supabase/migrations/021_drop_stop_votes_and_stop_status.sql](file:///d:/Spencer/Downloads/tara_travel/supabase/migrations/021_drop_stop_votes_and_stop_status.sql) **[NEW]**
+  - [supabase/migrations/000_master_schema.sql](file:///d:/Spencer/Downloads/tara_travel/supabase/migrations/000_master_schema.sql) **[MODIFIED]**
+  - [lib/core/models/itinerary_model.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/models/itinerary_model.dart) **[MODIFIED]**
+  - [lib/core/repositories/itinerary_repository.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/repositories/itinerary_repository.dart) **[MODIFIED]**
+  - [lib/core/providers/itinerary_provider.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/providers/itinerary_provider.dart) **[MODIFIED]**
+  - [lib/core/providers/realtime_provider.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/providers/realtime_provider.dart) **[MODIFIED]**
+  - [lib/features/itinerary/widgets/stop_detail_sheet.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/stop_detail_sheet.dart) **[MODIFIED]**
+  - [lib/features/itinerary/widgets/stop_card.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/stop_card.dart) **[MODIFIED]**
+  - [lib/features/itinerary/itinerary_screen.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/itinerary_screen.dart) **[MODIFIED]**
+- **Scope & Objectives**:
+  - **Database & Schema Deprecation**:
+    - Created migration `021_drop_stop_votes_and_stop_status.sql` permanently dropping `public.stop_votes` table (cascade) and dropping `status` column from `public.itinerary_stops`.
+    - Synchronized `000_master_schema.sql` by dropping `stop_votes` table, policies, indexes, and realtime publication.
+  - **Domain Model Streamlining**:
+    - Dropped `StopStatus` enum and `StopStatusX` extension.
+    - Removed `status` and `votes` (and `voteScore`) fields from `ItineraryStop`.
+    - Streamlined `isCompleted` getter to check `visitedAt != null || checkedInMemberIds.isNotEmpty`.
+    - Streamlined `completedStops` on `ItineraryDay` to count `stops.where((s) => s.isCompleted).length`.
+  - **Repository & State Layer Cleanup**:
+    - Removed `updateStopStatus()`, `voteOnStop()`, `removeVote()`, `_fromDbStatus()`, and `_toDbStatus()` from `ItineraryRepository`.
+    - Removed `updateStopStatus()`, `voteOnStop()` from `ItineraryNotifier`.
+    - Removed `stopVotesRealtimeProvider` from `realtime_provider.dart`.
+  - **UI Simplification**:
+    - Removed `Group Vote` thumbs up/down voting row and vote score pill from `StopDetailSheet`.
+    - Removed bottom status bar (`Approve` and `Mark Done` buttons) from `StopDetailSheet`.
+    - Removed status badge renderer and references in `StopCard`.
+- **Verification**:
+  - `dart analyze lib/` completed with 0 errors and 0 warnings.
+  - Verification confirmed zero remaining references to `StopStatus` or `stop_votes` across the entire project.
 
 </details>
 

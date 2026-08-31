@@ -232,6 +232,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         if (!mounted) return;
         final profile = ref.read(profileProvider);
         final supaUser = supa.Supabase.instance.client.auth.currentUser;
+
+        // If user already has an established account/profile, skip onboarding entirely
+        if (supaUser != null && profile.isAccountFullySet) {
+          Navigator.of(context).pushReplacementNamed('/home');
+          return;
+        }
+
         if (supaUser != null &&
             !profile.hasCompletedOnboarding &&
             profile.isLoaded) {

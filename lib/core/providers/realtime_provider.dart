@@ -44,22 +44,7 @@ final itineraryRealtimeProvider =
       });
 });
 
-// ── Stop Votes (collaborative itinerary voting) ───────────────────────────────
-// Invalidates trip providers on vote changes so all members see live scores.
 
-final stopVotesRealtimeProvider =
-    StreamProvider.family<List<Map<String, dynamic>>, String>((ref, tripId) {
-  return Supabase.instance.client
-      .from('stop_votes')
-      .stream(primaryKey: ['id'])
-      .eq('trip_id', tripId)
-      .map((rows) {
-        ref.invalidate(selectedTripProvider);
-        ref.invalidate(allTripsProvider);
-        ref.invalidate(activeTripProvider);
-        return rows;
-      });
-});
 
 // ── Packing Items ─────────────────────────────────────────────────────────────
 

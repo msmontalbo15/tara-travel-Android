@@ -3,7 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 import '../models/itinerary_model.dart';
 
-/// Pure Supabase data source for itinerary stops and collaborative voting.
+/// Pure Supabase data source for itinerary stops.
 /// All read/write operations go directly to Supabase.
 /// RLS policies enforce row-level access per trip member.
 class ItineraryRepository {
@@ -116,25 +116,6 @@ class ItineraryRepository {
   // WRITE
   // ────────────────────────────────────────────────────────────────
 
-  /// Updates a stop status in Supabase.
-  Future<void> updateStopStatus(String stopId, StopStatus status) async {
-    try {
-      await _supabase
-          .from('itinerary_stops')
-          .update({
-            'status': _toDbStatus(status),
-            'updated_at': DateTime.now().toUtc().toIso8601String(),
-          })
-          .eq('id', stopId);
-    } on PostgrestException catch (e) {
-      debugPrint('[ItineraryRepository] updateStopStatus PostgrestException: ${e.message}');
-      rethrow;
-    } catch (e) {
-      debugPrint('[ItineraryRepository] updateStopStatus error: $e');
-      rethrow;
-    }
-  }
-
   /// Upserts a full day of itinerary stops to Supabase.
   Future<void> saveItineraryDay(String tripId, ItineraryDay day) async {
     try {
@@ -160,7 +141,6 @@ class ItineraryRepository {
           'title': stop.title,
           'notes': stop.notes,
           'type': dbType,
-          'status': _toDbStatus(stop.status),
           'time_start': _encodeTime(stop.startTime),
           'time_end': _encodeTime(stop.endTime),
           'cost_estimate': stop.estimatedCost,
@@ -229,50 +209,6 @@ class ItineraryRepository {
     }
   }
 
-  /// Records a collaborative vote (up/down) on a stop to Supabase stop_votes table.
-  /// Uses upsert to allow toggle (user can only vote once per stop).
-  Future<void> voteOnStop({
-    required String tripId,
-    required String stopId,
-    required String memberId,
-    required bool upvote,
-  }) async {
-    try {
-      await _supabase.from('stop_votes').upsert(
-        {
-          'trip_id': tripId,
-          'stop_id': stopId,
-          'member_id': memberId,
-          'upvote': upvote,
-        },
-        onConflict: 'stop_id,member_id',
-      );
-    } on PostgrestException catch (e) {
-      debugPrint('[ItineraryRepository] voteOnStop PostgrestException: ${e.message}');
-      rethrow;
-    } catch (e) {
-      debugPrint('[ItineraryRepository] voteOnStop error: $e');
-      rethrow;
-    }
-  }
-
-  /// Removes a vote for the current user on a stop.
-  Future<void> removeVote({required String stopId, required String memberId}) async {
-    try {
-      await _supabase
-          .from('stop_votes')
-          .delete()
-          .eq('stop_id', stopId)
-          .eq('member_id', memberId);
-    } on PostgrestException catch (e) {
-      debugPrint('[ItineraryRepository] removeVote PostgrestException: ${e.message}');
-      rethrow;
-    } catch (e) {
-      debugPrint('[ItineraryRepository] removeVote error: $e');
-      rethrow;
-    }
-  }
-
   // ────────────────────────────────────────────────────────────────
   // HELPERS
   // ────────────────────────────────────────────────────────────────
@@ -286,7 +222,6 @@ class ItineraryRepository {
         (e) => e.name == json['type'],
         orElse: () => StopType.custom,
       ),
-      status: _fromDbStatus('${json['status'] ?? 'planned'}'),
       estimatedCost: json['cost_estimate'] != null
           ? double.tryParse(json['cost_estimate'].toString())
           : null,
@@ -299,36 +234,6 @@ class ItineraryRepository {
       assignedMemberId: json['assigned_user_id']?.toString(),
       confirmationNumber: json['booking_ref']?.toString(),
     );
-  }
-
-  /// Maps Supabase DB status strings to local [StopStatus].
-  StopStatus _fromDbStatus(String raw) {
-    switch (raw) {
-      case 'planned':
-        return StopStatus.pending;
-      case 'completed':
-        return StopStatus.approved;
-      case 'skipped':
-        return StopStatus.rejected;
-      case 'arrived':
-        return StopStatus.arrived;
-      default:
-        return StopStatus.pending;
-    }
-  }
-
-  /// Maps local [StopStatus] to DB status strings.
-  String _toDbStatus(StopStatus status) {
-    switch (status) {
-      case StopStatus.pending:
-        return 'planned';
-      case StopStatus.approved:
-        return 'completed';
-      case StopStatus.rejected:
-        return 'skipped';
-      case StopStatus.arrived:
-        return 'arrived';
-    }
   }
 
   String? _encodeTime(TimeOfDay? t) {

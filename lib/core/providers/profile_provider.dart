@@ -107,6 +107,13 @@ class ProfileState {
     return nameToUse.isNotEmpty ? nameToUse[0].toUpperCase() : '';
   }
 
+  /// Evaluates whether the account is sufficiently initialized to bypass onboarding.
+  bool get isAccountFullySet =>
+      hasCompletedOnboarding ||
+      homeCity.isNotEmpty ||
+      (displayName.isNotEmpty && displayName != 'User') ||
+      (firstName.isNotEmpty && firstName != 'User');
+
   Color get avatarColor => const Color(0xFFD85A30);
 
   ProfileState copyWith({
@@ -188,6 +195,7 @@ class ProfileState {
       'accountEmail': accountEmail,
       'hasCompletedOnboarding': hasCompletedOnboarding,
       'hideSurname': hideSurname,
+      'isFirstRun': isFirstRun,
     };
   }
 
@@ -209,30 +217,28 @@ class ProfileState {
       healthNotes: (json['healthNotes'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
-          [],
+          const [],
       bloodType: json['bloodType'] as String?,
       shareHealthWithOrganizer:
           json['shareHealthWithOrganizer'] as bool? ?? false,
-      notificationPrefs: (json['notificationPrefs'] as Map<String, dynamic>?)
-              ?.map((k, v) => MapEntry(k, v as bool)) ??
-          const {
-            'expenses': true,
-            'payments': true,
-            'itinerary': true,
-            'group_location': true,
-            'weather': true,
-            'reminders': true,
-            'system': true,
-          },
-      isCloudConnected: json['isCloudConnected'] as bool? ??
-          json['isGoogleConnected'] as bool? ??
-          false,
+      notificationPrefs: json['notificationPrefs'] != null
+          ? Map<String, bool>.from(json['notificationPrefs'] as Map)
+          : const {
+              'expenses': true,
+              'payments': true,
+              'itinerary': true,
+              'group_location': true,
+              'weather': true,
+              'reminders': true,
+              'system': true,
+            },
+      isCloudConnected: json['isCloudConnected'] as bool? ?? false,
       accountEmail: json['accountEmail'] as String?,
       hasCompletedOnboarding:
           json['hasCompletedOnboarding'] as bool? ?? false,
       hideSurname: json['hideSurname'] as bool? ?? false,
       isLoaded: true,
-      isFirstRun: false,
+      isFirstRun: json['isFirstRun'] as bool? ?? true,
     );
   }
 }
@@ -263,9 +269,15 @@ class ProfileNotifier extends Notifier<ProfileState> {
         final remoteData = await repo.getRemoteProfile(supaUser.id);
         if (remoteData != null) {
           final remote = ProfileState.fromJson(remoteData);
+          // If remote account has city or valid name, treat onboarding as completed
+          final hasOnboarded = remote.hasCompletedOnboarding ||
+              remote.homeCity.isNotEmpty ||
+              ((remote.displayName.isNotEmpty) && remote.displayName != 'User');
+
           current = remote.copyWith(
             accountEmail: supaUser.email,
             isCloudConnected: true,
+            hasCompletedOnboarding: hasOnboarded,
           );
         } else {
           // Seed initial name & photo from auth metadata if available
@@ -299,7 +311,8 @@ class ProfileNotifier extends Notifier<ProfileState> {
   Future<void> refreshProfile() => _loadProfile();
 
   Future<void> _persist() async {
-    if (!state.hasCompletedOnboarding && state.homeCity.isNotEmpty) {
+    if (!state.hasCompletedOnboarding &&
+        (state.homeCity.isNotEmpty || state.displayName.isNotEmpty)) {
       state = state.copyWith(hasCompletedOnboarding: true);
     }
 

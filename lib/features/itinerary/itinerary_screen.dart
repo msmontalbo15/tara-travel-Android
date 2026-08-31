@@ -258,8 +258,14 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
     List<MemberModel> members,
     int dayIndex,
     String tripId,
-    DateTime stopDate,
-  ) {
+    DateTime stopDate, {
+    String? currentUserId,
+    bool canManage = false,
+  }) {
+    final notifier = ref.read(ref.read(itineraryProvider(tripId)).notifier);
+    final selfId = currentUserId ??
+        (members.isNotEmpty ? members.first.id : 'me');
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -267,12 +273,8 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
       builder: (_) => StopDetailSheet(
         stop: stop,
         members: members,
-        onStatusChange: (s) => ref
-            .read(ref.read(itineraryProvider(tripId)).notifier)
-            .updateStopStatus(dayIndex, stop.id, s),
-        onVote: (memberId, upvote) => ref
-            .read(ref.read(itineraryProvider(tripId)).notifier)
-            .voteOnStop(dayIndex, stop.id, memberId, upvote),
+        currentUserId: selfId,
+        canManage: canManage,
         onEdit: () {
           Navigator.pop(context);
           _openEditForm(
@@ -280,20 +282,25 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
             dayIndex,
             stop,
             members,
-            ref.read(ref.read(itineraryProvider(tripId)).notifier),
+            notifier,
           );
         },
         onLogExpense: () {
           Navigator.pop(context);
           _openLogExpenseForm(context, stop, members, tripId, stopDate);
         },
-        onRollCall: () {
-          Navigator.pop(context);
-          // Roll call sheet
-          final notifier =
-              ref.read(ref.read(itineraryProvider(tripId)).notifier);
-          notifier.toggleStopVisited(
-              dayIndex, stop.id, members.isNotEmpty ? members.first.id : 'me');
+        onCheckIn: () {
+          notifier.toggleStopVisited(dayIndex, stop.id, selfId);
+        },
+        onMemberToggle: (memberId) {
+          notifier.toggleStopVisited(dayIndex, stop.id, memberId);
+        },
+        onMarkAllArrived: () {
+          notifier.updateCheckedInMembers(
+            dayIndex,
+            stop.id,
+            members.map((m) => m.id).toList(),
+          );
         },
       ),
     );
@@ -524,6 +531,8 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                                         activeDay,
                                         trip.id,
                                         currentDay.date,
+                                        currentUserId: currentMember?.id,
+                                        canManage: canManageItinerary,
                                       ),
                                     )
                                   : _buildListContent(
@@ -764,36 +773,8 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                                     dayIndex,
                                     tripId,
                                     day.date,
-                                  ),
-                                  onStatusChange: (s) =>
-                                      notifier.updateStopStatus(
-                                    dayIndex,
-                                    stop.id,
-                                    s,
-                                  ),
-                                  onEdit: canManage
-                                      ? () => setState(() => _editingStopId =
-                                          isEditing ? null : stop.id)
-                                      : null,
-                                  onCheckIn: () => notifier.toggleStopVisited(
-                                    dayIndex,
-                                    stop.id,
-                                    currentMemberId,
-                                  ),
-                                  onLogExpense: () => _openLogExpenseForm(
-                                    context,
-                                    stop,
-                                    members,
-                                    tripId,
-                                    day.date,
-                                  ),
-                                  onRollCall: () => _showStopDetail(
-                                    context,
-                                    stop,
-                                    members,
-                                    dayIndex,
-                                    tripId,
-                                    day.date,
+                                    currentUserId: currentMemberId,
+                                    canManage: canManage,
                                   ),
                                 ),
                               ),

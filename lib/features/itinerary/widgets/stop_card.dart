@@ -5,19 +5,16 @@ import '../../../core/models/member_model.dart';
 import '../../../core/widgets/multi_member_picker_sheet.dart';
 import 'navigate_route_button.dart';
 
+/// Ultra-simplified Itinerary Stop Card (IDEA-007).
+///
+/// Features a clean, un-cluttered card face with a single primary CTA: "🧭 Navigate" / "🗺️ Map".
+/// Secondary actions (Mark as Arrived, Companion Arrival Roster, Expense Logging, Edit)
+/// are housed inside the [StopDetailSheet] opened by tapping the card body.
 class StopCard extends StatelessWidget {
   final ItineraryStop stop;
   final List<MemberModel> members;
   final bool isLast;
   final VoidCallback? onTap;
-  final void Function(StopStatus)? onStatusChange;
-  final VoidCallback? onEdit;
-  /// Called when the user taps "Mark Arrived" / check-in button.
-  final VoidCallback? onCheckIn;
-  /// Called when the user taps "Log Expense" to convert this stop into a trip expense.
-  final VoidCallback? onLogExpense;
-  /// Called when the user taps the Roll Call button to view and manage group presence.
-  final VoidCallback? onRollCall;
 
   const StopCard({
     super.key,
@@ -25,11 +22,6 @@ class StopCard extends StatelessWidget {
     required this.members,
     this.isLast = false,
     this.onTap,
-    this.onStatusChange,
-    this.onEdit,
-    this.onCheckIn,
-    this.onLogExpense,
-    this.onRollCall,
   });
 
   List<MemberModel> get _assignedMembers => members
@@ -102,7 +94,7 @@ class StopCard extends StatelessWidget {
           ),
           const SizedBox(width: 12),
 
-          // ── Card ───────────────────────────────────────────────────
+          // ── Card Body ──────────────────────────────────────────────
           Expanded(
             child: GestureDetector(
               onTap: onTap,
@@ -135,7 +127,7 @@ class StopCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Time + Status Row
+                      // 1. Time + Status Row
                       Row(
                         children: [
                           if (stop.startTime != null)
@@ -164,7 +156,7 @@ class StopCard extends StatelessWidget {
                             ),
                           ],
                           const Spacer(),
-                          // Arrived timestamp or status badge
+                          // Arrived timestamp indicator
                           if (completed && stop.arrivedAtLabel != null)
                             Container(
                               padding: const EdgeInsets.symmetric(
@@ -182,12 +174,12 @@ class StopCard extends StatelessWidget {
                                   color: AppColors.greenBright,
                                 ),
                               ),
-                            )
-                          else
-                            _buildStatusBadge(),
+                            ),
                         ],
                       ),
                       const SizedBox(height: 5),
+
+                      // 2. Title + Location + Thumbnail
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -234,7 +226,7 @@ class StopCard extends StatelessWidget {
                                     ],
                                   ),
                                 ],
-                                // Notes
+                                // Notes preview
                                 if (stop.notes != null &&
                                     stop.notes!.isNotEmpty) ...[
                                   const SizedBox(height: 6),
@@ -256,8 +248,8 @@ class StopCard extends StatelessWidget {
                           if (stop.photoUrls.isNotEmpty) ...[
                             const SizedBox(width: 12),
                             Container(
-                              width: 64,
-                              height: 64,
+                              width: 60,
+                              height: 60,
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(12),
                                 image: DecorationImage(
@@ -270,20 +262,36 @@ class StopCard extends StatelessWidget {
                         ],
                       ),
 
-                      // ── Checked-in members & Roll Call preview ─────────────────
+                      // 3. Checked-in Presence Preview
                       if (_checkedInMembers.isNotEmpty) ...[
                         const SizedBox(height: 8),
-                        GestureDetector(
-                          onTap: onRollCall,
-                          child: _CheckedInMemberRow(
-                            members: _checkedInMembers,
-                            totalMembersCount: members.length,
-                            onTap: onRollCall,
-                          ),
+                        _CheckedInMemberRow(
+                          members: _checkedInMembers,
+                          totalMembersCount: members.length,
                         ),
                       ],
 
-                      // Footer
+                      // 4. Booking Reference
+                      if (stop.confirmationNumber != null) ...[
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            const Icon(Icons.confirmation_number_outlined,
+                                size: 12, color: AppColors.muted),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Ref: ${stop.confirmationNumber}',
+                              style: const TextStyle(
+                                fontFamily: 'DM Sans',
+                                fontSize: 11,
+                                color: AppColors.muted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+
+                      // 5. Clean Footer Row with Single Navigate CTA
                       const SizedBox(height: 8),
                       Row(
                         children: [
@@ -334,6 +342,7 @@ class StopCard extends StatelessWidget {
                               ),
                             ),
                           ],
+                          // Cost
                           if (stop.estimatedCost != null) ...[
                             const SizedBox(width: 6),
                             Text(
@@ -346,64 +355,64 @@ class StopCard extends StatelessWidget {
                               ),
                             ),
                           ],
-                          const Spacer(),
-                          // 1-Tap Log Expense chip
-                          if (onLogExpense != null) ...[
-                            GestureDetector(
-                              onTap: onLogExpense,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 4),
+                          // Assigned leads (if not arrived)
+                          if (_assignedMembers.isNotEmpty && _checkedInMembers.isEmpty) ...[
+                            const SizedBox(width: 8),
+                            if (_assignedMembers.length > 1)
+                              MemberAvatarStack(
+                                members: members,
+                                memberIds: stop.assignedMemberIds,
+                                size: 20,
+                              )
+                            else
+                              Container(
+                                width: 22,
+                                height: 22,
                                 decoration: BoxDecoration(
-                                  color: AppColors.amber.withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: AppColors.amber.withValues(alpha: 0.35),
-                                    width: 1,
+                                  color: _assignedMembers.first.color,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    _assignedMembers.first.initials.isNotEmpty
+                                        ? _assignedMembers.first.initials.substring(0, 1)
+                                        : 'M',
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
                                   ),
                                 ),
-                                child: const Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.receipt_long_rounded,
-                                        size: 13, color: AppColors.amberText),
-                                    SizedBox(width: 3),
-                                    Text(
-                                      'Expense',
-                                      style: TextStyle(
-                                        fontFamily: 'DM Sans',
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w700,
-                                        color: AppColors.amberText,
-                                      ),
-                                    ),
-                                  ],
-                                ),
                               ),
-                            ),
-                            const SizedBox(width: 6),
                           ],
-                          // Maps btn
+                          const Spacer(),
+
+                          // Sole Primary Action CTA: Navigate / Map
                           GestureDetector(
                             onTap: () => openGoogleMapsForStop(context, stop),
                             child: Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
+                                  horizontal: 10, vertical: 5),
                               decoration: BoxDecoration(
                                 color: AppColors.primary.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: AppColors.primary.withValues(alpha: 0.25),
+                                  width: 1,
+                                ),
                               ),
                               child: const Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(Icons.directions_rounded,
-                                      size: 13, color: AppColors.primary),
-                                  SizedBox(width: 3),
+                                      size: 14, color: AppColors.primary),
+                                  SizedBox(width: 4),
                                   Text(
-                                    'Maps',
+                                    'Navigate',
                                     style: TextStyle(
                                       fontFamily: 'DM Sans',
-                                      fontSize: 10,
+                                      fontSize: 11,
                                       fontWeight: FontWeight.w700,
                                       color: AppColors.primary,
                                     ),
@@ -412,106 +421,8 @@ class StopCard extends StatelessWidget {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          if (onEdit != null) ...[
-                            GestureDetector(
-                              onTap: onEdit,
-                              child: const Icon(Icons.edit_rounded,
-                                  size: 15, color: AppColors.muted),
-                            ),
-                            const SizedBox(width: 6),
-                          ],
-                          if (_assignedMembers.isNotEmpty && _checkedInMembers.isEmpty)
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (_assignedMembers.length > 1)
-                                  MemberAvatarStack(
-                                    members: members,
-                                    memberIds: stop.assignedMemberIds,
-                                    size: 20,
-                                  )
-                                else
-                                  Container(
-                                    width: 22,
-                                    height: 22,
-                                    decoration: BoxDecoration(
-                                      color: _assignedMembers.first.color,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        _assignedMembers.first.initials.isNotEmpty
-                                            ? _assignedMembers.first.initials.substring(0, 1)
-                                            : 'M',
-                                        style: const TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  _assignedMembers.length > 1
-                                      ? '${_assignedMembers.length} leads'
-                                      : _assignedMembers.first.name.split(' ').first,
-                                  style: const TextStyle(
-                                    fontFamily: 'DM Sans',
-                                    fontSize: 11,
-                                    color: AppColors.muted,
-                                  ),
-                                ),
-                              ],
-                            ),
                         ],
                       ),
-                      if (stop.confirmationNumber != null) ...[
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            const Icon(Icons.confirmation_number_outlined,
-                                size: 12, color: AppColors.muted),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Ref: ${stop.confirmationNumber}',
-                              style: const TextStyle(
-                                fontFamily: 'DM Sans',
-                                fontSize: 11,
-                                color: AppColors.muted,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                      // ── Action Buttons (Check-In & Roll Call) ─────────────
-                      if (onCheckIn != null || onRollCall != null) ...[
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            if (onCheckIn != null)
-                              Expanded(
-                                flex: 3,
-                                child: _CheckInButton(
-                                  completed: completed,
-                                  onTap: onCheckIn!,
-                                ),
-                              ),
-                            if (onCheckIn != null && onRollCall != null && members.length > 1)
-                              const SizedBox(width: 8),
-                            if (onRollCall != null && members.length > 1)
-                              Expanded(
-                                flex: 2,
-                                child: _RollCallPillButton(
-                                  checkedCount: _checkedInMembers.length,
-                                  totalCount: members.length,
-                                  onTap: onRollCall!,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ],
                     ],
                   ),
                 ),
@@ -523,25 +434,7 @@ class StopCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusBadge() {
-    if (stop.status == StopStatus.pending) return const SizedBox.shrink();
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-      decoration: BoxDecoration(
-        color: stop.status.color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        stop.status.label,
-        style: TextStyle(
-          fontFamily: 'DM Sans',
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
-          color: stop.status.color,
-        ),
-      ),
-    );
-  }
+
 
   String _formatTime(TimeOfDay time) {
     final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
@@ -552,18 +445,16 @@ class StopCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Checked-in member row
+// Checked-in presence preview row
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _CheckedInMemberRow extends StatelessWidget {
   final List<MemberModel> members;
   final int totalMembersCount;
-  final VoidCallback? onTap;
 
   const _CheckedInMemberRow({
     required this.members,
     required this.totalMembersCount,
-    this.onTap,
   });
 
   @override
@@ -581,15 +472,15 @@ class _CheckedInMemberRow extends StatelessWidget {
           // Avatar stack
           SizedBox(
             width: visible.length * 14.0 + 8,
-            height: 22,
+            height: 20,
             child: Stack(
               children: List.generate(visible.length, (i) {
                 final m = visible[i];
                 return Positioned(
                   left: i * 13.0,
                   child: Container(
-                    width: 22,
-                    height: 22,
+                    width: 20,
+                    height: 20,
                     decoration: BoxDecoration(
                       color: m.color,
                       shape: BoxShape.circle,
@@ -603,7 +494,7 @@ class _CheckedInMemberRow extends StatelessWidget {
                       m.initials.isNotEmpty ? m.initials.substring(0, 1) : '?',
                       style: const TextStyle(
                         fontFamily: 'DM Sans',
-                        fontSize: 9,
+                        fontSize: 8.5,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
                       ),
@@ -623,122 +514,7 @@ class _CheckedInMemberRow extends StatelessWidget {
               color: AppColors.greenBright,
             ),
           ),
-          if (onTap != null) ...[
-            const SizedBox(width: 4),
-            const Icon(Icons.arrow_forward_ios_rounded, size: 9, color: AppColors.greenBright),
-          ],
         ],
-      ),
-    );
-  }
-}
-
-class _RollCallPillButton extends StatelessWidget {
-  final int checkedCount;
-  final int totalCount;
-  final VoidCallback onTap;
-
-  const _RollCallPillButton({
-    required this.checkedCount,
-    required this.totalCount,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final allIn = totalCount > 0 && checkedCount == totalCount;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 9),
-        decoration: BoxDecoration(
-          color: allIn
-              ? AppColors.greenBright.withValues(alpha: 0.12)
-              : Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: allIn
-                ? AppColors.greenBright.withValues(alpha: 0.4)
-                : AppColors.dividerLight,
-            width: 1,
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.people_outline_rounded,
-              size: 15,
-              color: allIn ? AppColors.greenBright : AppColors.deepEarth,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              'Roll Call ($checkedCount/$totalCount)',
-              style: TextStyle(
-                fontFamily: 'DM Sans',
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: allIn ? AppColors.greenBright : AppColors.deepEarth,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Animated check-in / undo button
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _CheckInButton extends StatelessWidget {
-  final bool completed;
-  final VoidCallback onTap;
-
-  const _CheckInButton({required this.completed, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 280),
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 9),
-        decoration: BoxDecoration(
-          color: completed
-              ? AppColors.greenBright.withValues(alpha: 0.12)
-              : AppColors.greenBright,
-          borderRadius: BorderRadius.circular(12),
-          border: completed
-              ? Border.all(
-                  color: AppColors.greenBright.withValues(alpha: 0.4))
-              : null,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              completed
-                  ? Icons.undo_rounded
-                  : Icons.check_circle_outline_rounded,
-              size: 16,
-              color: completed ? AppColors.greenBright : Colors.white,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              completed ? 'Undo Check-In' : '✓ Mark Arrived',
-              style: TextStyle(
-                fontFamily: 'DM Sans',
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: completed ? AppColors.greenBright : Colors.white,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

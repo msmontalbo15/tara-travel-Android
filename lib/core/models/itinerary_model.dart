@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 
 enum StopType { hotel, activity, food, transport, custom }
 
-enum StopStatus { pending, approved, rejected, arrived }
-
 extension StopTypeX on StopType {
   String get label {
     switch (this) {
@@ -47,34 +45,6 @@ extension StopTypeX on StopType {
         return const Color(0xFFD85A30); // coral
       case StopType.custom:
         return const Color(0xFF8B5CF6); // purple
-    }
-  }
-}
-
-extension StopStatusX on StopStatus {
-  String get label {
-    switch (this) {
-      case StopStatus.pending:
-        return 'Pending';
-      case StopStatus.approved:
-        return 'Approved';
-      case StopStatus.rejected:
-        return 'Rejected';
-      case StopStatus.arrived:
-        return 'Arrived';
-    }
-  }
-
-  Color get color {
-    switch (this) {
-      case StopStatus.pending:
-        return const Color(0xFFEF9F27);
-      case StopStatus.approved:
-        return const Color(0xFF10B981);
-      case StopStatus.rejected:
-        return const Color(0xFFEF4444);
-      case StopStatus.arrived:
-        return const Color(0xFF3B82F6);
     }
   }
 }
@@ -201,7 +171,6 @@ class ItineraryStop {
   final String title;
   final String? notes;
   final StopType type;
-  StopStatus status;
   final TimeOfDay? startTime;
   final TimeOfDay? endTime;
   final double? estimatedCost;
@@ -212,11 +181,9 @@ class ItineraryStop {
   final double? lng;
   final String? confirmationNumber;
   final TransportMode? transportMode;
-  // Feature 6 — collaborative voting: memberId → thumbsUp
-  final Map<String, bool> votes;
-  // Feature 11 — photo gallery
+  // Photo gallery
   final List<String> photoUrls;
-  // Feature 7 — booking attachments
+  // Booking attachments
   final List<String> attachmentUrls;
   // Member presence & fulfillment
   final List<String> checkedInMemberIds;
@@ -228,7 +195,6 @@ class ItineraryStop {
     required this.title,
     this.notes,
     required this.type,
-    this.status = StopStatus.pending,
     this.startTime,
     this.endTime,
     this.estimatedCost,
@@ -240,13 +206,12 @@ class ItineraryStop {
     this.lng,
     this.confirmationNumber,
     this.transportMode,
-    this.votes = const {},
     this.photoUrls = const [],
     this.attachmentUrls = const [],
     this.checkedInMemberIds = const [],
     this.visitedAt,
     this.checkInPhotoUrls = const [],
-  }) : assignedMemberIds = assignedMemberIds ??  
+  }) : assignedMemberIds = assignedMemberIds ??
            (assignedMemberId != null && assignedMemberId.isNotEmpty
                ? [assignedMemberId]
                : const []);
@@ -257,8 +222,8 @@ class ItineraryStop {
 
   bool get isAssigned => assignedMemberIds.isNotEmpty;
 
-  /// Whether this stop is fully fulfilled (at least one member arrived).
-  bool get isCompleted => status == StopStatus.arrived || visitedAt != null;
+  /// Whether this stop is fully fulfilled (at least one member arrived or timestamp logged).
+  bool get isCompleted => visitedAt != null || checkedInMemberIds.isNotEmpty;
 
   /// Whether this stop has any member currently checked in.
   bool get hasArrived => checkedInMemberIds.isNotEmpty;
@@ -272,9 +237,6 @@ class ItineraryStop {
     final displayHour = h % 12 == 0 ? 12 : h % 12;
     return 'Arrived $displayHour:$m $period';
   }
-
-  /// Net vote score (upvotes minus downvotes).
-  int get voteScore => votes.values.fold(0, (sum, up) => sum + (up ? 1 : -1));
 
   String get duration {
     if (startTime == null || endTime == null) return '';
@@ -294,7 +256,6 @@ class ItineraryStop {
     String? title,
     String? notes,
     StopType? type,
-    StopStatus? status,
     TimeOfDay? startTime,
     TimeOfDay? endTime,
     double? estimatedCost,
@@ -304,7 +265,6 @@ class ItineraryStop {
     double? lng,
     String? confirmationNumber,
     TransportMode? transportMode,
-    Map<String, bool>? votes,
     List<String>? photoUrls,
     List<String>? attachmentUrls,
     List<String>? checkedInMemberIds,
@@ -316,7 +276,6 @@ class ItineraryStop {
       title: title ?? this.title,
       notes: notes ?? this.notes,
       type: type ?? this.type,
-      status: status ?? this.status,
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,
       estimatedCost: estimatedCost ?? this.estimatedCost,
@@ -326,7 +285,6 @@ class ItineraryStop {
       lng: lng ?? this.lng,
       confirmationNumber: confirmationNumber ?? this.confirmationNumber,
       transportMode: transportMode ?? this.transportMode,
-      votes: votes ?? this.votes,
       photoUrls: photoUrls ?? this.photoUrls,
       attachmentUrls: attachmentUrls ?? this.attachmentUrls,
       checkedInMemberIds: checkedInMemberIds ?? this.checkedInMemberIds,
@@ -387,8 +345,8 @@ class ItineraryDay {
   double get totalDayCost =>
       stops.fold(0.0, (sum, s) => sum + (s.estimatedCost ?? 0.0));
 
-  /// Stops that have been marked arrived (completed).
-  int get completedStops => stops.where((s) => s.status == StopStatus.arrived).length;
+  /// Stops that have been marked completed / arrived.
+  int get completedStops => stops.where((s) => s.isCompleted).length;
 
   ItineraryDay copyWith({
     int? dayNumber,

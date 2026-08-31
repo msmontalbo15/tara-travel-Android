@@ -82,27 +82,7 @@ class ItineraryNotifier extends AsyncNotifier<ItineraryState> {
     await repo.saveItineraryDay(_tripId, updatedDay);
   }
 
-  Future<void> updateStopStatus(
-    int dayIndex,
-    String stopId,
-    StopStatus status,
-  ) async {
-    final currentState = state.value;
-    if (currentState == null) return;
 
-    final repo = ref.read(itineraryRepositoryProvider);
-    final day = currentState.days[dayIndex];
-    final updatedStops = day.stops.map((s) {
-      if (s.id == stopId) return s.copyWith(status: status);
-      return s;
-    }).toList();
-    final updatedDay = day.copyWith(stops: updatedStops);
-    final updatedDays = List<ItineraryDay>.from(currentState.days);
-    updatedDays[dayIndex] = updatedDay;
-
-    state = AsyncData(currentState.copyWith(days: updatedDays));
-    await repo.saveItineraryDay(_tripId, updatedDay);
-  }
 
   // ── Feature 1: Drag-and-drop reorder ─────────────────────────────
 
@@ -161,38 +141,7 @@ class ItineraryNotifier extends AsyncNotifier<ItineraryState> {
     await repo.saveItineraryDay(_tripId, updatedDay);
   }
 
-  // ── Feature 6: Collaborative voting ──────────────────────────────
 
-  Future<void> voteOnStop(
-    int dayIndex,
-    String stopId,
-    String memberId,
-    bool upvote,
-  ) async {
-    final currentState = state.value;
-    if (currentState == null) return;
-
-    final repo = ref.read(itineraryRepositoryProvider);
-    final day = currentState.days[dayIndex];
-    final updatedStops = day.stops.map((s) {
-      if (s.id != stopId) return s;
-      final updatedVotes = Map<String, bool>.from(s.votes);
-      // Toggle: if already voted same way, remove vote
-      if (updatedVotes[memberId] == upvote) {
-        updatedVotes.remove(memberId);
-      } else {
-        updatedVotes[memberId] = upvote;
-      }
-      return s.copyWith(votes: updatedVotes);
-    }).toList();
-
-    final updatedDay = day.copyWith(stops: updatedStops);
-    final updatedDays = List<ItineraryDay>.from(currentState.days);
-    updatedDays[dayIndex] = updatedDay;
-
-    state = AsyncData(currentState.copyWith(days: updatedDays));
-    await repo.saveItineraryDay(_tripId, updatedDay);
-  }
 
   // ── Add a new Day to the itinerary ──────────────────────────────
   Future<ItineraryDay?> addDay({DateTime? customDate}) async {
@@ -279,11 +228,9 @@ class ItineraryNotifier extends AsyncNotifier<ItineraryState> {
       }
       // If no one is checked in, remove arrived timestamp
       final nowVisited = ids.isNotEmpty ? (s.visitedAt ?? DateTime.now()) : null;
-      final newStatus = ids.isNotEmpty ? StopStatus.arrived : StopStatus.approved;
       return s.copyWith(
         checkedInMemberIds: ids,
         visitedAt: nowVisited,
-        status: newStatus,
       );
     }).toList();
 
@@ -316,7 +263,6 @@ class ItineraryNotifier extends AsyncNotifier<ItineraryState> {
         ids.remove(memberId);
       }
       return s.copyWith(
-        status: isNowVisited ? StopStatus.arrived : StopStatus.approved,
         visitedAt: isNowVisited ? DateTime.now() : null,
         checkedInMemberIds: ids,
       );
@@ -344,11 +290,9 @@ class ItineraryNotifier extends AsyncNotifier<ItineraryState> {
     final updatedStops = day.stops.map((s) {
       if (s.id != stopId) return s;
       final nowVisited = memberIds.isNotEmpty ? (s.visitedAt ?? DateTime.now()) : null;
-      final newStatus = memberIds.isNotEmpty ? StopStatus.arrived : StopStatus.approved;
       return s.copyWith(
         checkedInMemberIds: memberIds,
         visitedAt: nowVisited,
-        status: newStatus,
       );
     }).toList();
 
@@ -405,7 +349,6 @@ class ItineraryNotifier extends AsyncNotifier<ItineraryState> {
     final clonedStops = sourceDay.stops.map((s) {
       return s.copyWith(
         id: const Uuid().v4(),
-        status: StopStatus.pending,
         visitedAt: null,
         checkedInMemberIds: const [],
       );

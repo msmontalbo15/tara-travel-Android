@@ -425,8 +425,6 @@ create table if not exists public.itinerary_stops (
   lng              double precision,
   address          text,
   booking_ref      text,
-  status           text        not null default 'planned'
-                   check (status in ('planned','arrived','completed','skipped')),
   created_at       timestamptz not null default now(),
   updated_at       timestamptz not null default now()
 );
@@ -454,40 +452,6 @@ create policy "stops_update_nav"
 create policy "stops_delete_nav"
   on public.itinerary_stops for delete
   using (public.is_trip_member(trip_id));
-
--- ── 4b. STOP VOTES ───────────────────────────────────────────────────────────
-create table if not exists public.stop_votes (
-  id         uuid        primary key default uuid_generate_v4(),
-  trip_id    uuid        not null references public.trips(id) on delete cascade,
-  stop_id    uuid        not null,                                  -- references itinerary_stops.id
-  member_id  uuid        not null references public.users(id) on delete cascade,
-  upvote     boolean     not null,
-  created_at timestamptz not null default now(),
-  unique (stop_id, member_id)
-);
-
-alter table public.stop_votes enable row level security;
-
-drop policy if exists "votes_select"   on public.stop_votes;
-drop policy if exists "votes_insert"   on public.stop_votes;
-drop policy if exists "votes_update"   on public.stop_votes;
-drop policy if exists "votes_delete"   on public.stop_votes;
-
-create policy "votes_select"
-  on public.stop_votes for select
-  using (public.is_trip_member(trip_id));
-
-create policy "votes_insert"
-  on public.stop_votes for insert
-  with check (public.is_trip_member(trip_id) and member_id = auth.uid());
-
-create policy "votes_update"
-  on public.stop_votes for update
-  using (member_id = auth.uid());
-
-create policy "votes_delete"
-  on public.stop_votes for delete
-  using (member_id = auth.uid());
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- SECTION 5 · PACKING
@@ -786,10 +750,6 @@ create index if not exists idx_tm_user_id          on public.trip_members (user_
 -- Itinerary Stops
 create index if not exists idx_stops_trip_day      on public.itinerary_stops (trip_id, day_number, sort_order);
 
--- Stop Votes
-create index if not exists idx_votes_stop_id       on public.stop_votes (stop_id);
-create index if not exists idx_votes_trip_id       on public.stop_votes (trip_id);
-
 -- Packing
 create index if not exists idx_packing_trip_id     on public.packing_items (trip_id, category);
 
@@ -1071,7 +1031,6 @@ begin
   foreach tbl in array array[
     'trip_members',
     'itinerary_stops',
-    'stop_votes',
     'packing_items',
     'expenses',
     'settlements',
