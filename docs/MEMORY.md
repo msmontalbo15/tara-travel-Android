@@ -436,6 +436,9 @@ Client Tier               Storage Tier                Transport Tier
   - Speed-adaptive GPS sampling (Stationary 60s/25m, Walking 15s/10m, Driving 5s/30m) with battery saver mode.
   - Privacy modes: `exact`, `approximate` (~500m fuzzy bubble), `ghost` (broadcast suppression with duration timers).
   - Priority SOS panic beacon broadcasting (`broadcastSos`) and periodic PostGIS checkpointing.
+- **`ModuleViewTrackerService.instance`** (`lib/core/services/module_view_tracker_service.dart`):
+  - Keystore-backed timestamp tracker (`FlutterSecureStorage` with in-memory sync cache) recording `last_viewed:{module}:{tripId}` for client-side unread/change diffing.
+  - Methods: `initialize()`, `getLastViewed(module, tripId)`, `markViewed(module, tripId)`, `clearTrip(tripId)`.
 - **`SupaService.instance`** (`lib/core/services/supa_service.dart`):
   - Low-level direct table operations, device token registration, and presence pings.
 
@@ -448,6 +451,7 @@ Client Tier               Storage Tier                Transport Tier
 | `authNotifierProvider` | `StateNotifierProvider<AuthNotifier, AsyncValue<AuthState>>` | MVI Auth state machine (`Unauthenticated`, `Authenticating`, `Authenticated`, `AuthError`). |
 | `tripProvider` | `StateNotifierProvider<TripNotifier, AsyncValue<List<TripModel>>>` | Global list of user trips, add/edit/archive/delete/join actions. |
 | `selectedTripProvider` | `StateProvider<TripModel?>` | Active trip context across Detail, Itinerary, Budget, Packing, Chat. |
+| `tripQuickActionChangesProvider(trip)` | `FutureProvider.family<TripQuickActionChanges, TripModel>` | Computes contextual Red Notification Dot indicators (`🔴`) for trip quick action buttons (Itinerary, Packing, Members, Expenses, Chat) by comparing remote timestamps against Keystore `ModuleViewTrackerService` with self-action exemption. |
 | `activeTripProvider` | `FutureProvider<TripModel?>` | Returns the first non-draft, non-archived trip (or selected trip if unarchived); returns `null` when only archived trips exist. |
 | `profileProvider` | `StateNotifierProvider<ProfileNotifier, ProfileState>` | User profile state, surname privacy toggle, encrypted data sync, `isAccountFullySet` onboarding guard & auto-recovery. |
 | `chatNotifierProvider(tripId)`| `StateNotifierProvider<ChatNotifier, ChatState>` | Live chat messages, presence typing indicators, optimistic send. |

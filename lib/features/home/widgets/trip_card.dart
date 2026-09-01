@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/constants/trip_types.dart';
 import '../../../core/utils/currency_utils.dart';
+import '../models/trip_card_badge_data.dart';
 
 /// A trip list card — used for both "Upcoming" and "Draft" states.
 /// Brand-aligned with premium card styling and animations.
@@ -34,6 +35,7 @@ class TripCard extends StatelessWidget {
   final VoidCallback? onChat;
   final VoidCallback? onNavigation;
   final VoidCallback? onMore;
+  final TripQuickActionChanges? actionChanges;
 
   const TripCard.upcoming({
     super.key,
@@ -63,6 +65,7 @@ class TripCard extends StatelessWidget {
     this.onSetBudget,
     this.onChat,
     this.onNavigation,
+    this.actionChanges,
   })  : isUpcoming = true;
 
   const TripCard.draft({
@@ -93,7 +96,8 @@ class TripCard extends StatelessWidget {
         onBudgetTap = null,
         onSetBudget = null,
         onChat = null,
-        onNavigation = null;
+        onNavigation = null,
+        actionChanges = null;
 
   @override
   Widget build(BuildContext context) {
@@ -479,16 +483,41 @@ class TripCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _actionButton(Icons.calendar_today_outlined, 'Itinerary',
-                      const Color(0xFF5B8DEF), onItinerary),
-                  _actionButton(Icons.inventory_2_outlined, 'Packing',
-                      const Color(0xFFF59E0B), onPacking),
-                  _actionButton(Icons.group_outlined, 'Members',
-                      const Color(0xFF10B981), onMembers),
-                  _actionButton(Icons.attach_money_rounded, 'Expenses',
-                      const Color(0xFFD85A30), onExpenses),
-                  _actionButton(Icons.chat_bubble_outline_rounded, 'Chat',
-                      const Color(0xFF8B5CF6), onChat),
+                  _actionButton(
+                    Icons.calendar_today_outlined,
+                    'Itinerary',
+                    const Color(0xFF5B8DEF),
+                    onItinerary,
+                    hasNotificationDot: actionChanges?.hasItineraryChanges ?? false,
+                  ),
+                  _actionButton(
+                    Icons.inventory_2_outlined,
+                    'Packing',
+                    const Color(0xFFF59E0B),
+                    onPacking,
+                    hasNotificationDot: actionChanges?.hasPackingChanges ?? false,
+                  ),
+                  _actionButton(
+                    Icons.group_outlined,
+                    'Members',
+                    const Color(0xFF10B981),
+                    onMembers,
+                    hasNotificationDot: actionChanges?.hasMemberChanges ?? false,
+                  ),
+                  _actionButton(
+                    Icons.attach_money_rounded,
+                    'Expenses',
+                    const Color(0xFFD85A30),
+                    onExpenses,
+                    hasNotificationDot: actionChanges?.hasExpenseChanges ?? false,
+                  ),
+                  _actionButton(
+                    Icons.chat_bubble_outline_rounded,
+                    'Chat',
+                    const Color(0xFF8B5CF6),
+                    onChat,
+                    hasNotificationDot: actionChanges?.hasChatChanges ?? false,
+                  ),
                 ],
               ),
             ],
@@ -519,91 +548,85 @@ class TripCard extends StatelessWidget {
               child: const Icon(
                 Icons.location_on_outlined,
                 color: AppColors.warmMuted,
-                size: 20,
+                size: 22,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontFamily: 'DM Sans',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  if (destination != null)
-                    Text(
-                      destination!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontFamily: 'DM Sans',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textSecondary,
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppColors.warmMuted.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text(
+                          'DRAFT',
+                          style: TextStyle(
+                            fontFamily: 'DM Sans',
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.warmMuted,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          name,
+                          style: const TextStyle(
+                            fontFamily: 'Playfair Display',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
                   Text(
-                    dateRange,
+                    destination != null && destination!.isNotEmpty
+                        ? destination!
+                        : 'Destination not set',
                     style: const TextStyle(
                       fontFamily: 'DM Sans',
                       fontSize: 12,
                       color: AppColors.textSecondary,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+            if (onMore != null) ...[
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: onMore,
+                child: Container(
+                  padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: AppColors.amberBg,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: const Color(0xFFFAC775)),
+                    color: AppColors.surfaceLight,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.cardBorder),
                   ),
-                  child: const Text(
-                    'Draft',
-                    style: TextStyle(
-                      fontFamily: 'DM Sans',
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.amberText,
-                      letterSpacing: 0.2,
-                    ),
+                  child: const Icon(
+                    Icons.more_horiz_rounded,
+                    color: AppColors.textSecondary,
+                    size: 18,
                   ),
                 ),
-                if (onMore != null) ...[
-                  const SizedBox(width: 8),
-                  GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: onMore,
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceLight,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.cardBorder),
-                      ),
-                      child: const Icon(
-                        Icons.more_horiz_rounded,
-                        color: AppColors.textSecondary,
-                        size: 18,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
+              ),
+            ],
           ],
         ),
       ),
@@ -645,24 +668,64 @@ class TripCard extends StatelessWidget {
   }
 
   Widget _actionButton(
-      IconData icon, String label, Color accentColor, VoidCallback? onPressed) {
+    IconData icon,
+    String label,
+    Color accentColor,
+    VoidCallback? onPressed, {
+    bool hasNotificationDot = false,
+  }) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onPressed,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
+          SizedBox(
             width: 44,
             height: 44,
-            decoration: BoxDecoration(
-              color: accentColor.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(
-              icon,
-              size: 20,
-              color: onPressed != null ? accentColor : AppColors.textSecondary,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: accentColor.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 20,
+                    color: onPressed != null ? accentColor : AppColors.textSecondary,
+                  ),
+                ),
+                if (hasNotificationDot)
+                  Positioned(
+                    top: 2,
+                    right: 2,
+                    child: IgnorePointer(
+                      child: Container(
+                        width: 9,
+                        height: 9,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEF4444), // High-visibility red
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white,
+                            width: 1.5,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFEF4444).withValues(alpha: 0.4),
+                              blurRadius: 4,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
           const SizedBox(height: 5),

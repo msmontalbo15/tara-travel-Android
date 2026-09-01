@@ -9,6 +9,8 @@ import '../../core/providers/packing_provider.dart';
 import '../../core/providers/trip_provider.dart';
 import '../../core/providers/selected_trip_provider.dart';
 import '../../core/providers/itinerary_provider.dart';
+import '../../core/providers/trip_action_changes_provider.dart';
+import '../../core/services/module_view_tracker_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_brand_logo.dart';
 import '../../core/widgets/navigation/floating_nav_bar.dart';
@@ -1197,6 +1199,9 @@ class _HomeTripCardItem extends ConsumerWidget {
       }
     }
 
+    final actionChangesAsync = ref.watch(tripQuickActionChangesProvider(trip));
+    final actionChanges = actionChangesAsync.value;
+
     return TripCard.upcoming(
       name: trip.name,
       destination: trip.destination,
@@ -1213,6 +1218,7 @@ class _HomeTripCardItem extends ConsumerWidget {
       tripType: trip.tripType,
       coverColor: trip.coverColor,
       coverEmoji: trip.coverEmoji,
+      actionChanges: actionChanges,
       onMore: () => TripActionSheet.show(context, ref, trip),
       travelers: trip.members
           .map(
@@ -1226,32 +1232,44 @@ class _HomeTripCardItem extends ConsumerWidget {
         ref.read(selectedTripIdProvider.notifier).select(trip.id);
         Navigator.pushNamed(context, '/trip-detail');
       },
-      onItinerary: () {
+      onItinerary: () async {
+        await ModuleViewTrackerService.instance.markViewed('itinerary', trip.id);
+        ref.invalidate(tripQuickActionChangesProvider(trip));
         ref.read(selectedTripIdProvider.notifier).select(trip.id);
-        Navigator.pushNamed(context, '/itinerary');
+        if (context.mounted) Navigator.pushNamed(context, '/itinerary');
       },
-      onPacking: () {
+      onPacking: () async {
+        await ModuleViewTrackerService.instance.markViewed('packing', trip.id);
+        ref.invalidate(tripQuickActionChangesProvider(trip));
         ref.read(selectedTripIdProvider.notifier).select(trip.id);
-        Navigator.pushNamed(context, '/packing');
+        if (context.mounted) Navigator.pushNamed(context, '/packing');
       },
-      onMembers: () {
+      onMembers: () async {
+        await ModuleViewTrackerService.instance.markViewed('members', trip.id);
+        ref.invalidate(tripQuickActionChangesProvider(trip));
         ref.read(selectedTripIdProvider.notifier).select(trip.id);
-        Navigator.pushNamed(context, '/members');
+        if (context.mounted) Navigator.pushNamed(context, '/members');
       },
-      onExpenses: () {
+      onExpenses: () async {
+        await ModuleViewTrackerService.instance.markViewed('expenses', trip.id);
+        ref.invalidate(tripQuickActionChangesProvider(trip));
         ref.read(selectedTripIdProvider.notifier).select(trip.id);
-        Navigator.pushNamed(context, '/budget');
+        if (context.mounted) Navigator.pushNamed(context, '/budget');
       },
-      onBudgetTap: () {
+      onBudgetTap: () async {
+        await ModuleViewTrackerService.instance.markViewed('expenses', trip.id);
+        ref.invalidate(tripQuickActionChangesProvider(trip));
         ref.read(selectedTripIdProvider.notifier).select(trip.id);
-        Navigator.pushNamed(context, '/budget');
+        if (context.mounted) Navigator.pushNamed(context, '/budget');
       },
       onSetBudget: () {
         QuickBudgetSheet.show(context, trip);
       },
-      onChat: () {
+      onChat: () async {
+        await ModuleViewTrackerService.instance.markViewed('chat', trip.id);
+        ref.invalidate(tripQuickActionChangesProvider(trip));
         ref.read(selectedTripIdProvider.notifier).select(trip.id);
-        Navigator.pushNamed(context, '/chat');
+        if (context.mounted) Navigator.pushNamed(context, '/chat');
       },
       onNavigation: () {
         ref.read(selectedTripIdProvider.notifier).select(trip.id);

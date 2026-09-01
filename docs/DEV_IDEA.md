@@ -917,7 +917,7 @@ WITH CHECK (
 
 ---
 
-## 💡 IDEA-010: Trip Card Quick-Action Status Badges (N/N Counter, Completion Percentage, Unread / Change Red Dot) [PROPOSED]
+## 💡 IDEA-010: Trip Card Quick-Action Red Notification Dot Indicator for New or Changed Content [COMPLETED]
 
 ### 1. Context & Motivation
 Currently on the Home Screen (`home_screen.dart` / `trip_card.dart`), the bottom row of the upcoming trip card exposes 5 quick action buttons:
@@ -927,33 +927,32 @@ Currently on the Home Screen (`home_screen.dart` / `trip_card.dart`), the bottom
 - **Expenses** (`onExpenses`)
 - **Chat** (`onChat`)
 
-While these buttons provide 1-tap navigation into their respective modules, they are currently static icons without contextual state awareness. Users cannot glance at their trip card to immediately know:
-1. **Packing Progress**: How many items are packed vs total (e.g., `12/15` or `80%`).
-2. **Itinerary Fulfillment**: How many stops have been completed for today / overall trip (e.g., `3/5` or `60%`).
-3. **Expense Settlement Status**: Pending approvals or unsettled splits (e.g., `₱1.2k` or alert badge).
-4. **Member Acceptance / RSVP**: Confirmed vs invited count (e.g., `4/5`).
-5. **Unread Activity / Live Change Indicators**: A crisp red notification dot (`•`) when new chat messages arrive, itinerary stops are modified, or new expenses are logged by co-travelers since last viewed.
+While these buttons provide 1-tap navigation into their respective modules, they are currently static icons without contextual change awareness. Users cannot glance at their trip card to immediately know if there is unread activity, newly added content, or updates made by co-travelers inside any module since they last checked.
 
 ---
 
 ### 2. Core Proposal
-Transform the static Quick Action buttons in `TripCard` into **Smart Micro-Badge Action Chips**:
-- **Dynamic Sub-Badges / Count Pills (`N/N`)**: Compact pill overlaid on top-right of button icon (e.g., `3/5` for itinerary stops or `14/18` for packing items).
-- **Radial Mini-Progress / Percentage (`%`)**: Circular mini-gauge or percent text pill (e.g., `75%` packed) for instant visual progress recognition.
-- **Red Notification Dot Indicator (`🔴` / `AppColors.red`)**: High-visibility subtle indicator dot anchored on the action button when there are unread messages, new expenses pending review, or updated itinerary stops.
-- **Configurable Badge Model**: Clean, type-safe metadata model (`QuickActionBadgeData`) passed to `TripCard` without polluting widget business logic.
+Enhance the Quick Action buttons in `TripCard` with a lightweight, contextual **Red Notification Dot Indicator (`🔴` / `AppColors.red`)**:
+- **Trigger**: Display the red dot exclusively when there is **new or modified content** inside that specific module since the user's last view/read timestamp.
+- **Modules & Change Triggers**:
+  - **Itinerary (`onItinerary`)**: New stops added, modified stop times/details, or schedule revisions.
+  - **Packing (`onPacking`)**: New items added or checklist items updated/assigned by co-travelers.
+  - **Members (`onMembers`)**: New member invites accepted or traveler list updates.
+  - **Expenses (`onExpenses`)**: New expenses logged, pending approval requests, or receipt uploads.
+  - **Chat (`onChat`)**: New unread messages in the trip group chat.
+- **Auto-Dismissal**: Tapping the action button (or viewing the respective module) automatically updates the local `lastViewed` timestamp and clears the red dot.
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
-│  QUICK ACTION ROW WITH SMART STATUS BADGES & CHANGE INDICATORS         │
+│  QUICK ACTION ROW WITH RED NOTIFICATION DOT CHANGE INDICATORS          │
 ├────────────────────────────────────────────────────────────────────────┤
 │                                                                        │
 │   ┌────────┐       ┌────────┐       ┌────────┐       ┌────────┐        │
-│   │ 📅 [3/5]│      │ 🎒 [80%]│     │ 👥  4/5 │      │ 💬  [🔴]│       │
+│   │ 📅 [🔴]│      │ 🎒     │       │ 👥     │       │ 💬 [🔴]│        │
 │   │        │       │        │       │        │       │        │        │
 │   └────────┘       └────────┘       └────────┘       └────────┘        │
 │   Itinerary         Packing          Members            Chat           │
-│   (3 of 5 done)   (80% packed)    (4 of 5 joined)   (New activity)     │
+│ (Updated stops)   (Up to date)     (Up to date)     (Unread messages)  │
 │                                                                        │
 └────────────────────────────────────────────────────────────────────────┘
 ```
@@ -962,115 +961,83 @@ Transform the static Quick Action buttons in `TripCard` into **Smart Micro-Badge
 
 ### 3. Recommended Architectural & UX Design
 
-#### A. Data Model: `QuickActionBadgeData` (`lib/features/home/models/trip_card_badge_data.dart`)
+#### A. Data Model: `TripQuickActionChanges` (`lib/features/home/models/trip_card_badge_data.dart`)
 
 ```dart
-enum BadgeDisplayType {
-  count,        // e.g. "3/5" or "12"
-  percentage,   // e.g. "80%"
-  redDot,       // Unread/new changes indicator
-  customText,   // e.g. "₱1.2k"
-}
+class TripQuickActionChanges {
+  final bool hasItineraryChanges;
+  final bool hasPackingChanges;
+  final bool hasMemberChanges;
+  final bool hasExpenseChanges;
+  final bool hasChatChanges;
 
-class QuickActionBadge {
-  final BadgeDisplayType type;
-  final int? current;
-  final int? total;
-  final double? percentage;
-  final String? text;
-  final bool hasUnread;
-  final Color? customColor;
-
-  const QuickActionBadge.count(this.current, this.total, {this.customColor})
-      : type = BadgeDisplayType.count,
-        percentage = null,
-        text = null,
-        hasUnread = false;
-
-  const QuickActionBadge.percentage(this.percentage, {this.customColor})
-      : type = BadgeDisplayType.percentage,
-        current = null,
-        total = null,
-        text = null,
-        hasUnread = false;
-
-  const QuickActionBadge.redDot({this.customColor})
-      : type = BadgeDisplayType.redDot,
-        current = null,
-        total = null,
-        percentage = null,
-        text = null,
-        hasUnread = true;
-
-  const QuickActionBadge.custom(this.text, {this.customColor})
-      : type = BadgeDisplayType.customText,
-        current = null,
-        total = null,
-        percentage = null,
-        hasUnread = false;
-}
-
-class TripQuickActionBadges {
-  final QuickActionBadge? itineraryBadge;
-  final QuickActionBadge? packingBadge;
-  final QuickActionBadge? membersBadge;
-  final QuickActionBadge? expensesBadge;
-  final QuickActionBadge? chatBadge;
-
-  const TripQuickActionBadges({
-    this.itineraryBadge,
-    this.packingBadge,
-    this.membersBadge,
-    this.expensesBadge,
-    this.chatBadge,
+  const TripQuickActionChanges({
+    this.hasItineraryChanges = false,
+    this.hasPackingChanges = false,
+    this.hasMemberChanges = false,
+    this.hasExpenseChanges = false,
+    this.hasChatChanges = false,
   });
+
+  bool get hasAnyChanges =>
+      hasItineraryChanges ||
+      hasPackingChanges ||
+      hasMemberChanges ||
+      hasExpenseChanges ||
+      hasChatChanges;
 }
 ```
 
 ---
 
-#### B. Component Layout & Visual Tokens
+#### B. Storage Key Scheme & Self-Action Exemption
 
-1. **Badge Positioning**:
-   - Anchored to the top-right of the 44×44 action button container using `Stack` + `Positioned(top: -4, right: -4)`.
-2. **Red Dot Specs**:
-   - `8px` diameter circle, `AppColors.red` (`#EF4444`) with `1.5px` white border for high contrast against background.
-3. **Pill Badge (`N/N` or `%`) Specs**:
-   - `height: 16px`, minimum width `16px`, `borderRadius: 8px`.
-   - Typography: `DM Sans`, Bold, `9px`, white or high-contrast dark text.
-   - Background: Semantic color matching action button accent (e.g. Amber for packing, Blue for itinerary, Emerald for members) or deep earth.
-4. **Accessibility & Tap Targets**:
-   - Badge is wrapped in `IgnorePointer` so full 44×44 tap target directly triggers the existing `onItinerary`, `onPacking`, `onExpenses`, etc. callbacks.
+1. **Storage Scheme (`ModuleViewTrackerService`)**:
+   - Backed by Keystore-encrypted storage with in-memory sync cache.
+   - Keys formatted as `last_viewed:{module}:{tripId}` (e.g. `last_viewed:itinerary:trip_123`).
+   - Value: ISO-8601 UTC string timestamp recorded whenever the user navigates into that section or taps its quick action button.
+2. **Self-Action Exemption**:
+   - Changes/edits authored by the current logged-in user (`user_id == currentUserId` or `paid_by_user_id == currentUserId`) are filtered out so that users do not receive red dots for their own updates.
+3. **Zero DB Migrations**:
+   - Queries `updated_at` / `created_at` or unread message counters directly from existing Supabase tables (`itinerary_stops`, `packing_items`, `expenses`, `messages`, `trip_members`).
 
 ---
 
-#### C. Riverpod State Providers
+#### C. Component Layout & Visual Tokens
+
+1. **Red Dot Positioning**:
+   - Anchored to the top-right of the 44×44 action button container using `Stack` + `Positioned(top: 2, right: 2)`.
+2. **Red Dot Specs**:
+   - `9px` diameter circle, `AppColors.red` (`#EF4444`) with `1.5px` surface border (`Colors.white`) for crisp contrast against button background.
+3. **Accessibility & Tap Targets**:
+   - The dot is wrapped in `IgnorePointer` so the entire 44×44 tap target directly triggers existing callbacks (`onItinerary`, `onPacking`, etc.).
+
+---
+
+#### D. Riverpod State Providers
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│                   tripBadgesProvider(tripId)             │
-│            AutoDisposeFutureProvider<TripQuickActionBadges> │
+│              tripQuickActionChangesProvider(trip)        │
+│          FutureProvider.family<TripQuickActionChanges>  │
 └────────────────────────────┬─────────────────────────────┘
                              │
        ┌─────────────────────┼─────────────────────┐
        ▼                     ▼                     ▼
-ItineraryStopsCount   PackingItemsCount     UnreadChangesStream
-(completed/total)      (packed/total)        (chat/expenses/stops)
+ItineraryLastModified   PackingLastModified   UnreadMessagesCount
+ (vs lastViewedItinerary) (vs lastViewedPacking) (vs lastViewedChat)
 ```
-
-1. **`tripBadgesProvider`**: Computes aggregated badge metrics per trip asynchronously.
-2. **Local Caching / Read Tracking**: Uses local timestamp storage (`lastViewedItinerary_[tripId]`, `lastViewedChat_[tripId]`, `lastViewedExpenses_[tripId]`) to determine whether the **Red Dot** should be active.
 
 ---
 
 ### 4. Implementation Steps
-1. [ ] **Model Definition**: Create `TripQuickActionBadges` and `QuickActionBadge` in `lib/features/home/models/trip_card_badge_data.dart`.
-2. [ ] **Widget Badge Rendering**: Update `_actionButton` in `trip_card.dart` to accept optional `QuickActionBadge? badge` and render red dot, `N/N` counter, or `%` pill.
-3. [ ] **Riverpod Provider**: Implement `tripQuickActionBadgesProvider` computing live metrics for itinerary stops, packing checklists, confirmed members, and unread chat/activity.
-4. [ ] **Home Screen Integration**: Connect `tripQuickActionBadgesProvider` in `HomeScreen` and pass badge models into `TripCard.upcoming`.
-5. [ ] **Visual & Tap Verification**: Validate micro-badge contrast, alignment on small screens, and responsive tap target handling.
+1. [x] **Model Definition**: Create `TripQuickActionChanges` in `lib/features/home/models/trip_card_badge_data.dart`.
+2. [x] **Widget Badge Rendering**: Update `_actionButton` in `trip_card.dart` to accept a boolean `hasNotificationDot` and render the top-right red dot when true.
+3. [x] **Riverpod Provider**: Implement `tripQuickActionChangesProvider` comparing entity timestamps against local `last_viewed:{module}:{tripId}` storage with self-action exemption.
+4. [x] **Home Screen Integration**: Connect `tripQuickActionChangesProvider` in `HomeScreen` and pass indicator flags to `TripCard.upcoming`.
+5. [x] **On-Tap Dismissal**: Ensure tapping each quick action writes to `ModuleViewTrackerService` and invalidates `tripQuickActionChangesProvider`.
 
-> **Status**: Proposed
+> **Status**: Completed
 
 ---
 

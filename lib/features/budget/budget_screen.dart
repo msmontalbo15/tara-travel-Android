@@ -15,6 +15,7 @@ import 'widgets/add_expense_form.dart';
 import 'widgets/split_bill_panel.dart';
 import 'widgets/category_budget_chart.dart';
 import '../../core/constants/trip_types.dart';
+import '../../core/services/module_view_tracker_service.dart';
 import '../../core/widgets/buttons/app_back_button.dart';
 import '../../core/widgets/shimmer_loading.dart';
 import '../../core/utils/currency_utils.dart';
@@ -39,6 +40,10 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
         if (trip == null) {
           return const Scaffold(body: Center(child: Text('Trip not found')));
         }
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ModuleViewTrackerService.instance.markViewed('expenses', trip.id);
+        });
 
         // Subscribe to live realtime expenses updates
         ref.watch(expenseRealtimeProvider(trip.id));

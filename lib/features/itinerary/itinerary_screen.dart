@@ -14,6 +14,7 @@ import '../../core/providers/repository_providers.dart';
 import '../../core/providers/trip_provider.dart';
 import '../../core/providers/trip_weather_provider.dart';
 import '../../core/services/location_tracking_service.dart';
+import '../../core/services/module_view_tracker_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/buttons/app_back_button.dart';
 import '../../core/widgets/feedback/app_dialog.dart';
@@ -63,6 +64,12 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
   void initState() {
     super.initState();
     _startGpsGeofencing();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final trip = ref.read(activeTripProvider).value;
+      if (trip != null) {
+        ModuleViewTrackerService.instance.markViewed('itinerary', trip.id);
+      }
+    });
   }
 
   @override

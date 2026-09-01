@@ -7,6 +7,7 @@ import '../../core/providers/profile_provider.dart';
 import '../../core/providers/chat_provider.dart';
 import '../../core/providers/selected_trip_provider.dart';
 import '../../core/repositories/chat_repository.dart';
+import '../../core/services/module_view_tracker_service.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   final bool showHeader;
@@ -20,6 +21,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _ctrl        = TextEditingController();
   final _scrollCtrl  = ScrollController();
   bool _isSending    = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final tripId = ref.read(selectedTripIdProvider);
+      if (tripId != null) {
+        ModuleViewTrackerService.instance.markViewed('chat', tripId);
+      }
+    });
+  }
 
   @override
   void dispose() {

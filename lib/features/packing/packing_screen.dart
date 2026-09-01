@@ -10,6 +10,7 @@ import '../../core/providers/trip_provider.dart';
 import '../../core/models/trip_model.dart';
 import '../../core/models/packing_model.dart';
 import '../../core/models/member_model.dart';
+import '../../core/services/module_view_tracker_service.dart';
 import '../../core/widgets/share/share_trip_modal.dart';
 import '../../core/widgets/shimmer_loading.dart';
 import '../../core/widgets/feedback/app_feedback.dart';
@@ -71,6 +72,10 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
         final packingNotifier =
             ref.read(ref.read(packingProvider(trip.id)).notifier);
         final packing = ref.watch(ref.watch(packingProvider(trip.id)));
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ModuleViewTrackerService.instance.markViewed('packing', trip.id);
+        });
 
         // Automatically populate contextual AI suggestions on initial empty suggestion load
         if (packing.suggestions.isEmpty && packing.showSuggestions) {

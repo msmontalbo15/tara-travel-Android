@@ -58,6 +58,7 @@
 | **`IMP-071`** | 2026-09-01 | UI & Navigation / Floating Dock Live Nav Migration | Relocated Live Nav trigger to ItineraryBottomDock, decluttered NextTripCard/TripCard action bars, and optimized TurnCard with external Google Maps navigation handoff. |
 | **`IMP-072`** | 2026-09-01 | UI & Home / Trip Card Date Abbreviation & Budget Clean-up | Abbreviated date ranges on home trip cards, replaced middle stat box with non-clickable ITINERARY (visited/total), and converted budget tracker to an informational progress bar without Manage >. |
 | **`IMP-073`** | 2026-09-01 | UI & Itinerary / Driver-Ready Touch Targets & Enriched Buttons | Scaled up all itinerary interactive CTA buttons (StopCard Navigate button, StopDetailSheet Navigate Maps / Expense / Edit / Slide to Arrive / Member toggle, NavigateRouteButton, DayStrip tabs, and ItineraryBottomDock) for effortless driver and one-handed thumb tapping on the road. |
+| **`IMP-074`** | 2026-09-02 | UI & Home / Quick-Action Red Notification Dot Indicator | Implemented IDEA-010: Contextual Red Notification Dot Indicator (`🔴`) on TripCard quick action buttons for new or modified content inside (Itinerary, Packing, Members, Expenses, Chat) using Keystore-backed `ModuleViewTrackerService`, self-action exemption, and reactive Riverpod stream diffing. |
 
 ---
 
@@ -1287,15 +1288,29 @@
   - **NavigateRouteButton & Route Modal**:
     - Increased main multi-stop navigation button height from 52 to `58` with size 24 icon and 14.5 bold typography.
     - Expanded tune options button hit area to a minimum `44x44` touch target.
-    - Scaled "Open in Google Maps" and "Copy Link" buttons in the route preview sheet to height `54` with larger icons and bold labels.
-    - Enlarged Scope Choice Chips and Travel Mode chips with generous padding (`14x10`) and tactile haptics.
-  - **ItineraryBottomDock Floating Bar**:
-    - Increased dock height, border radius (`26`), and inner button padding (`vertical: 13`) across `Live Nav`, `Day Map`, and `Stop` actions for effortless thumb tapping.
-  - **DayStrip Tabs & ArrivalPill**:
-    - Increased DayStrip height from 72 to `78`, tab padding to `18x10`, and font size to `13.5` bold with `HapticFeedback.selectionClick()`.
-    - Enlarged ArrivalPill check-in action button to `14x10` with size 20 icon and 11 bold text.
+### `IMP-074` · 2026-09-02 · UI & Home / Quick-Action Red Notification Dot Indicator (IDEA-010)
+- **Problem**:
+  - The 5 quick action buttons on the home trip card (`Itinerary`, `Packing`, `Members`, `Expenses`, `Chat`) were static and did not provide visual change awareness when co-travelers added new stops, updated packing items, joined the trip, logged expenses, or sent unread messages.
+- **Solution**:
+  - Implemented **IDEA-010**: Lightweight, contextual **Red Notification Dot Indicator (`🔴`)** anchored to the top-right of each action button container.
+  - Built `ModuleViewTrackerService` utilizing Android Keystore / iOS Keychain `FlutterSecureStorage` with in-memory sync cache for $O(1)$ timestamp diffing.
+  - Implemented `tripQuickActionChangesProvider` which subscribes to real-time streams and queries `created_at` / `updated_at` timestamps against local `last_viewed:{module}:{tripId}` records.
+  - Built **Self-Action Exemption**: modifications authored by the current logged-in user (`user_id == currentUserId` or `paid_by_user_id == currentUserId`) are filtered out so users do not see notifications for their own edits.
+  - Integrated auto-dismissal on quick action tap and on-screen entry across all 5 destination screens (`ItineraryScreen`, `PackingScreen`, `MembersScreen`, `BudgetScreen`, `ChatScreen`).
+- **Modified / Created Files**:
+  - `lib/core/services/module_view_tracker_service.dart` [NEW]
+  - `lib/features/home/models/trip_card_badge_data.dart` [NEW]
+  - `lib/core/providers/trip_action_changes_provider.dart` [NEW]
+  - `lib/features/home/widgets/trip_card.dart`
+  - `lib/features/home/home_screen.dart`
+  - `lib/features/itinerary/itinerary_screen.dart`
+  - `lib/features/packing/packing_screen.dart`
+  - `lib/features/members/members_screen.dart`
+  - `lib/features/budget/budget_screen.dart`
+  - `lib/features/chat/chat_screen.dart`
 - **Verification**:
-  - `flutter analyze lib/features/itinerary/` executed clean.
+  - `dart analyze` and `flutter analyze` completed cleanly with zero warnings or errors.
+
 
 
 

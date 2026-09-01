@@ -10,6 +10,7 @@ import '../../core/providers/friend_provider.dart';
 import '../../core/providers/repository_providers.dart';
 import '../../core/models/member_model.dart';
 import '../../core/models/trip_model.dart';
+import '../../core/services/module_view_tracker_service.dart';
 import '../../core/widgets/buttons/app_back_button.dart';
 import '../../core/widgets/shimmer_loading.dart';
 import '../../core/widgets/feedback/app_feedback.dart';
@@ -33,6 +34,10 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
         if (trip == null) {
           return const Scaffold(body: Center(child: Text('Trip not found')));
         }
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ModuleViewTrackerService.instance.markViewed('members', trip.id);
+        });
 
         ref.watch(membersRealtimeProvider(trip.id));
 

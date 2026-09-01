@@ -4,7 +4,7 @@ trigger: always_on
 
 # Tara Travel — Architectural Memory & Anti-Hallucination Rules
 
-Enforces factual ground truth across all Flutter and Supabase development in Tara Travel. For full schema listings, see `MEMORY.md`.
+Enforces factual ground truth across all Flutter and Supabase development in Tara Travel. For full schema listings, see `docs/MEMORY.md`.
 
 ## 1. Ground-Truth Schema & Forbidden Columns
 
@@ -37,6 +37,7 @@ Enforces factual ground truth across all Flutter and Supabase development in Tar
 ## 5. 🔄 Continuous Memory Synchronization Rule (MANDATORY)
 
 - **Rule**: Whenever any new feature, SQL migration, RPC function, repository method, Riverpod provider, service, or bugfix is implemented:
-  1. **Update `MEMORY.md`**: Update schemas, function indexes, providers, and architectural invariants to match the current state.
-  2. **Append to `IMPLEMENTATION_MEMORY.md`**: Add a chronological entry with Milestone ID (`IMP-XXX`), modified files, architectural rationale, and verification checks.
+  1. **Update `docs/MEMORY.md`**: Update schemas, function indexes, providers, and architectural invariants to match the current state.
+  2. **Append to `docs/IMPLEMENTATION_MEMORY.md`**: Add a chronological entry with Milestone ID (`IMP-XXX`), modified files, architectural rationale, and verification checks.
+  3. **Update `docs/CHANGELOG.md`** (or sync via `tools/generate_changelog.ps1`): Ensure changelog entries reflect changes.
 
