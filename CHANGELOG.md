@@ -1,7 +1,7 @@
 # Tara Travel — Version Changelog
 
 > Auto-generated from IMPLEMENTATION_MEMORY.md + git log
-> Last updated: **2026-09-01 03:45 PHT**
+> Last updated: **2026-09-01 22:55 PHT**
 
 ---
 
@@ -532,9 +532,9 @@
 
 ### IMP-047 - Itinerary Day Deletion & Supabase Synchronization
 
-**Component**: Itinerary / Supabase Sync
+**Component**: Itinerary Functional Add Day & Date Extension
 
-**Summary**: Permission-gated Itinerary Day Deletion (Organizers & Navigators), multi-day check, batch stop deletion (`deleteStops`), and remote day re-indexing synchronization.
+**Summary**: Fully functional Add Day action via DayStrip (+ Day) and DayActionsSheet, with dynamic date calculation and trip end_date auto-extension.
 
 <details>
 <summary>Full implementation detail</summary>
@@ -580,9 +580,9 @@
 
 ### IMP-047 - Itinerary Day Deletion & Supabase Synchronization
 
-**Component**: Itinerary Functional Add Day & Date Extension
+**Component**: Itinerary / Supabase Sync
 
-**Summary**: Fully functional Add Day action via DayStrip (+ Day) and DayActionsSheet, with dynamic date calculation and trip end_date auto-extension.
+**Summary**: Permission-gated Itinerary Day Deletion (Organizers & Navigators), multi-day check, batch stop deletion (`deleteStops`), and remote day re-indexing synchronization.
 
 <details>
 <summary>Full implementation detail</summary>
@@ -1522,7 +1522,108 @@
 
 ## 2026-09-01
 
-### IMP-070 - Driver-Ready Slide to Confirm Arrival, Per-Member Arrival Timestamps & Full Supabase Persistence [commit:9a3ced9](https://github.com/msmontalbo15/tara-travel-Android/commit/9a3ced9)
+### IMP-073 - UI & Itinerary / Driver-Ready Touch Targets & Enriched Buttons
+
+**Component**: UI & Itinerary / Driver-Ready Touch Targets & Enriched Buttons
+
+**Summary**: Scaled up all itinerary interactive CTA buttons (StopCard Navigate button, StopDetailSheet Navigate Maps / Expense / Edit / Slide to Arrive / Member toggle, NavigateRouteButton, DayStrip tabs, and ItineraryBottomDock) for effortless driver and one-handed thumb tapping on the road.
+
+---
+
+### IMP-072 - Trip Card & Trip Detail Date Abbreviation, Itinerary Stops Box & Budget Bar Decluttering
+
+**Component**: UI & Home / Trip Card Date Abbreviation & Budget Clean-up
+
+**Summary**: Abbreviated date ranges on home trip cards, replaced middle stat box with non-clickable ITINERARY (visited/total), and converted budget tracker to an informational progress bar without Manage >.
+
+<details>
+<summary>Full implementation detail</summary>
+
+- **Date**: September 1, 2026
+- **Files Modified**:
+  - [lib/features/home/widgets/trip_card.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/home/widgets/trip_card.dart) **[MODIFIED]**
+  - [lib/features/home/home_screen.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/home/home_screen.dart) **[MODIFIED]**
+  - [lib/features/trip_detail/trip_detail_screen.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/trip_detail/trip_detail_screen.dart) **[MODIFIED]**
+- **Scope & Objectives**:
+  - **Date Abbreviations**:
+    - Converted home screen trip card and trip detail hero dates to use 3-letter month abbreviations (e.g. `Oct 12–15, 2026` or `Oct 28 – Nov 2, 2026`).
+  - **Three Stat Boxes (DAYS/NIGHTS | ITINERARY | PEOPLE)**:
+    - Replaced the redundant middle `BUDGET` stat box on both Home Trip Cards and Trip Detail Screen with an `ITINERARY` box displaying `${visitedStops}/${totalStops}` progress (e.g. `2/8` or `0/5`).
+    - Configured the box as a clean informational box.
+  - **Standalone Budget Bar**:
+    - Converted the home card budget summary into a clean, informational progress bar.
+    - Removed direct link/tap interaction on the home tracker bar and removed `"Manage >"`.
+- **Verification**:
+  - `flutter analyze lib/features/home/widgets/trip_card.dart lib/features/home/home_screen.dart lib/features/trip_detail/trip_detail_screen.dart` passed with 0 issues.
+
+
+### Milestone: `IMP-073` — UI & Itinerary: Driver-Ready Touch Targets & Enriched Buttons
+- **Date**: 2026-09-01
+- **Status**: Production Verified
+- **Components**: `lib/features/itinerary/widgets/stop_card.dart`, `lib/features/itinerary/widgets/stop_detail_sheet.dart`, `lib/features/itinerary/widgets/navigate_route_button.dart`, `lib/features/itinerary/widgets/itinerary_bottom_dock.dart`, `lib/features/itinerary/widgets/slide_to_arrive_button.dart`, `lib/features/itinerary/widgets/day_strip.dart`, `lib/features/itinerary/widgets/arrival_pill.dart`, `lib/features/itinerary/widgets/timeline_view.dart`
+- **Architectural Rationale & Implementation Details**:
+  - **StopCard Navigate Action Button**:
+    - Replaced the subtle low-contrast `10x5` pill with a prominent, high-contrast, driver-ready solid primary button (`14x8` padding, size 16 icon, font 12.5 bold) with soft shadow and `HapticFeedback.lightImpact()`.
+  - **StopDetailSheet Driver Actions**:
+    - Scaled `Navigate Maps` primary button height from 46 to `54` with size 22 icon and 14.5 bold typography.
+    - Scaled `Expense` action button height from 46 to `54` with size 19 icon and 13.5 bold typography.
+    - Scaled top-right `Edit` header button to a generous `14x9` touch area with size 15 icon and 13 bold text.
+    - Upgraded `SlideToArriveButton` default height to `60` with a 52px knob and size 24 vehicle icon.
+    - Enriched Arrived Driver Status bar with height `62`, size 36 circle check, and a roomy `14x8` Undo button.
+    - Scaled companion arrival toggles ("Mark Arrived" / "Undo") to `13x8` with size 15 icons and 12 bold text, and "Mark Everyone as Arrived" button to height `48`.
+  - **NavigateRouteButton & Route Modal**:
+    - Increased main multi-stop navigation button height from 52 to `58` with size 24 icon and 14.5 bold typography.
+    - Expanded tune options button hit area to a minimum `44x44` touch target.
+    - Scaled "Open in Google Maps" and "Copy Link" buttons in the route preview sheet to height `54` with larger icons and bold labels.
+    - Enlarged Scope Choice Chips and Travel Mode chips with generous padding (`14x10`) and tactile haptics.
+  - **ItineraryBottomDock Floating Bar**:
+    - Increased dock height, border radius (`26`), and inner button padding (`vertical: 13`) across `Live Nav`, `Day Map`, and `Stop` actions for effortless thumb tapping.
+  - **DayStrip Tabs & ArrivalPill**:
+    - Increased DayStrip height from 72 to `78`, tab padding to `18x10`, and font size to `13.5` bold with `HapticFeedback.selectionClick()`.
+    - Enlarged ArrivalPill check-in action button to `14x10` with size 20 icon and 11 bold text.
+- **Verification**:
+  - `flutter analyze lib/features/itinerary/` executed clean.
+
+</details>
+
+---
+
+### IMP-071 - Relocating Live Nav to Itinerary Floating Dock & Driver Navigation Optimization
+
+**Component**: UI & Navigation / Floating Dock Live Nav Migration
+
+**Summary**: Relocated Live Nav trigger to ItineraryBottomDock, decluttered NextTripCard/TripCard action bars, and optimized TurnCard with external Google Maps navigation handoff.
+
+<details>
+<summary>Full implementation detail</summary>
+
+- **Date**: September 1, 2026
+- **Files Modified**:
+  - [lib/features/home/widgets/next_trip_card.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/home/widgets/next_trip_card.dart) **[MODIFIED]**
+  - [lib/features/home/widgets/trip_card.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/home/widgets/trip_card.dart) **[MODIFIED]**
+  - [lib/features/itinerary/widgets/itinerary_bottom_dock.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/itinerary_bottom_dock.dart) **[MODIFIED]**
+  - [lib/features/navigation/widgets/live_map_tab.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/navigation/widgets/live_map_tab.dart) **[MODIFIED]**
+  - [DEV_IDEA.md](file:///d:/Spencer/Downloads/tara_travel/DEV_IDEA.md) **[MODIFIED]**
+- **Scope & Objectives**:
+  - **Home Screen Surface Decluttering**:
+    - Removed `Live Nav` badge button from the top header row of `NextTripCard`.
+    - Removed `Live Nav` action button from `TripCard` bottom action bar, balancing spacing for `Itinerary`, `Packing`, `Members`, `Expenses`, and `Chat`.
+  - **Itinerary Floating Dock Redesign**:
+    - Replaced the 2-button layout in `ItineraryBottomDock` with a 3-button tri-action bar:
+      - Primary Hero Action: `[ 🧭 Live Nav ]` (Gradient coral button with medium impact haptics, opening in-app live navigation).
+      - Secondary Action: `[ 🗺️ Day Map ]` (Frosted pill opening interactive route sheet).
+      - Tertiary Action: `[ ＋ Stop ]` (Quick modal trigger for itinerary managers).
+  - **Driver-Focused Navigation HUD**:
+    - Added direct 1-tap **"Launch Google Maps Turn-by-Turn"** (`google.navigation:q=lat,lng&mode=d`) external handoff to `_TurnCard` in `LiveMapTab`.
+    - Enhanced `_BottomStrip` with higher contrast `[ Exit Nav ]` button for ease of operation.
+- **Verification**:
+  - `dart analyze lib/` passed with 0 errors and 0 warnings.
+
+</details>
+
+---
+
+### IMP-070 - Driver-Ready Slide to Confirm Arrival, Per-Member Arrival Timestamps & Full Supabase Persistence [commit:ce24954](https://github.com/msmontalbo15/tara-travel-Android/commit/ce24954)
 
 **Component**: UI & Itinerary / Driver-Ready Slide-to-Arrive Bottom Dock
 

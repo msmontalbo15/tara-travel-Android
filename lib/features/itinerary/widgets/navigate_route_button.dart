@@ -224,14 +224,14 @@ class _NavigateRouteButtonState extends State<NavigateRouteButton> {
 
     return Container(
       width: double.infinity,
-      height: 52,
+      height: 58,
       decoration: BoxDecoration(
         color: AppColors.primary,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.28),
-            blurRadius: 10,
+            color: AppColors.primary.withValues(alpha: 0.35),
+            blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
@@ -239,23 +239,28 @@ class _NavigateRouteButtonState extends State<NavigateRouteButton> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: canNavigate && !_loading ? _quickNavigate : null,
+          borderRadius: BorderRadius.circular(18),
+          onTap: canNavigate && !_loading
+              ? () {
+                  HapticFeedback.mediumImpact();
+                  _quickNavigate();
+                }
+              : null,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
                 _loading
                     ? const SizedBox(
-                        width: 18,
-                        height: 18,
+                        width: 22,
+                        height: 22,
                         child: CircularProgressIndicator(
-                          strokeWidth: 2,
+                          strokeWidth: 2.5,
                           color: Colors.white,
                         ),
                       )
-                    : const Icon(Icons.directions_rounded, color: Colors.white, size: 20),
-                const SizedBox(width: 10),
+                    : const Icon(Icons.directions_rounded, color: Colors.white, size: 24),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -269,42 +274,49 @@ class _NavigateRouteButtonState extends State<NavigateRouteButton> {
                                 : 'No stops to navigate',
                         style: const TextStyle(
                           fontFamily: 'DM Sans',
-                          fontSize: 13.5,
+                          fontSize: 14.5,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
+                          letterSpacing: 0.2,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      if (canNavigate && !_loading)
+                      if (canNavigate && !_loading) ...[
+                        const SizedBox(height: 2),
                         Text(
                           hasFilteredRemaining
                               ? 'Next $displayCount remaining stops · Tap to launch'
                               : 'All $displayCount stops · Full day route',
                           style: TextStyle(
                             fontFamily: 'DM Sans',
-                            fontSize: 10.5,
-                            color: Colors.white.withValues(alpha: 0.8),
+                            fontSize: 11.5,
+                            color: Colors.white.withValues(alpha: 0.85),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
+                      ],
                     ],
                   ),
                 ),
                 if (canNavigate && !_loading) ...[
                   Container(
-                    height: 24,
+                    height: 28,
                     width: 1,
-                    color: Colors.white.withValues(alpha: 0.25),
+                    color: Colors.white.withValues(alpha: 0.3),
                   ),
+                  const SizedBox(width: 4),
                   IconButton(
-                    icon: const Icon(Icons.tune_rounded, color: Colors.white, size: 19),
+                    icon: const Icon(Icons.tune_rounded, color: Colors.white, size: 22),
                     tooltip: 'Route options & preview',
-                    padding: const EdgeInsets.all(6),
-                    constraints: const BoxConstraints(),
-                    splashRadius: 18,
-                    onPressed: _openRouteOptionsSheet,
+                    padding: const EdgeInsets.all(8),
+                    constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                    splashRadius: 22,
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      _openRouteOptionsSheet();
+                    },
                   ),
                 ],
               ],
@@ -615,9 +627,9 @@ class _RouteOptionsSheetState extends State<_RouteOptionsSheet> {
               ),
             ),
 
-            // Bottom action buttons
+            // Bottom action buttons (Driver-ready large touch targets)
             Container(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
               decoration: BoxDecoration(
                 color: Colors.white,
                 boxShadow: [
@@ -631,43 +643,57 @@ class _RouteOptionsSheetState extends State<_RouteOptionsSheet> {
               child: Row(
                 children: [
                   OutlinedButton.icon(
-                    onPressed: _copyLink,
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      _copyLink();
+                    },
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.deepEarth,
-                      side: const BorderSide(color: AppColors.cardBorder),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      side: const BorderSide(color: AppColors.cardBorder, width: 1.2),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     ),
-                    icon: const Icon(Icons.share_outlined, size: 18),
+                    icon: const Icon(Icons.share_outlined, size: 20),
                     label: const Text(
                       'Copy Link',
-                      style: TextStyle(fontFamily: 'DM Sans', fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        fontFamily: 'DM Sans',
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: activeStops.isNotEmpty && !_loading ? _launch : null,
+                      onPressed: activeStops.isNotEmpty && !_loading
+                          ? () {
+                              HapticFeedback.mediumImpact();
+                              _launch();
+                            }
+                          : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        elevation: 2,
+                        shadowColor: AppColors.primary.withValues(alpha: 0.4),
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       ),
                       icon: _loading
                           ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
                             )
-                          : const Icon(Icons.map_rounded, size: 20),
+                          : const Icon(Icons.map_rounded, size: 22),
                       label: Text(
                         _loading ? 'Opening Maps…' : 'Open in Google Maps',
                         style: const TextStyle(
                           fontFamily: 'DM Sans',
-                          fontSize: 14,
+                          fontSize: 15,
                           fontWeight: FontWeight.w700,
+                          letterSpacing: 0.2,
                         ),
                       ),
                     ),
@@ -696,24 +722,37 @@ class _ScopeChoiceChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        padding: const EdgeInsets.symmetric(vertical: 12),
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: isSelected ? AppColors.deepEarth : Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isSelected ? AppColors.deepEarth : AppColors.cardBorder,
+            width: isSelected ? 1.5 : 1.0,
           ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.deepEarth.withValues(alpha: 0.2),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  )
+                ]
+              : null,
         ),
         child: Text(
           label,
           style: TextStyle(
             fontFamily: 'DM Sans',
-            fontSize: 12.5,
-            fontWeight: FontWeight.w600,
+            fontSize: 13,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
             color: isSelected ? Colors.white : AppColors.textPrimary,
           ),
         ),
@@ -741,13 +780,16 @@ class _TravelModeChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool isSelected = modeKey == selectedKey;
     return GestureDetector(
-      onTap: () => onSelected(modeKey),
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onSelected(modeKey);
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.sand : Colors.white,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? AppColors.primary : AppColors.cardBorder,
             width: isSelected ? 1.5 : 1.0,
@@ -758,15 +800,15 @@ class _TravelModeChip extends StatelessWidget {
           children: [
             Icon(
               icon,
-              size: 16,
+              size: 18,
               color: isSelected ? AppColors.primary : AppColors.textSecondary,
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: 7),
             Text(
               label,
               style: TextStyle(
                 fontFamily: 'DM Sans',
-                fontSize: 12,
+                fontSize: 13,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 color: isSelected ? AppColors.darkAccent : AppColors.textPrimary,
               ),

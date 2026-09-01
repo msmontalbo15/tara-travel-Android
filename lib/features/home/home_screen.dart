@@ -2,11 +2,13 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:intl/intl.dart';
 import '../../core/models/trip_model.dart';
 import '../../core/providers/profile_provider.dart';
 import '../../core/providers/packing_provider.dart';
 import '../../core/providers/trip_provider.dart';
 import '../../core/providers/selected_trip_provider.dart';
+import '../../core/providers/itinerary_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_brand_logo.dart';
 import '../../core/widgets/navigation/floating_nav_bar.dart';
@@ -382,128 +384,48 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
                                           ],
                                         ),
                                       ),
-                                        Column(
-                                          children: visibleTrips
-                                              .map(
-                                                (trip) => trip.isDraft
-                                                    ? TripCard.draft(
-                                                        name: trip.name,
-                                                        destination: trip.destination.isNotEmpty ? trip.destination : null,
-                                                        isIncomplete: trip.isIncomplete,
-                                                        dateRange:
-                                                            '${trip.fromDate.month}/${trip.fromDate.day}-${trip.toDate.day}, ${trip.toDate.year}',
-                                                        onMore: () => TripActionSheet.show(context, ref, trip),
-                                                        onTap: () {
-                                                          ref
-                                                              .read(selectedTripIdProvider
-                                                                  .notifier)
-                                                              .select(trip.id);
-                                                          Navigator.pushNamed(
-                                                              context, '/trip-detail');
-                                                        },
-                                                      )
-                                                    : TripCard.upcoming(
-                                                        name: trip.name,
-                                                        destination: trip.destination,
-                                                        tripId: trip.id,
-                                                        isIncomplete: trip.isIncomplete,
-                                                        dateRange:
-                                                            '${trip.fromDate.month}/${trip.fromDate.day}-${trip.toDate.day}, ${trip.toDate.year}',
-                                                        budget:
-                                                            'P${(trip.totalBudget / 1000).toStringAsFixed(0)}k',
-                                                        totalBudget: trip.totalBudget,
-                                                        totalSpent: trip.totalSpent,
-                                                        days: trip.toDate
-                                                                .difference(
-                                                                    trip.fromDate)
-                                                                .inDays +
-                                                            1,
-                                                        people: trip.members.length,
-                                                        tripType: trip.tripType,
-                                                        coverColor: trip.coverColor,
-                                                        coverEmoji: trip.coverEmoji,
-                                                        onMore: () => TripActionSheet.show(context, ref, trip),
-                                                        travelers: trip.members
-                                                            .map(
-                                                              (member) => TravelerInfo(
-                                                                member.initials,
-                                                                member.color
-                                                                    .toARGB32(),
-                                                              ),
-                                                            )
-                                                            .toList(),
-                                                        onTap: () {
-                                                          ref
-                                                              .read(selectedTripIdProvider
-                                                                  .notifier)
-                                                              .select(trip.id);
-                                                          Navigator.pushNamed(
-                                                              context, '/trip-detail');
-                                                        },
-                                                        onItinerary: () {
-                                                          ref
-                                                              .read(selectedTripIdProvider
-                                                                  .notifier)
-                                                              .select(trip.id);
-                                                          Navigator.pushNamed(
-                                                              context, '/itinerary');
-                                                        },
-                                                        onPacking: () {
-                                                          ref
-                                                              .read(selectedTripIdProvider
-                                                                  .notifier)
-                                                              .select(trip.id);
-                                                          Navigator.pushNamed(
-                                                              context, '/packing');
-                                                        },
-                                                        onMembers: () {
-                                                          ref
-                                                              .read(selectedTripIdProvider
-                                                                  .notifier)
-                                                              .select(trip.id);
-                                                          Navigator.pushNamed(
-                                                              context, '/members');
-                                                        },
-                                                        onExpenses: () {
-                                                          ref
-                                                              .read(selectedTripIdProvider
-                                                                  .notifier)
-                                                              .select(trip.id);
-                                                          Navigator.pushNamed(
-                                                              context, '/budget');
-                                                        },
-                                                        onBudgetTap: () {
-                                                          ref
-                                                              .read(selectedTripIdProvider
-                                                                  .notifier)
-                                                              .select(trip.id);
-                                                          Navigator.pushNamed(
-                                                              context, '/budget');
-                                                        },
-                                                        onSetBudget: () {
-                                                          QuickBudgetSheet.show(
-                                                              context, trip);
-                                                        },
-                                                        onChat: () {
-                                                          ref
-                                                              .read(selectedTripIdProvider
-                                                                  .notifier)
-                                                              .select(trip.id);
-                                                          Navigator.pushNamed(
-                                                              context, '/chat');
-                                                        },
-                                                        onNavigation: () {
-                                                          ref
-                                                              .read(selectedTripIdProvider
-                                                                  .notifier)
-                                                              .select(trip.id);
-                                                          Navigator.pushNamed(
-                                                              context, '/navigation');
-                                                        },
-                                                      ),
-                                              )
-                                              .toList(),
-                                        ),
+                                         Column(
+                                           children: visibleTrips.map(
+                                             (trip) {
+                                               final String dateRangeStr;
+                                               if (trip.fromDate.year == trip.toDate.year) {
+                                                 if (trip.fromDate.month == trip.toDate.month) {
+                                                   dateRangeStr =
+                                                       '${DateFormat('MMM d').format(trip.fromDate)}–${trip.toDate.day}, ${trip.toDate.year}';
+                                                 } else {
+                                                   dateRangeStr =
+                                                       '${DateFormat('MMM d').format(trip.fromDate)} – ${DateFormat('MMM d').format(trip.toDate)}, ${trip.toDate.year}';
+                                                 }
+                                               } else {
+                                                 dateRangeStr =
+                                                     '${DateFormat('MMM d, yyyy').format(trip.fromDate)} – ${DateFormat('MMM d, yyyy').format(trip.toDate)}';
+                                               }
+
+                                               if (trip.isDraft) {
+                                                 return TripCard.draft(
+                                                   name: trip.name,
+                                                   destination: trip.destination.isNotEmpty ? trip.destination : null,
+                                                   isIncomplete: trip.isIncomplete,
+                                                   dateRange: dateRangeStr,
+                                                   onMore: () => TripActionSheet.show(context, ref, trip),
+                                                   onTap: () {
+                                                     ref
+                                                         .read(selectedTripIdProvider
+                                                             .notifier)
+                                                         .select(trip.id);
+                                                     Navigator.pushNamed(
+                                                         context, '/trip-detail');
+                                                   },
+                                                 );
+                                               }
+
+                                               return _HomeTripCardItem(
+                                                 trip: trip,
+                                                 dateRange: dateRangeStr,
+                                               );
+                                             },
+                                           ).toList(),
+                                         ),
                                         const SizedBox(height: 20),
                                       ],
                                     );
@@ -1246,3 +1168,96 @@ class _HomeHeaderDelegate extends SliverPersistentHeaderDelegate {
         oldDelegate.greeting != greeting;
   }
 }
+
+class _HomeTripCardItem extends ConsumerWidget {
+  final TripModel trip;
+  final String dateRange;
+
+  const _HomeTripCardItem({
+    required this.trip,
+    required this.dateRange,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final itineraryAsync = ref.watch(ref.watch(itineraryProvider(trip.id)));
+    final itineraryState = itineraryAsync.value;
+
+    int totalStops = 0;
+    int visitedStops = 0;
+
+    if (itineraryState != null) {
+      for (final day in itineraryState.days) {
+        totalStops += day.stops.length;
+        for (final stop in day.stops) {
+          if (stop.isCompleted) {
+            visitedStops++;
+          }
+        }
+      }
+    }
+
+    return TripCard.upcoming(
+      name: trip.name,
+      destination: trip.destination,
+      tripId: trip.id,
+      isIncomplete: trip.isIncomplete,
+      dateRange: dateRange,
+      budget: 'P${(trip.totalBudget / 1000).toStringAsFixed(0)}k',
+      totalBudget: trip.totalBudget,
+      totalSpent: trip.totalSpent,
+      days: trip.toDate.difference(trip.fromDate).inDays + 1,
+      people: trip.members.length,
+      visitedStops: visitedStops,
+      totalStops: totalStops,
+      tripType: trip.tripType,
+      coverColor: trip.coverColor,
+      coverEmoji: trip.coverEmoji,
+      onMore: () => TripActionSheet.show(context, ref, trip),
+      travelers: trip.members
+          .map(
+            (member) => TravelerInfo(
+              member.initials,
+              member.color.toARGB32(),
+            ),
+          )
+          .toList(),
+      onTap: () {
+        ref.read(selectedTripIdProvider.notifier).select(trip.id);
+        Navigator.pushNamed(context, '/trip-detail');
+      },
+      onItinerary: () {
+        ref.read(selectedTripIdProvider.notifier).select(trip.id);
+        Navigator.pushNamed(context, '/itinerary');
+      },
+      onPacking: () {
+        ref.read(selectedTripIdProvider.notifier).select(trip.id);
+        Navigator.pushNamed(context, '/packing');
+      },
+      onMembers: () {
+        ref.read(selectedTripIdProvider.notifier).select(trip.id);
+        Navigator.pushNamed(context, '/members');
+      },
+      onExpenses: () {
+        ref.read(selectedTripIdProvider.notifier).select(trip.id);
+        Navigator.pushNamed(context, '/budget');
+      },
+      onBudgetTap: () {
+        ref.read(selectedTripIdProvider.notifier).select(trip.id);
+        Navigator.pushNamed(context, '/budget');
+      },
+      onSetBudget: () {
+        QuickBudgetSheet.show(context, trip);
+      },
+      onChat: () {
+        ref.read(selectedTripIdProvider.notifier).select(trip.id);
+        Navigator.pushNamed(context, '/chat');
+      },
+      onNavigation: () {
+        ref.read(selectedTripIdProvider.notifier).select(trip.id);
+        Navigator.pushNamed(context, '/navigation');
+      },
+    );
+  }
+}
+

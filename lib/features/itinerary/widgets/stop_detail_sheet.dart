@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../core/models/itinerary_model.dart';
 import '../../../core/models/member_model.dart';
 import '../../../core/theme/app_colors.dart';
@@ -228,47 +229,55 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                     ],
                   ),
                 ),
-                // Top-right Edit button
-                GestureDetector(
-                  onTap: widget.onEdit,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.sand,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: AppColors.primary.withValues(alpha: 0.3),
+                // Top-right Edit button (Driver-friendly tap area)
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      widget.onEdit();
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 9,
                       ),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.edit_rounded,
-                            size: 13, color: AppColors.primary),
-                        SizedBox(width: 4),
-                        Text(
-                          'Edit',
-                          style: TextStyle(
-                            fontFamily: 'DM Sans',
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primary,
-                          ),
+                      decoration: BoxDecoration(
+                        color: AppColors.sand,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppColors.primary.withValues(alpha: 0.35),
+                          width: 1.2,
                         ),
-                      ],
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.edit_rounded,
+                              size: 15, color: AppColors.primary),
+                          SizedBox(width: 5),
+                          Text(
+                            'Edit',
+                            style: TextStyle(
+                              fontFamily: 'DM Sans',
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 8),
                 // Close button
                 IconButton(
                   icon: const Icon(Icons.close_rounded,
-                      size: 20, color: AppColors.muted),
+                      size: 24, color: AppColors.muted),
                   onPressed: () => Navigator.pop(context),
-                  visualDensity: VisualDensity.compact,
+                  visualDensity: VisualDensity.standard,
                 ),
               ],
             ),
@@ -306,59 +315,66 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                     const SizedBox(height: 16),
                   ],
 
-                  // 2. Primary Navigation & Expense Actions
+                  // 2. Primary Navigation & Expense Actions (Driver-Ready Big Touch Targets)
                   Row(
                     children: [
                       Expanded(
                         flex: 3,
                         child: SizedBox(
-                          height: 46,
+                          height: 54,
                           child: ElevatedButton.icon(
-                            onPressed: () =>
-                                openGoogleMapsForStop(context, stop),
+                            onPressed: () {
+                              HapticFeedback.mediumImpact();
+                              openGoogleMapsForStop(context, stop);
+                            },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.primary,
                               foregroundColor: Colors.white,
-                              elevation: 0,
+                              elevation: 2,
+                              shadowColor: AppColors.primary.withValues(alpha: 0.4),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(16),
                               ),
                             ),
-                            icon: const Icon(Icons.directions_rounded, size: 18),
+                            icon: const Icon(Icons.directions_rounded, size: 22),
                             label: const Text(
                               'Navigate Maps',
                               style: TextStyle(
                                 fontFamily: 'DM Sans',
-                                fontSize: 13,
+                                fontSize: 14.5,
                                 fontWeight: FontWeight.w700,
+                                letterSpacing: 0.2,
                               ),
                             ),
                           ),
                         ),
                       ),
                       if (widget.onLogExpense != null) ...[
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 12),
                         Expanded(
                           flex: 2,
                           child: SizedBox(
-                            height: 46,
+                            height: 54,
                             child: OutlinedButton.icon(
-                              onPressed: widget.onLogExpense,
+                              onPressed: () {
+                                HapticFeedback.lightImpact();
+                                widget.onLogExpense!();
+                              },
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: AppColors.amberText,
                                 side: const BorderSide(
-                                    color: AppColors.amber, width: 1.2),
+                                    color: AppColors.amber, width: 1.5),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(16),
                                 ),
                               ),
                               icon: const Icon(Icons.receipt_long_rounded,
-                                  size: 16),
+                                  size: 19),
                               label: const Text(
                                 'Expense',
                                 style: TextStyle(
                                   fontFamily: 'DM Sans',
-                                  fontSize: 12,
+                                  fontSize: 13.5,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
@@ -368,7 +384,7 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                       ],
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 18),
 
                   // 3. Dedicated "Members" Arrival Hub & Roster (for group trips)
                   if (members.length > 1) ...[
@@ -513,6 +529,7 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
               child: _isSelfArrived
                   ? _buildArrivedDriverStatus()
                   : SlideToArriveButton(
+                      height: 60.0,
                       onConfirmed: () async {
                         _handleSelfArrivalToggle();
                         final nav = Navigator.of(context);
@@ -538,26 +555,26 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
     final stop = _currentStop;
 
     return Container(
-      height: 56,
+      height: 62,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: AppColors.greenBright.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(31),
         border: Border.all(
-          color: AppColors.greenBright.withValues(alpha: 0.4),
+          color: AppColors.greenBright.withValues(alpha: 0.45),
           width: 1.5,
         ),
       ),
       child: Row(
         children: [
           Container(
-            width: 32,
-            height: 32,
+            width: 36,
+            height: 36,
             decoration: const BoxDecoration(
               color: AppColors.greenBright,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.check_rounded, color: Colors.white, size: 18),
+            child: const Icon(Icons.check_rounded, color: Colors.white, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -571,7 +588,7 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                       : '✓ You Arrived',
                   style: const TextStyle(
                     fontFamily: 'DM Sans',
-                    fontSize: 13,
+                    fontSize: 13.5,
                     fontWeight: FontWeight.w700,
                     color: AppColors.greenBright,
                   ),
@@ -587,30 +604,44 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
               ],
             ),
           ),
-          GestureDetector(
-            onTap: _handleSelfArrivalToggle,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.dividerLight),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.undo_rounded, size: 13, color: AppColors.muted),
-                  SizedBox(width: 4),
-                  Text(
-                    'Undo',
-                    style: TextStyle(
-                      fontFamily: 'DM Sans',
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.deepEarth,
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () {
+                HapticFeedback.lightImpact();
+                _handleSelfArrivalToggle();
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.dividerLight),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
                     ),
-                  ),
-                ],
+                  ],
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.undo_rounded, size: 15, color: AppColors.muted),
+                    SizedBox(width: 5),
+                    Text(
+                      'Undo',
+                      style: TextStyle(
+                        fontFamily: 'DM Sans',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.deepEarth,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -736,24 +767,25 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
 
                       return Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 8),
+                            horizontal: 12, vertical: 10),
                         decoration: BoxDecoration(
                           color: isPresent
                               ? AppColors.greenLight.withValues(alpha: 0.4)
                               : Colors.white,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(14),
                           border: Border.all(
                             color: isPresent
-                                ? AppColors.greenBright.withValues(alpha: 0.3)
+                                ? AppColors.greenBright.withValues(alpha: 0.35)
                                 : AppColors.dividerLight,
+                            width: 1.2,
                           ),
                         ),
                         child: Row(
                           children: [
                             // Member Avatar
                             Container(
-                              width: 32,
-                              height: 32,
+                              width: 36,
+                              height: 36,
                               decoration: BoxDecoration(
                                 color: member.color,
                                 shape: BoxShape.circle,
@@ -771,13 +803,13 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                                     : '?',
                                 style: const TextStyle(
                                   fontFamily: 'DM Sans',
-                                  fontSize: 12,
+                                  fontSize: 13,
                                   fontWeight: FontWeight.w700,
                                   color: Colors.white,
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 10),
+                            const SizedBox(width: 12),
                             // Member Name & Status
                             Expanded(
                               child: Column(
@@ -787,7 +819,7 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                                     formattedName,
                                     style: const TextStyle(
                                       fontFamily: 'DM Sans',
-                                      fontSize: 13,
+                                      fontSize: 13.5,
                                       fontWeight: FontWeight.w600,
                                       color: AppColors.deepEarth,
                                     ),
@@ -812,52 +844,60 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                                 ],
                               ),
                             ),
-                            // 1-Tap Toggle Action Button
+                            // 1-Tap Toggle Action Button (Driver-friendly)
                             if (widget.onMemberToggle != null)
-                              GestureDetector(
-                                onTap: () => _handleMemberToggle(member.id),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 10, vertical: 5),
-                                  decoration: BoxDecoration(
-                                    color: isPresent
-                                        ? AppColors.greenBright
-                                            .withValues(alpha: 0.12)
-                                        : AppColors.sand,
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
+                              Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(10),
+                                  onTap: () {
+                                    HapticFeedback.lightImpact();
+                                    _handleMemberToggle(member.id);
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 13, vertical: 8),
+                                    decoration: BoxDecoration(
                                       color: isPresent
                                           ? AppColors.greenBright
-                                              .withValues(alpha: 0.4)
-                                          : AppColors.primary
-                                              .withValues(alpha: 0.3),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        isPresent
-                                            ? Icons.check_rounded
-                                            : Icons.add_rounded,
-                                        size: 13,
+                                              .withValues(alpha: 0.15)
+                                          : AppColors.sand,
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
                                         color: isPresent
                                             ? AppColors.greenBright
-                                            : AppColors.primary,
+                                                .withValues(alpha: 0.45)
+                                            : AppColors.primary
+                                                .withValues(alpha: 0.35),
+                                        width: 1.2,
                                       ),
-                                      const SizedBox(width: 3),
-                                      Text(
-                                        isPresent ? 'Undo' : 'Mark Arrived',
-                                        style: TextStyle(
-                                          fontFamily: 'DM Sans',
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w700,
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          isPresent
+                                              ? Icons.check_rounded
+                                              : Icons.add_rounded,
+                                          size: 15,
                                           color: isPresent
                                               ? AppColors.greenBright
                                               : AppColors.primary,
                                         ),
-                                      ),
-                                    ],
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          isPresent ? 'Undo' : 'Mark Arrived',
+                                          style: TextStyle(
+                                            fontFamily: 'DM Sans',
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                            color: isPresent
+                                                ? AppColors.greenBright
+                                                : AppColors.primary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
@@ -869,29 +909,37 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
 
                   // Batch Shortcut: "Mark Everyone as Arrived"
                   if (!allArrived && widget.onMarkAllArrived != null) ...[
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 12),
                     SizedBox(
                       width: double.infinity,
-                      child: TextButton.icon(
-                        onPressed: _handleMarkAllArrived,
+                      height: 48,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          HapticFeedback.mediumImpact();
+                          _handleMarkAllArrived();
+                        },
                         icon: const Icon(Icons.done_all_rounded,
-                            size: 16, color: AppColors.primary),
+                            size: 18, color: AppColors.primary),
                         label: const Text(
                           'Mark Everyone as Arrived',
                           style: TextStyle(
                             fontFamily: 'DM Sans',
-                            fontSize: 12,
+                            fontSize: 13.5,
                             fontWeight: FontWeight.w700,
                             color: AppColors.primary,
                           ),
                         ),
-                        style: TextButton.styleFrom(
+                        style: ElevatedButton.styleFrom(
                           backgroundColor:
-                              AppColors.primary.withValues(alpha: 0.08),
+                              AppColors.primary.withValues(alpha: 0.1),
+                          foregroundColor: AppColors.primary,
+                          elevation: 0,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(
+                              color: AppColors.primary.withValues(alpha: 0.25),
+                            ),
                           ),
-                          padding: const EdgeInsets.symmetric(vertical: 8),
                         ),
                       ),
                     ),

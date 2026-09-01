@@ -1,7 +1,7 @@
 # 🧠 TARA TRAVEL — ARCHITECTURAL MEMORY & AI GROUND TRUTH
 > **AUTHORITATIVE CONTEXT FOR AI ASSISTANTS & CORE DEVELOPERS**  
 > **Status**: Production Verified  
-> **Last Synced**: August 2026  
+> **Last Synced**: September 2026  
 > **Scope**: Complete Database Schema, Stored Functions, RPCs, Repositories, State Providers, Security Invariants, Feature Implementations, and [Software Design Patterns & REST Standards](file:///d:/Spencer/Downloads/tara_travel/SOFTWARE_DESIGN_PATTERNS.md).
 
 ---
@@ -872,7 +872,32 @@ Client Tier               Storage Tier                Transport Tier
 
 ---
 
+## 19. 🏎️ DRIVER-READY ITINERARY TOUCH TARGETS & ENRICHED BUTTONS (IMP-073)
+
+- **Location**: `lib/features/itinerary/widgets/`
+- **Core Ergonomic & Driver UX Invariants**:
+  - **`StopCard` Navigate CTA**: Upgraded from subtle low-contrast `10x5` pill to prominent, high-contrast solid primary button (`14x8` padding, size 16 icon, font 12.5 bold) with soft shadow and `HapticFeedback.lightImpact()`.
+  - **`StopDetailSheet` Action Buttons**:
+    - **`Navigate Maps` Button**: Height `54`, size 22 icon, 14.5 bold typography with elevated primary gradient.
+    - **`Expense` Button**: Height `54`, size 19 icon, 13.5 bold typography.
+    - **Top-Right `Edit` Action**: Roomy `14x9` pill target with size 15 icon and 13 bold text.
+    - **`SlideToArriveButton`**: Height scaled to `60` with 52px sliding knob and size 24 vehicle icon.
+    - **Arrived Status Bar**: Height `62` with 36px circular badge and `14x8` Undo button.
+    - **Companion Roster Toggles**: Individual member `Mark Arrived` / `Undo` buttons scaled to `13x8` with size 15 icons and 12 bold text; batch `Mark Everyone as Arrived` button scaled to height `48`.
+  - **`NavigateRouteButton` & Route Preview Modal**:
+    - Multi-stop navigation button height scaled to `58` with size 24 icon and 14.5 bold text; tune options hit target $\ge 44\times 44\text{px}$.
+    - "Open in Google Maps" and "Copy Link" buttons scaled to height `54`.
+    - Travel mode and scope choice chips enlarged with `14x10` padding.
+  - **`ItineraryBottomDock`**:
+    - Border radius `26`, vertical padding `13` on `Live Nav`, `Day Map`, and `Stop` action buttons for seamless one-handed thumb reachability on dashboard mounts.
+  - **`DayStrip` & `ArrivalPill`**:
+    - DayStrip height `78` with `18x10` tab padding and bold labels.
+    - ArrivalPill check-in action enlarged to `14x10` with size 20 icon and 11 bold text.
+
+---
+
 *This document is the single source of architectural truth for Tara Travel. Update this file whenever database schemas, RPC functions, core repositories, or system flows are modified.*
+
 
 
 

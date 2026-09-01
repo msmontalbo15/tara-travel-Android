@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../core/models/itinerary_model.dart';
 import '../../../core/theme/app_colors.dart';
 
@@ -256,25 +257,35 @@ class _UntimedStopRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: stop.type.color.withValues(alpha: 0.3)),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: stop.type.color.withValues(alpha: 0.35), width: 1.2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           children: [
-            Icon(stop.type.icon, size: 16, color: stop.type.color),
+            Icon(stop.type.icon, size: 18, color: stop.type.color),
             const SizedBox(width: 10),
             Expanded(
-              child: Text(stop.title, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.deepEarth)),
+              child: Text(stop.title, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 13.5, fontWeight: FontWeight.w600, color: AppColors.deepEarth)),
             ),
-            const Icon(Icons.schedule_rounded, size: 14, color: AppColors.muted),
+            const Icon(Icons.schedule_rounded, size: 15, color: AppColors.muted),
             const SizedBox(width: 4),
-            const Text('No time', style: TextStyle(fontFamily: 'DM Sans', fontSize: 11, color: AppColors.muted)),
+            const Text('No time', style: TextStyle(fontFamily: 'DM Sans', fontSize: 11.5, color: AppColors.muted)),
           ],
         ),
       ),

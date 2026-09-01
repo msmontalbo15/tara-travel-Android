@@ -160,7 +160,21 @@ class _TripDashboardState extends ConsumerState<_TripDashboard> {
     // ── Itinerary ────────────────────────────────────────────────
     final itineraryProviderInst = ref.watch(itineraryProvider(trip.id));
     final itineraryAsync = ref.watch(itineraryProviderInst);
-    final itineraryDayCount = itineraryAsync.asData?.value.days.length ?? 0;
+    final itineraryState = itineraryAsync.asData?.value;
+    final itineraryDayCount = itineraryState?.days.length ?? 0;
+
+    int totalStops = 0;
+    int visitedStops = 0;
+    if (itineraryState != null) {
+      for (final day in itineraryState.days) {
+        totalStops += day.stops.length;
+        for (final stop in day.stops) {
+          if (stop.isCompleted) {
+            visitedStops++;
+          }
+        }
+      }
+    }
 
     final nights = trip.toDate.difference(trip.fromDate).inDays;
     final now = DateTime.now();
@@ -237,7 +251,12 @@ class _TripDashboardState extends ConsumerState<_TripDashboard> {
                     ],
 
                     // Stats row
-                    _StatsRow(trip: trip, nights: nights),
+                    _StatsRow(
+                      trip: trip,
+                      nights: nights,
+                      totalStops: totalStops,
+                      visitedStops: visitedStops,
+                    ),
                     const SizedBox(height: 12),
 
                     // Budget bar
@@ -592,8 +611,22 @@ class _HeroHeader extends ConsumerWidget {
                   const SizedBox(height: 4),
 
                   Text(
-                    '${DateFormat('MMM d').format(trip.fromDate)}–'
-                    '${DateFormat('MMM d, yyyy').format(trip.toDate)} · $nights nights',
+                    () {
+                      final String dateStr;
+                      if (trip.fromDate.year == trip.toDate.year) {
+                        if (trip.fromDate.month == trip.toDate.month) {
+                          dateStr =
+                              '${DateFormat('MMM d').format(trip.fromDate)}–${trip.toDate.day}, ${trip.toDate.year}';
+                        } else {
+                          dateStr =
+                              '${DateFormat('MMM d').format(trip.fromDate)} – ${DateFormat('MMM d').format(trip.toDate)}, ${trip.toDate.year}';
+                        }
+                      } else {
+                        dateStr =
+                            '${DateFormat('MMM d, yyyy').format(trip.fromDate)} – ${DateFormat('MMM d, yyyy').format(trip.toDate)}';
+                      }
+                      return '$dateStr · $nights nights';
+                    }(),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -682,21 +715,24 @@ class _StatusBadge extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Stats Row  (Nights / Budget / People) — glassmorphic cells
+// Stats Row  (Nights / Itinerary / People) — glassmorphic cells
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _StatsRow extends StatelessWidget {
   final TripModel trip;
   final int nights;
-  const _StatsRow({required this.trip, required this.nights});
+  final int totalStops;
+  final int visitedStops;
+
+  const _StatsRow({
+    required this.trip,
+    required this.nights,
+    required this.totalStops,
+    required this.visitedStops,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final budget = trip.totalBudget;
-    final budgetLabel = budget >= 1000
-        ? '₱${(budget / 1000).toStringAsFixed(0)}k'
-        : '₱${budget.toInt()}';
-
     return Row(
       children: [
         Expanded(
@@ -710,9 +746,9 @@ class _StatsRow extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(
           child: _StatCell(
-            label: 'Budget',
-            value: budgetLabel,
-            icon: Icons.account_balance_wallet_rounded,
+            label: 'Itinerary',
+            value: '$visitedStops/$totalStops',
+            icon: Icons.explore_rounded,
             iconColor: AppColors.primary,
           ),
         ),

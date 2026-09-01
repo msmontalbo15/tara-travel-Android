@@ -27,26 +27,26 @@ class ItineraryBottomDock extends StatelessWidget {
     final hasStops = currentDay != null && currentDay!.stops.isNotEmpty;
 
     return Positioned(
-      left: 14,
-      right: 14,
+      left: 12,
+      right: 12,
       bottom: bottomInset > 0 ? bottomInset + 8 : 16,
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(26),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
             decoration: BoxDecoration(
-              color: AppColors.deepEarth.withValues(alpha: 0.94),
-              borderRadius: BorderRadius.circular(24),
+              color: AppColors.deepEarth.withValues(alpha: 0.95),
+              borderRadius: BorderRadius.circular(26),
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.15),
-                width: 1,
+                color: Colors.white.withValues(alpha: 0.18),
+                width: 1.2,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.40),
-                  blurRadius: 20,
+                  color: Colors.black.withValues(alpha: 0.45),
+                  blurRadius: 22,
                   offset: const Offset(0, 8),
                 ),
               ],
@@ -56,105 +56,115 @@ class ItineraryBottomDock extends StatelessWidget {
                 // ── 1. Live Navigation & Driving Mode (Hero Action) ───────
                 Expanded(
                   flex: 5,
-                  child: InkWell(
-                    onTap: () {
-                      HapticFeedback.mediumImpact();
-                      Navigator.pushNamed(context, '/navigation');
-                    },
-                    borderRadius: BorderRadius.circular(16),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [
-                            AppColors.primary,
-                            Color(0xFFE86A3E),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        HapticFeedback.mediumImpact();
+                        Navigator.pushNamed(context, '/navigation');
+                      },
+                      borderRadius: BorderRadius.circular(18),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 13,
                         ),
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.4),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [
+                              AppColors.primary,
+                              Color(0xFFE86A3E),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
-                        ],
-                      ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.navigation_rounded,
-                            color: Colors.white,
-                            size: 17,
-                          ),
-                          SizedBox(width: 6),
-                          Text(
-                            'Live Nav',
-                            style: TextStyle(
-                              fontFamily: 'DM Sans',
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                              letterSpacing: 0.2,
+                          borderRadius: BorderRadius.circular(18),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withValues(alpha: 0.45),
+                              blurRadius: 10,
+                              offset: const Offset(0, 3),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.navigation_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                            SizedBox(width: 7),
+                            Text(
+                              'Live Nav',
+                              style: TextStyle(
+                                fontFamily: 'DM Sans',
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
 
-                const SizedBox(width: 6),
+                const SizedBox(width: 8),
 
                 // ── 2. Day Map & Route Overview ────────────────────────────
                 Expanded(
                   flex: 4,
-                  child: InkWell(
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      if (currentDay != null) {
-                        ItineraryMapSheet.show(
-                          context,
-                          day: currentDay!,
-                          tripId: tripId,
-                        );
-                      }
-                    },
-                    borderRadius: BorderRadius.circular(16),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.09),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.map_outlined,
-                            color: Colors.white,
-                            size: 16,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        if (currentDay != null) {
+                          ItineraryMapSheet.show(
+                            context,
+                            day: currentDay!,
+                            tripId: tripId,
+                          );
+                        }
+                      },
+                      borderRadius: BorderRadius.circular(18),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 13,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            width: 1,
                           ),
-                          const SizedBox(width: 5),
-                          Text(
-                            hasStops ? 'Day Map' : 'Map',
-                            style: const TextStyle(
-                              fontFamily: 'DM Sans',
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w700,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.map_outlined,
                               color: Colors.white,
+                              size: 18,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 6),
+                            Text(
+                              hasStops ? 'Day Map' : 'Map',
+                              style: const TextStyle(
+                                fontFamily: 'DM Sans',
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -162,44 +172,48 @@ class ItineraryBottomDock extends StatelessWidget {
 
                 // ── 3. Add Stop Action (for managers) ──────────────────────
                 if (canManage) ...[
-                  const SizedBox(width: 6),
-                  InkWell(
-                    onTap: () {
-                      HapticFeedback.mediumImpact();
-                      onAddStop();
-                    },
-                    borderRadius: BorderRadius.circular(16),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.20),
+                  const SizedBox(width: 8),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        HapticFeedback.mediumImpact();
+                        onAddStop();
+                      },
+                      borderRadius: BorderRadius.circular(18),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 13,
                         ),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.add_rounded,
-                            color: Colors.white,
-                            size: 18,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.24),
+                            width: 1,
                           ),
-                          SizedBox(width: 4),
-                          Text(
-                            'Stop',
-                            style: TextStyle(
-                              fontFamily: 'DM Sans',
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w700,
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.add_rounded,
                               color: Colors.white,
+                              size: 20,
                             ),
-                          ),
-                        ],
+                            SizedBox(width: 5),
+                            Text(
+                              'Stop',
+                              style: TextStyle(
+                                fontFamily: 'DM Sans',
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),

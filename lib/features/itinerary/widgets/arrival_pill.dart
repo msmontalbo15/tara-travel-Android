@@ -374,34 +374,43 @@ class _PillContent extends StatelessWidget {
         ),
         const SizedBox(width: 8),
 
-        // Check-in button
+        // Check-in button (Driver-Ready Big Hit Target)
         GestureDetector(
           onTap: onCheckIn,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
               color: AppColors.greenBright
-                  .withValues(alpha: 0.12 + checkInProgress * 0.88),
+                  .withValues(alpha: 0.14 + checkInProgress * 0.86),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: AppColors.greenBright
-                    .withValues(alpha: 0.4 + checkInProgress * 0.6),
+                    .withValues(alpha: 0.5 + checkInProgress * 0.5),
+                width: 1.5,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.greenBright.withValues(alpha: 0.25),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: const Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.check_rounded, color: AppColors.greenBright, size: 18),
+                Icon(Icons.check_rounded, color: AppColors.greenBright, size: 20),
+                SizedBox(height: 2),
                 Text(
                   'Check\nIn',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontFamily: 'DM Sans',
-                    fontSize: 10,
+                    fontSize: 11,
                     fontWeight: FontWeight.w700,
                     color: AppColors.greenBright,
-                    height: 1.2,
+                    height: 1.15,
                   ),
                 ),
               ],

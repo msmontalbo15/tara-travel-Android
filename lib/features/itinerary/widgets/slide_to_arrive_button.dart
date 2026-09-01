@@ -26,7 +26,7 @@ class SlideToArriveButton extends StatefulWidget {
     this.activeColor = AppColors.primary,
     this.confirmedColor = AppColors.greenBright,
     this.icon = Icons.directions_car_rounded,
-    this.height = 56.0,
+    this.height = 60.0,
   });
 
   @override
@@ -128,9 +128,9 @@ class _SlideToArriveButtonState extends State<SlideToArriveButton>
             boxShadow: [
               BoxShadow(
                 color: _isConfirmed
-                    ? widget.confirmedColor.withValues(alpha: 0.4)
-                    : Colors.black.withValues(alpha: 0.15),
-                blurRadius: 14,
+                    ? widget.confirmedColor.withValues(alpha: 0.45)
+                    : Colors.black.withValues(alpha: 0.20),
+                blurRadius: 16,
                 offset: const Offset(0, 4),
               ),
             ],
@@ -161,7 +161,7 @@ class _SlideToArriveButtonState extends State<SlideToArriveButton>
                         widget.label,
                         style: const TextStyle(
                           fontFamily: 'DM Sans',
-                          fontSize: 13,
+                          fontSize: 14,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
                           letterSpacing: 0.4,
@@ -171,12 +171,12 @@ class _SlideToArriveButtonState extends State<SlideToArriveButton>
                       const Icon(
                         Icons.chevron_right_rounded,
                         color: Colors.white70,
-                        size: 18,
+                        size: 20,
                       ),
                       const Icon(
                         Icons.chevron_right_rounded,
                         color: Colors.white38,
-                        size: 18,
+                        size: 20,
                       ),
                     ],
                   ),
@@ -190,13 +190,13 @@ class _SlideToArriveButtonState extends State<SlideToArriveButton>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(Icons.check_circle_rounded,
-                          color: Colors.white, size: 20),
+                          color: Colors.white, size: 22),
                       const SizedBox(width: 8),
                       Text(
                         widget.confirmedLabel,
                         style: const TextStyle(
                           fontFamily: 'DM Sans',
-                          fontSize: 14,
+                          fontSize: 15,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
                           letterSpacing: 0.3,
@@ -226,7 +226,7 @@ class _SlideToArriveButtonState extends State<SlideToArriveButton>
                         BoxShadow(
                           color: (_isConfirmed ? Colors.white : widget.activeColor)
                               .withValues(alpha: 0.45),
-                          blurRadius: _isDragging ? 12 : 8,
+                          blurRadius: _isDragging ? 14 : 8,
                           spreadRadius: _isDragging ? 2 : 0,
                           offset: const Offset(0, 2),
                         ),
@@ -240,7 +240,7 @@ class _SlideToArriveButtonState extends State<SlideToArriveButton>
                         color: _isConfirmed
                             ? widget.confirmedColor
                             : Colors.white,
-                        size: 22,
+                        size: 24,
                       ),
                     ),
                   ),
