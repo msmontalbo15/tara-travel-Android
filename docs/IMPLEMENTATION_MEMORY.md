@@ -59,6 +59,7 @@
 | **`IMP-072`** | 2026-09-01 | UI & Home / Trip Card Date Abbreviation & Budget Clean-up | Abbreviated date ranges on home trip cards, replaced middle stat box with non-clickable ITINERARY (visited/total), and converted budget tracker to an informational progress bar without Manage >. |
 | **`IMP-073`** | 2026-09-01 | UI & Itinerary / Driver-Ready Touch Targets & Enriched Buttons | Scaled up all itinerary interactive CTA buttons (StopCard Navigate button, StopDetailSheet Navigate Maps / Expense / Edit / Slide to Arrive / Member toggle, NavigateRouteButton, DayStrip tabs, and ItineraryBottomDock) for effortless driver and one-handed thumb tapping on the road. |
 | **`IMP-074`** | 2026-09-02 | UI & Home / Quick-Action Red Notification Dot Indicator | Implemented IDEA-010: Contextual Red Notification Dot Indicator (`🔴`) on TripCard quick action buttons for new or modified content inside (Itinerary, Packing, Members, Expenses, Chat) using Keystore-backed `ModuleViewTrackerService`, self-action exemption, and reactive Riverpod stream diffing. |
+| **`IMP-075`** | 2026-09-02 | UI & Itinerary / Stop Detail Sheet Live GPS ETA & Stop Sharing | Implemented real-time Estimated Time of Arrival (Live GPS ETA & inter-stop Haversine routing fallback) and 1-tap Stop Details Sharing (`share_plus`) inside `StopDetailSheet`, with 6-pillar information hierarchy and `previousStop` contextual routing handoff. |
 
 ---
 
@@ -1354,6 +1355,27 @@
   - `lib/core/widgets/inputs/app_date_picker.dart` [MODIFIED]
 - **Verification**:
   - `flutter analyze` completed with 0 errors/warnings.
+
+---
+
+### `IMP-075` · Itinerary Stop Detail Sheet: Real-Time ETA & 1-Tap Stop Sharing
+- **Date**: September 2, 2026
+- **Scope & Objectives**:
+  1. **Real-Time Estimated Time of Arrival (Live GPS ETA & Fallback Routing)**:
+     - Implemented `_fetchLiveGpsForEta()` in `StopDetailSheet` using `Geolocator.getCurrentPosition(medium accuracy, 3s timeout)`.
+     - Integrated `TransitConflictHelper.analyze` to dynamically compute geodesic distance and transit duration based on stop transport mode speed (`averageSpeedKmh`).
+     - Added live ETA card featuring `LIVE GPS` badge, formatted arrival clock (`"8:45 AM"`), remaining minutes (`"in ~18 mins"`), and distance (`"3.2 km"`).
+     - Built completed stop state with green completion badge and scheduled fallback when coordinates are absent.
+  2. **1-Tap Stop Details Sharing**:
+     - Added top header share icon button (`Icons.share_outlined`) invoking `_shareStopDetails()`.
+     - Formatted structured plaintext payload including stop category, timings, location, Google Maps direct place URL, cost, booking ref, and notes via `SharePlus.instance.share`.
+  3. **Contextual Inter-Stop Routing Integration**:
+     - Extended `StopDetailSheet` and `ItineraryScreen._showStopDetail` with `previousStop` parameter across both timeline and list view modes.
+- **Modified Files**:
+  - `lib/features/itinerary/widgets/stop_detail_sheet.dart` [MODIFIED]
+  - `lib/features/itinerary/itinerary_screen.dart` [MODIFIED]
+- **Verification**:
+  - `flutter analyze lib/features/itinerary/` passed with 0 issues.
 
 
 

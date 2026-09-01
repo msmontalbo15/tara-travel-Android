@@ -269,6 +269,7 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
     DateTime stopDate, {
     String? currentUserId,
     bool canManage = false,
+    ItineraryStop? previousStop,
   }) {
     final notifier = ref.read(ref.read(itineraryProvider(tripId)).notifier);
     final selfId = currentUserId ??
@@ -281,6 +282,7 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
       builder: (_) => StopDetailSheet(
         stop: stop,
         members: members,
+        previousStop: previousStop,
         currentUserId: selfId,
         canManage: canManage,
         onEdit: () {
@@ -549,16 +551,21 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                               : _viewMode == _StopViewMode.timeline
                                   ? TimelineView(
                                       day: currentDay,
-                                      onStopTap: (s) => _showStopDetail(
-                                        context,
-                                        s,
-                                        trip.members,
-                                        activeDay,
-                                        trip.id,
-                                        currentDay.date,
-                                        currentUserId: currentMember?.id,
-                                        canManage: canManageItinerary,
-                                      ),
+                                      onStopTap: (s) {
+                                        final stops = currentDay.stops;
+                                        final idx = stops.indexWhere((st) => st.id == s.id);
+                                        _showStopDetail(
+                                          context,
+                                          s,
+                                          trip.members,
+                                          activeDay,
+                                          trip.id,
+                                          currentDay.date,
+                                          currentUserId: currentMember?.id,
+                                          canManage: canManageItinerary,
+                                          previousStop: idx > 0 ? stops[idx - 1] : null,
+                                        );
+                                      },
                                     )
                                   : _buildListContent(
                                       currentDay,
@@ -800,6 +807,7 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                                     day.date,
                                     currentUserId: currentMemberId,
                                     canManage: canManage,
+                                    previousStop: i > 0 ? day.stops[i - 1] : null,
                                   ),
                                 ),
                               ),

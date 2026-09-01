@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../core/models/itinerary_model.dart';
 import '../../../core/models/member_model.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/multi_member_picker_sheet.dart';
+import '../utils/transit_conflict_helper.dart';
 import 'navigate_route_button.dart';
 import 'slide_to_arrive_button.dart';
 
 /// Full-detail bottom sheet for an itinerary stop (IDEA-007).
 ///
 /// Features:
-/// - Top-right Edit and Dismiss actions in header
+/// - Real-time Estimated Time of Arrival (Live GPS ETA & Origin calculation)
+/// - 1-tap Stop Details Share (Messenger, WhatsApp, SMS, Copy)
+/// - Top-right Edit, Share, and Dismiss actions in header
 /// - Fixed bottom driver-ready "Slide to Confirm Arrival" confirmation bar
 /// - Auto-dismiss back to itinerary upon arrival confirmation
 /// - Responsive Undo support with immediate Supabase sync
@@ -20,6 +25,7 @@ import 'slide_to_arrive_button.dart';
 class StopDetailSheet extends StatefulWidget {
   final ItineraryStop stop;
   final List<MemberModel> members;
+  final ItineraryStop? previousStop;
   final VoidCallback onEdit;
   final VoidCallback? onLogExpense;
   /// Toggles self check-in for the current user.
@@ -35,6 +41,7 @@ class StopDetailSheet extends StatefulWidget {
     super.key,
     required this.stop,
     required this.members,
+    this.previousStop,
     required this.onEdit,
     this.onLogExpense,
     this.onCheckIn,
@@ -52,10 +59,102 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
   late ItineraryStop _currentStop;
   bool _isRosterExpanded = false;
 
+  // ── Real Live ETA State ──────────────────────────────────────────────────
+  double? _userLat;
+  double? _userLng;
+  bool _isLoadingGps = false;
+
   @override
   void initState() {
     super.initState();
     _currentStop = widget.stop;
+    _fetchLiveGpsForEta();
+  }
+
+  Future<void> _fetchLiveGpsForEta() async {
+    if (_currentStop.isCompleted) return;
+    if (_currentStop.lat == null || _currentStop.lng == null) return;
+
+    setState(() => _isLoadingGps = true);
+    try {
+      LocationPermission perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied) {
+        perm = await Geolocator.requestPermission();
+      }
+      if (perm == LocationPermission.whileInUse || perm == LocationPermission.always) {
+        final pos = await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.medium,
+            timeLimit: Duration(seconds: 3),
+          ),
+        );
+        if (mounted) {
+          setState(() {
+            _userLat = pos.latitude;
+            _userLng = pos.longitude;
+            _isLoadingGps = false;
+          });
+        }
+      } else {
+        if (mounted) setState(() => _isLoadingGps = false);
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoadingGps = false);
+    }
+  }
+
+  // ── Share Stop Details ───────────────────────────────────────────────────
+  void _shareStopDetails() {
+    HapticFeedback.lightImpact();
+    final stop = _currentStop;
+    final buf = StringBuffer();
+
+    buf.writeln('📍 ${stop.title.toUpperCase()}');
+    buf.writeln('━━━━━━━━━━━━━━━━━━━━━━━━');
+    buf.writeln('🏷️ Category: ${stop.type.label}');
+
+    if (stop.startTime != null) {
+      final timeStr = _formatTime(stop.startTime!);
+      final endStr = stop.endTime != null ? ' – ${_formatTime(stop.endTime!)}' : '';
+      buf.writeln('⏰ Schedule: $timeStr$endStr');
+    }
+
+    if (stop.location != null && stop.location!.trim().isNotEmpty) {
+      buf.writeln('📌 Location: ${stop.location!.trim()}');
+    }
+
+    // Google Maps link
+    final hasCoords = stop.lat != null && stop.lng != null && stop.lat != 0.0 && stop.lng != 0.0;
+    if (hasCoords) {
+      buf.writeln('🗺️ Map Link: https://maps.google.com/?q=${stop.lat},${stop.lng}');
+    } else if (stop.location != null && stop.location!.trim().isNotEmpty) {
+      buf.writeln('🗺️ Map Link: https://maps.google.com/?q=${Uri.encodeComponent('${stop.title}, ${stop.location}')}');
+    }
+
+    if (stop.estimatedCost != null && stop.estimatedCost! > 0) {
+      buf.writeln('💸 Estimated Cost: ₱${stop.estimatedCost!.toStringAsFixed(2)}');
+    }
+
+    if (stop.confirmationNumber != null && stop.confirmationNumber!.isNotEmpty) {
+      buf.writeln('🎫 Booking Ref: ${stop.confirmationNumber}');
+    }
+
+    if (stop.notes != null && stop.notes!.trim().isNotEmpty) {
+      buf.writeln('📝 Notes: ${stop.notes!.trim()}');
+    }
+
+    if (stop.isCompleted) {
+      buf.writeln('✅ Status: Visited / Completed');
+    }
+
+    buf.writeln('\nShared via Tara Travel 🇵🇭');
+
+    SharePlus.instance.share(
+      ShareParams(
+        text: buf.toString().trim(),
+        subject: 'Stop: ${stop.title} — Tara Travel',
+      ),
+    );
   }
 
   @override
@@ -182,9 +281,9 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
             ),
           ),
 
-          // ── Header Bar: Category, Title, Edit, Close ───────────────
+          // ── Header Bar: Category, Title, Share, Edit, Close ──────────
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 4, 16, 12),
+            padding: const EdgeInsets.fromLTRB(20, 4, 12, 12),
             child: Row(
               children: [
                 Container(
@@ -229,6 +328,17 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                     ],
                   ),
                 ),
+                // Share Action Button
+                IconButton(
+                  tooltip: 'Share Stop Details',
+                  icon: const Icon(
+                    Icons.share_outlined,
+                    size: 21,
+                    color: AppColors.primary,
+                  ),
+                  onPressed: _shareStopDetails,
+                  visualDensity: VisualDensity.compact,
+                ),
                 // Top-right Edit button (Driver-friendly tap area)
                 Material(
                   color: Colors.transparent,
@@ -240,8 +350,8 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                     borderRadius: BorderRadius.circular(12),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 9,
+                        horizontal: 12,
+                        vertical: 8,
                       ),
                       decoration: BoxDecoration(
                         color: AppColors.sand,
@@ -255,13 +365,13 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(Icons.edit_rounded,
-                              size: 15, color: AppColors.primary),
-                          SizedBox(width: 5),
+                              size: 14, color: AppColors.primary),
+                          SizedBox(width: 4),
                           Text(
                             'Edit',
                             style: TextStyle(
                               fontFamily: 'DM Sans',
-                              fontSize: 13,
+                              fontSize: 12.5,
                               fontWeight: FontWeight.w700,
                               color: AppColors.primary,
                             ),
@@ -271,13 +381,13 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 4),
                 // Close button
                 IconButton(
                   icon: const Icon(Icons.close_rounded,
                       size: 24, color: AppColors.muted),
                   onPressed: () => Navigator.pop(context),
-                  visualDensity: VisualDensity.standard,
+                  visualDensity: VisualDensity.compact,
                 ),
               ],
             ),
@@ -315,7 +425,11 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                     const SizedBox(height: 16),
                   ],
 
-                  // 2. Primary Navigation & Expense Actions (Driver-Ready Big Touch Targets)
+                  // 2. Real-Time ETA Card (Live GPS / Transit estimation)
+                  _buildEtaCard(),
+                  const SizedBox(height: 16),
+
+                  // 3. Primary Navigation & Expense Actions (Driver-Ready Big Touch Targets)
                   Row(
                     children: [
                       Expanded(
@@ -386,13 +500,13 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                   ),
                   const SizedBox(height: 18),
 
-                  // 3. Dedicated "Members" Arrival Hub & Roster (for group trips)
+                  // 4. Dedicated "Members" Arrival Hub & Roster (for group trips)
                   if (members.length > 1) ...[
                     _buildMembersArrivalHub(totalMembers, checkedInCount, allArrived),
                     const SizedBox(height: 16),
                   ],
 
-                  // 4. Metadata Info Rows (Arrival Time, Location, Cost, Booking Ref)
+                  // 5. Metadata Info Rows (Arrival Time, Location, Cost, Booking Ref)
                   if (stop.arrivedAtLabel != null)
                     _infoRow(
                       Icons.check_circle_rounded,
@@ -547,6 +661,303 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
         ],
       ),
     );
+  }
+
+  // ── Real Estimated Time of Arrival (ETA) Widget ──────────────────────────
+  Widget _buildEtaCard() {
+    final stop = _currentStop;
+
+    // If stop is completed, show completion summary
+    if (stop.isCompleted) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.greenLight.withValues(alpha: 0.35),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AppColors.greenBright.withValues(alpha: 0.4),
+            width: 1.2,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: AppColors.greenBright.withValues(alpha: 0.18),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.check_circle_rounded,
+                color: AppColors.greenBright,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Stop Completed',
+                    style: TextStyle(
+                      fontFamily: 'DM Sans',
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.greenBright,
+                    ),
+                  ),
+                  Text(
+                    stop.arrivedAtLabel != null
+                        ? '${stop.arrivedAtLabel!} · All set!'
+                        : 'Arrival recorded in trip itinerary',
+                    style: const TextStyle(
+                      fontFamily: 'DM Sans',
+                      fontSize: 11.5,
+                      color: AppColors.deepEarth,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Determine calculation method: Live GPS or Inter-Stop Distance
+    double? distanceKm;
+    int? transitMinutes;
+    String calculationSource = '';
+
+    if (_userLat != null && _userLng != null && stop.lat != null && stop.lng != null) {
+      distanceKm = TransitConflictHelper.analyze(
+        from: ItineraryStop(
+          id: 'user_pos',
+          title: 'Current Location',
+          type: StopType.custom,
+          lat: _userLat,
+          lng: _userLng,
+        ),
+        to: stop,
+      ).distanceKm;
+
+      final speed = stop.transportMode?.averageSpeedKmh ?? 35.0;
+      if (distanceKm != null) {
+        transitMinutes = (distanceKm / speed * 60.0).round() + 4;
+        calculationSource = 'from your live GPS location';
+      }
+    } else if (widget.previousStop != null && widget.previousStop!.lat != null && widget.previousStop!.lng != null && stop.lat != null && stop.lng != null) {
+      final analysis = TransitConflictHelper.analyze(
+        from: widget.previousStop!,
+        to: stop,
+      );
+      distanceKm = analysis.distanceKm;
+      transitMinutes = analysis.estimatedTransitMinutes;
+      calculationSource = 'from previous stop (${widget.previousStop!.title})';
+    }
+
+    // If still loading GPS
+    if (_isLoadingGps) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceLight,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.dividerLight),
+        ),
+        child: const Row(
+          children: [
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: AppColors.primary,
+              ),
+            ),
+            SizedBox(width: 12),
+            Text(
+              'Calculating live GPS ETA...',
+              style: TextStyle(
+                fontFamily: 'DM Sans',
+                fontSize: 12.5,
+                color: AppColors.muted,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // If we have calculated transit minutes
+    if (transitMinutes != null) {
+      final now = DateTime.now();
+      final estimatedArrival = now.add(Duration(minutes: transitMinutes));
+      final etaHour = estimatedArrival.hour % 12 == 0 ? 12 : estimatedArrival.hour % 12;
+      final etaMinute = estimatedArrival.minute.toString().padLeft(2, '0');
+      final etaPeriod = estimatedArrival.hour >= 12 ? 'PM' : 'AM';
+      final formattedEta = '$etaHour:$etaMinute $etaPeriod';
+
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppColors.primary.withValues(alpha: 0.08),
+              AppColors.sand.withValues(alpha: 0.6),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AppColors.primary.withValues(alpha: 0.25),
+            width: 1.2,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.access_time_filled_rounded,
+                color: AppColors.primary,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Text(
+                        'ESTIMATED ARRIVAL (ETA)',
+                        style: TextStyle(
+                          fontFamily: 'DM Sans',
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.0,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      const Spacer(),
+                      if (_userLat != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.gps_fixed_rounded,
+                                  size: 10, color: Color(0xFF10B981)),
+                              SizedBox(width: 3),
+                              Text(
+                                'LIVE GPS',
+                                style: TextStyle(
+                                  fontFamily: 'DM Sans',
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF10B981),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text(
+                        formattedEta,
+                        style: const TextStyle(
+                          fontFamily: 'Playfair Display',
+                          fontSize: 21,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.deepEarth,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '(in ~$transitMinutes mins${distanceKm != null ? ' · ${distanceKm < 1 ? '${(distanceKm * 1000).round()}m' : '${distanceKm.toStringAsFixed(1)}km'}' : ''})',
+                        style: const TextStyle(
+                          fontFamily: 'DM Sans',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.muted,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (calculationSource.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        'Calculated $calculationSource',
+                        style: const TextStyle(
+                          fontFamily: 'DM Sans',
+                          fontSize: 10.5,
+                          color: AppColors.muted,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Default scheduled time fallback if coordinates are missing
+    if (stop.startTime != null) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceLight,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.dividerLight),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.schedule_rounded, size: 18, color: AppColors.muted),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Scheduled for ${_formatTime(stop.startTime!)}',
+                style: const TextStyle(
+                  fontFamily: 'DM Sans',
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.deepEarth,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return const SizedBox.shrink();
   }
 
   // ── Driver-Ready Arrived Status Dock ────────────────────────────────────────
