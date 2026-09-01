@@ -16,6 +16,7 @@ import '../../core/widgets/app_brand_logo.dart';
 import '../../core/widgets/navigation/floating_nav_bar.dart';
 import '../../core/widgets/shimmer_loading.dart';
 import '../../core/utils/jit_guard.dart';
+import '../../core/utils/trip_conflict_helper.dart';
 
 import '../budget/budget_screen.dart';
 import '../explore/explore_screen.dart';
@@ -386,48 +387,59 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
                                           ],
                                         ),
                                       ),
-                                         Column(
-                                           children: visibleTrips.map(
-                                             (trip) {
-                                               final String dateRangeStr;
-                                               if (trip.fromDate.year == trip.toDate.year) {
-                                                 if (trip.fromDate.month == trip.toDate.month) {
-                                                   dateRangeStr =
-                                                       '${DateFormat('MMM d').format(trip.fromDate)}–${trip.toDate.day}, ${trip.toDate.year}';
-                                                 } else {
-                                                   dateRangeStr =
-                                                       '${DateFormat('MMM d').format(trip.fromDate)} – ${DateFormat('MMM d').format(trip.toDate)}, ${trip.toDate.year}';
-                                                 }
-                                               } else {
-                                                 dateRangeStr =
-                                                     '${DateFormat('MMM d, yyyy').format(trip.fromDate)} – ${DateFormat('MMM d, yyyy').format(trip.toDate)}';
-                                               }
+                                          Column(
+                                            children: visibleTrips.map(
+                                              (trip) {
+                                                final String dateRangeStr;
+                                                if (trip.fromDate.year == trip.toDate.year) {
+                                                  if (trip.fromDate.month == trip.toDate.month) {
+                                                    dateRangeStr =
+                                                        '${DateFormat('MMM d').format(trip.fromDate)}–${trip.toDate.day}, ${trip.toDate.year}';
+                                                  } else {
+                                                    dateRangeStr =
+                                                        '${DateFormat('MMM d').format(trip.fromDate)} – ${DateFormat('MMM d').format(trip.toDate)}, ${trip.toDate.year}';
+                                                  }
+                                                } else {
+                                                  dateRangeStr =
+                                                      '${DateFormat('MMM d, yyyy').format(trip.fromDate)} – ${DateFormat('MMM d, yyyy').format(trip.toDate)}';
+                                                }
 
-                                               if (trip.isDraft) {
-                                                 return TripCard.draft(
-                                                   name: trip.name,
-                                                   destination: trip.destination.isNotEmpty ? trip.destination : null,
-                                                   isIncomplete: trip.isIncomplete,
-                                                   dateRange: dateRangeStr,
-                                                   onMore: () => TripActionSheet.show(context, ref, trip),
-                                                   onTap: () {
-                                                     ref
-                                                         .read(selectedTripIdProvider
-                                                             .notifier)
-                                                         .select(trip.id);
-                                                     Navigator.pushNamed(
-                                                         context, '/trip-detail');
-                                                   },
-                                                 );
-                                               }
+                                                // Detect schedule overlap with other visible trips
+                                                final conflicts = TripConflictHelper.findConflictingTrips(
+                                                  trips: visibleTrips,
+                                                  start: trip.fromDate,
+                                                  end: trip.toDate,
+                                                  excludeTripId: trip.id,
+                                                );
+                                                final overlappingTripName = conflicts.isNotEmpty ? conflicts.first.name : null;
 
-                                               return _HomeTripCardItem(
-                                                 trip: trip,
-                                                 dateRange: dateRangeStr,
-                                               );
-                                             },
-                                           ).toList(),
-                                         ),
+                                                if (trip.isDraft) {
+                                                  return TripCard.draft(
+                                                    name: trip.name,
+                                                    destination: trip.destination.isNotEmpty ? trip.destination : null,
+                                                    isIncomplete: trip.isIncomplete,
+                                                    dateRange: dateRangeStr,
+                                                    overlappingTripName: overlappingTripName,
+                                                    onMore: () => TripActionSheet.show(context, ref, trip),
+                                                    onTap: () {
+                                                      ref
+                                                          .read(selectedTripIdProvider
+                                                              .notifier)
+                                                          .select(trip.id);
+                                                      Navigator.pushNamed(
+                                                          context, '/trip-detail');
+                                                    },
+                                                  );
+                                                }
+
+                                                return _HomeTripCardItem(
+                                                  trip: trip,
+                                                  dateRange: dateRangeStr,
+                                                  overlappingTripName: overlappingTripName,
+                                                );
+                                              },
+                                            ).toList(),
+                                          ),
                                         const SizedBox(height: 20),
                                       ],
                                     );
@@ -1174,10 +1186,12 @@ class _HomeHeaderDelegate extends SliverPersistentHeaderDelegate {
 class _HomeTripCardItem extends ConsumerWidget {
   final TripModel trip;
   final String dateRange;
+  final String? overlappingTripName;
 
   const _HomeTripCardItem({
     required this.trip,
     required this.dateRange,
+    this.overlappingTripName,
   });
 
   @override
@@ -1219,6 +1233,7 @@ class _HomeTripCardItem extends ConsumerWidget {
       coverColor: trip.coverColor,
       coverEmoji: trip.coverEmoji,
       actionChanges: actionChanges,
+      overlappingTripName: overlappingTripName,
       onMore: () => TripActionSheet.show(context, ref, trip),
       travelers: trip.members
           .map(

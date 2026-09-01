@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../theme/app_colors.dart';
+import 'tara_date_range_picker.dart';
 
 class AppDatePicker extends StatelessWidget {
   final String label;
@@ -43,29 +44,12 @@ class AppDatePicker extends StatelessWidget {
     final end = lastDate ?? now.add(const Duration(days: 365 * 5));
 
     if (onRangeSelected != null) {
-      final initialRange = selectedRange ??
-          DateTimeRange(
-            start: now,
-            end: now.add(const Duration(days: 3)),
-          );
-      final range = await showDateRangePicker(
-        context: context,
+      final range = await TaraDateRangePickerSheet.show(
+        context,
+        initialStart: selectedRange?.start,
+        initialEnd: selectedRange?.end,
         firstDate: start,
         lastDate: end,
-        initialDateRange: initialRange,
-        builder: (context, child) {
-          return Theme(
-            data: Theme.of(context).copyWith(
-              colorScheme: const ColorScheme.light(
-                primary: AppColors.primary,
-                onPrimary: Colors.white,
-                surface: Colors.white,
-                onSurface: AppColors.textPrimary,
-              ),
-            ),
-            child: child!,
-          );
-        },
       );
       if (range != null) {
         onRangeSelected!(range);

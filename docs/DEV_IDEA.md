@@ -1318,3 +1318,126 @@ USING (
 
 > **Status**: Proposed
 
+---
+
+## 💡 IDEA-013: Real-Time Live Weather Forecast & Severe Condition Alerts Engine [PROPOSED]
+
+### 1. Context & User Problem
+Currently, the weather forecast in `lib/core/providers/trip_weather_provider.dart` returns static mock data (`WeatherData.mock()`).
+- **Problem**: When planning itineraries or traveling across the Philippines (e.g. Boracay, Siargao, Palawan, Cebu, Baguio, Batanes), weather conditions such as monsoon rains (Habagat/Amihan), tropical depressions/typhoons, high UV indices, or rough sea conditions directly dictate activity feasibility (island hopping boat cancellations, hiking safety, outdoor dining, packing requirements).
+- **Missing Link**: Users currently see placeholder temperatures and static icons that do not reflect actual on-the-ground weather at the trip destination for the trip dates.
+
+---
+
+### 2. Core Proposal: Real-Time Weather Integration Engine
+
+Integrate a high-reliability, zero-cost, privacy-friendly weather forecasting service (such as **Open-Meteo API** — free, no API key required, 10-14 day forecasts, hourly & daily parameters, WMO interpretation codes, precipitation probability, UV index, and geocoding) with local offline caching.
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│             REAL-TIME WEATHER FORECAST ARCHITECTURE                    │
+├────────────────────────────────────────────────────────────────────────┤
+│                                                                        │
+│   [ Trip Destination / Coordinates ] ──> [ Geocoding Service ]         │
+│                                                │                       │
+│                                                ▼                       │
+│   [ Open-Meteo REST API ] <───> [ Local Sembast/Cache Layer ] (3h TTL) │
+│                                                │                       │
+│                                                ▼                       │
+│   ┌────────────────────────────────────────────────────────────────┐   │
+│   │                 tripWeatherProvider(tripId)                    │   │
+│   └───────────────┬─────────────────┬──────────────────┬───────────┘   │
+│                   │                 │                  │               │
+│                   ▼                 ▼                  ▼               │
+│          [ Itinerary Screen ]   [ Packing Engine ]  [ Alerts & Notifs] │
+│          • DayStrip weather     • Auto-select       • Rain warnings    │
+│          • DayInsightsHeader      rain/cold gear    • Typhoon alerts   │
+│          • Activity caution     • Sun protection    • Gale warnings    │
+│                                                                        │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 3. Recommended Architectural & Data Design
+
+#### A. Weather Service & API Client (`lib/core/services/weather_service.dart`)
+
+1. **Free & High-Accuracy Provider**: Use **Open-Meteo** (`https://api.open-meteo.com/v1/forecast` and `https://geocoding-api.open-meteo.com/v1/search`).
+2. **Parameters Fetched**:
+   - `daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,uv_index_max,wind_speed_10m_max,precipitation_sum`
+   - `timezone=auto`
+   - `start_date` & `end_date` aligned with trip duration (up to 14-16 days ahead).
+3. **WMO Interpretation Code Standard Mapping**:
+
+| WMO Code | Weather Condition | Icon Emoji | Travel Recommendation |
+| :--- | :--- | :--- | :--- |
+| `0` | Clear Sky | ☀️ | Great for beach & outdoor tours |
+| `1, 2, 3` | Mainly Clear / Partly Cloudy | ⛅ | Ideal travel conditions |
+| `45, 48` | Fog / Depositing Rime Fog | 🌫️ | Low visibility caution (mountain drives) |
+| `51, 53, 55` | Drizzle (Light to Dense) | 🌦️ | Light rain gear recommended |
+| `61, 63, 65` | Rain (Slight, Moderate, Heavy)| 🌧️ | Prepare waterproof gear; indoor backups |
+| `80, 81, 82` | Rain Showers (Violent) | 🌧️ | Possible outdoor tour delays |
+| `95, 96, 99` | Thunderstorm / Hail | ⛈️ | Outdoor activity & boat hazard alert |
+
+---
+
+#### B. Destination Geocoding & Coordinate Resolution
+
+1. If `trip.departure_lat` and `trip.departure_lng` or itinerary stop coordinates (`latitude`, `longitude`) exist, use them directly ($O(1)$ lookup, zero extra API calls).
+2. If only destination name exists (e.g. `"El Nido, Palawan"` or `"Baguio City"`), query Open-Meteo Geocoding API (`/v1/search?name={query}&count=1`) and cache the resolved lat/lng locally.
+
+---
+
+#### C. Local Cache & Offline Resiliency Layer
+
+- **Cache Strategy**: Store weather responses locally with a `fetched_at` timestamp.
+- **TTL (Time to Live)**: 3 to 6 hours.
+- If network request fails or device is offline in remote travel zones (e.g. island boat tours, remote mountains), automatically return cached data with an `"Offline forecast"` tag.
+- Fallback gracefully to `WeatherData.unavailable()` if no cache exists and device is offline.
+
+---
+
+#### D. Riverpod State Providers (`lib/core/providers/trip_weather_provider.dart`)
+
+```dart
+final weatherServiceProvider = Provider<WeatherService>((ref) {
+  return WeatherService();
+});
+
+final tripWeatherProvider = FutureProvider.family<List<DayForecast>, String>((ref, tripId) async {
+  final tripRepo = ref.watch(tripRepositoryProvider);
+  final trip = await tripRepo.getTrip(tripId);
+  if (trip == null) return [];
+
+  final weatherService = ref.watch(weatherServiceProvider);
+  return weatherService.getTripForecast(trip);
+});
+```
+
+---
+
+#### E. High-Value Integrations Across Tara Travel
+
+1. **Itinerary DayStrip & DayInsightsHeader**:
+   - Display real high/low temperatures (e.g. `31° / 24°`), rain chance percentage (e.g. `💧 85%`), and weather condition icon for each day of the trip.
+   - Show contextual warnings if rain chance $> 70\%$ (e.g. *"🌧️ High chance of rain today. Consider indoor alternatives for outdoor stops."*).
+2. **AI & Dynamic Packing Assistant**:
+   - `AIPackingDialog` automatically detects the prevailing forecast during the trip window and pre-selects the weather condition (`☀️ Sunny`, `🌧️ Rainy`, `❄️ Cold`), generating relevant essentials (e.g., umbrella, dry bag, sunscreen SPF50+, waterproof phone pouch).
+3. **Severe Weather & Travel Safety Notifications**:
+   - Generate local notifications for severe weather (heavy rainfall advisories, thunderstorms, or tropical storms) targeting the trip destination 24-48 hours before departure.
+
+---
+
+### 4. Implementation Steps
+
+1. [x] **Weather Service Client**: Implement `WeatherService` in `lib/core/services/weather_service.dart` with Open-Meteo & OpenWeatherMap API integration and WMO code mapper.
+2. [x] **Geocoding & Location Resolver**: Add destination geocoding helper with Philippine travel hub fast table and fallback to trip/stop coordinates.
+3. [x] **Local Cache Layer**: Implement local memory cache with 3-hour TTL and offline fallback.
+4. [x] **Update Riverpod Provider**: Refactor `trip_weather_provider.dart` to fetch live data using `WeatherService` with `tripWeatherProvider` and `tripCurrentWeatherProvider`.
+5. [x] **UI Connection in Itinerary & Insights**: Connect live data to `DayStrip` and `DayInsightsHeader` via Riverpod.
+6. [ ] **Packing Module Auto-Sync**: Pre-fill `AIPackingDialog` and smart packing suggestions based on destination forecast.
+7. [ ] **Weather Notification Hooks**: Add helper to trigger `NotificationCategory.weather` when severe rain/storms are forecasted.
+
+> **Status**: In Progress / Core Complete
+

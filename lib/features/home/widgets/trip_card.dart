@@ -36,6 +36,7 @@ class TripCard extends StatelessWidget {
   final VoidCallback? onNavigation;
   final VoidCallback? onMore;
   final TripQuickActionChanges? actionChanges;
+  final String? overlappingTripName;
 
   const TripCard.upcoming({
     super.key,
@@ -66,6 +67,7 @@ class TripCard extends StatelessWidget {
     this.onChat,
     this.onNavigation,
     this.actionChanges,
+    this.overlappingTripName,
   })  : isUpcoming = true;
 
   const TripCard.draft({
@@ -76,6 +78,7 @@ class TripCard extends StatelessWidget {
     this.isIncomplete = true,
     this.onTap,
     this.onMore,
+    this.overlappingTripName,
   })  : isUpcoming = false,
         budget = null,
         totalBudget = null,
@@ -182,23 +185,55 @@ class TripCard extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.22),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
-                          ),
-                          child: const Text(
-                            'Upcoming',
-                            style: TextStyle(
-                              fontFamily: 'DM Sans',
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                              letterSpacing: 0.2,
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.22),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
+                              ),
+                              child: const Text(
+                                'Upcoming',
+                                style: TextStyle(
+                                  fontFamily: 'DM Sans',
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
                             ),
-                          ),
+                            if (overlappingTripName != null) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFEF3C7), // Warm amber
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: const Color(0xFFF59E0B)),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.warning_amber_rounded, size: 12, color: Color(0xFFB45309)),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Overlaps: $overlappingTripName',
+                                      style: const TextStyle(
+                                        fontFamily: 'DM Sans',
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFFB45309),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                         if (onMore != null)
                           GestureDetector(
@@ -558,23 +593,47 @@ class TripCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppColors.warmMuted.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: const Text(
-                          'DRAFT',
-                          style: TextStyle(
-                            fontFamily: 'DM Sans',
-                            fontSize: 9,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.warmMuted,
-                            letterSpacing: 0.8,
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.warmMuted.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text(
+                              'DRAFT',
+                              style: TextStyle(
+                                fontFamily: 'DM Sans',
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.warmMuted,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
                           ),
-                        ),
+                          if (overlappingTripName != null) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFEF3C7),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(color: const Color(0xFFF59E0B)),
+                              ),
+                              child: Text(
+                                '⚠️ Overlaps: $overlappingTripName',
+                                style: const TextStyle(
+                                  fontFamily: 'DM Sans',
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFFB45309),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                       const SizedBox(width: 8),
                       Expanded(

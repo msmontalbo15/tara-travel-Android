@@ -10,8 +10,11 @@ import '../../../core/providers/selected_trip_provider.dart';
 import '../../../core/providers/trip_provider.dart';
 import '../../../core/providers/itinerary_provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/jit_guard.dart';
+import '../../../core/utils/trip_conflict_helper.dart';
 import '../../../core/widgets/inputs/app_text_field.dart';
 import '../../../core/widgets/inputs/location_picker.dart';
+import '../../../core/widgets/inputs/tara_date_range_picker.dart';
 import '../../../core/widgets/feedback/app_feedback.dart';
 
 class EditTripSheet extends ConsumerStatefulWidget {
@@ -72,27 +75,32 @@ class _EditTripSheetState extends ConsumerState<EditTripSheet> {
 
 
   Future<void> _pickDateRange() async {
-    final picked = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2035),
-      initialDateRange: DateTimeRange(start: _fromDate, end: _toDate),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.primary,
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: AppColors.textPrimary,
-            ),
-          ),
-          child: child!,
-        );
-      },
+    final existingTrips = ref.read(allTripsProvider).value ?? [];
+
+    final picked = await TaraDateRangePickerSheet.show(
+      context,
+      initialStart: _fromDate,
+      initialEnd: _toDate,
+      existingTrips: existingTrips,
+      excludeTripId: widget.trip.id,
     );
 
-    if (picked != null) {
+    if (picked != null && mounted) {
+      final conflicts = TripConflictHelper.findConflictingTrips(
+        trips: existingTrips,
+        start: picked.start,
+        end: picked.end,
+        excludeTripId: widget.trip.id,
+      );
+
+      if (conflicts.isNotEmpty) {
+        final proceed = await JitGuard.checkDateOverlapGuard(
+          context,
+          conflictingTripNames: conflicts.map((t) => t.name).toList(),
+        );
+        if (!proceed || !mounted) return;
+      }
+
       setState(() {
         _fromDate = picked.start;
         _toDate = picked.end;

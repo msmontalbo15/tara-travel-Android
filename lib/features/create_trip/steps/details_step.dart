@@ -3,9 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/friend_model.dart';
 import '../../../core/providers/friend_provider.dart';
+import '../../../core/providers/trip_provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/jit_guard.dart';
+import '../../../core/utils/trip_conflict_helper.dart';
 import '../../../core/widgets/inputs/app_text_field.dart';
 import '../../../core/widgets/inputs/location_picker.dart';
+import '../../../core/widgets/inputs/tara_date_range_picker.dart';
 
 import '../../../shared/widgets/trip_type_carousel.dart';
 import '../models/new_trip_model.dart';
@@ -83,30 +87,31 @@ class _DetailsStepState extends ConsumerState<DetailsStep> {
 
 
   Future<void> _selectDateRange() async {
-    final initialDateRange = (widget.trip.fromDate != null && widget.trip.toDate != null) 
-      ? DateTimeRange(start: widget.trip.fromDate!, end: widget.trip.toDate!)
-      : null;
+    final existingTrips = ref.read(allTripsProvider).value ?? [];
 
-    final picked = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
-      initialDateRange: initialDateRange,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.primary,
-              onPrimary: Colors.white,
-              onSurface: AppColors.deepEarth,
-            ),
-          ),
-          child: child!,
-        );
-      }
+    final picked = await TaraDateRangePickerSheet.show(
+      context,
+      initialStart: widget.trip.fromDate,
+      initialEnd: widget.trip.toDate,
+      existingTrips: existingTrips,
     );
 
-    if (picked != null) {
+    if (picked != null && mounted) {
+      // Check for conflicts and ask for confirmation if overlapping
+      final conflicts = TripConflictHelper.findConflictingTrips(
+        trips: existingTrips,
+        start: picked.start,
+        end: picked.end,
+      );
+
+      if (conflicts.isNotEmpty) {
+        final proceed = await JitGuard.checkDateOverlapGuard(
+          context,
+          conflictingTripNames: conflicts.map((t) => t.name).toList(),
+        );
+        if (!proceed || !mounted) return;
+      }
+
       setState(() {
         widget.trip.fromDate = picked.start;
         widget.trip.toDate = picked.end;

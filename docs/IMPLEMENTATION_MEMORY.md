@@ -1311,6 +1311,51 @@
 - **Verification**:
   - `dart analyze` and `flutter analyze` completed cleanly with zero warnings or errors.
 
+---
+
+### `IMP-075` · 2026-09-02 · Core & Services / Real-Time Live Weather Forecast & Severe Condition Alerts Engine (IDEA-013)
+- **Problem**:
+  - Trip weather forecasts in `trip_weather_provider.dart` returned static mock values (`WeatherData.mock()`), lacking live meteorological data, rainfall probabilities, UV index, and severe weather warnings for Philippine destinations.
+- **Solution**:
+  - Implemented **IDEA-013**: Elite, high-accuracy real-time `WeatherService` with dual-engine failover:
+    1. **Primary High-Resolution Numerical Forecasts & Rain Engine**: Open-Meteo API (14-16 day multi-day forecast, ECMWF/GFS meteorological models, hourly/daily precipitation probability %, max/min temperatures, wind speed, UV index, WMO interpretation code translation, zero rate-limit friction).
+    2. **Secondary Real-Time Station Telemetry**: OpenWeatherMap API (metric units, real-time live station conditions, 5-day / 3-hour forecasts with configured API key in `.env`).
+    3. **Philippine Travel Hub Geocoder**: Instant $O(1)$ coordinate resolution for top travel hubs (Manila, Boracay, El Nido, Coron, Siargao, Cebu, Baguio, Bohol, Panglao, Batanes, Davao, Tagaytay, Puerto Princesa, La Union, Sagada, Iloilo, etc.) with automatic Open-Meteo geocoding fallback.
+    4. **In-Memory & Local Cache Layer (3-Hour TTL)**: Caches weather responses to guarantee instant sub-millisecond loads on tab switching and resilient offline fallback during island/mountain travel.
+  - Refactored `trip_weather_provider.dart` to provide `weatherServiceProvider`, `tripWeatherProvider` (family for trip-aligned day forecasts), and `tripCurrentWeatherProvider` (live station conditions).
+### `IMP-076` · 2026-09-02 · Core & UI / 3-Layer Trip Schedule Conflict Management & Interactive Trip-Aware Calendar Picker
+- **Problem**:
+  - Travelers had no visual indication when multiple trips had overlapping dates on the Home Screen.
+  - When creating or editing a trip, users could not see other scheduled trips on the calendar picker, risking accidental double-booking.
+  - Lack of proactive conflict alerts allowed date overlaps without user awareness.
+- **Solution**:
+  - Implemented the **3-Layer Schedule Conflict Management Architecture**:
+    1. **Layer 1: Home Screen Overlap Badging & Grouping**:
+       - Built `TripConflictHelper` to detect interval intersections ($O(N)$ interval scan) between active trips.
+       - Added amber overlap pill badges (`⚠️ Overlaps: [Trip Name]`) on both `TripCard.upcoming` and `TripCard.draft`.
+       - Integrated conflict resolution in `home_screen.dart` via `_HomeTripCardItem`.
+    2. **Layer 2: Interactive Trip-Aware Calendar Picker (`TaraDateRangePickerSheet`)**:
+       - Custom brand-aligned modal bottom sheet (`Playfair Display`, `DM Sans`, `AppColors.primary`, `AppColors.amber`).
+       - Highlights existing scheduled trip dates with soft amber dot badges ($\bullet$).
+       - Prohibits picking past dates by enforcing `widget.firstDate` boundary (`DateTime.now()` normalized to midnight) and graying out previous days with `onTap: null`.
+       - Renders live collision detection banner below calendar detailing conflicting trip names and date ranges.
+       - Integrated into `DetailsStep` (Create Trip), `EditTripSheet` (Trip Detail), and `AppDatePicker`.
+       - Added `JitGuard.checkDateOverlapGuard` confirmation dialog for creation/edit flows.
+    3. **Layer 3: Itinerary Inter-Stop Collision Engine**:
+       - Maintained and integrated with existing `TransitConflictHelper` and `InterStopTransitBadge` for stop-level tight buffers and direct overlaps.
+- **Modified / Created Files**:
+  - `lib/core/utils/trip_conflict_helper.dart` [NEW]
+  - `lib/core/widgets/inputs/tara_date_range_picker.dart` [NEW]
+  - `lib/core/utils/jit_guard.dart` [MODIFIED]
+  - `lib/features/home/widgets/trip_card.dart` [MODIFIED]
+  - `lib/features/home/home_screen.dart` [MODIFIED]
+  - `lib/features/create_trip/steps/details_step.dart` [MODIFIED]
+  - `lib/features/trip_detail/widgets/edit_trip_sheet.dart` [MODIFIED]
+  - `lib/core/widgets/inputs/app_date_picker.dart` [MODIFIED]
+- **Verification**:
+  - `flutter analyze` completed with 0 errors/warnings.
+
+
 
 
 

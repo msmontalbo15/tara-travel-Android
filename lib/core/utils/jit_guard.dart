@@ -127,4 +127,112 @@ class JitGuard {
 
     return result ?? true;
   }
+
+  /// Checks if the selected trip dates overlap with existing trips and shows a non-blocking confirmation dialog.
+  /// Returns `true` if the user chooses to proceed anyway, or `false` if they cancel/re-adjust.
+  static Future<bool> checkDateOverlapGuard(
+    BuildContext context, {
+    required List<String> conflictingTripNames,
+  }) async {
+    if (conflictingTripNames.isEmpty) return true;
+
+    final tripListText = conflictingTripNames.map((name) => '• $name').join('\n');
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        backgroundColor: Colors.white,
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: AppColors.amber, size: 26),
+            SizedBox(width: 10),
+            Text(
+              'Schedule Conflict',
+              style: TextStyle(
+                fontFamily: 'Playfair Display',
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.deepEarth,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'You already have an existing trip scheduled during these dates:',
+              style: TextStyle(
+                fontFamily: 'DM Sans',
+                fontSize: 14,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: AppColors.sand.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.4)),
+              ),
+              child: Text(
+                tripListText,
+                style: const TextStyle(
+                  fontFamily: 'DM Sans',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.deepEarth,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Do you still want to proceed with these dates?',
+              style: TextStyle(
+                fontFamily: 'DM Sans',
+                fontSize: 13,
+                color: AppColors.warmMuted,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text(
+              'Change Dates',
+              style: TextStyle(
+                fontFamily: 'DM Sans',
+                fontWeight: FontWeight.w600,
+                color: AppColors.warmMuted,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              'Proceed Anyway',
+              style: TextStyle(
+                fontFamily: 'DM Sans',
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    return result ?? false;
+  }
 }

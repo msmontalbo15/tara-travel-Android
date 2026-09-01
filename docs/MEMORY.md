@@ -517,6 +517,14 @@ Client Tier               Storage Tier                Transport Tier
 - **Member-as-Waypoint & Meet Halfway**: Dynamic in-app routing to separated companions, midpoint rendezvous calculation, and external GPS app deep linking (Google Maps/Apple Maps/Waze).
 - **Convoy & SOS Intelligence**: Automated convoy separation alarm (>2.0 km) and emergency SOS panic beacon broadcast.
 
+### 8. Real-Time Weather & Live Severe Advisory Engine (IDEA-013)
+- **Dual-Source Meteorological Engine**:
+  - **Open-Meteo High-Resolution Forecasts**: Up to 16-day daily horizons, ECMWF/GFS weather models, precipitation probability (`%`), UV index, high/low temperatures, and WMO code mapping.
+  - **OpenWeatherMap Real-Time Telemetry**: Station telemetry fallback with configured `OPENWEATHERMAP_API_KEY`.
+- **Philippine Travel Hub Resolution**: $O(1)$ coordinate lookup for top destination centers (Boracay, El Nido, Siargao, Baguio, Cebu, Coron, Bohol, Batanes, etc.) with automatic Open-Meteo geocoding fallback.
+- **Local In-Memory Cache (3-Hour TTL)**: Minimizes network roundtrips and provides seamless offline fallback when travelers are in remote island/mountain regions.
+- **Riverpod Architecture**: `weatherServiceProvider`, `tripWeatherProvider(tripId)` (forecast array), and `tripCurrentWeatherProvider(tripId)` (live telemetry).
+
 ---
 
 ## 9. 🎨 BRAND IDENTITY & DESIGN INVARIANTS
