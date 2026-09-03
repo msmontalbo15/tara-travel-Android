@@ -985,7 +985,34 @@ Client Tier               Storage Tier                Transport Tier
 
 ---
 
+## 21. 📱 MOBILE RESPONSIVENESS & OVERFLOW PREVENTION INVARIANTS (IMP-079)
+
+- **Ground Truth Standard**: All Tara Travel screens, dialogs, and modal bottom sheets must adapt seamlessly to any mobile viewport dimension (from compact 320px–360px displays up to large devices and tablets) with zero layout overflow errors (`RenderFlex` exceptions).
+- **Core Guardrails (Detailed in [SOFTWARE_DESIGN_PATTERNS.md](file:///d:/Spencer/Downloads/tara_travel/docs/SOFTWARE_DESIGN_PATTERNS.md))**:
+  1. **Scrollable Viewports**: Always wrap vertical or variable-length layouts in `SingleChildScrollView`, `ListView`, or `CustomScrollView` with keyboard insets awareness (`Scaffold.resizeToAvoidBottomInset: true`).
+  2. **Bounded Row/Column Constraints**: In horizontal `Row` widgets, all dynamic text and flexible contents must be bounded via `Expanded` or `Flexible` with `TextOverflow.ellipsis`.
+  3. **Safe Dynamic Typography**: Apply `maxLines` and `overflow: TextOverflow.ellipsis` on single-line and bounded text elements. Wrap critical action button texts in `FittedBox` or allow multi-line text wrapping.
+  4. **Dynamic Wrapping**: Dynamic chip lists, tags, and badge collections must utilize `Wrap` with `spacing` and `runSpacing` instead of fixed `Row` layouts.
+  5. **Hardware Cutout & Notch Safe Zones**: Always enclose top-level view content in `SafeArea` or consume `MediaQuery.paddingOf(context)` / `viewInsets`. All bottom sheets must set `isScrollControlled: true` and enforce internal scroll bounds.
+
+---
+
+## 22. 🧩 COMPONENT REUSE & ANTI-DUPLICATION INVARIANTS (IMP-079)
+
+- **Ground Truth Standard**: Always audit and compose canonical shared widgets in `lib/core/widgets/` rather than creating redundant, hardcoded one-off widgets.
+- **Canonical Components Catalog**:
+  - **Back Navigation**: [`AppBackButton`](file:///d:/Spencer/Downloads/tara_travel/lib/core/widgets/buttons/app_back_button.dart) (`glass`, `light`, `brand`, `ghost`).
+  - **Alerts & Dialogs**: [`AppDialog`](file:///d:/Spencer/Downloads/tara_travel/lib/core/widgets/feedback/app_dialog.dart), [`AppFeedback`](file:///d:/Spencer/Downloads/tara_travel/lib/core/widgets/feedback/app_feedback.dart), [`AppBanner`](file:///d:/Spencer/Downloads/tara_travel/lib/core/widgets/feedback/app_banner.dart).
+  - **Form Controls**: [`AppTextField`](file:///d:/Spencer/Downloads/tara_travel/lib/core/widgets/inputs/app_text_field.dart), [`AppNumericField`](file:///d:/Spencer/Downloads/tara_travel/lib/core/widgets/inputs/app_numeric_field.dart), [`AppDropdown`](file:///d:/Spencer/Downloads/tara_travel/lib/core/widgets/inputs/app_dropdown.dart), [`TaraDateRangePicker`](file:///d:/Spencer/Downloads/tara_travel/lib/core/widgets/inputs/tara_date_range_picker.dart), [`LocationPicker`](file:///d:/Spencer/Downloads/tara_travel/lib/core/widgets/inputs/location_picker.dart).
+  - **Loading & Skeleton**: [`ShimmerLoading`](file:///d:/Spencer/Downloads/tara_travel/lib/core/widgets/shimmer_loading.dart).
+  - **Pickers & Carousels**: [`TripTypeCarousel`](file:///d:/Spencer/Downloads/tara_travel/lib/core/widgets/trip_color_carousel.dart), [`MultiMemberPickerSheet`](file:///d:/Spencer/Downloads/tara_travel/lib/core/widgets/multi_member_picker_sheet.dart).
+- **Zero Inline Hardcoding**: All colors, fonts, and borders must strictly resolve through [`AppColors`](file:///d:/Spencer/Downloads/tara_travel/lib/core/theme/app_colors.dart) and [`AppTextStyles`](file:///d:/Spencer/Downloads/tara_travel/lib/core/theme/app_text_styles.dart).
+
+---
+
 *This document is the single source of architectural truth for Tara Travel. Update this file whenever database schemas, RPC functions, core repositories, or system flows are modified.*
+
+
 
 
 

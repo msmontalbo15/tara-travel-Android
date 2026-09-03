@@ -86,8 +86,91 @@
 
 ---
 
+## 📱 Mobile Responsive Layout & Overflow Prevention Patterns (Flutter & Mobile UI)
+> **MANDATORY INVARIANT: Every screen and modal must be responsive to any mobile screen size and strictly immune to layout overflows (`RenderFlex` overflow errors / yellow-and-black stripes).**
+
+### 1. Universal Screen Boundary Rule: Scrollable Viewports
+* **Standard:** Wrap all vertical or variable-length layouts in a scrollable container.
+* **Rule:** Never assume a fixed vertical screen height. Always use `SingleChildScrollView`, `ListView`, or `CustomScrollView` on form screens, modal bottom sheets, onboarding flows, and detail views.
+* **Keyboard Awareness:** Ensure `SingleChildScrollView` or `Scaffold.resizeToAvoidBottomInset: true` is paired with adequate bottom padding or `MediaQuery.of(context).viewInsets.bottom` so inputs are never occluded by the virtual keyboard.
+
+### 2. Flexible & Expanded Column / Row Constraints
+* **Standard:** Inside `Row` and `Column` widgets, dynamic children must be bounded.
+* **Rule:** 
+  * In a `Row`, any dynamic text, label, or variable-width child **must** be wrapped in `Expanded` or `Flexible` with `overflow: TextOverflow.ellipsis` to prevent horizontal render overflow on narrow devices (e.g., 320px–360px viewport widths).
+  * Never place an unbounded `ListView` or `SingleChildScrollView` directly inside a `Column` without wrapping it in an `Expanded` or `Flexible` widget.
+
+### 3. Safe Dynamic Typography & Text Overflow Defense
+* **Standard:** Typography must gracefully handle accessibility font scaling (large system text sizes) and multi-locale string lengths.
+* **Rule:**
+  * Always provide explicit `overflow: TextOverflow.ellipsis` and `maxLines` on single-line or bounded multi-line text.
+  * For critical buttons or headers, wrap with `FittedBox(fit: BoxFit.scaleDown)` or allow multi-line wrapping instead of hardcoding fixed container widths.
+  * Clamp text scaling where extreme system accessibility zoom would completely break critical navigation actions using `MediaQuery.withClampedTextScaling(...)`.
+
+### 4. Adaptive & Proportional Sizing (No Hardcoded Viewport Assumptions)
+* **Standard:** Layouts must dynamically calculate spatial budgets using responsive breakpoints and constraints.
+* **Rule:**
+  * Use `LayoutBuilder` or `BoxConstraints` to adapt layouts based on parent constraints rather than relying purely on static dimensions.
+  * For split-view or grid items, calculate item aspect ratios or column counts adaptively based on available width:
+    ```dart
+    int crossAxisCount = constraints.maxWidth > 600 ? 3 : (constraints.maxWidth > 340 ? 2 : 1);
+    ```
+  * Avoid hardcoded fixed widget widths (e.g., `width: 380`) on mobile screens; prefer percentages, flex factors (`Expanded`), or relative sizing (`MediaQuery.sizeOf(context).width`).
+
+### 5. Safe Area Ingestion & Notch / Gesture Navigation Insets
+* **Standard:** Content must respect device hardware cutouts, camera notches, dynamic islands, and OS gesture bars.
+* **Rule:** Always wrap top-level body content or edge-anchored floating bars in `SafeArea` or consume `MediaQuery.paddingOf(context)` / `viewPadding`.
+* **Modal Bottom Sheets:** Always set `isScrollControlled: true` and wrap bottom sheet content with `SafeArea` and scroll bounds to prevent overflow on compact or landscape mobile orientations.
+
+### 6. Dynamic Card & Content Wrapping
+* **Standard:** Tag groups, filter chips, action button groups, and badge lists must adapt to arbitrary horizontal sizes.
+* **Rule:** Use `Wrap` with `spacing` and `runSpacing` instead of `Row` for dynamic chip collections, tags, or button bars that could exceed the screen width.
+
+---
+
+## 🧩 Component Reuse & Anti-Duplication Standards (DRY UI Architecture)
+> **MANDATORY INVARIANT: Always reuse existing design-system components instead of building one-off, hardcoded widgets. Duplicate widget logic, ad-hoc styling, and redundant dialog/input implementations are strictly forbidden.**
+
+### 1. Pre-Flight Component Audit Rule
+* **Standard:** Before creating any new UI widget, inspect `lib/core/widgets/` and existing feature components.
+* **Rule:** If a design requirement overlaps with an existing component, you **must** import and compose the existing component or extend it via clean parameters. Never rewrite one-off equivalents.
+
+### 2. Canonical Shared Components Catalog
+Whenever implementing screens or modals, utilize these canonical implementations:
+* **Buttons & Navigation:**
+  * [`AppBackButton`](file:///d:/Spencer/Downloads/tara_travel/lib/core/widgets/buttons/app_back_button.dart): Canonical 12px brand back button with `glass`, `light`, `brand`, and `ghost` variants. Never use raw `IconButton(icon: Icon(Icons.arrow_back))` or ad-hoc containers.
+  * [`DynamicIslandPill`](file:///d:/Spencer/Downloads/tara_travel/lib/core/widgets/dynamic_island_pill.dart): Status and glanceable pill badges.
+* **Feedback, Dialogs & Alerts:**
+  * [`AppFeedback`](file:///d:/Spencer/Downloads/tara_travel/lib/core/widgets/feedback/app_feedback.dart): Unified snackbar/toast toasts (`showSuccess`, `showError`, `showWarning`, `showInfo`).
+  * [`AppDialog`](file:///d:/Spencer/Downloads/tara_travel/lib/core/widgets/feedback/app_dialog.dart): Standardized modal alert/confirmation dialogs. Never invoke raw `showDialog` with custom ad-hoc `AlertDialog` containers.
+  * [`AppBanner`](file:///d:/Spencer/Downloads/tara_travel/lib/core/widgets/feedback/app_banner.dart): In-page status alerts and banners.
+* **Inputs & Form Controls:**
+  * [`AppTextField`](file:///d:/Spencer/Downloads/tara_travel/lib/core/widgets/inputs/app_text_field.dart): Standard text entry with brand borders, 12px radius, and focus states.
+  * [`AppNumericField`](file:///d:/Spencer/Downloads/tara_travel/lib/core/widgets/inputs/app_numeric_field.dart): Currency and numeric inputs with built-in validation.
+  * [`AppDropdown`](file:///d:/Spencer/Downloads/tara_travel/lib/core/widgets/inputs/app_dropdown.dart): Styled form select menus.
+  * [`AppDatePicker`](file:///d:/Spencer/Downloads/tara_travel/lib/core/widgets/inputs/app_date_picker.dart) & [`TaraDateRangePicker`](file:///d:/Spencer/Downloads/tara_travel/lib/core/widgets/inputs/tara_date_range_picker.dart): Standard brand date and date-range pickers.
+  * [`LocationPicker`](file:///d:/Spencer/Downloads/tara_travel/lib/core/widgets/inputs/location_picker.dart) & [`MapPinPickerModal`](file:///d:/Spencer/Downloads/tara_travel/lib/core/widgets/inputs/map_pin_picker_modal.dart): Philippine address & GPS geocoding inputs.
+* **Loading & Surfaces:**
+  * [`ShimmerLoading`](file:///d:/Spencer/Downloads/tara_travel/lib/core/widgets/shimmer_loading.dart): Universal skeleton loaders (`ShimmerBox`, `ShimmerCard`, `ShimmerCircle`). Never use static spinners or un-themed progress bars where skeleton loading applies.
+  * [`GlassCard`](file:///d:/Spencer/Downloads/tara_travel/lib/core/widgets/glass_card.dart): Frosted backdrop cards.
+* **Shared Feature Carousels & Sheets:**
+  * [`TripTypeCarousel`](file:///d:/Spencer/Downloads/tara_travel/lib/core/widgets/trip_color_carousel.dart): Canonical trip type selector across Create and Edit flows.
+  * [`MultiMemberPickerSheet`](file:///d:/Spencer/Downloads/tara_travel/lib/core/widgets/multi_member_picker_sheet.dart): Shared group member selection for expenses, packing, and roles.
+
+### 3. Centralized Brand Tokens
+* **Rule:** Never hardcode colors (`Color(0xFF...)`), text styles (`TextStyle(...)`), or corner radii in feature files. Always consume:
+  * [`AppColors`](file:///d:/Spencer/Downloads/tara_travel/lib/core/theme/app_colors.dart) (`primary`, `secondary`, `sand`, `sunset`, `deepEarth`, `warmWhite`, `cardBorder`, etc.)
+  * [`AppTextStyles`](file:///d:/Spencer/Downloads/tara_travel/lib/core/theme/app_text_styles.dart) (Playfair Display headlines, DM Sans body and labels)
+  * Design tokens from `0_Brand identity.html` (strictly 12px corner radii for buttons & inputs, 20px pill badges).
+
+---
+
 ## 🔒 Security & Data Integrity Invariants
 
 1. **Zero Hardcoded Secrets**: All backend URLs, API keys, and OAuth client IDs are loaded dynamically at runtime via `.env` through `flutter_dotenv`.
 2. **Deterministic Input Sanitization**: All client parameters, invite codes, and user input strings must be trimmed, normalized, and validated prior to SQL execution.
 3. **Database-Level RLS Anti-Recursion**: Postgres security policies must never recursively query the target relation directly; always delegate permission checks to `SECURITY DEFINER` helper functions.
+4. **Zero Layout Overflow Tolerance**: All production Flutter builds must undergo rigorous multi-device verification (compact 320px–360px phones, tall notch phones, and large display zoom settings) with zero unhandled `RenderFlex` exceptions.
+5. **Zero Hardcoded Component Duplication**: Reject duplicate one-off UI implementations; all views must strictly compose reusable components from `lib/core/widgets/` and theme tokens from `lib/core/theme/`.
+
+

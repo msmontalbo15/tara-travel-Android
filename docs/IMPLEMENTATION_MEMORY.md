@@ -62,6 +62,7 @@
 | **`IMP-075`** | 2026-09-02 | UI & Itinerary / Stop Detail Sheet Live GPS ETA & Stop Sharing | Implemented real-time Estimated Time of Arrival (Live GPS ETA & inter-stop Haversine routing fallback) and 1-tap Stop Details Sharing (`share_plus`) inside `StopDetailSheet`, with 6-pillar information hierarchy and `previousStop` contextual routing handoff. |
 | **`IMP-077`** | 2026-09-03 | UI / Brand-Aligned Back Button Standardization | Standardized and upgraded `AppBackButton` with Tara Travel brand tokens (12px radius, frosted glass, light, brand, and ghost variants) and replaced one-off back buttons across all screens (Packing, Friends, Navigation, Live Navigation, Chat, Notifications, Activity Log, Create Trip, and MapPinPicker). |
 | **`IMP-078`** | 2026-09-04 | Chat, Polls & Firebase FCM | Interactive In-Chat Travel Polls, real-time live vote sync, one-tap winner resolution to itinerary, pinned announcements drawer, quick travel action chips, branded Coral gradient UI, and Firebase FCM notification service. |
+| **`IMP-079`** | 2026-09-04 | Architecture & UI Standards | Formalized Mobile Responsive Layout Standards and Strict Overflow Prevention Patterns in `SOFTWARE_DESIGN_PATTERNS.md` & `MEMORY.md` (bounded flex, scrollable viewports, dynamic font ellipsis, and zero RenderFlex overflow tolerance). |
 
 ---
 
@@ -1590,6 +1591,41 @@
   - `docs/MEMORY.md` [MODIFIED]
 - **Verification**:
   - `flutter analyze` completed with 0 errors and 0 warnings across all modified and new files.
+
+---
+
+## 📱 [IMP-079] Mobile Responsive Layout Standards, Strict Overflow Prevention & Canonical Component Reuse Guardrails
+- **Date**: 2026-09-04
+- **Motivation**:
+  - Prevent visual degradation, `RenderFlex` overflow yellow-and-black stripes, and usability issues across varying mobile screen sizes (narrow 320px–360px devices, tall aspect ratio displays, notches, dynamic islands, accessibility zoom).
+  - Eliminate code bloat and UI regressions caused by recreating one-off hardcoded widgets, colors, and dialogs when canonical design-system components already exist.
+- **Architectural Standards Added to `docs/SOFTWARE_DESIGN_PATTERNS.md` & `docs/MEMORY.md`**:
+  1. **Universal Screen Boundary Rule**:
+     - All vertical and variable-length layouts must be scrollable (`SingleChildScrollView`, `ListView`, `CustomScrollView`).
+     - Keyboard awareness: Ensure proper view insets handling (`Scaffold.resizeToAvoidBottomInset: true` + bottom padding).
+  2. **Flexible & Bounded Constraints**:
+     - In `Row` layouts, dynamic text and variable-width children must be wrapped in `Expanded` or `Flexible` with explicit text ellipsis.
+     - Unbounded scrollable lists must never sit directly inside a `Column` without flex bounds.
+  3. **Safe Dynamic Typography**:
+     - Explicit `overflow: TextOverflow.ellipsis` and `maxLines` on single-line and bounded text elements.
+     - Use `FittedBox` or allow multi-line wrapping on critical CTAs instead of hardcoded fixed container widths.
+     - Text scale factor clamping for extreme system zoom levels (`MediaQuery.withClampedTextScaling(...)`).
+  4. **Adaptive & Proportional Sizing**:
+     - Leverage `LayoutBuilder` / `BoxConstraints` and dynamic column counts rather than fixed pixel widths.
+  5. **Safe Area & Hardware Insets**:
+     - Guard against hardware notches, camera cutouts, and bottom gesture pill bars via `SafeArea` and `MediaQuery.paddingOf(context)`.
+     - Modal bottom sheets must be scroll-controlled (`isScrollControlled: true`) with explicit scroll views.
+  6. **Dynamic Card & Content Wrapping**:
+     - Dynamic chips, badge pills, and tag sets must use `Wrap` with `spacing` / `runSpacing` instead of horizontal `Row`.
+  7. **Canonical Component Reuse & Anti-Duplication (DRY UI)**:
+     - Mandatory pre-flight component audit: Check `lib/core/widgets/` before creating new widgets.
+     - Reusable shared catalog: `AppBackButton`, `AppDialog`, `AppFeedback`, `AppBanner`, `AppTextField`, `AppNumericField`, `AppDropdown`, `TaraDateRangePicker`, `LocationPicker`, `ShimmerLoading`, `GlassCard`, `TripTypeCarousel`, `MultiMemberPickerSheet`.
+     - Zero hardcoded styling: Colors, fonts, and corner radii strictly consume `AppColors`, `AppTextStyles`, and brand identity tokens.
+- **Target Files**:
+  - `docs/SOFTWARE_DESIGN_PATTERNS.md` [MODIFIED]
+  - `docs/MEMORY.md` [MODIFIED]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+
 
 
 
