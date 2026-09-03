@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/member_model.dart';
 import '../theme/app_colors.dart';
+import 'member_avatar_circle.dart';
 
 /// A multi-select bottom sheet for picking one or more [MemberModel]s.
 ///
@@ -262,31 +263,11 @@ class _MultiMemberPickerSheetState extends State<MultiMemberPickerSheet> {
                         ? m.roles.first.displayName
                         : 'Trip Member',
                     roleColor: m.roles.isNotEmpty ? m.roles.first.color : null,
-                    leading: Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: m.color,
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: [
-                          BoxShadow(
-                            color: m.color.withValues(alpha: 0.3),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Text(
-                          m.initials,
-                          style: const TextStyle(
-                            fontFamily: 'DM Sans',
-                            fontWeight: FontWeight.w700,
-                            fontSize: 15,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
+                    leading: MemberAvatarCircle(
+                      photoUrl: m.profilePhotoUrl,
+                      initials: m.initials,
+                      color: m.color,
+                      size: 42,
                     ),
                     isSelected: isSelected,
                     isMultiSelect: true,
@@ -514,25 +495,12 @@ class MemberAvatarStack extends StatelessWidget {
           for (int i = 0; i < assigned.length; i++)
             Positioned(
               left: i * (size * 0.6),
-              child: Container(
-                width: size,
-                height: size,
-                decoration: BoxDecoration(
-                  color: assigned[i].color,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 1.5),
-                ),
-                child: Center(
-                  child: Text(
-                    assigned[i].initials,
-                    style: TextStyle(
-                      fontFamily: 'DM Sans',
-                      fontWeight: FontWeight.w700,
-                      fontSize: size * 0.36,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
+              child: MemberAvatarCircle(
+                photoUrl: assigned[i].profilePhotoUrl,
+                initials: assigned[i].initials,
+                color: assigned[i].color,
+                size: size,
+                border: Border.all(color: Colors.white, width: 1.5),
               ),
             ),
           if (overflow > 0)

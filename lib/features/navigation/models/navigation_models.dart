@@ -78,6 +78,7 @@ class NavMember {
   final bool isSos;
   final String? sosMessage;
   final DateTime? lastPingTime;
+  final String? photoUrl;
 
   const NavMember({
     required this.id,
@@ -105,6 +106,7 @@ class NavMember {
     this.isSos = false,
     this.sosMessage,
     this.lastPingTime,
+    this.photoUrl,
   });
 
   // ── Convenience getters (for backward compat with widgets) ────
@@ -138,6 +140,7 @@ class NavMember {
     bool? isSos,
     String? sosMessage,
     DateTime? lastPingTime,
+    String? photoUrl,
   }) {
     return NavMember(
       id: id ?? this.id,
@@ -166,6 +169,7 @@ class NavMember {
       isSos: isSos ?? this.isSos,
       sosMessage: sosMessage ?? this.sosMessage,
       lastPingTime: lastPingTime ?? this.lastPingTime,
+      photoUrl: photoUrl ?? this.photoUrl,
     );
   }
 }

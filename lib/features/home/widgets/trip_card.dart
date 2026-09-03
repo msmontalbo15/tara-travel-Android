@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/member_avatar_circle.dart';
 import '../../../core/constants/trip_types.dart';
 import '../../../core/utils/currency_utils.dart';
 import '../models/trip_card_badge_data.dart';
@@ -479,32 +480,12 @@ class TripCard extends StatelessWidget {
                         children: travelers!.asMap().entries.map((e) {
                           return Positioned(
                             left: e.key * 18.0,
-                            child: Container(
-                              width: 30,
-                              height: 30,
-                              decoration: BoxDecoration(
-                                color: Color(e.value.color),
-                                shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 2.5),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Color(e.value.color).withValues(alpha: 0.3),
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Center(
-                                child: Text(
-                                  e.value.initials,
-                                  style: const TextStyle(
-                                    fontFamily: 'DM Sans',
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
+                            child: MemberAvatarCircle(
+                              photoUrl: e.value.photoUrl,
+                              initials: e.value.initials,
+                              color: Color(e.value.color),
+                              size: 30,
+                              border: Border.all(color: Colors.white, width: 2.5),
                             ),
                           );
                         }).toList(),
@@ -807,7 +788,8 @@ class TripCard extends StatelessWidget {
 class TravelerInfo {
   final String initials;
   final int color;
-  const TravelerInfo(this.initials, this.color);
+  final String? photoUrl;
+  const TravelerInfo(this.initials, this.color, {this.photoUrl});
 }
 
 // Convenience constructor helpers

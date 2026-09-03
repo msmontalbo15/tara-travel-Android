@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../security/three_layer_encryption_service.dart';
@@ -10,6 +11,46 @@ class ProfileRepository {
   final SupabaseClient _supabase = Supabase.instance.client;
   final ThreeLayerEncryptionService _encryption =
       ThreeLayerEncryptionService.instance;
+
+  // ── AVATAR UPLOAD (SUPABASE STORAGE) ───────────────────────────────────────
+
+  /// Uploads a local avatar image to Supabase Storage bucket `avatars` and
+  /// returns the resulting public URL.
+  ///
+  /// Storage path: `{userId}/profile.{ext}`
+  /// Overwrites any existing file at that path (upsert).
+  /// Returns `null` if the upload fails.
+  Future<String?> uploadAvatar(String userId, String localFilePath) async {
+    try {
+      final file = File(localFilePath);
+      if (!file.existsSync()) {
+        debugPrint('[ProfileRepository] uploadAvatar: file does not exist at $localFilePath');
+        return null;
+      }
+
+      final ext = localFilePath.split('.').last.toLowerCase();
+      final storagePath = '$userId/profile.$ext';
+
+      await _supabase.storage.from('avatars').upload(
+        storagePath,
+        file,
+        fileOptions: const FileOptions(upsert: true),
+      );
+
+      final publicUrl = _supabase.storage.from('avatars').getPublicUrl(storagePath);
+
+      // Append cache-buster to force CDN/browser refresh after re-upload
+      final bustedUrl = '$publicUrl?t=${DateTime.now().millisecondsSinceEpoch}';
+      debugPrint('[ProfileRepository] uploadAvatar success: $bustedUrl');
+      return bustedUrl;
+    } on StorageException catch (e) {
+      debugPrint('[ProfileRepository] uploadAvatar StorageException: ${e.message}');
+      return null;
+    } catch (e) {
+      debugPrint('[ProfileRepository] uploadAvatar error: $e');
+      return null;
+    }
+  }
 
   // ── REMOTE STORAGE (SUPABASE WITH 3-LAYER ENCRYPTION) ──────────────────────
 

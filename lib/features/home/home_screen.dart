@@ -1222,6 +1222,7 @@ class _HomeTripCardItem extends ConsumerWidget {
             (member) => TravelerInfo(
               member.initials,
               member.color.toARGB32(),
+              photoUrl: member.profilePhotoUrl,
             ),
           )
           .toList(),

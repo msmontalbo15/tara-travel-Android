@@ -19,6 +19,7 @@ import '../../core/widgets/share/share_trip_modal.dart';
 import '../../core/widgets/shimmer_loading.dart';
 import '../../core/widgets/feedback/app_feedback.dart';
 import '../../core/widgets/feedback/app_dialog.dart';
+import '../../core/widgets/member_avatar_circle.dart';
 import 'widgets/edit_trip_sheet.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1201,24 +1202,12 @@ class _SquadPreviewCard extends StatelessWidget {
                   for (int i = 0; i < displayMembers.length; i++)
                     Positioned(
                       left: i * 24.0,
-                      child: Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: displayMembers[i].color,
-                          border: Border.all(color: Colors.white, width: 2),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          displayMembers[i].initials,
-                          style: const TextStyle(
-                            fontFamily: 'DM Sans',
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
+                      child: MemberAvatarCircle(
+                        photoUrl: displayMembers[i].profilePhotoUrl,
+                        initials: displayMembers[i].initials,
+                        color: displayMembers[i].color,
+                        size: 36,
+                        border: Border.all(color: Colors.white, width: 2),
                       ),
                     ),
                   if (remainingCount > 0)

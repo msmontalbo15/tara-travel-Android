@@ -369,8 +369,32 @@ class ProfileNotifier extends Notifier<ProfileState> {
     _persist();
   }
 
-  void updatePhoto(String? url) {
-    state = state.copyWith(profilePhotoUrl: url);
+  Future<void> updatePhoto(String? pathOrUrl) async {
+    if (pathOrUrl == null || pathOrUrl.isEmpty) {
+      state = state.copyWith(profilePhotoUrl: null);
+      _persist();
+      return;
+    }
+
+    // HTTP URL (Google avatar or already-uploaded) — use directly
+    if (pathOrUrl.startsWith('http')) {
+      state = state.copyWith(profilePhotoUrl: pathOrUrl);
+      _persist();
+      return;
+    }
+
+    // Local file path — upload to Supabase Storage
+    final supaUser = Supabase.instance.client.auth.currentUser;
+    if (supaUser == null) {
+      // Offline fallback: persist local path (will re-upload later)
+      state = state.copyWith(profilePhotoUrl: pathOrUrl);
+      _persist();
+      return;
+    }
+
+    final repo = ref.read(profileRepositoryProvider);
+    final publicUrl = await repo.uploadAvatar(supaUser.id, pathOrUrl);
+    state = state.copyWith(profilePhotoUrl: publicUrl ?? pathOrUrl);
     _persist();
   }
 

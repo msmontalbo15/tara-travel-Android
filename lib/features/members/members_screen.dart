@@ -15,6 +15,7 @@ import '../../core/widgets/buttons/app_back_button.dart';
 import '../../core/widgets/shimmer_loading.dart';
 import '../../core/widgets/feedback/app_feedback.dart';
 import '../../core/widgets/feedback/app_dialog.dart';
+import '../../core/widgets/member_avatar_circle.dart';
 
 class MembersScreen extends ConsumerStatefulWidget {
   final bool showHeader;
@@ -587,21 +588,11 @@ class _MemberCard extends StatelessWidget {
           // Avatar
           Stack(
             children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration:
-                    BoxDecoration(color: member.color, shape: BoxShape.circle),
-                child: Center(
-                  child: Text(
-                    member.initials,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
+              MemberAvatarCircle(
+                photoUrl: member.profilePhotoUrl,
+                initials: member.initials,
+                color: member.color,
+                size: 48,
               ),
               // Online dot
               Positioned(

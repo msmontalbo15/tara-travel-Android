@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../../core/models/itinerary_model.dart';
 import '../../../core/models/member_model.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/member_avatar_circle.dart';
 
 /// Swipeable floating arrival pill.
 ///
@@ -493,24 +494,12 @@ class _MemberAvatarStack extends StatelessWidget {
           final m = visible[i];
           return Positioned(
             left: i * 12.0,
-            child: Container(
-              width: 20,
-              height: 20,
-              decoration: BoxDecoration(
-                color: m.color,
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 1.5),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                m.initials.substring(0, 1),
-                style: const TextStyle(
-                  fontFamily: 'DM Sans',
-                  fontSize: 9,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
+            child: MemberAvatarCircle(
+              photoUrl: m.profilePhotoUrl,
+              initials: m.initials.isNotEmpty ? m.initials.substring(0, 1) : 'M',
+              color: m.color,
+              size: 20,
+              border: Border.all(color: Colors.white, width: 1.5),
             ),
           );
         }),

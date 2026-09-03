@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/widgets/member_avatar_circle.dart';
 import '../../models/navigation_models.dart';
 
 // ── Status colour helper (feature-local MemberStatus) ────────────────────────
@@ -16,7 +17,7 @@ Color _statusColor(MemberStatus status) {
 
 // ── MemberAvatar ──────────────────────────────────────────────────────────────
 
-/// Circular avatar with initials and an optional status dot.
+/// Circular avatar with profile photo / initials and an optional status dot.
 class MemberAvatar extends StatelessWidget {
   final NavMember member;
   final double size;
@@ -43,28 +44,16 @@ class MemberAvatar extends StatelessWidget {
       height: size + (showStatus ? 4 : 0),
       child: Stack(
         children: [
-          Container(
-            width: size,
-            height: size,
-            decoration: BoxDecoration(
-              color: isOffline
-                  ? member.color.withValues(alpha: 0.5)
-                  : member.color,
-              shape: BoxShape.circle,
-              border: borderWidth > 0
-                  ? Border.all(color: borderColor, width: borderWidth)
-                  : null,
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              member.initials,
-              style: TextStyle(
-                fontFamily: 'DM Sans',
-                fontSize: size * 0.36,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
-            ),
+          MemberAvatarCircle(
+            photoUrl: member.photoUrl,
+            initials: member.initials,
+            color: isOffline
+                ? member.color.withValues(alpha: 0.5)
+                : member.color,
+            size: size,
+            border: borderWidth > 0
+                ? Border.all(color: borderColor, width: borderWidth)
+                : null,
           ),
           if (showStatus)
             Positioned(
@@ -104,24 +93,12 @@ class MapMemberPin extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          width: 28,
-          height: 28,
-          decoration: BoxDecoration(
-            color: member.color,
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 2.5),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            member.initials,
-            style: const TextStyle(
-              fontFamily: 'DM Sans',
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
-          ),
+        MemberAvatarCircle(
+          photoUrl: member.photoUrl,
+          initials: member.initials,
+          color: member.color,
+          size: 28,
+          border: Border.all(color: Colors.white, width: 2.5),
         ),
         Container(
           width: 2,

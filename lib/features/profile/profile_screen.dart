@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -309,13 +310,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           ],
                         ),
                         child: ClipOval(
-                          child: (profile.profilePhotoUrl != null && profile.profilePhotoUrl!.isNotEmpty)
-                              ? Image.file(
-                                  File(profile.profilePhotoUrl!),
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => _initialsAvatar(profile),
-                                )
-                              : _initialsAvatar(profile),
+                          child: _buildProfileAvatar(profile),
                         ),
                       ),
                       GestureDetector(
@@ -1121,6 +1116,33 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildProfileAvatar(ProfileState profile) {
+    final url = profile.profilePhotoUrl;
+    if (url != null && url.isNotEmpty) {
+      if (url.startsWith('http')) {
+        return CachedNetworkImage(
+          imageUrl: url,
+          fit: BoxFit.cover,
+          width: 90,
+          height: 90,
+          errorWidget: (_, __, ___) => _initialsAvatar(profile),
+          placeholder: (_, __) => _initialsAvatar(profile),
+        );
+      }
+      final file = File(url);
+      if (file.existsSync()) {
+        return Image.file(
+          file,
+          fit: BoxFit.cover,
+          width: 90,
+          height: 90,
+          errorBuilder: (_, __, ___) => _initialsAvatar(profile),
+        );
+      }
+    }
+    return _initialsAvatar(profile);
   }
 
   Widget _initialsAvatar(ProfileState profile) {
@@ -2086,7 +2108,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         imageQuality: 85,
       );
       if (pickedFile != null) {
-        ref.read(profileProvider.notifier).updatePhoto(pickedFile.path);
+        await ref.read(profileProvider.notifier).updatePhoto(pickedFile.path);
       }
     } catch (e) {
       debugPrint('Error picking photo: $e');

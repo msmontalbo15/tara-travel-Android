@@ -6,6 +6,7 @@ import '../../../core/models/itinerary_model.dart';
 import '../../../core/models/member_model.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/multi_member_picker_sheet.dart';
+import '../../../core/widgets/member_avatar_circle.dart';
 import '../utils/transit_conflict_helper.dart';
 import 'navigate_route_button.dart';
 import 'slide_to_arrive_button.dart';
@@ -1360,31 +1361,17 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                         child: Row(
                           children: [
                             // Member Avatar
-                            Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: member.color,
-                                shape: BoxShape.circle,
-                                border: isPresent
-                                    ? Border.all(
-                                        color: AppColors.greenBright,
-                                        width: 2,
-                                      )
-                                    : null,
-                              ),
-                              alignment: Alignment.center,
-                              child: Text(
-                                member.initials.isNotEmpty
-                                    ? member.initials.substring(0, 1)
-                                    : '?',
-                                style: const TextStyle(
-                                  fontFamily: 'DM Sans',
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                ),
-                              ),
+                            MemberAvatarCircle(
+                              photoUrl: member.profilePhotoUrl,
+                              initials: member.initials,
+                              color: member.color,
+                              size: 36,
+                              border: isPresent
+                                  ? Border.all(
+                                      color: AppColors.greenBright,
+                                      width: 2,
+                                    )
+                                  : null,
                             ),
                             const SizedBox(width: 12),
                             // Member Name & Status

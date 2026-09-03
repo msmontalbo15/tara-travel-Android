@@ -47,6 +47,7 @@ class NavigationNotifier extends Notifier<NavigationState> {
       heading: lastGps?.heading ?? 0.0,
       altitude: lastGps?.altitude,
       mapPosition: const Offset(0.48, 0.74),
+      photoUrl: profile.profilePhotoUrl,
     );
 
     // Dynamic companions from Supabase Trip Members
@@ -65,6 +66,7 @@ class NavigationNotifier extends Notifier<NavigationState> {
           isMe: false,
           batteryLevel: 85,
           mapPosition: const Offset(0.5, 0.5),
+          photoUrl: m.profilePhotoUrl,
         ));
       }
     }
