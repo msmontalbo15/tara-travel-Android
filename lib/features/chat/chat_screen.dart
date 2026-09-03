@@ -8,6 +8,7 @@ import '../../core/providers/chat_provider.dart';
 import '../../core/providers/selected_trip_provider.dart';
 import '../../core/repositories/chat_repository.dart';
 import '../../core/services/module_view_tracker_service.dart';
+import '../../core/widgets/buttons/app_back_button.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   final bool showHeader;
@@ -212,6 +213,12 @@ class _ChatHeader extends ConsumerWidget {
       ),
       child: Row(
         children: [
+          if (Navigator.canPop(context)) ...[
+            const AppBackButton(
+              variant: AppBackButtonVariant.glass,
+            ),
+            const SizedBox(width: 12),
+          ],
           const Icon(Icons.forum_rounded, color: Colors.white70, size: 20),
           const SizedBox(width: 8),
           Expanded(

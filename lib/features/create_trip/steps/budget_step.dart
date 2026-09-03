@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/inputs/app_numeric_field.dart';
 import '../../../core/utils/currency_utils.dart';
+import '../../../core/widgets/buttons/app_back_button.dart';
 import '../models/new_trip_model.dart';
 import '../widgets/step_indicator.dart';
 
@@ -65,23 +66,9 @@ class _BudgetStepState extends State<BudgetStep> {
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
               child: Row(
                 children: [
-                  GestureDetector(
-                    onTap: widget.onBack,
-                    child: const Row(
-                      children: [
-                        Icon(Icons.arrow_back_ios_new_rounded,
-                            size: 16, color: AppColors.primary),
-                        SizedBox(width: 4),
-                        Text(
-                          'Back',
-                          style: TextStyle(
-                            fontFamily: 'DM Sans',
-                            fontSize: 15,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      ],
-                    ),
+                  AppBackButton(
+                    variant: AppBackButtonVariant.brand,
+                    onPressed: widget.onBack,
                   ),
                   const Expanded(
                     child: Center(

@@ -5,6 +5,7 @@ import '../../../core/models/itinerary_model.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_brand_logo.dart';
 import '../../../core/utils/currency_utils.dart';
+import '../../../core/widgets/buttons/app_back_button.dart';
 import '../models/new_trip_model.dart';
 import '../widgets/step_indicator.dart';
 
@@ -121,32 +122,9 @@ class ConfirmStep extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 12),
               child: Row(
                 children: [
-                  GestureDetector(
-                    onTap: onBack,
-                    behavior: HitTestBehavior.opaque,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.arrow_back_ios_new_rounded, size: 14, color: AppColors.primary),
-                          SizedBox(width: 4),
-                          Text(
-                            'Back',
-                            style: TextStyle(
-                              fontFamily: 'DM Sans',
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                  AppBackButton(
+                    variant: AppBackButtonVariant.glass,
+                    onPressed: onBack,
                   ),
                   const Expanded(
                     child: Center(

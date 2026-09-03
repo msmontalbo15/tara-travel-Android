@@ -7,6 +7,7 @@ import 'package:latlong2/latlong.dart';
 import '../../constants/map_tile_config.dart';
 import '../../services/philippine_geocoding_service.dart';
 import '../../theme/app_colors.dart';
+import '../buttons/app_back_button.dart';
 import 'location_picker.dart';
 
 class MapPinPickerModal extends StatefulWidget {
@@ -290,10 +291,15 @@ class _MapPinPickerModalState extends State<MapPinPickerModal> {
                   ),
                   child: Row(
                     children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary),
-                        onPressed: () => Navigator.of(context).pop(),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 4),
+                        child: AppBackButton(
+                          variant: AppBackButtonVariant.light,
+                          size: 36,
+                          iconSize: 16,
+                        ),
                       ),
+                      const SizedBox(width: 4),
                       Expanded(
                         child: TextField(
                           controller: _searchCtrl,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/buttons/app_back_button.dart';
 import 'models/navigation_models.dart';
 import 'providers/navigation_provider.dart';
 import 'widgets/live_map_tab.dart';
@@ -166,25 +167,14 @@ class _NavHeader extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
             child: Row(
               children: [
-                if (Navigator.canPop(context))
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? Colors.white.withValues(alpha: 0.08)
-                            : const Color(0xFFF2F2F7),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        size: 16,
-                        color: isDark ? Colors.white : AppColors.textPrimary,
-                      ),
-                    ),
+                if (Navigator.canPop(context)) ...[
+                  AppBackButton(
+                    variant: isDark
+                        ? AppBackButtonVariant.glass
+                        : AppBackButtonVariant.light,
                   ),
-                if (Navigator.canPop(context)) const SizedBox(width: 12),
+                  const SizedBox(width: 12),
+                ],
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

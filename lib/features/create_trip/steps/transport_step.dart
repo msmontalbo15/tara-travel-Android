@@ -4,6 +4,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/models/itinerary_model.dart';
 import '../../../core/widgets/inputs/location_picker.dart';
 import '../../../core/utils/currency_utils.dart';
+import '../../../core/widgets/buttons/app_back_button.dart';
 import '../models/new_trip_model.dart';
 
 class TransportPresetHub {
@@ -396,16 +397,9 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
               children: [
                 Row(
                   children: [
-                    GestureDetector(
-                      onTap: widget.onBack,
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 16),
-                      ),
+                    AppBackButton(
+                      variant: AppBackButtonVariant.glass,
+                      onPressed: widget.onBack,
                     ),
                     const SizedBox(width: 16),
                     const Expanded(

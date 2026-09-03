@@ -123,6 +123,43 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
       buf.writeln('📌 Location: ${stop.location!.trim()}');
     }
 
+    // Distance & Estimated Travel Time in Share
+    if (_userLat != null && _userLng != null && stop.lat != null && stop.lng != null) {
+      final analysis = TransitConflictHelper.analyze(
+        from: ItineraryStop(
+          id: 'user_pos',
+          title: 'Current Location',
+          type: StopType.custom,
+          lat: _userLat,
+          lng: _userLng,
+        ),
+        to: stop,
+      );
+      if (analysis.distanceKm != null) {
+        final distStr = analysis.distanceKm! < 1.0
+            ? '${(analysis.distanceKm! * 1000).round()} m'
+            : '${analysis.distanceKm!.toStringAsFixed(1)} km';
+        final speed = stop.transportMode?.averageSpeedKmh ?? 35.0;
+        final transitMin = (analysis.distanceKm! / speed * 60.0).round() + 4;
+        buf.writeln('📏 Real Distance: $distStr from current location');
+        buf.writeln('⏱️ Est. Travel Time: ~$transitMin mins (${stop.transportMode?.label ?? 'Driving'})');
+      }
+    } else if (widget.previousStop != null && widget.previousStop!.lat != null && widget.previousStop!.lng != null && stop.lat != null && stop.lng != null) {
+      final analysis = TransitConflictHelper.analyze(
+        from: widget.previousStop!,
+        to: stop,
+      );
+      if (analysis.distanceKm != null) {
+        final distStr = analysis.distanceKm! < 1.0
+            ? '${(analysis.distanceKm! * 1000).round()} m'
+            : '${analysis.distanceKm!.toStringAsFixed(1)} km';
+        buf.writeln('📏 Distance: $distStr from ${widget.previousStop!.title}');
+        if (analysis.estimatedTransitMinutes != null) {
+          buf.writeln('⏱️ Est. Travel Time: ~${analysis.estimatedTransitMinutes} mins');
+        }
+      }
+    }
+
     // Google Maps link
     final hasCoords = stop.lat != null && stop.lng != null && stop.lat != 0.0 && stop.lng != 0.0;
     if (hasCoords) {
@@ -802,126 +839,255 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
       final etaPeriod = estimatedArrival.hour >= 12 ? 'PM' : 'AM';
       final formattedEta = '$etaHour:$etaMinute $etaPeriod';
 
+      final String distanceLabel = distanceKm != null
+          ? (distanceKm < 1.0
+              ? '${(distanceKm * 1000).round()} meters'
+              : '${distanceKm.toStringAsFixed(1)} km')
+          : 'Unknown';
+
+      final String travelTimeLabel = transitMinutes < 60
+          ? '$transitMinutes mins'
+          : '${transitMinutes ~/ 60}h ${transitMinutes % 60}m';
+
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
               AppColors.primary.withValues(alpha: 0.08),
-              AppColors.sand.withValues(alpha: 0.6),
+              AppColors.sand.withValues(alpha: 0.7),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: AppColors.primary.withValues(alpha: 0.25),
+            color: AppColors.primary.withValues(alpha: 0.3),
             width: 1.2,
           ),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.access_time_filled_rounded,
-                color: AppColors.primary,
-                size: 22,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+            // Header Row: ETA Title + GPS Pill
+            Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.access_time_filled_rounded,
+                    color: AppColors.primary,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'ESTIMATED ARRIVAL (ETA)',
+                        'ESTIMATED TIME OF ARRIVAL',
                         style: TextStyle(
                           fontFamily: 'DM Sans',
-                          fontSize: 10.5,
+                          fontSize: 10,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 1.0,
                           color: AppColors.primary,
                         ),
                       ),
-                      const Spacer(),
-                      if (_userLat != null)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF10B981).withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.gps_fixed_rounded,
-                                  size: 10, color: Color(0xFF10B981)),
-                              SizedBox(width: 3),
-                              Text(
-                                'LIVE GPS',
-                                style: TextStyle(
-                                  fontFamily: 'DM Sans',
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF10B981),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 3),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
-                    children: [
                       Text(
                         formattedEta,
                         style: const TextStyle(
                           fontFamily: 'Playfair Display',
-                          fontSize: 21,
+                          fontSize: 22,
                           fontWeight: FontWeight.w800,
                           color: AppColors.deepEarth,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '(in ~$transitMinutes mins${distanceKm != null ? ' · ${distanceKm < 1 ? '${(distanceKm * 1000).round()}m' : '${distanceKm.toStringAsFixed(1)}km'}' : ''})',
-                        style: const TextStyle(
-                          fontFamily: 'DM Sans',
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.muted,
-                        ),
-                      ),
                     ],
                   ),
-                  if (calculationSource.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Text(
-                        'Calculated $calculationSource',
-                        style: const TextStyle(
-                          fontFamily: 'DM Sans',
-                          fontSize: 10.5,
-                          color: AppColors.muted,
-                        ),
+                ),
+                if (_userLat != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: const Color(0xFF10B981).withValues(alpha: 0.3),
                       ),
                     ),
-                ],
-              ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.gps_fixed_rounded,
+                            size: 11, color: Color(0xFF10B981)),
+                        SizedBox(width: 4),
+                        Text(
+                          'LIVE GPS',
+                          style: TextStyle(
+                            fontFamily: 'DM Sans',
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF10B981),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
             ),
+            const SizedBox(height: 12),
+
+            // Metrics Grid: Real Distance & Est. Travel Time
+            Row(
+              children: [
+                // 1. Real Distance Card
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppColors.dividerLight,
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 28,
+                          height: 28,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.straighten_rounded,
+                            size: 16,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'REAL DISTANCE',
+                                style: TextStyle(
+                                  fontFamily: 'DM Sans',
+                                  fontSize: 8.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.muted,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              Text(
+                                distanceLabel,
+                                style: const TextStyle(
+                                  fontFamily: 'DM Sans',
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.deepEarth,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+
+                // 2. Estimated Travel Time Card
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppColors.dividerLight,
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 28,
+                          height: 28,
+                          decoration: BoxDecoration(
+                            color: AppColors.amber.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.commute_rounded,
+                            size: 16,
+                            color: AppColors.amberText,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'TRAVEL TIME',
+                                style: TextStyle(
+                                  fontFamily: 'DM Sans',
+                                  fontSize: 8.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.muted,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              Text(
+                                travelTimeLabel,
+                                style: const TextStyle(
+                                  fontFamily: 'DM Sans',
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.deepEarth,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            if (calculationSource.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 8, left: 2),
+                child: Text(
+                  'Calculated $calculationSource (${stop.transportMode?.label ?? 'Driving'})',
+                  style: const TextStyle(
+                    fontFamily: 'DM Sans',
+                    fontSize: 10.5,
+                    color: AppColors.muted,
+                  ),
+                ),
+              ),
           ],
         ),
       );

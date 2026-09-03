@@ -11,6 +11,7 @@ import '../../core/widgets/inputs/app_text_field.dart';
 import '../../core/widgets/shimmer_loading.dart';
 import '../../core/widgets/scanner/qr_scanner_modal.dart';
 import '../../core/widgets/feedback/app_feedback.dart';
+import '../../core/widgets/buttons/app_back_button.dart';
 import 'widgets/friend_list_item.dart';
 
 class FriendsScreen extends ConsumerStatefulWidget {
@@ -594,19 +595,11 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
               child: Row(
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppColors.cardBorder),
-                      ),
-                      child: const Icon(Icons.arrow_back_ios_new_rounded,
-                          size: 16, color: AppColors.deepEarth),
+                  if (Navigator.canPop(context))
+                    const AppBackButton(
+                      variant: AppBackButtonVariant.light,
                     ),
-                  ),
+                  if (Navigator.canPop(context)) const SizedBox(width: 12),
                   const Expanded(
                     child: Center(
                       child: Text(

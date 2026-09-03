@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/buttons/app_back_button.dart';
 import 'models/navigation_models.dart';
 import 'providers/navigation_provider.dart';
 import 'widgets/nav_map_view.dart';
@@ -80,9 +81,9 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Back button
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(width: 40, height: 40, decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle), child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18)),
+          const AppBackButton(
+            variant: AppBackButtonVariant.glass,
+            color: Colors.black45,
           ),
           const Spacer(),
           // Right controls column

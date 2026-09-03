@@ -12,6 +12,7 @@ import '../../core/providers/packing_provider.dart';
 import '../../core/providers/itinerary_provider.dart';
 import '../../core/models/trip_model.dart';
 import '../../core/models/expense_model.dart';
+import '../../core/models/itinerary_model.dart';
 import '../../core/widgets/buttons/app_back_button.dart';
 import '../../core/widgets/navigation/floating_nav_bar.dart';
 import '../../core/widgets/share/share_trip_modal.dart';
@@ -21,7 +22,7 @@ import '../../core/widgets/feedback/app_dialog.dart';
 import 'widgets/edit_trip_sheet.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TripDetailScreen — dashboard UI (glassmorphic iOS 17/18 layout)
+// TripDetailScreen — Streamlined Dashboard (Zero-Redundancy Rich Hub)
 // ─────────────────────────────────────────────────────────────────────────────
 
 class TripDetailScreen extends ConsumerWidget {
@@ -165,12 +166,18 @@ class _TripDashboardState extends ConsumerState<_TripDashboard> {
 
     int totalStops = 0;
     int visitedStops = 0;
+    ItineraryStop? nextStop;
+    DateTime? nextStopDate;
+
     if (itineraryState != null) {
       for (final day in itineraryState.days) {
         totalStops += day.stops.length;
         for (final stop in day.stops) {
           if (stop.isCompleted) {
             visitedStops++;
+          } else if (nextStop == null) {
+            nextStop = stop;
+            nextStopDate = day.date;
           }
         }
       }
@@ -180,68 +187,27 @@ class _TripDashboardState extends ConsumerState<_TripDashboard> {
     final now = DateTime.now();
     final isActive = now.isAfter(trip.fromDate) && now.isBefore(trip.toDate);
 
-    // ── Section definitions (vertical list) ──────────────────────
-    final sections = [
-      _SectionItem(
-        icon: Icons.calendar_month_rounded,
-        label: 'Itinerary',
-        subtitle: '$itineraryDayCount days planned',
-        color: const Color(0xFF185FA5),
-        route: '/itinerary',
-      ),
-      _SectionItem(
-        icon: Icons.luggage_rounded,
-        label: 'Packing',
-        subtitle: '$packedCount / $totalPacking items packed',
-        color: const Color(0xFF854F0B),
-        route: '/packing',
-      ),
-      _SectionItem(
-        icon: Icons.group_rounded,
-        label: 'Members',
-        subtitle: '${trip.members.length} people',
-        color: const Color(0xFF3B6D11),
-        route: '/members',
-      ),
-      _SectionItem(
-        icon: Icons.account_balance_wallet_rounded,
-        label: 'Budget & Expenses',
-        subtitle: '₱${_fmt(totalSpent)} spent',
-        color: AppColors.primary,
-        route: '/budget',
-      ),
-      const _SectionItem(
-        icon: Icons.chat_bubble_rounded,
-        label: 'Chat & Polls',
-        subtitle: 'Group chat',
-        color: Color(0xFF4A2C7A),
-        route: '/chat',
-      ),
-    ];
-
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F2F7),
+      backgroundColor: const Color(0xFFF4F3F0),
       body: Stack(
         children: [
           CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
-              // ── Hero ────────────────────────────────────────────────
-              SliverToBoxAdapter(
-                child: _HeroHeader(
-                  trip: trip,
-                  coverColor: coverColor,
-                  nights: nights,
-                  isActive: isActive,
-                ),
+              // ── 1. Collapsible Sticky Hero Header ──────────────────
+              _CollapsibleHeroHeader(
+                trip: trip,
+                coverColor: coverColor,
+                nights: nights,
+                isActive: isActive,
               ),
 
-              // ── Body ────────────────────────────────────────────────
+              // ── 2. Streamlined Interactive Dashboard ───────────────
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
-                    // Draft Publish Card
+                    // A. Draft Publish Banner (if draft)
                     if (trip.isDraft) ...[
                       _DraftPublishCard(
                         isLoading: _isPublishing,
@@ -250,33 +216,73 @@ class _TripDashboardState extends ConsumerState<_TripDashboard> {
                       const SizedBox(height: 12),
                     ],
 
-                    // Stats row
-                    _StatsRow(
-                      trip: trip,
-                      nights: nights,
+                    // B. Authoritative Itinerary / Next Stop Card (1-tap to /itinerary)
+                    _ItineraryHubCard(
+                      nextStop: nextStop,
+                      nextStopDate: nextStopDate,
                       totalStops: totalStops,
                       visitedStops: visitedStops,
+                      dayCount: itineraryDayCount,
+                      onTap: () => Navigator.pushNamed(context, '/itinerary'),
                     ),
                     const SizedBox(height: 12),
 
-                    // Budget bar
-                    if (trip.totalBudget > 0) ...[
-                      _BudgetCard(
-                        totalSpent: totalSpent,
-                        totalPending: totalPending,
-                        remaining: remaining,
-                        budget: trip.totalBudget,
-                        budgetPct: budgetPct,
-                        onTap: () => Navigator.pushNamed(context, '/budget'),
-                      ),
+                    // C. Logistics & Departure Card (if defined)
+                    if ((trip.departurePoint != null && trip.departurePoint!.trim().isNotEmpty) ||
+                        (trip.transportMode != null && trip.transportMode!.trim().isNotEmpty)) ...[
+                      _LogisticsCard(trip: trip),
                       const SizedBox(height: 12),
                     ],
 
-                    // Section links
-                    _SectionLinks(sections: sections),
+                    // D. Authoritative Budget Progress Card (1-tap to /budget)
+                    _BudgetCard(
+                      totalSpent: totalSpent,
+                      totalPending: totalPending,
+                      remaining: remaining,
+                      budget: trip.totalBudget,
+                      budgetPct: budgetPct,
+                      splitEqually: trip.splitEqually,
+                      onTap: () => Navigator.pushNamed(context, '/budget'),
+                    ),
                     const SizedBox(height: 12),
 
-                    // Navigate CTA — active trips only
+                    // E. Authoritative Squad & Members Card (1-tap to /members)
+                    _SquadPreviewCard(
+                      trip: trip,
+                      onTap: () => Navigator.pushNamed(context, '/members'),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // F. 2-Tile Utility Hub (Packing Checklist + Group Chat)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _QuickTile(
+                            icon: Icons.luggage_rounded,
+                            iconColor: const Color(0xFF854F0B),
+                            title: 'Packing List',
+                            subtitle: totalPacking > 0
+                                ? '$packedCount of $totalPacking packed'
+                                : 'Check items',
+                            progress: totalPacking > 0 ? (packedCount / totalPacking).clamp(0.0, 1.0) : null,
+                            onTap: () => Navigator.pushNamed(context, '/packing'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _QuickTile(
+                            icon: Icons.chat_bubble_rounded,
+                            iconColor: const Color(0xFF4A2C7A),
+                            title: 'Chat & Polls',
+                            subtitle: 'Group discussions',
+                            onTap: () => Navigator.pushNamed(context, '/chat'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // G. Live Navigation CTA (active trips only)
                     if (isActive) ...[
                       _NavButton(
                         onTap: () => Navigator.pushNamed(context, '/navigation'),
@@ -284,12 +290,12 @@ class _TripDashboardState extends ConsumerState<_TripDashboard> {
                       const SizedBox(height: 12),
                     ],
 
-                    // Invite code
+                    // H. Invite Code Card
                     if (trip.inviteCode.isNotEmpty)
                       _InviteCard(trip: trip),
 
                     // Bottom clearance for floating nav
-                    const SizedBox(height: 130),
+                    const SizedBox(height: 120),
                   ]),
                 ),
               ),
@@ -309,23 +315,19 @@ class _TripDashboardState extends ConsumerState<_TripDashboard> {
       ),
     );
   }
-
-  static String _fmt(double v) =>
-      NumberFormat('#,##0', 'en_PH').format(v.toInt());
 }
 
-
 // ─────────────────────────────────────────────────────────────────────────────
-// Hero Header — ambient gradient mesh + frosted status pill
+// Collapsible Sticky Hero Header (SliverAppBar with Pinned Frosted Glass Mini-Bar)
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _HeroHeader extends ConsumerWidget {
+class _CollapsibleHeroHeader extends ConsumerWidget {
   final TripModel trip;
   final Color coverColor;
   final int nights;
   final bool isActive;
 
-  const _HeroHeader({
+  const _CollapsibleHeroHeader({
     required this.trip,
     required this.coverColor,
     required this.nights,
@@ -336,7 +338,8 @@ class _HeroHeader extends ConsumerWidget {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Trip'),
+        title: const Text('Delete Trip',
+            style: TextStyle(fontFamily: 'Playfair Display', fontWeight: FontWeight.w700)),
         content: Text('Are you sure you want to delete "${trip.name}"? This action cannot be undone.'),
         actions: [
           TextButton(
@@ -391,7 +394,6 @@ class _HeroHeader extends ConsumerWidget {
           title: willArchive ? 'Trip Archived 📦' : 'Trip Restored ✨',
         );
 
-        // Automatically close the trip detail screen when archived
         if (willArchive) {
           ref.read(selectedTripIdProvider.notifier).clear();
           Navigator.of(context).pop();
@@ -402,9 +404,6 @@ class _HeroHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final topPad = MediaQuery.of(context).padding.top;
-
-    // Derived ambient accent — slightly lighter tone for mesh
     final accentLight = HSLColor.fromColor(coverColor)
         .withLightness((HSLColor.fromColor(coverColor).lightness + 0.18).clamp(0.0, 1.0))
         .toColor();
@@ -414,239 +413,299 @@ class _HeroHeader extends ConsumerWidget {
         trip.destinationDetails?['cover_image'] ??
         trip.destinationDetails?['image_url'];
 
-    return ClipRect(
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              HSLColor.fromColor(coverColor)
-                  .withLightness(
-                      (HSLColor.fromColor(coverColor).lightness - 0.12).clamp(0.0, 1.0))
-                  .toColor(),
-              coverColor,
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+    final statusDotColor = trip.isDraft
+        ? AppColors.amberText
+        : isActive
+            ? AppColors.greenBright
+            : trip.isArchived
+                ? AppColors.warmMuted
+                : AppColors.amber;
+
+    return SliverAppBar(
+      pinned: true,
+      expandedHeight: 270.0,
+      elevation: 0,
+      backgroundColor: coverColor,
+      surfaceTintColor: Colors.transparent,
+      leading: const Center(
+        child: AppBackButton(
+          variant: AppBackButtonVariant.glass,
         ),
-        child: Stack(
-          children: [
-            // ── Background cover image watermark (if available) ──────
-            if (imageUrl != null && imageUrl.toString().isNotEmpty)
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: Opacity(
-                    opacity: 0.12,
-                    child: Image.network(
-                      imageUrl.toString(),
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                    ),
-                  ),
-                ),
-              ),
-
-            // ── Large emoji watermark — bottom right ─────────────────
-            Positioned(
-              right: -20,
-              bottom: -30,
-              child: IgnorePointer(
-                child: Opacity(
-                  opacity: 0.10,
-                  child: Transform.rotate(
-                    angle: -0.10,
-                    child: Text(
-                      emoji,
-                      style: const TextStyle(
-                        fontSize: 160,
-                        height: 1.0,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            // Ambient mesh blobs
-            Positioned(
-              top: -40,
-              right: -30,
-              child: Container(
-                width: 180,
-                height: 180,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: accentLight.withValues(alpha: 0.22),
-                ),
-              ),
-            ),
-            Positioned(
-              bottom: -20,
-              left: -40,
-              child: Container(
-                width: 130,
-                height: 130,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.07),
-                ),
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.fromLTRB(20, topPad + 12, 20, 28),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      ),
+      actions: [
+        PopupMenuButton<String>(
+          icon: const Icon(Icons.more_vert_rounded, color: Colors.white),
+          color: const Color(0xFF2C2016),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          onSelected: (value) {
+            if (value == 'edit') EditTripSheet.show(context, trip);
+            if (value == 'archive') _toggleArchiveTrip(context, ref);
+            if (value == 'delete') _confirmDeleteTrip(context, ref);
+          },
+          itemBuilder: (_) => [
+            const PopupMenuItem(
+              value: 'edit',
+              child: Row(
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const AppBackButton(),
-                      PopupMenuButton<String>(
-                        icon: const Icon(Icons.more_vert_rounded, color: Colors.white70),
-                        color: const Color(0xFF2C2016),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16)),
-                        onSelected: (value) {
-                          if (value == 'edit') EditTripSheet.show(context, trip);
-                          if (value == 'archive') _toggleArchiveTrip(context, ref);
-                          if (value == 'delete') _confirmDeleteTrip(context, ref);
-                        },
-                        itemBuilder: (_) => [
-                          const PopupMenuItem(
-                            value: 'edit',
-                            child: Row(
-                              children: [
-                                Icon(Icons.edit_outlined,
-                                    size: 18, color: Colors.white70),
-                                SizedBox(width: 12),
-                                Text('Edit Trip',
-                                    style: TextStyle(
-                                        fontFamily: 'DM Sans', color: Colors.white)),
-                              ],
-                            ),
-                          ),
-                          PopupMenuItem(
-                            value: 'archive',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  trip.isArchived
-                                      ? Icons.unarchive_outlined
-                                      : Icons.archive_outlined,
-                                  size: 18,
-                                  color: Colors.white70,
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  trip.isArchived ? 'Unarchive Trip' : 'Archive Trip',
-                                  style: const TextStyle(
-                                      fontFamily: 'DM Sans', color: Colors.white),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const PopupMenuDivider(),
-                          const PopupMenuItem(
-                            value: 'delete',
-                            child: Row(
-                              children: [
-                                Icon(Icons.delete_outline_rounded,
-                                    size: 18, color: Colors.redAccent),
-                                SizedBox(width: 12),
-                                Text('Delete Trip',
-                                    style: TextStyle(
-                                        fontFamily: 'DM Sans',
-                                        color: Colors.redAccent)),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                  Icon(Icons.edit_outlined, size: 18, color: Colors.white70),
+                  SizedBox(width: 12),
+                  Text('Edit Trip', style: TextStyle(fontFamily: 'DM Sans', color: Colors.white)),
+                ],
+              ),
+            ),
+            PopupMenuItem(
+              value: 'archive',
+              child: Row(
+                children: [
+                  Icon(
+                    trip.isArchived ? Icons.unarchive_outlined : Icons.archive_outlined,
+                    size: 18,
+                    color: Colors.white70,
                   ),
-                  const SizedBox(height: 20),
-
-                  _StatusBadge(
-                    isActive: isActive,
-                    isArchived: trip.isArchived,
-                    isDraft: trip.isDraft,
-                  ),
-                  const SizedBox(height: 10),
-
+                  const SizedBox(width: 12),
                   Text(
-                    trip.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontFamily: 'Playfair Display',
-                      fontSize: 28,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      height: 1.12,
-                      letterSpacing: -0.5,
-                    ),
+                    trip.isArchived ? 'Unarchive Trip' : 'Archive Trip',
+                    style: const TextStyle(fontFamily: 'DM Sans', color: Colors.white),
                   ),
-                  const SizedBox(height: 8),
-
-                  Row(
-                    children: [
-                      Icon(Icons.place_rounded,
-                          color: Colors.white.withValues(alpha: 0.60), size: 12),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          trip.destination,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontFamily: 'DM Sans',
-                            fontSize: 12,
-                            color: Colors.white.withValues(alpha: 0.60),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-
-                  Text(
-                    () {
-                      final String dateStr;
-                      if (trip.fromDate.year == trip.toDate.year) {
-                        if (trip.fromDate.month == trip.toDate.month) {
-                          dateStr =
-                              '${DateFormat('MMM d').format(trip.fromDate)}–${trip.toDate.day}, ${trip.toDate.year}';
-                        } else {
-                          dateStr =
-                              '${DateFormat('MMM d').format(trip.fromDate)} – ${DateFormat('MMM d').format(trip.toDate)}, ${trip.toDate.year}';
-                        }
-                      } else {
-                        dateStr =
-                            '${DateFormat('MMM d, yyyy').format(trip.fromDate)} – ${DateFormat('MMM d, yyyy').format(trip.toDate)}';
-                      }
-                      return '$dateStr · $nights nights';
-                    }(),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontFamily: 'DM Sans',
-                      fontSize: 11,
-                      color: Colors.white.withValues(alpha: 0.38),
-                    ),
-                  ),
+                ],
+              ),
+            ),
+            const PopupMenuDivider(),
+            const PopupMenuItem(
+              value: 'delete',
+              child: Row(
+                children: [
+                  Icon(Icons.delete_outline_rounded, size: 18, color: Colors.redAccent),
+                  SizedBox(width: 12),
+                  Text('Delete Trip',
+                      style: TextStyle(fontFamily: 'DM Sans', color: Colors.redAccent)),
                 ],
               ),
             ),
           ],
         ),
+      ],
+      flexibleSpace: LayoutBuilder(
+        builder: (BuildContext ctx, BoxConstraints constraints) {
+          final topPad = MediaQuery.of(ctx).padding.top;
+          final currentHeight = constraints.biggest.height;
+          final minHeight = kToolbarHeight + topPad;
+          final delta = 270.0 - minHeight;
+          final expandRatio = delta > 0 ? ((currentHeight - minHeight) / delta).clamp(0.0, 1.0) : 0.0;
+          final isCollapsed = expandRatio < 0.28;
+
+          return FlexibleSpaceBar(
+            collapseMode: CollapseMode.parallax,
+            titlePadding: EdgeInsets.zero,
+            title: isCollapsed
+                ? SafeArea(
+                    bottom: false,
+                    child: Container(
+                      height: kToolbarHeight,
+                      alignment: Alignment.centerLeft,
+                      padding: const EdgeInsets.only(left: 60, right: 52),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 8,
+                            height: 8,
+                            margin: const EdgeInsets.only(right: 8),
+                            decoration: BoxDecoration(
+                              color: statusDotColor,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          Flexible(
+                            child: Text(
+                              trip.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontFamily: 'Playfair Display',
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : null,
+            background: Stack(
+              children: [
+                // Base background gradient
+                Positioned.fill(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          HSLColor.fromColor(coverColor)
+                              .withLightness(
+                                  (HSLColor.fromColor(coverColor).lightness - 0.12).clamp(0.0, 1.0))
+                              .toColor(),
+                          coverColor,
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Background cover image watermark (if available)
+                if (imageUrl != null && imageUrl.toString().isNotEmpty)
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: Opacity(
+                        opacity: 0.14,
+                        child: Image.network(
+                          imageUrl.toString(),
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                // Large emoji watermark
+                Positioned(
+                  right: -20,
+                  bottom: -30,
+                  child: IgnorePointer(
+                    child: Opacity(
+                      opacity: 0.12,
+                      child: Transform.rotate(
+                        angle: -0.10,
+                        child: Text(
+                          emoji,
+                          style: const TextStyle(fontSize: 160, height: 1.0),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Ambient mesh blobs
+                Positioned(
+                  top: -40,
+                  right: -30,
+                  child: Container(
+                    width: 180,
+                    height: 180,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: accentLight.withValues(alpha: 0.22),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: -20,
+                  left: -40,
+                  child: Container(
+                    width: 130,
+                    height: 130,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withValues(alpha: 0.07),
+                    ),
+                  ),
+                ),
+
+                // Expanded content container
+                Positioned.fill(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(20, topPad + 56, 20, 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        _StatusBadge(
+                          isActive: isActive,
+                          isArchived: trip.isArchived,
+                          isDraft: trip.isDraft,
+                        ),
+                        const SizedBox(height: 10),
+
+                        Text(
+                          trip.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontFamily: 'Playfair Display',
+                            fontSize: 28,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                            height: 1.15,
+                            letterSpacing: -0.4,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+
+                        Row(
+                          children: [
+                            Icon(Icons.place_rounded,
+                                color: Colors.white.withValues(alpha: 0.75), size: 14),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                trip.destination,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontFamily: 'DM Sans',
+                                  fontSize: 13,
+                                  color: Colors.white.withValues(alpha: 0.75),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+
+                        Text(
+                          () {
+                            final String dateStr;
+                            if (trip.fromDate.year == trip.toDate.year) {
+                              if (trip.fromDate.month == trip.toDate.month) {
+                                dateStr =
+                                    '${DateFormat('MMM d').format(trip.fromDate)}–${trip.toDate.day}, ${trip.toDate.year}';
+                              } else {
+                                dateStr =
+                                    '${DateFormat('MMM d').format(trip.fromDate)} – ${DateFormat('MMM d').format(trip.toDate)}, ${trip.toDate.year}';
+                              }
+                            } else {
+                              dateStr =
+                                  '${DateFormat('MMM d, yyyy').format(trip.fromDate)} – ${DateFormat('MMM d, yyyy').format(trip.toDate)}';
+                            }
+                            return '$dateStr · $nights nights';
+                          }(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: 'DM Sans',
+                            fontSize: 12,
+                            color: Colors.white.withValues(alpha: 0.55),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Status Badge — glassmorphic pill
+// Status Badge — frosted glass pill
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _StatusBadge extends StatelessWidget {
@@ -715,73 +774,269 @@ class _StatusBadge extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Stats Row  (Nights / Itinerary / People) — glassmorphic cells
+// Authoritative Itinerary / Next Stop Hub Card
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _StatsRow extends StatelessWidget {
-  final TripModel trip;
-  final int nights;
+class _ItineraryHubCard extends StatelessWidget {
+  final ItineraryStop? nextStop;
+  final DateTime? nextStopDate;
   final int totalStops;
   final int visitedStops;
+  final int dayCount;
+  final VoidCallback onTap;
 
-  const _StatsRow({
-    required this.trip,
-    required this.nights,
+  const _ItineraryHubCard({
+    this.nextStop,
+    this.nextStopDate,
     required this.totalStops,
     required this.visitedStops,
+    required this.dayCount,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _StatCell(
-            label: 'Nights',
-            value: '$nights',
-            icon: Icons.nights_stay_rounded,
-            iconColor: const Color(0xFF7E57C2),
+    if (nextStop != null) {
+      final dateStr = nextStopDate != null ? DateFormat('EEE, MMM d').format(nextStopDate!) : '';
+      final timeStr = nextStop!.startTime != null
+          ? nextStop!.startTime!.format(context)
+          : 'Scheduled';
+
+      return GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.primary.withValues(alpha: 0.25), width: 1.2),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.08),
+                blurRadius: 14,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  nextStop!.type.icon,
+                  color: AppColors.primary,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(
+                            color: AppColors.greenBright,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          'NEXT UP · $timeStr${dateStr.isNotEmpty ? ' ($dateStr)' : ''}',
+                          style: const TextStyle(
+                            fontFamily: 'DM Sans',
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
+                            letterSpacing: 0.6,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      nextStop!.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontFamily: 'DM Sans',
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF1A1A1A),
+                      ),
+                    ),
+                    if (nextStop!.location != null && nextStop!.location!.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          const Icon(Icons.place_outlined, size: 12, color: Color(0xFF8E8E93)),
+                          const SizedBox(width: 3),
+                          Expanded(
+                            child: Text(
+                              nextStop!.location!,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontFamily: 'DM Sans',
+                                fontSize: 12,
+                                color: Color(0xFF8E8E93),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF2F2F7),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.chevron_right_rounded, size: 18, color: Color(0xFF8E8E93)),
+              ),
+            ],
           ),
         ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _StatCell(
-            label: 'Itinerary',
-            value: '$visitedStops/$totalStops',
-            icon: Icons.explore_rounded,
-            iconColor: AppColors.primary,
-          ),
+      );
+    }
+
+    // Fallback when all stops are completed or no stops are planned yet
+    final isCompleted = totalStops > 0 && visitedStops >= totalStops;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFE5E5EA), width: 0.8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _StatCell(
-            label: 'People',
-            value: '${trip.members.length}',
-            icon: Icons.group_rounded,
-            iconColor: const Color(0xFF3B6D11),
-          ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: const Color(0xFF185FA5).withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Icon(
+                Icons.calendar_month_rounded,
+                color: Color(0xFF185FA5),
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isCompleted ? 'All Stops Completed 🎉' : 'Trip Itinerary',
+                    style: const TextStyle(
+                      fontFamily: 'DM Sans',
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1A1A1A),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    totalStops > 0
+                        ? '$visitedStops of $totalStops stops visited · $dayCount days'
+                        : 'Plan activities, food, hotels & stops',
+                    style: const TextStyle(
+                      fontFamily: 'DM Sans',
+                      fontSize: 12,
+                      color: Color(0xFF8E8E93),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF2F2F7),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.chevron_right_rounded, size: 18, color: Color(0xFF8E8E93)),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
 
-class _StatCell extends StatelessWidget {
-  final String label;
-  final String value;
-  final IconData icon;
-  final Color iconColor;
-  const _StatCell({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.iconColor,
-  });
+// ─────────────────────────────────────────────────────────────────────────────
+// Logistics & Transport Departure Card
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _LogisticsCard extends StatelessWidget {
+  final TripModel trip;
+  const _LogisticsCard({required this.trip});
+
+  IconData _resolveTransportIcon(String? mode) {
+    final m = mode?.toLowerCase() ?? '';
+    if (m.contains('plane') || m.contains('flight') || m.contains('air')) {
+      return Icons.flight_takeoff_rounded;
+    }
+    if (m.contains('ferry') || m.contains('boat') || m.contains('ship')) {
+      return Icons.directions_boat_rounded;
+    }
+    if (m.contains('van') || m.contains('bus')) {
+      return Icons.directions_bus_rounded;
+    }
+    if (m.contains('motor') || m.contains('bike')) {
+      return Icons.two_wheeler_rounded;
+    }
+    return Icons.directions_car_rounded;
+  }
+
+  String _formatTransportLabel(String? mode) {
+    if (mode == null || mode.isEmpty) return 'Land Transport';
+    return mode[0].toUpperCase() + mode.substring(1);
+  }
+
+  void _copyDeparturePoint(BuildContext context) {
+    if (trip.departurePoint != null && trip.departurePoint!.isNotEmpty) {
+      Clipboard.setData(ClipboardData(text: trip.departurePoint!));
+      AppFeedback.showSuccess(
+        context,
+        'Departure location copied: ${trip.departurePoint}',
+        title: 'Location Copied 📋',
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final hasDeparture = trip.departurePoint != null && trip.departurePoint!.trim().isNotEmpty;
+    final transportMode = trip.transportMode;
+
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -797,39 +1052,102 @@ class _StatCell extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, size: 16, color: iconColor),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.near_me_rounded, size: 16, color: AppColors.primary),
+                  SizedBox(width: 6),
+                  Text(
+                    'Logistics & Departure',
+                    style: TextStyle(
+                      fontFamily: 'DM Sans',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1A1A1A),
+                    ),
+                  ),
+                ],
+              ),
+              if (transportMode != null && transportMode.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.sand,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(_resolveTransportIcon(transportMode), size: 13, color: AppColors.primary),
+                      const SizedBox(width: 4),
+                      Text(
+                        _formatTransportLabel(transportMode),
+                        style: const TextStyle(
+                          fontFamily: 'DM Sans',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
           ),
-          const SizedBox(height: 10),
-          Text(
-            value,
-            style: const TextStyle(
-              fontFamily: 'DM Sans',
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF1A1A1A),
-              height: 1.0,
+          if (hasDeparture) ...[
+            const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF2F2F7),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.place_rounded, size: 18, color: Color(0xFF185FA5)),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'MEETUP / DEPARTURE POINT',
+                        style: TextStyle(
+                          fontFamily: 'DM Sans',
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF8E8E93),
+                          letterSpacing: 0.6,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        trip.departurePoint!,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontFamily: 'DM Sans',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1A1A1A),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.copy_rounded, size: 16, color: Color(0xFF8E8E93)),
+                  tooltip: 'Copy Departure Point',
+                  onPressed: () => _copyDeparturePoint(context),
+                ),
+              ],
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label.toUpperCase(),
-            style: const TextStyle(
-              fontFamily: 'DM Sans',
-              fontSize: 9,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF8E8E93),
-              letterSpacing: 0.8,
-            ),
-          ),
+          ],
         ],
       ),
     );
@@ -837,7 +1155,156 @@ class _StatCell extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Budget Card — glass with animated progress
+// Authoritative Squad & Members Card
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _SquadPreviewCard extends StatelessWidget {
+  final TripModel trip;
+  final VoidCallback onTap;
+
+  const _SquadPreviewCard({
+    required this.trip,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final members = trip.members;
+    const maxAvatars = 4;
+    final displayMembers = members.take(maxAvatars).toList();
+    final remainingCount = members.length > maxAvatars ? members.length - maxAvatars : 0;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFE5E5EA), width: 0.8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Overlapping avatar cluster
+            SizedBox(
+              height: 38,
+              width: (displayMembers.length * 26.0) + (remainingCount > 0 ? 32 : 12),
+              child: Stack(
+                children: [
+                  for (int i = 0; i < displayMembers.length; i++)
+                    Positioned(
+                      left: i * 24.0,
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: displayMembers[i].color,
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          displayMembers[i].initials,
+                          style: const TextStyle(
+                            fontFamily: 'DM Sans',
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (remainingCount > 0)
+                    Positioned(
+                      left: displayMembers.length * 24.0,
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: const Color(0xFF2C1A14),
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          '+$remainingCount',
+                          style: const TextStyle(
+                            fontFamily: 'DM Sans',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${members.length} Squad ${members.length == 1 ? 'Member' : 'Members'}',
+                    style: const TextStyle(
+                      fontFamily: 'DM Sans',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1A1A1A),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  const Text(
+                    'Manage roles & split participants',
+                    style: TextStyle(
+                      fontFamily: 'DM Sans',
+                      fontSize: 11,
+                      color: Color(0xFF8E8E93),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF2F2F7),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Manage',
+                    style: TextStyle(
+                      fontFamily: 'DM Sans',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1A1A1A),
+                    ),
+                  ),
+                  SizedBox(width: 2),
+                  Icon(Icons.chevron_right_rounded, size: 16, color: Color(0xFF8E8E93)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Authoritative Budget & Expenses Card
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _BudgetCard extends StatelessWidget {
@@ -846,6 +1313,7 @@ class _BudgetCard extends StatelessWidget {
   final double remaining;
   final double budget;
   final double budgetPct;
+  final bool splitEqually;
   final VoidCallback onTap;
 
   const _BudgetCard({
@@ -854,6 +1322,7 @@ class _BudgetCard extends StatelessWidget {
     required this.remaining,
     required this.budget,
     required this.budgetPct,
+    this.splitEqually = true,
     required this.onTap,
   });
 
@@ -907,54 +1376,89 @@ class _BudgetCard extends StatelessWidget {
                           size: 18, color: _barColor),
                     ),
                     const SizedBox(width: 10),
-                    const Text(
-                      'Budget',
-                      style: TextStyle(
-                        fontFamily: 'DM Sans',
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF1A1A1A),
-                      ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Trip Budget & Expenses',
+                          style: TextStyle(
+                            fontFamily: 'DM Sans',
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF1A1A1A),
+                          ),
+                        ),
+                        Text(
+                          splitEqually ? 'Equal Split' : 'Custom Split',
+                          style: const TextStyle(
+                            fontFamily: 'DM Sans',
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF8E8E93),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: _pctColor.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '${(budgetPct * 100).round()}% used',
-                    style: TextStyle(
-                      fontFamily: 'DM Sans',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: _pctColor,
+                if (budget > 0)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _pctColor.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '${(budgetPct * 100).round()}% used',
+                      style: TextStyle(
+                        fontFamily: 'DM Sans',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: _pctColor,
+                      ),
+                    ),
+                  )
+                else
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF2F2F7),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text(
+                      'No Budget Set',
+                      style: TextStyle(
+                        fontFamily: 'DM Sans',
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF8E8E93),
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
             const SizedBox(height: 14),
 
             // Progress bar
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0, end: budgetPct),
-                duration: const Duration(milliseconds: 900),
-                curve: Curves.easeOutCubic,
-                builder: (_, val, __) => LinearProgressIndicator(
-                  value: val,
-                  minHeight: 8,
-                  backgroundColor: const Color(0xFFF2F2F7),
-                  valueColor: AlwaysStoppedAnimation<Color>(_barColor),
+            if (budget > 0) ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0, end: budgetPct),
+                  duration: const Duration(milliseconds: 900),
+                  curve: Curves.easeOutCubic,
+                  builder: (_, val, __) => LinearProgressIndicator(
+                    value: val,
+                    minHeight: 8,
+                    backgroundColor: const Color(0xFFF2F2F7),
+                    valueColor: AlwaysStoppedAnimation<Color>(_barColor),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 14),
+              const SizedBox(height: 14),
+            ],
 
             // Spent / Pending / Remaining
             Row(
@@ -976,9 +1480,10 @@ class _BudgetCard extends StatelessWidget {
                 ),
                 Expanded(
                   child: _BudgetStat(
-                    label: 'Remaining',
-                    value:
-                        '₱${_fmt(remaining.abs())}${remaining < 0 ? ' over' : ''}',
+                    label: budget > 0 ? 'Remaining' : 'Total Budget',
+                    value: budget > 0
+                        ? '₱${_fmt(remaining.abs())}${remaining < 0 ? ' over' : ''}'
+                        : '₱${_fmt(budget)}',
                     valueColor: remaining < 0
                         ? const Color(0xFFA32D2D)
                         : const Color(0xFF3B6D11),
@@ -1029,149 +1534,98 @@ class _BudgetStat extends StatelessWidget {
   }
 }
 
-
-
 // ─────────────────────────────────────────────────────────────────────────────
-// Section Links — glass card container
+// Quick Utility Tile (Packing & Chat side-by-side grid)
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _SectionItem {
+class _QuickTile extends StatelessWidget {
   final IconData icon;
-  final String label;
+  final Color iconColor;
+  final String title;
   final String subtitle;
-  final Color color;
-  final String route;
-
-  const _SectionItem({
-    required this.icon,
-    required this.label,
-    required this.subtitle,
-    required this.color,
-    required this.route,
-  });
-}
-
-class _SectionLinks extends StatelessWidget {
-  final List<_SectionItem> sections;
-
-  const _SectionLinks({required this.sections});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFE5E5EA), width: 0.8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: sections.asMap().entries.map((entry) {
-          final isLast = entry.key == sections.length - 1;
-          return _SectionRow(
-            item: entry.value,
-            showDivider: !isLast,
-            onTap: () => Navigator.pushNamed(context, entry.value.route),
-          );
-        }).toList(),
-      ),
-    );
-  }
-}
-
-class _SectionRow extends StatefulWidget {
-  final _SectionItem item;
-  final bool showDivider;
+  final double? progress;
   final VoidCallback onTap;
 
-  const _SectionRow({
-    required this.item,
-    required this.showDivider,
+  const _QuickTile({
+    required this.icon,
+    required this.iconColor,
+    required this.title,
+    required this.subtitle,
+    this.progress,
     required this.onTap,
   });
 
   @override
-  State<_SectionRow> createState() => _SectionRowState();
-}
-
-class _SectionRowState extends State<_SectionRow> {
-  bool _pressed = false;
-
-  @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) {
-        setState(() => _pressed = false);
-        widget.onTap();
-      },
-      onTapCancel: () => setState(() => _pressed = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 80),
-        color: _pressed ? const Color(0xFFF2F2F7) : Colors.transparent,
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFE5E5EA), width: 0.8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              child: Row(
-                children: [
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      color: widget.item.color.withValues(alpha: 0.10),
-                      borderRadius: BorderRadius.circular(13),
-                    ),
-                    child: Icon(widget.item.icon,
-                        size: 20, color: widget.item.color),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: iconColor.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(widget.item.label,
-                            style: const TextStyle(
-                              fontFamily: 'DM Sans',
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF1A1A1A),
-                            )),
-                        const SizedBox(height: 2),
-                        Text(widget.item.subtitle,
-                            style: const TextStyle(
-                              fontFamily: 'DM Sans',
-                              fontSize: 12,
-                              color: Color(0xFF8E8E93),
-                            )),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF2F2F7),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(Icons.chevron_right_rounded,
-                        size: 18, color: Color(0xFFB0B0BA)),
-                  ),
-                ],
+                  child: Icon(icon, size: 20, color: iconColor),
+                ),
+                const Icon(Icons.arrow_outward_rounded, size: 16, color: Color(0xFF8E8E93)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontFamily: 'DM Sans',
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF1A1A1A),
               ),
             ),
-            if (widget.showDivider)
-              const Divider(
-                  height: 1,
-                  thickness: 0.8,
-                  indent: 72,
-                  color: Color(0xFFEEEEEE)),
+            const SizedBox(height: 2),
+            Text(
+              subtitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontFamily: 'DM Sans',
+                fontSize: 11,
+                color: Color(0xFF8E8E93),
+              ),
+            ),
+            if (progress != null) ...[
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 4,
+                  backgroundColor: const Color(0xFFF2F2F7),
+                  valueColor: AlwaysStoppedAnimation<Color>(iconColor),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -1285,7 +1739,6 @@ class _InviteCardState extends ConsumerState<_InviteCard> {
         ),
         child: Stack(
           children: [
-            // Ambient glow blob
             Positioned(
               right: -20,
               bottom: -20,
@@ -1507,4 +1960,3 @@ class _DraftPublishCard extends StatelessWidget {
     );
   }
 }
-

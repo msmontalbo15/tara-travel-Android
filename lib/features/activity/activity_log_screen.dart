@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/providers/activity_provider.dart';
 import '../../core/models/activity_model.dart';
 import '../../core/widgets/shimmer_loading.dart';
+import '../../core/widgets/buttons/app_back_button.dart';
 
 // Standalone screen (with back button)
 class ActivityLogScreen extends ConsumerWidget {
@@ -17,6 +18,13 @@ class ActivityLogScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: AppColors.deepEarth,
         foregroundColor: Colors.white,
+        leading: Navigator.canPop(context)
+            ? const Center(
+                child: AppBackButton(
+                  variant: AppBackButtonVariant.glass,
+                ),
+              )
+            : null,
         title: const Text('Activity Log', style: TextStyle(fontFamily: 'Playfair Display', fontWeight: FontWeight.w700)),
         elevation: 0,
       ),

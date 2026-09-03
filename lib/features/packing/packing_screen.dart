@@ -18,6 +18,7 @@ import '../../core/widgets/feedback/app_dialog.dart';
 import 'widgets/member_assignment_sheet.dart';
 import 'widgets/packing_template_modals.dart';
 import 'widgets/ai_packing_dialog.dart';
+import '../../core/widgets/buttons/app_back_button.dart';
 import '../../core/widgets/multi_member_picker_sheet.dart';
 
 class PackingScreen extends ConsumerStatefulWidget {
@@ -112,33 +113,12 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
                     if (widget.showHeader) ...[
                       Row(
                         children: [
-                          if (Navigator.canPop(context))
-                            GestureDetector(
-                              onTap: () => Navigator.pop(context),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child: BackdropFilter(
-                                  filter:
-                                      ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color:
-                                          Colors.white.withValues(alpha: 0.10),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                          color: Colors.white
-                                              .withValues(alpha: 0.15)),
-                                    ),
-                                    child: const Icon(
-                                        Icons.arrow_back_ios_new_rounded,
-                                        color: Colors.white,
-                                        size: 16),
-                                  ),
-                                ),
-                              ),
+                          if (Navigator.canPop(context)) ...[
+                            const AppBackButton(
+                              variant: AppBackButtonVariant.glass,
                             ),
-                          const SizedBox(width: 8),
+                            const SizedBox(width: 12),
+                          ],
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,

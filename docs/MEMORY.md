@@ -908,6 +908,21 @@ Client Tier               Storage Tier                Transport Tier
 
 ---
 
+## 20. 🔙 BRAND-ALIGNED BACK BUTTON DESIGN INVARIANT (IMP-077)
+
+- **Location**: `lib/core/widgets/buttons/app_back_button.dart`
+- **Design Tokens**:
+  - **Border Radius**: Strictly $12\text{px}$ in accordance with the brand-identity button specifications (`BorderRadius.circular(12)`).
+  - **Touch Target**: $40\times 40\text{px}$ minimum (with custom `size` and `iconSize` parameters).
+  - **Tactile Feedback**: Wrapped in `Semantics(button: true, label: 'Back')` and `Material` + `InkWell` for native ripple and high responsiveness.
+- **Variant Archetypes (`AppBackButtonVariant`)**:
+  1. **`glass`**: Frosted backdrop filter (`sigma: 8`), 12% white opacity fill, 18% white border, white icon. Used for dark hero gradients (`TripDetailScreen`, `MembersScreen`, `ItineraryScreen`, `PackingScreen`, `ActivityLogScreen`, `LiveNavigationScreen` [dark]).
+  2. **`light`**: Crisp white fill with 1px `AppColors.cardBorder` and ambient shadow. Used for light pages (`FriendsScreen`, `NotificationsScreen`, `LiveNavigationScreen` [light], and `MapPinPickerModal`).
+  3. **`brand`**: Warm Sand (`#FAECE7`) fill with light coral border and primary coral icon (`#D85A30`). Used for brand step flows (`BudgetStep`).
+  4. **`ghost`**: Transparent fill with subtle coral border.
+
+---
+
 *This document is the single source of architectural truth for Tara Travel. Update this file whenever database schemas, RPC functions, core repositories, or system flows are modified.*
 
 

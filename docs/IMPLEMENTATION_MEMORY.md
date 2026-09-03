@@ -60,6 +60,7 @@
 | **`IMP-073`** | 2026-09-01 | UI & Itinerary / Driver-Ready Touch Targets & Enriched Buttons | Scaled up all itinerary interactive CTA buttons (StopCard Navigate button, StopDetailSheet Navigate Maps / Expense / Edit / Slide to Arrive / Member toggle, NavigateRouteButton, DayStrip tabs, and ItineraryBottomDock) for effortless driver and one-handed thumb tapping on the road. |
 | **`IMP-074`** | 2026-09-02 | UI & Home / Quick-Action Red Notification Dot Indicator | Implemented IDEA-010: Contextual Red Notification Dot Indicator (`🔴`) on TripCard quick action buttons for new or modified content inside (Itinerary, Packing, Members, Expenses, Chat) using Keystore-backed `ModuleViewTrackerService`, self-action exemption, and reactive Riverpod stream diffing. |
 | **`IMP-075`** | 2026-09-02 | UI & Itinerary / Stop Detail Sheet Live GPS ETA & Stop Sharing | Implemented real-time Estimated Time of Arrival (Live GPS ETA & inter-stop Haversine routing fallback) and 1-tap Stop Details Sharing (`share_plus`) inside `StopDetailSheet`, with 6-pillar information hierarchy and `previousStop` contextual routing handoff. |
+| **`IMP-077`** | 2026-09-03 | UI / Brand-Aligned Back Button Standardization | Standardized and upgraded `AppBackButton` with Tara Travel brand tokens (12px radius, frosted glass, light, brand, and ghost variants) and replaced one-off back buttons across all screens (Packing, Friends, Navigation, Live Navigation, Chat, Notifications, Activity Log, Create Trip, and MapPinPicker). |
 
 ---
 
@@ -1358,24 +1359,91 @@
 
 ---
 
-### `IMP-075` · Itinerary Stop Detail Sheet: Real-Time ETA & 1-Tap Stop Sharing
+### `IMP-075` · Itinerary Stop Detail Sheet: Real-Time ETA, Travel Time & Real Distance Engine
 - **Date**: September 2, 2026
 - **Scope & Objectives**:
-  1. **Real-Time Estimated Time of Arrival (Live GPS ETA & Fallback Routing)**:
+  1. **Real-Time Estimated Time of Arrival (Live GPS ETA, Real Distance & Travel Time)**:
      - Implemented `_fetchLiveGpsForEta()` in `StopDetailSheet` using `Geolocator.getCurrentPosition(medium accuracy, 3s timeout)`.
      - Integrated `TransitConflictHelper.analyze` to dynamically compute geodesic distance and transit duration based on stop transport mode speed (`averageSpeedKmh`).
-     - Added live ETA card featuring `LIVE GPS` badge, formatted arrival clock (`"8:45 AM"`), remaining minutes (`"in ~18 mins"`), and distance (`"3.2 km"`).
+     - Added enhanced ETA card featuring:
+       - Top row: Arrival clock (`"8:45 AM"`) with green `LIVE GPS` badge indicator.
+       - Metrics grid: Dedicated **Real Distance** badge (`"3.2 km"` / `"850 meters"`) and **Estimated Travel Time** badge (`"18 mins"` / `"1h 15m"`).
+       - Context label indicating calculation origin (live GPS position vs. predecessor stop).
      - Built completed stop state with green completion badge and scheduled fallback when coordinates are absent.
-  2. **1-Tap Stop Details Sharing**:
+  2. **1-Tap Stop Details Sharing with Real Geodata**:
      - Added top header share icon button (`Icons.share_outlined`) invoking `_shareStopDetails()`.
-     - Formatted structured plaintext payload including stop category, timings, location, Google Maps direct place URL, cost, booking ref, and notes via `SharePlus.instance.share`.
+     - Formatted structured plaintext payload including stop category, timings, location, real distance from user/previous stop, estimated travel time, Google Maps direct place URL, cost, booking ref, and notes via `SharePlus.instance.share`.
   3. **Contextual Inter-Stop Routing Integration**:
      - Extended `StopDetailSheet` and `ItineraryScreen._showStopDetail` with `previousStop` parameter across both timeline and list view modes.
 - **Modified Files**:
   - `lib/features/itinerary/widgets/stop_detail_sheet.dart` [MODIFIED]
   - `lib/features/itinerary/itinerary_screen.dart` [MODIFIED]
+### `IMP-076` · Trip Detail Dashboard: Collapsible Sticky Hero & Zero-Redundancy Rich Hub
+- **Date**: September 2, 2026
+- **Scope & Objectives**:
+  1. **Collapsible Sticky Hero Header (`SliverAppBar`)**:
+     - Built `_CollapsibleHeroHeader` with `pinned: true` and `expandedHeight: 270.0`.
+     - Cross-fades from a rich gradient cover header with destination and dates into a slim, frosted glass mini-bar with single-line trip title, status dot, pinned back button, and popup menu on scroll.
+  2. **Elimination of Navigation & Metric Redundancies**:
+     - Removed duplicate vertical `_SectionLinks` list and repeated `_StatsRow` counts that caused metric clashing.
+     - Established single, authoritative interactive cards for each core pillar.
+  3. **Authoritative Itinerary Hub Card (`_ItineraryHubCard`)**:
+     - Dynamically surfaces next upcoming unvisited stop with formatted start time, location, category icon, and 1-tap route to `/itinerary`.
+     - Gracefully falls back to completed milestone status or itinerary planning prompt.
+  4. **Logistics & Departure Card (`_LogisticsCard`)**:
+     - Meetup point with 1-tap clipboard copy and transport mode tags (Flight, Van, Ferry, Bus, Car).
+  5. **Authoritative Budget Card (`_BudgetCard`)**:
+     - Spend progress bar, remaining balance, and split method tag (`Equal Split` / `Custom Split`) with 1-tap route to `/budget`.
+  6. **Authoritative Squad Card (`_SquadPreviewCard`)**:
+     - Overlapping avatar cluster, member count, and 1-tap route to `/members`.
+  7. **2-Tile Utility Hub (`_QuickTile`)**:
+     - Side-by-side balanced tiles for **Packing List** (with live progress indicator) and **Chat & Polls**.
+- **Modified Files**:
+  - `lib/features/trip_detail/trip_detail_screen.dart` [MODIFIED]
 - **Verification**:
-  - `flutter analyze lib/features/itinerary/` passed with 0 issues.
+  - `flutter analyze lib/features/trip_detail/trip_detail_screen.dart` passed with 0 issues.
+
+---
+
+### `IMP-077` · UI / Brand-Aligned Back Button Standardization
+- **Date**: September 3, 2026
+- **Scope & Objectives**:
+  1. **Upgraded Core `AppBackButton`**:
+     - Standardized on Tara Travel brand guidelines: `BorderRadius.circular(12)` conforming to the exact 12px button radius rule.
+     - Added `AppBackButtonVariant` enum:
+       - `glass`: Frosted backdrop filter (`sigma: 8`), 12% white opacity fill, 18% white border, white icon for dark/hero gradients.
+       - `light`: Crisp white fill with 1px `AppColors.cardBorder` and ambient shadow for light pages (Friends, Notifications).
+       - `brand`: Soft Sand (`#FAECE7`) fill with light coral border and primary coral icon (`#D85A30`).
+       - `ghost`: Transparent fill with subtle coral border.
+     - Integrated `Semantics(button: true, label: 'Back')`, `Material` ripple feedback with `InkWell`, and configurable `size` and `iconSize`.
+  2. **Comprehensive Screen Adoption**:
+     - `PackingScreen`: Replaced custom frosted container with `AppBackButton(variant: AppBackButtonVariant.glass)`.
+     - `FriendsScreen`: Replaced ad-hoc white container with `AppBackButton(variant: AppBackButtonVariant.light)`.
+     - `LiveNavigationScreen`: Replaced custom container with dynamic dark/light `AppBackButton`.
+     - `NavigationScreen`: Replaced black circle container with `AppBackButton(variant: AppBackButtonVariant.glass, color: Colors.black45)`.
+     - `ChatScreen`: Added `AppBackButton` to header when navigated to via route so travelers can return to previous screen.
+     - `NotificationsScreen`: Integrated brand `AppBackButton(variant: AppBackButtonVariant.light)` as leading AppBar widget.
+     - `ActivityLogScreen`: Integrated brand `AppBackButton(variant: AppBackButtonVariant.glass)` as leading AppBar widget.
+     - `CreateTripFlow` (`TransportStep`, `BudgetStep`, `ConfirmStep`): Standardized back chevrons on `AppBackButton`.
+     - `MapPinPickerModal`: Replaced generic `IconButton` with `AppBackButton(variant: AppBackButtonVariant.light)`.
+- **Modified Files**:
+  - `lib/core/widgets/buttons/app_back_button.dart` [MODIFIED]
+  - `lib/features/trip_detail/trip_detail_screen.dart` [MODIFIED]
+  - `lib/features/packing/packing_screen.dart` [MODIFIED]
+  - `lib/features/friends/friends_screen.dart` [MODIFIED]
+  - `lib/features/navigation/live_navigation_screen.dart` [MODIFIED]
+  - `lib/features/navigation/navigation_screen.dart` [MODIFIED]
+  - `lib/features/chat/chat_screen.dart` [MODIFIED]
+  - `lib/features/notifications/notifications_screen.dart` [MODIFIED]
+  - `lib/features/activity/activity_log_screen.dart` [MODIFIED]
+  - `lib/features/create_trip/steps/transport_step.dart` [MODIFIED]
+  - `lib/features/create_trip/steps/budget_step.dart` [MODIFIED]
+  - `lib/features/create_trip/steps/confirm_step.dart` [MODIFIED]
+  - `lib/core/widgets/inputs/map_pin_picker_modal.dart` [MODIFIED]
+- **Verification**:
+  - `flutter analyze` completed cleanly with 0 errors and 0 warnings.
+
+
 
 
 

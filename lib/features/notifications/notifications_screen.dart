@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/providers/profile_provider.dart';
+import '../../core/widgets/buttons/app_back_button.dart';
 import 'package:intl/intl.dart';
 import 'models/notification_model.dart';
 
@@ -280,6 +281,13 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     return Scaffold(
       backgroundColor: AppColors.surfaceLight,
       appBar: AppBar(
+        leading: Navigator.canPop(context)
+            ? const Center(
+                child: AppBackButton(
+                  variant: AppBackButtonVariant.light,
+                ),
+              )
+            : null,
         title: const Text(
           'Notifications',
           style: TextStyle(
