@@ -1626,6 +1626,37 @@
   - `docs/MEMORY.md` [MODIFIED]
   - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
 
+---
+
+## 💬 [IMP-081] Chat Module UI/UX Overhaul, Keyboard Inset Fix & Group Decision Polish
+- **Date**: 2026-09-04
+- **Motivation**:
+  - Eliminate the double-padding layout glitch above the software keyboard in `ChatScreen` that created an unsightly blank gap.
+  - Upgrade message readability via consecutive sender grouping (suppressing duplicate avatars/names within 2 minutes), integrated timestamps with delivery status ticks, and high-visibility badges for `quickTravel` status alerts.
+  - Introduce essential messaging capabilities: context action sheet with **Copy to Clipboard** (`Clipboard.setData`), pinned announcements top banner with modal viewer, and smart scroll-to-bottom floating action button.
+  - Enhance group poll interactions with organizer close confirmation dialogs and duplicate resolution prevention.
+- **Key Technical Enhancements**:
+  1. **Keyboard & Safe Area Inset Normalization**:
+     - Synchronized `_InputBar` padding with `MediaQuery.viewInsetsOf(context)` and `MediaQuery.paddingOf(context)` to prevent double insets under `Scaffold(resizeToAvoidBottomInset: true)`.
+     - Replaced hardcoded status bar heights in `_ChatHeader` with `MediaQuery.paddingOf(context).top` for notch and dynamic island edge-to-edge responsiveness.
+  2. **Message Bubble Grouping & Context Actions**:
+     - Added consecutive message detection logic: groups messages from the same sender within 2 minutes with tighter vertical spacing (3px) and rounded bubble corners.
+     - Added long-press context sheet: 1-tap emoji reactions (`❤️`, `👍`, `✈️`, `🌴`, `😂`, `🔥`), clipboard copy with toast confirmation, pin/unpin toggles, and deletion confirmation dialog.
+  3. **Distinct Quick Travel Alert Styling**:
+     - Messages with `ChatMessageType.quickTravel` are rendered with custom coral/amber borders, `TRAVEL ALERT` status pill, and highlighted card background to stand out from regular chatter.
+  4. **Smart Scroll & Floating FAB**:
+     - Added `_ScrollToBottomButton` that animates into view when scrolled > 240px from bottom.
+     - Auto-scroll only triggers if user is already near bottom, preventing scroll disruptions while reading older messages.
+  5. **Quick Travel Attachment Sheet (`+` Button)**:
+     - Expandable bottom sheet exposing rich travel actions: Group Poll, Late Alert (10m), Meeting Spot Check-in, and Expense Split reminders.
+- **Target Files**:
+  - `lib/features/chat/chat_screen.dart` [MODIFIED]
+  - `lib/features/chat/widgets/poll_card.dart` [MODIFIED]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+- **Verification**:
+  - `flutter analyze lib/features/chat/` executed with 0 errors and 0 warnings.
+  - Verified keyboard inset avoidance, context menu clipboard copy, and poll finalization dialogs.
+
 
 
 

@@ -158,7 +158,7 @@ class PollCard extends StatelessWidget {
               child: SizedBox(
                 width: double.infinity,
                 child: TextButton(
-                  onPressed: onClose,
+                  onPressed: () => _confirmClosePoll(context),
                   style: TextButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     shape: RoundedRectangleBorder(
@@ -180,6 +180,54 @@ class PollCard extends StatelessWidget {
             ),
 
           const SizedBox(height: 4),
+        ],
+      ),
+    );
+  }
+
+  void _confirmClosePoll(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Finalize & Close Poll?',
+          style: TextStyle(
+            fontFamily: 'Playfair Display',
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: const Text(
+          'Closing this poll will end voting for all travelers and finalize the winning option.',
+          style: TextStyle(
+            fontFamily: 'DM Sans',
+            fontSize: 13,
+            color: AppColors.deepEarth,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Keep Open',
+                style: TextStyle(fontFamily: 'DM Sans', color: AppColors.muted)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              onClose?.call();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text(
+              'Finalize Winner',
+              style: TextStyle(fontFamily: 'DM Sans', fontWeight: FontWeight.bold),
+            ),
+          ),
         ],
       ),
     );

@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -35,6 +34,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _scrollCtrl = ScrollController();
   bool _isSending = false;
   bool _showPinnedDrawer = true;
+  bool _showScrollToBottom = false;
+  bool _isComposing = false;
+
+  // Track resolved polls to prevent duplicate additions
+  final Set<String> _resolvedItineraryPollIds = {};
+  final Set<String> _resolvedExpensePollIds = {};
 
   @override
   void initState() {
@@ -45,22 +50,48 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         ModuleViewTrackerService.instance.markViewed('chat', tripId);
       }
     });
+
+    _scrollCtrl.addListener(_onScrollChanged);
+    _ctrl.addListener(_onTextChanged);
   }
 
   @override
   void dispose() {
+    _scrollCtrl.removeListener(_onScrollChanged);
+    _ctrl.removeListener(_onTextChanged);
     _ctrl.dispose();
     _scrollCtrl.dispose();
     super.dispose();
   }
 
-  void _scrollToBottom() {
+  void _onScrollChanged() {
+    if (!_scrollCtrl.hasClients) return;
+    final maxScroll = _scrollCtrl.position.maxScrollExtent;
+    final currentOffset = _scrollCtrl.offset;
+    final distanceFromBottom = maxScroll - currentOffset;
+    final shouldShow = distanceFromBottom > 240;
+    if (shouldShow != _showScrollToBottom) {
+      setState(() => _showScrollToBottom = shouldShow);
+    }
+  }
+
+  void _onTextChanged() {
+    final hasText = _ctrl.text.trim().isNotEmpty;
+    if (hasText != _isComposing) {
+      setState(() => _isComposing = hasText);
+    }
+  }
+
+  void _scrollToBottom({bool force = false}) {
+    // Only auto-scroll if the user is already near the bottom or force is true
+    if (!force && _showScrollToBottom) return;
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollCtrl.hasClients) {
         _scrollCtrl.animateTo(
           _scrollCtrl.position.maxScrollExtent,
           duration: const Duration(milliseconds: 280),
-          curve: Curves.easeOut,
+          curve: Curves.easeOutCubic,
         );
       }
     });
@@ -76,17 +107,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             hideSurname: profile.hideSurname)
         : 'Anonymous';
 
+    HapticFeedback.lightImpact();
     setState(() => _isSending = true);
     _ctrl.clear();
 
     await ref.read(chatProvider.notifier).sendMessage(text, senderName);
 
     if (mounted) setState(() => _isSending = false);
-    _scrollToBottom();
+    _scrollToBottom(force: true);
   }
 
   Future<void> _sendQuickTravelMessage(String text) async {
-    HapticFeedback.lightImpact();
+    HapticFeedback.mediumImpact();
     final profile = ref.read(profileProvider);
     final senderName = profile.effectiveName.isNotEmpty
         ? MemberModel.formatDisplayName(profile.effectiveName,
@@ -96,7 +128,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     await ref
         .read(chatProvider.notifier)
         .sendQuickTravel(text, senderName);
-    _scrollToBottom();
+    _scrollToBottom(force: true);
   }
 
   void _openCreatePoll() {
@@ -122,13 +154,135 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               creatorName: creatorName,
               allowMultiple: allowMultiple,
             );
-        _scrollToBottom();
+        _scrollToBottom(force: true);
       },
+    );
+  }
+
+  void _openAttachmentMenu() {
+    HapticFeedback.lightImpact();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _AttachmentActionSheet(
+        onCreatePoll: () {
+          Navigator.pop(ctx);
+          _openCreatePoll();
+        },
+        onSelectQuickPreset: (text) {
+          Navigator.pop(ctx);
+          _sendQuickTravelMessage(text);
+        },
+      ),
+    );
+  }
+
+  void _showTripInfoModal(String tripTitle, int memberCount, dynamic trip) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => _TripInfoSheet(
+        tripTitle: tripTitle,
+        memberCount: memberCount,
+        trip: trip,
+      ),
+    );
+  }
+
+  void _showPinnedMessagesModal(List<ChatMessage> pinnedMessages, bool isOrganizer) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => _PinnedMessagesSheet(
+        messages: pinnedMessages,
+        isOrganizer: isOrganizer,
+        onUnpin: (id) {
+          ref.read(chatProvider.notifier).togglePin(id, false);
+          Navigator.pop(ctx);
+        },
+      ),
+    );
+  }
+
+  void _showMessageActionsModal(ChatMessage msg, bool isOrganizer, String currentUserId) {
+    HapticFeedback.mediumImpact();
+    final isMe = msg.isMe || msg.userId == currentUserId;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _MessageActionSheet(
+        message: msg,
+        isMe: isMe,
+        canPin: isOrganizer || isMe,
+        onCopy: () {
+          Clipboard.setData(ClipboardData(text: msg.text));
+          HapticFeedback.selectionClick();
+          Navigator.pop(ctx);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+                  SizedBox(width: 8),
+                  Text('Message copied to clipboard'),
+                ],
+              ),
+              backgroundColor: AppColors.deepEarth,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        },
+        onTogglePin: () {
+          Navigator.pop(ctx);
+          ref.read(chatProvider.notifier).togglePin(msg.id, !msg.isPinned);
+        },
+        onDelete: isMe
+            ? () {
+                Navigator.pop(ctx);
+                _confirmDeleteMessage(msg.id);
+              }
+            : null,
+      ),
+    );
+  }
+
+  void _confirmDeleteMessage(String messageId) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Delete Message?',
+            style: TextStyle(fontFamily: 'Playfair Display', fontWeight: FontWeight.bold)),
+        content: const Text('This will delete this message for everyone in the group chat.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.muted)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              ref.read(chatProvider.notifier).deleteMessage(messageId);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
     );
   }
 
   // ── Convert Winning Poll to Itinerary Stop ────────────────────────
   Future<void> _handleWinnerToItinerary(TripPoll poll, PollOption winner) async {
+    if (_resolvedItineraryPollIds.contains(poll.id)) return;
+
     final trip = await ref.read(activeTripProvider.future);
     if (trip == null) return;
 
@@ -163,6 +317,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
     await itineraryRepo.saveItineraryDay(trip.id, updatedDay);
 
+    setState(() {
+      _resolvedItineraryPollIds.add(poll.id);
+    });
+
     // Send an automated notification message to chat
     final profile = ref.read(profileProvider);
     final senderName = profile.effectiveName.isNotEmpty
@@ -187,6 +345,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   // ── Convert Winning Poll to Expense Draft ─────────────────────────
   Future<void> _handleWinnerToExpense(TripPoll poll, PollOption winner) async {
+    if (_resolvedExpensePollIds.contains(poll.id)) return;
+
     final trip = await ref.read(activeTripProvider.future);
     if (trip == null) return;
 
@@ -210,6 +370,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
 
     await expenseRepo.addExpense(trip.id, newExpense);
+
+    setState(() {
+      _resolvedExpensePollIds.add(poll.id);
+    });
 
     final profile = ref.read(profileProvider);
     final senderName = profile.effectiveName.isNotEmpty
@@ -241,9 +405,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final pinnedMessages = ref.watch(pinnedMessagesProvider);
     final profile = ref.watch(profileProvider);
 
-    // Auto-scroll when new messages arrive
+    // Auto-scroll when new messages arrive (only if already near bottom)
     ref.listen<AsyncValue<List<ChatMessage>>>(chatProvider, (_, next) {
-      if (next.hasValue) _scrollToBottom();
+      if (next.hasValue) _scrollToBottom(force: false);
     });
 
     final currentUserId = ref.watch(authRepositoryProvider).currentUser?.id ?? '';
@@ -253,7 +417,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         (currentMember?.isTripCreator(trip?.ownerId ?? '') ?? false);
 
     return Scaffold(
-      backgroundColor: AppColors.deepEarth,
+      backgroundColor: AppColors.surfaceLight,
+      resizeToAvoidBottomInset: true,
       body: Column(
         children: [
           // ── Header ──────────────────────────────────────────────
@@ -262,139 +427,167 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             tripTitle: trip?.name ?? 'Group Chat',
             tripId: tripId,
             memberCount: trip?.members.length ?? 0,
+            pinnedCount: pinnedMessages.length,
+            onTapPinned: () {
+              if (pinnedMessages.isNotEmpty) {
+                _showPinnedMessagesModal(pinnedMessages, isOrganizer);
+              }
+            },
+            onTapInfo: () {
+              _showTripInfoModal(trip?.name ?? 'Trip', trip?.members.length ?? 0, trip);
+            },
           ),
 
-          // ── Pinned Announcements Drawer ──────────────────────────
+          // ── Pinned Announcements Top Banner ──────────────────────
           if (pinnedMessages.isNotEmpty && _showPinnedDrawer)
-            _PinnedAnnouncementDrawer(
+            _PinnedAnnouncementBanner(
               messages: pinnedMessages,
               onDismiss: () => setState(() => _showPinnedDrawer = false),
+              onTapBanner: () => _showPinnedMessagesModal(pinnedMessages, isOrganizer),
               onUnpin: (msgId) =>
                   ref.read(chatProvider.notifier).togglePin(msgId, false),
             ),
 
           // ── Message & Poll Stream ────────────────────────────────
           Expanded(
-            child: Container(
-              color: AppColors.surfaceLight,
-              child: chatAsync.when(
-                loading: () => const Center(
-                  child: CircularProgressIndicator(color: AppColors.primary),
-                ),
-                error: (e, _) => Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.wifi_off_rounded,
-                            color: AppColors.warmMuted, size: 40),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Unable to load messages.\nSign in to access group chat.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontFamily: 'DM Sans',
-                            fontSize: 14,
-                            color: AppColors.warmMuted.withValues(alpha: 0.8),
-                          ),
-                        ),
-                      ],
+            child: Stack(
+              children: [
+                Container(
+                  color: AppColors.surfaceLight,
+                  child: chatAsync.when(
+                    loading: () => const Center(
+                      child: CircularProgressIndicator(color: AppColors.primary),
                     ),
-                  ),
-                ),
-                data: (messages) {
-                  final polls = pollsAsync.value ?? [];
+                    error: (e, _) => Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.wifi_off_rounded,
+                                color: AppColors.warmMuted, size: 40),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Unable to load messages.\nSign in to access group chat.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontFamily: 'DM Sans',
+                                fontSize: 14,
+                                color: AppColors.warmMuted.withValues(alpha: 0.8),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    data: (messages) {
+                      final polls = pollsAsync.value ?? [];
 
-                  if (messages.isEmpty && polls.isEmpty) {
-                    return _EmptyChat(
-                      tripId: tripId,
-                      onCreatePoll: _openCreatePoll,
-                    );
-                  }
+                      if (messages.isEmpty && polls.isEmpty) {
+                        return _EmptyChat(
+                          tripId: tripId,
+                          onCreatePoll: _openCreatePoll,
+                          onQuickStart: _sendQuickTravelMessage,
+                        );
+                      }
 
-                  return ListView.builder(
-                    controller: _scrollCtrl,
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                    itemCount: messages.length,
-                    itemBuilder: (_, i) {
-                      final msg = messages[i];
-                      final showDate = i == 0 ||
-                          !_isSameDay(messages[i - 1].createdAt, msg.createdAt);
+                      return ListView.builder(
+                        controller: _scrollCtrl,
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                        itemCount: messages.length,
+                        itemBuilder: (_, i) {
+                          final msg = messages[i];
+                          final prevMsg = i > 0 ? messages[i - 1] : null;
 
-                      // If message has an associated poll, render PollCard
-                      if (msg.pollId != null) {
-                        final poll = polls.where((p) => p.id == msg.pollId).firstOrNull;
-                        if (poll != null) {
+                          final showDate = i == 0 ||
+                              !_isSameDay(prevMsg!.createdAt, msg.createdAt);
+
+                          // Consecutive check: same sender within 2 minutes on the same day
+                          final isConsecutive = prevMsg != null &&
+                              !showDate &&
+                              (prevMsg.userId == msg.userId || prevMsg.senderName == msg.senderName) &&
+                              msg.createdAt.difference(prevMsg.createdAt).inMinutes < 2;
+
+                          // If message has an associated poll, render PollCard
+                          if (msg.pollId != null) {
+                            final poll = polls.where((p) => p.id == msg.pollId).firstOrNull;
+                            if (poll != null) {
+                              return Column(
+                                children: [
+                                  if (showDate) _dateDivider(msg.createdAt),
+                                  PollCard(
+                                    poll: poll,
+                                    currentUserId: currentUserId,
+                                    isOrganizer: isOrganizer,
+                                    onVote: (optionId) {
+                                      final voterName = profile.effectiveName.isNotEmpty
+                                          ? MemberModel.formatDisplayName(
+                                              profile.effectiveName,
+                                              hideSurname: profile.hideSurname)
+                                          : 'Anonymous';
+
+                                      ref.read(pollsProvider.notifier).toggleVote(
+                                            poll: poll,
+                                            optionId: optionId,
+                                            currentUserId: currentUserId,
+                                            voterName: voterName,
+                                          );
+                                    },
+                                    onClose: () => ref
+                                        .read(pollsProvider.notifier)
+                                        .closePoll(poll.id),
+                                    onAddToItinerary: () {
+                                      final winner = poll.winnerOption;
+                                      if (winner != null) {
+                                        _handleWinnerToItinerary(poll, winner);
+                                      }
+                                    },
+                                    onAddToExpenses: () {
+                                      final winner = poll.winnerOption;
+                                      if (winner != null) {
+                                        _handleWinnerToExpense(poll, winner);
+                                      }
+                                    },
+                                  ),
+                                ],
+                              );
+                            }
+                          }
+
                           return Column(
                             children: [
                               if (showDate) _dateDivider(msg.createdAt),
-                              PollCard(
-                                poll: poll,
-                                currentUserId: currentUserId,
-                                isOrganizer: isOrganizer,
-                                onVote: (optionId) {
-                                  final voterName = profile.effectiveName.isNotEmpty
-                                      ? MemberModel.formatDisplayName(
-                                          profile.effectiveName,
-                                          hideSurname: profile.hideSurname)
-                                      : 'Anonymous';
-
-                                  ref.read(pollsProvider.notifier).toggleVote(
-                                        poll: poll,
-                                        optionId: optionId,
-                                        currentUserId: currentUserId,
-                                        voterName: voterName,
-                                      );
-                                },
-                                onClose: () => ref
-                                    .read(pollsProvider.notifier)
-                                    .closePoll(poll.id),
-                                onAddToItinerary: () {
-                                  final winner = poll.winnerOption;
-                                  if (winner != null) {
-                                    _handleWinnerToItinerary(poll, winner);
-                                  }
-                                },
-                                onAddToExpenses: () {
-                                  final winner = poll.winnerOption;
-                                  if (winner != null) {
-                                    _handleWinnerToExpense(poll, winner);
-                                  }
-                                },
-                              ),
+                              msg.isMe
+                                  ? _MyBubble(
+                                      msg: msg,
+                                      isConsecutive: isConsecutive,
+                                      onTapActions: () => _showMessageActionsModal(
+                                          msg, isOrganizer, currentUserId),
+                                    )
+                                  : _TheirBubble(
+                                      msg: msg,
+                                      isConsecutive: isConsecutive,
+                                      onTapActions: () => _showMessageActionsModal(
+                                          msg, isOrganizer, currentUserId),
+                                    ),
                             ],
                           );
-                        }
-                      }
-
-                      return Column(
-                        children: [
-                          if (showDate) _dateDivider(msg.createdAt),
-                          msg.isMe
-                              ? _MyBubble(
-                                  msg: msg,
-                                  onDelete: () => ref
-                                      .read(chatProvider.notifier)
-                                      .deleteMessage(msg.id),
-                                  onTogglePin: () => ref
-                                      .read(chatProvider.notifier)
-                                      .togglePin(msg.id, !msg.isPinned),
-                                )
-                              : _TheirBubble(
-                                  msg: msg,
-                                  onTogglePin: isOrganizer
-                                      ? () => ref
-                                          .read(chatProvider.notifier)
-                                          .togglePin(msg.id, !msg.isPinned)
-                                      : null,
-                                ),
-                        ],
+                        },
                       );
                     },
-                  );
-                },
-              ),
+                  ),
+                ),
+
+                // ── Floating Scroll-to-Bottom Button ────────────────
+                if (_showScrollToBottom)
+                  Positioned(
+                    right: 16,
+                    bottom: 16,
+                    child: _ScrollToBottomButton(
+                      onTap: () => _scrollToBottom(force: true),
+                    ),
+                  ),
+              ],
             ),
           ),
 
@@ -408,9 +601,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           _InputBar(
             controller: _ctrl,
             isSending: _isSending,
+            isComposing: _isComposing,
             isOffline: tripId == null,
             onSend: _sendMessage,
-            onCreatePoll: _openCreatePoll,
+            onOpenAttachment: _openAttachmentMenu,
           ),
         ],
       ),
@@ -420,30 +614,55 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   bool _isSameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
 
-  Widget _dateDivider(DateTime dt) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Row(
-          children: [
-            const Expanded(child: Divider(color: AppColors.dividerLight)),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Text(
-                _isToday(dt) ? 'Today' : DateFormat('MMM d').format(dt),
-                style: const TextStyle(
-                  fontFamily: 'DM Sans',
-                  fontSize: 11,
-                  color: AppColors.muted,
-                ),
-              ),
-            ),
-            const Expanded(child: Divider(color: AppColors.dividerLight)),
-          ],
-        ),
-      );
+  bool _isYesterday(DateTime dt) {
+    final yesterday = DateTime.now().subtract(const Duration(days: 1));
+    return dt.year == yesterday.year &&
+        dt.month == yesterday.month &&
+        dt.day == yesterday.day;
+  }
 
   bool _isToday(DateTime dt) {
     final now = DateTime.now();
     return dt.year == now.year && dt.month == now.month && dt.day == now.day;
+  }
+
+  Widget _dateDivider(DateTime dt) {
+    final text = _isToday(dt)
+        ? 'Today'
+        : (_isYesterday(dt) ? 'Yesterday' : DateFormat('EEE, MMM d').format(dt));
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+          decoration: BoxDecoration(
+            color: AppColors.sand,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: AppColors.primaryLight.withValues(alpha: 0.35),
+            ),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0A000000),
+                blurRadius: 4,
+                offset: Offset(0, 1),
+              ),
+            ],
+          ),
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontFamily: 'DM Sans',
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: AppColors.darkAccent,
+              letterSpacing: 0.3,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -454,157 +673,307 @@ class _ChatHeader extends StatelessWidget {
   final String tripTitle;
   final String? tripId;
   final int memberCount;
+  final int pinnedCount;
+  final VoidCallback onTapPinned;
+  final VoidCallback onTapInfo;
 
   const _ChatHeader({
     required this.showHeader,
     required this.tripTitle,
     required this.tripId,
     required this.memberCount,
+    required this.pinnedCount,
+    required this.onTapPinned,
+    required this.onTapInfo,
   });
 
   @override
   Widget build(BuildContext context) {
+    final topPadding = MediaQuery.paddingOf(context).top;
+
     return Container(
-      padding: EdgeInsets.fromLTRB(20, showHeader ? 54 : 16, 20, 16),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        showHeader ? (topPadding + 10) : 16,
+        16,
+        14,
+      ),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFF1A0A04), AppColors.deepEarth],
+          colors: [Color(0xFF190903), AppColors.deepEarth],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Color(0x2A000000),
+            blurRadius: 8,
+            offset: Offset(0, 3),
+          ),
+        ],
       ),
       child: Row(
         children: [
           if (Navigator.canPop(context)) ...[
             const AppBackButton(variant: AppBackButtonVariant.glass),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
           ],
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.15),
-              shape: BoxShape.circle,
+          GestureDetector(
+            onTap: onTapInfo,
+            child: Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [AppColors.primary, Color(0xFFE56338)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x33D85A30),
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: const Icon(Icons.groups_rounded, color: Colors.white, size: 22),
             ),
-            child: const Icon(Icons.forum_rounded, color: AppColors.primaryLight, size: 20),
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  tripTitle,
-                  style: const TextStyle(
-                    fontFamily: 'Playfair Display',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
+            child: GestureDetector(
+              onTap: onTapInfo,
+              behavior: HitTestBehavior.opaque,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          tripTitle,
+                          style: const TextStyle(
+                            fontFamily: 'Playfair Display',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Icon(Icons.chevron_right_rounded,
+                          size: 16, color: Colors.white60),
+                    ],
                   ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  tripId != null
-                      ? 'Live Chat & Polls  ·  $memberCount members'
-                      : 'Select a trip to start chatting',
-                  style: const TextStyle(
-                    fontFamily: 'DM Sans',
-                    fontSize: 11,
-                    color: Colors.white60,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (tripId != null)
-            Container(
-              width: 8,
-              height: 8,
-              decoration: const BoxDecoration(
-                color: AppColors.greenBright,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Color(0x6610B981),
-                    blurRadius: 6,
-                    spreadRadius: 2,
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      if (tripId != null) ...[
+                        Container(
+                          width: 7,
+                          height: 7,
+                          decoration: const BoxDecoration(
+                            color: AppColors.greenBright,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Color(0x6610B981),
+                                blurRadius: 4,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                      ],
+                      Expanded(
+                        child: Text(
+                          tripId != null
+                              ? '$memberCount travelers  ·  Live Chat & Polls'
+                              : 'Select a trip to start chatting',
+                          style: const TextStyle(
+                            fontFamily: 'DM Sans',
+                            fontSize: 11,
+                            color: Colors.white70,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
+          ),
+          const SizedBox(width: 6),
+
+          // Pinned messages button with badge
+          if (pinnedCount > 0)
+            GestureDetector(
+              onTap: onTapPinned,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+                margin: const EdgeInsets.only(right: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.sand.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.primaryLight.withValues(alpha: 0.4),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.push_pin_rounded,
+                        color: AppColors.primaryLight, size: 14),
+                    const SizedBox(width: 4),
+                    Text(
+                      '$pinnedCount',
+                      style: const TextStyle(
+                        fontFamily: 'DM Sans',
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+          // Info icon button
+          IconButton(
+            icon: const Icon(Icons.info_outline_rounded,
+                color: Colors.white70, size: 20),
+            onPressed: onTapInfo,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          ),
         ],
       ),
     );
   }
 }
 
-// ── Pinned Announcement Drawer ─────────────────────────────────────────────────
+// ── Pinned Announcement Top Banner ─────────────────────────────────────────────
 
-class _PinnedAnnouncementDrawer extends StatelessWidget {
+class _PinnedAnnouncementBanner extends StatelessWidget {
   final List<ChatMessage> messages;
   final VoidCallback onDismiss;
+  final VoidCallback onTapBanner;
   final ValueChanged<String> onUnpin;
 
-  const _PinnedAnnouncementDrawer({
+  const _PinnedAnnouncementBanner({
     required this.messages,
     required this.onDismiss,
+    required this.onTapBanner,
     required this.onUnpin,
   });
 
   @override
   Widget build(BuildContext context) {
-    final pinned = messages.first; // show most recent pinned
+    final pinned = messages.first;
 
     return Container(
       width: double.infinity,
-      color: AppColors.deepEarth,
-      padding: const EdgeInsets.fromLTRB(16, 8, 12, 10),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: AppColors.sand,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.6)),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.push_pin_rounded, color: AppColors.primary, size: 18),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'PINNED ANNOUNCEMENT · ${pinned.senderName}',
-                    style: const TextStyle(
-                      fontFamily: 'DM Sans',
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.darkAccent,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  Text(
-                    pinned.text,
-                    style: const TextStyle(
-                      fontFamily: 'DM Sans',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.deepEarth,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+      color: const Color(0xFF22130D),
+      padding: const EdgeInsets.fromLTRB(16, 6, 12, 8),
+      child: GestureDetector(
+        onTap: onTapBanner,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: AppColors.sand,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: AppColors.primaryLight.withValues(alpha: 0.6),
+            ),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x10000000),
+                blurRadius: 4,
+                offset: Offset(0, 2),
               ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.close_rounded, size: 18, color: AppColors.deepEarth),
-              onPressed: onDismiss,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-            ),
-          ],
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(5),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.push_pin_rounded,
+                    color: AppColors.primary, size: 14),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'PINNED ANNOUNCEMENT · ${pinned.senderName}',
+                          style: const TextStyle(
+                            fontFamily: 'DM Sans',
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.darkAccent,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        if (messages.length > 1) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              '+${messages.length - 1} more',
+                              style: const TextStyle(
+                                fontFamily: 'DM Sans',
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      pinned.text,
+                      style: const TextStyle(
+                        fontFamily: 'DM Sans',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.deepEarth,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close_rounded,
+                    size: 16, color: AppColors.deepEarth),
+                onPressed: onDismiss,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -626,7 +995,7 @@ class _QuickActionChips extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(14, 8, 14, 4),
+      padding: const EdgeInsets.fromLTRB(14, 8, 14, 6),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
@@ -635,15 +1004,15 @@ class _QuickActionChips extends StatelessWidget {
             GestureDetector(
               onTap: onCreatePoll,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [AppColors.primary, Color(0xFFE6683E)],
+                    colors: [AppColors.primary, Color(0xFFE56338)],
                   ),
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: const [
                     BoxShadow(
-                      color: Color(0x33D85A30),
+                      color: Color(0x2ADB5A30),
                       blurRadius: 6,
                       offset: Offset(0, 2),
                     ),
@@ -670,18 +1039,33 @@ class _QuickActionChips extends StatelessWidget {
 
             // Quick travel presets
             _QuickChip(
-              text: '⏰ Running 10 mins late!',
+              emoji: '⏰',
+              text: 'Running 10m late',
               onTap: () => onQuickMessage('⏰ Running 10 mins late! Meet you at the lobby.'),
             ),
             const SizedBox(width: 8),
             _QuickChip(
-              text: '📍 Arrived at meeting spot',
+              emoji: '📍',
+              text: 'At meeting spot',
               onTap: () => onQuickMessage('📍 Arrived at the meeting spot! Where are you guys?'),
             ),
             const SizedBox(width: 8),
             _QuickChip(
-              text: '🍽️ Where are we eating?',
+              emoji: '🍽️',
+              text: 'Where to eat?',
               onTap: () => onQuickMessage('🍽️ Anyone hungry? Where are we eating next?'),
+            ),
+            const SizedBox(width: 8),
+            _QuickChip(
+              emoji: '💸',
+              text: 'Split bills',
+              onTap: () => onQuickMessage('💸 Friendly reminder: please upload expenses to the Budget tab!'),
+            ),
+            const SizedBox(width: 8),
+            _QuickChip(
+              emoji: '🏄',
+              text: 'Ready for next stop',
+              onTap: () => onQuickMessage('🏄 All packed and ready for our next excursion!'),
             ),
           ],
         ),
@@ -691,30 +1075,42 @@ class _QuickActionChips extends StatelessWidget {
 }
 
 class _QuickChip extends StatelessWidget {
+  final String emoji;
   final String text;
   final VoidCallback onTap;
 
-  const _QuickChip({required this.text, required this.onTap});
+  const _QuickChip({
+    required this.emoji,
+    required this.text,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
         decoration: BoxDecoration(
           color: AppColors.surfaceLight,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: AppColors.cardBorder),
         ),
-        child: Text(
-          text,
-          style: const TextStyle(
-            fontFamily: 'DM Sans',
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: AppColors.deepEarth,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 12)),
+            const SizedBox(width: 5),
+            Text(
+              text,
+              style: const TextStyle(
+                fontFamily: 'DM Sans',
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: AppColors.deepEarth,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -726,63 +1122,93 @@ class _QuickChip extends StatelessWidget {
 class _InputBar extends StatelessWidget {
   final TextEditingController controller;
   final bool isSending;
+  final bool isComposing;
   final bool isOffline;
   final VoidCallback onSend;
-  final VoidCallback onCreatePoll;
+  final VoidCallback onOpenAttachment;
 
   const _InputBar({
     required this.controller,
     required this.isSending,
+    required this.isComposing,
     required this.isOffline,
     required this.onSend,
-    required this.onCreatePoll,
+    required this.onOpenAttachment,
   });
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final bottomPadding = MediaQuery.paddingOf(context).bottom;
+
+    // Fix double-padding: Scaffold already handles viewInsets when resizeToAvoidBottomInset is true
+    final effectiveBottom = bottomInset > 0 ? 8.0 : (bottomPadding > 0 ? bottomPadding : 8.0);
 
     return Container(
-      color: Colors.white,
-      padding: EdgeInsets.fromLTRB(12, 6, 12, 8 + math.max(bottomInset, bottomPadding)),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(color: AppColors.dividerLight),
+        ),
+      ),
+      padding: EdgeInsets.fromLTRB(12, 8, 12, effectiveBottom),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          // Attachment / Poll icon button
-          GestureDetector(
-            onTap: isOffline ? null : onCreatePoll,
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: AppColors.sand,
-                borderRadius: BorderRadius.circular(20),
+          // Attachment / Quick action button
+          Padding(
+            padding: const EdgeInsets.only(bottom: 2),
+            child: GestureDetector(
+              onTap: isOffline ? null : onOpenAttachment,
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.sand,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: AppColors.primaryLight.withValues(alpha: 0.4),
+                  ),
+                ),
+                child: const Icon(
+                  Icons.add_rounded,
+                  color: AppColors.primary,
+                  size: 24,
+                ),
               ),
-              child: const Icon(Icons.add_rounded,
-                  color: AppColors.primary, size: 24),
             ),
           ),
           const SizedBox(width: 8),
 
-          // Text field
+          // Multi-line expandable text field
           Expanded(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              constraints: const BoxConstraints(
+                minHeight: 40,
+                maxHeight: 120,
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               decoration: BoxDecoration(
                 color: AppColors.surfaceLight,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: AppColors.cardBorder),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(
+                  color: isComposing
+                      ? AppColors.primary.withValues(alpha: 0.6)
+                      : AppColors.cardBorder,
+                ),
               ),
               child: TextField(
                 controller: controller,
                 enabled: !isOffline,
+                minLines: 1,
+                maxLines: 4,
+                keyboardType: TextInputType.multiline,
                 style: const TextStyle(
                   fontFamily: 'DM Sans',
                   fontSize: 14,
                   color: AppColors.deepEarth,
                 ),
-                textInputAction: TextInputAction.send,
-                onSubmitted: (_) => onSend(),
+                textInputAction: TextInputAction.newline,
                 decoration: InputDecoration(
                   hintText: isOffline
                       ? 'Select a trip to chat...'
@@ -793,40 +1219,57 @@ class _InputBar extends StatelessWidget {
                     fontSize: 13,
                   ),
                   border: InputBorder.none,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
                 ),
               ),
             ),
           ),
           const SizedBox(width: 8),
 
-          // Send button
-          GestureDetector(
-            onTap: (isOffline || isSending) ? null : onSend,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: (isOffline || isSending)
-                    ? AppColors.warmMuted
-                    : AppColors.primary,
-                shape: BoxShape.circle,
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x33D85A30),
-                    blurRadius: 6,
-                    offset: Offset(0, 2),
-                  ),
-                ],
+          // Dynamic Send Button
+          Padding(
+            padding: const EdgeInsets.only(bottom: 2),
+            child: GestureDetector(
+              onTap: (isOffline || isSending || !isComposing) ? null : onSend,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  gradient: (isOffline || isSending || !isComposing)
+                      ? null
+                      : const LinearGradient(
+                          colors: [AppColors.primary, Color(0xFFE56338)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                  color: (isOffline || isSending || !isComposing)
+                      ? AppColors.cardBorder
+                      : null,
+                  shape: BoxShape.circle,
+                  boxShadow: isComposing
+                      ? const [
+                          BoxShadow(
+                            color: Color(0x33D85A30),
+                            blurRadius: 6,
+                            offset: Offset(0, 2),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: isSending
+                    ? const Padding(
+                        padding: EdgeInsets.all(11),
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white),
+                      )
+                    : Icon(
+                        Icons.arrow_upward_rounded,
+                        color: isComposing ? Colors.white : AppColors.muted,
+                        size: 20,
+                      ),
               ),
-              child: isSending
-                  ? const Padding(
-                      padding: EdgeInsets.all(12),
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
-                    )
-                  : const Icon(Icons.send_rounded,
-                      color: Colors.white, size: 18),
             ),
           ),
         ],
@@ -839,156 +1282,154 @@ class _InputBar extends StatelessWidget {
 
 class _MyBubble extends StatelessWidget {
   final ChatMessage msg;
-  final VoidCallback onDelete;
-  final VoidCallback onTogglePin;
+  final bool isConsecutive;
+  final VoidCallback onTapActions;
 
   const _MyBubble({
     required this.msg,
-    required this.onDelete,
-    required this.onTogglePin,
+    required this.isConsecutive,
+    required this.onTapActions,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isQuickTravel = msg.messageType == ChatMessageType.quickTravel;
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8, left: 48),
+      padding: EdgeInsets.only(
+        bottom: isConsecutive ? 3 : 8,
+        left: 48,
+      ),
       child: GestureDetector(
-        onLongPress: () => _showActionsSheet(context),
+        onLongPress: onTapActions,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.end,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [AppColors.primary, Color(0xFFE6683E)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(16),
-                      topRight: Radius.circular(16),
-                      bottomLeft: Radius.circular(16),
-                      bottomRight: Radius.circular(4),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Color(0x22D85A30),
-                        blurRadius: 6,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      if (msg.isPinned)
-                        const Padding(
-                          padding: EdgeInsets.only(bottom: 4),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.push_pin_rounded,
-                                  size: 12, color: Colors.white70),
-                              SizedBox(width: 4),
-                              Text(
-                                'Pinned',
-                                style: TextStyle(
-                                  fontFamily: 'DM Sans',
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white70,
-                                ),
-                              ),
-                            ],
-                          ),
+            Flexible(
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
+                decoration: BoxDecoration(
+                  gradient: isQuickTravel
+                      ? const LinearGradient(
+                          colors: [Color(0xFFE65100), AppColors.primary],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        )
+                      : const LinearGradient(
+                          colors: [AppColors.primary, Color(0xFFE56338)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
-                      Text(
-                        msg.text,
-                        style: const TextStyle(
-                          fontFamily: 'DM Sans',
-                          fontSize: 13,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
+                  borderRadius: BorderRadius.only(
+                    topLeft: const Radius.circular(16),
+                    topRight: isConsecutive ? const Radius.circular(6) : const Radius.circular(16),
+                    bottomLeft: const Radius.circular(16),
+                    bottomRight: const Radius.circular(4),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (msg.isPending)
-                      const Padding(
-                        padding: EdgeInsets.only(right: 4),
-                        child: Icon(Icons.access_time_rounded,
-                            size: 10, color: AppColors.muted),
-                      ),
-                    Text(
-                      _formatTime(msg.createdAt),
-                      style: const TextStyle(
-                        fontFamily: 'DM Sans',
-                        fontSize: 10,
-                        color: AppColors.muted,
-                      ),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x22D85A30),
+                      blurRadius: 6,
+                      offset: Offset(0, 2),
                     ),
                   ],
                 ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Pinned badge
+                    if (msg.isPinned)
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.black26,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.push_pin_rounded, size: 11, color: Colors.white),
+                            SizedBox(width: 4),
+                            Text(
+                              'Pinned',
+                              style: TextStyle(
+                                fontFamily: 'DM Sans',
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
 
-  void _showActionsSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: Icon(
-                msg.isPinned ? Icons.push_pin_outlined : Icons.push_pin_rounded,
-                color: AppColors.primary,
-              ),
-              title: Text(
-                msg.isPinned ? 'Unpin message' : 'Pin message as announcement',
-                style: const TextStyle(
-                  fontFamily: 'DM Sans',
-                  fontWeight: FontWeight.w600,
+                    // Quick travel badge
+                    if (isQuickTravel)
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.near_me_rounded, size: 11, color: Colors.white),
+                            SizedBox(width: 4),
+                            Text(
+                              'TRAVEL ALERT',
+                              style: TextStyle(
+                                fontFamily: 'DM Sans',
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                letterSpacing: 0.4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                    // Message text
+                    Text(
+                      msg.text,
+                      style: const TextStyle(
+                        fontFamily: 'DM Sans',
+                        fontSize: 14,
+                        color: Colors.white,
+                        height: 1.35,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+
+                    // Timestamp and delivery status integrated neatly
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _formatTime(msg.createdAt),
+                          style: TextStyle(
+                            fontFamily: 'DM Sans',
+                            fontSize: 10,
+                            color: Colors.white.withValues(alpha: 0.8),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        if (msg.isPending)
+                          const Icon(Icons.schedule_rounded,
+                              size: 11, color: Colors.white70)
+                        else
+                          const Icon(Icons.done_all_rounded,
+                              size: 12, color: Colors.white),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-              onTap: () {
-                Navigator.pop(context);
-                onTogglePin();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete_outline_rounded,
-                  color: Color(0xFFEF4444)),
-              title: const Text(
-                'Delete message',
-                style: TextStyle(
-                  fontFamily: 'DM Sans',
-                  color: Color(0xFFEF4444),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                onDelete();
-              },
             ),
           ],
         ),
@@ -1001,78 +1442,123 @@ class _MyBubble extends StatelessWidget {
 
 class _TheirBubble extends StatelessWidget {
   final ChatMessage msg;
-  final VoidCallback? onTogglePin;
+  final bool isConsecutive;
+  final VoidCallback onTapActions;
 
-  const _TheirBubble({required this.msg, this.onTogglePin});
+  const _TheirBubble({
+    required this.msg,
+    required this.isConsecutive,
+    required this.onTapActions,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final isQuickTravel = msg.messageType == ChatMessageType.quickTravel;
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8, right: 48),
+      padding: EdgeInsets.only(
+        bottom: isConsecutive ? 3 : 8,
+        right: 48,
+      ),
       child: GestureDetector(
-        onLongPress: onTogglePin != null
-            ? () => _showActionsSheet(context)
-            : null,
+        onLongPress: onTapActions,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            // Avatar with initials
-            Container(
-              width: 32,
-              height: 32,
-              decoration: const BoxDecoration(
-                color: AppColors.deepEarth,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Text(
-                  msg.initials,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+            // Sender Avatar (hidden if consecutive from same user)
+            if (!isConsecutive)
+              Container(
+                width: 32,
+                height: 32,
+                margin: const EdgeInsets.only(bottom: 2),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.deepEarth,
+                      Color((msg.senderName.hashCode & 0x00FFFFFF) | 0xFF000000),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    msg.initials,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
-              ),
-            ),
+              )
+            else
+              const SizedBox(width: 32),
             const SizedBox(width: 8),
+
+            // Content
             Flexible(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    msg.senderName,
-                    style: const TextStyle(
-                      fontFamily: 'DM Sans',
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.darkAccent,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(4),
-                        topRight: Radius.circular(16),
-                        bottomLeft: Radius.circular(16),
-                        bottomRight: Radius.circular(16),
+                  // Sender name (only if not consecutive)
+                  if (!isConsecutive)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4, bottom: 4),
+                      child: Text(
+                        msg.senderName,
+                        style: const TextStyle(
+                          fontFamily: 'DM Sans',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.darkAccent,
+                        ),
                       ),
-                      border: Border.all(color: AppColors.cardBorder),
+                    ),
+
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
+                    decoration: BoxDecoration(
+                      color: isQuickTravel ? const Color(0xFFFFF8F4) : Colors.white,
+                      borderRadius: BorderRadius.only(
+                        topLeft: isConsecutive ? const Radius.circular(6) : const Radius.circular(16),
+                        topRight: const Radius.circular(16),
+                        bottomLeft: const Radius.circular(4),
+                        bottomRight: const Radius.circular(16),
+                      ),
+                      border: Border.all(
+                        color: isQuickTravel
+                            ? AppColors.primaryLight
+                            : AppColors.cardBorder,
+                        width: isQuickTravel ? 1.5 : 1.0,
+                      ),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x0A000000),
+                          blurRadius: 4,
+                          offset: Offset(0, 1),
+                        ),
+                      ],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
+                        // Pinned badge
                         if (msg.isPinned)
-                          const Padding(
-                            padding: EdgeInsets.only(bottom: 4),
-                            child: Row(
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 6),
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.sand,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(Icons.push_pin_rounded,
-                                    size: 12, color: AppColors.primary),
+                                    size: 11, color: AppColors.primary),
                                 SizedBox(width: 4),
                                 Text(
                                   'Pinned',
@@ -1086,24 +1572,58 @@ class _TheirBubble extends StatelessWidget {
                               ],
                             ),
                           ),
+
+                        // Quick travel alert badge
+                        if (isQuickTravel)
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 6),
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.sand,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.near_me_rounded,
+                                    size: 11, color: AppColors.primary),
+                                SizedBox(width: 4),
+                                Text(
+                                  'TRAVEL ALERT',
+                                  style: TextStyle(
+                                    fontFamily: 'DM Sans',
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.darkAccent,
+                                    letterSpacing: 0.4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                        // Message text
                         Text(
                           msg.text,
                           style: const TextStyle(
                             fontFamily: 'DM Sans',
-                            fontSize: 13,
+                            fontSize: 14,
                             color: AppColors.deepEarth,
+                            height: 1.35,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+
+                        // Timestamp
+                        Text(
+                          _formatTime(msg.createdAt),
+                          style: const TextStyle(
+                            fontFamily: 'DM Sans',
+                            fontSize: 10,
+                            color: AppColors.muted,
                           ),
                         ),
                       ],
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    _formatTime(msg.createdAt),
-                    style: const TextStyle(
-                      fontFamily: 'DM Sans',
-                      fontSize: 10,
-                      color: AppColors.muted,
                     ),
                   ),
                 ],
@@ -1114,32 +1634,38 @@ class _TheirBubble extends StatelessWidget {
       ),
     );
   }
+}
 
-  void _showActionsSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => SafeArea(
-        child: ListTile(
-          leading: Icon(
-            msg.isPinned ? Icons.push_pin_outlined : Icons.push_pin_rounded,
-            color: AppColors.primary,
-          ),
-          title: Text(
-            msg.isPinned ? 'Unpin message' : 'Pin message as announcement',
-            style: const TextStyle(
-              fontFamily: 'DM Sans',
-              fontWeight: FontWeight.w600,
+// ── Scroll-to-Bottom Floating Button ──────────────────────────────────────────
+
+class _ScrollToBottomButton extends StatelessWidget {
+  final VoidCallback onTap;
+  const _ScrollToBottomButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
+      child: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+          border: Border.all(color: AppColors.cardBorder),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x20000000),
+              blurRadius: 8,
+              offset: Offset(0, 3),
             ),
-          ),
-          onTap: () {
-            Navigator.pop(context);
-            onTogglePin?.call();
-          },
+          ],
         ),
+        child: const Icon(Icons.arrow_downward_rounded,
+            color: AppColors.primary, size: 20),
       ),
     );
   }
@@ -1150,27 +1676,42 @@ class _TheirBubble extends StatelessWidget {
 class _EmptyChat extends StatelessWidget {
   final String? tripId;
   final VoidCallback onCreatePoll;
+  final ValueChanged<String> onQuickStart;
 
-  const _EmptyChat({required this.tripId, required this.onCreatePoll});
+  const _EmptyChat({
+    required this.tripId,
+    required this.onCreatePoll,
+    required this.onQuickStart,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(28),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 72,
-              height: 72,
+              width: 76,
+              height: 76,
               decoration: BoxDecoration(
                 color: AppColors.sand,
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.5)),
+                border: Border.all(
+                  color: AppColors.primaryLight.withValues(alpha: 0.5),
+                  width: 1.5,
+                ),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x15000000),
+                    blurRadius: 10,
+                    offset: Offset(0, 4),
+                  ),
+                ],
               ),
-              child: const Icon(Icons.chat_bubble_outline_rounded,
-                  color: AppColors.primary, size: 34),
+              child: const Icon(Icons.forum_rounded,
+                  color: AppColors.primary, size: 36),
             ),
             const SizedBox(height: 18),
             Text(
@@ -1179,7 +1720,7 @@ class _EmptyChat extends StatelessWidget {
                   : 'Select a trip to see group chat',
               style: const TextStyle(
                 fontFamily: 'Playfair Display',
-                fontSize: 18,
+                fontSize: 20,
                 fontWeight: FontWeight.w700,
                 color: AppColors.deepEarth,
               ),
@@ -1187,20 +1728,52 @@ class _EmptyChat extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               tripId != null
-                  ? 'Say hello to your travel group or create a poll to decide your next destination.'
+                  ? 'Start the conversation, coordinate meetup spots, or poll the group to decide your itinerary!'
                   : 'Join or select an active trip from the Home screen.',
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontFamily: 'DM Sans',
                 fontSize: 13,
                 color: AppColors.warmMuted,
+                height: 1.4,
               ),
             ),
             if (tripId != null) ...[
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
+              const Text(
+                'QUICK ICEBREAKERS',
+                style: TextStyle(
+                  fontFamily: 'DM Sans',
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.darkAccent,
+                  letterSpacing: 0.8,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                alignment: WrapAlignment.center,
+                children: [
+                  _IcebreakerChip(
+                    text: '👋 Say hello to everyone',
+                    onTap: () => onQuickStart('👋 Hello travel crew! So excited for our adventure together!'),
+                  ),
+                  _IcebreakerChip(
+                    text: '⏰ What time are we meeting?',
+                    onTap: () => onQuickStart('⏰ Hey guys, what time should we all meet up on Day 1?'),
+                  ),
+                  _IcebreakerChip(
+                    text: '🍽️ Who has food recommendations?',
+                    onTap: () => onQuickStart('🍽️ Anyone have restaurant or street food recommendations in mind?'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
               ElevatedButton.icon(
                 onPressed: onCreatePoll,
-                icon: const Icon(Icons.how_to_vote_rounded, size: 16),
+                icon: const Icon(Icons.how_to_vote_rounded, size: 18),
                 label: const Text('Create First Travel Poll'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
@@ -1208,11 +1781,547 @@ class _EmptyChat extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   elevation: 0,
                 ),
               ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _IcebreakerChip extends StatelessWidget {
+  final String text;
+  final VoidCallback onTap;
+
+  const _IcebreakerChip({required this.text, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return ActionChip(
+      onPressed: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: AppColors.cardBorder),
+      ),
+      label: Text(
+        text,
+        style: const TextStyle(
+          fontFamily: 'DM Sans',
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: AppColors.deepEarth,
+        ),
+      ),
+    );
+  }
+}
+
+// ── Attachment & Action Sheet ──────────────────────────────────────────────────
+
+class _AttachmentActionSheet extends StatelessWidget {
+  final VoidCallback onCreatePoll;
+  final ValueChanged<String> onSelectQuickPreset;
+
+  const _AttachmentActionSheet({
+    required this.onCreatePoll,
+    required this.onSelectQuickPreset,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+      child: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.cardBorder,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Share with Travel Group',
+              style: TextStyle(
+                fontFamily: 'Playfair Display',
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.deepEarth,
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Main Action Grid
+            Row(
+              children: [
+                Expanded(
+                  child: _MenuActionCard(
+                    icon: Icons.how_to_vote_rounded,
+                    iconBg: AppColors.sand,
+                    iconColor: AppColors.primary,
+                    title: 'Group Poll',
+                    subtitle: 'Vote on meals & stops',
+                    onTap: onCreatePoll,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _MenuActionCard(
+                    icon: Icons.access_time_rounded,
+                    iconBg: AppColors.amberBg,
+                    iconColor: AppColors.amber,
+                    title: 'Late Alert',
+                    subtitle: 'Running 10 mins late',
+                    onTap: () => onSelectQuickPreset('⏰ Running 10 mins late! Meet you at the lobby.'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _MenuActionCard(
+                    icon: Icons.place_rounded,
+                    iconBg: AppColors.greenBg,
+                    iconColor: AppColors.green,
+                    title: 'Meeting Spot',
+                    subtitle: 'I have arrived',
+                    onTap: () => onSelectQuickPreset('📍 Arrived at the meeting spot! Where are you guys?'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _MenuActionCard(
+                    icon: Icons.receipt_long_rounded,
+                    iconBg: AppColors.blueLight,
+                    iconColor: AppColors.blue,
+                    title: 'Split Bill',
+                    subtitle: 'Remind crew to log',
+                    onTap: () => onSelectQuickPreset('💸 Friendly reminder: please upload your receipts to the Budget tab for split calculations!'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MenuActionCard extends StatelessWidget {
+  final IconData icon;
+  final Color iconBg;
+  final Color iconColor;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _MenuActionCard({
+    required this.icon,
+    required this.iconBg,
+    required this.iconColor,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceLight,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.cardBorder),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: iconBg,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: iconColor, size: 20),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              title,
+              style: const TextStyle(
+                fontFamily: 'DM Sans',
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: AppColors.deepEarth,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              subtitle,
+              style: const TextStyle(
+                fontFamily: 'DM Sans',
+                fontSize: 11,
+                color: AppColors.muted,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Message Context Action Sheet ───────────────────────────────────────────────
+
+class _MessageActionSheet extends StatelessWidget {
+  final ChatMessage message;
+  final bool isMe;
+  final bool canPin;
+  final VoidCallback onCopy;
+  final VoidCallback onTogglePin;
+  final VoidCallback? onDelete;
+
+  const _MessageActionSheet({
+    required this.message,
+    required this.isMe,
+    required this.canPin,
+    required this.onCopy,
+    required this.onTogglePin,
+    this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      child: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.cardBorder,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+
+            // Quick emoji reactions bar
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceLight,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: AppColors.cardBorder),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: ['❤️', '👍', '✈️', '🌴', '😂', '🔥'].map((emoji) {
+                  return GestureDetector(
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      Navigator.pop(context);
+                    },
+                    child: Text(emoji, style: const TextStyle(fontSize: 22)),
+                  );
+                }).toList(),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Copy Action
+            ListTile(
+              leading: const Icon(Icons.copy_rounded, color: AppColors.deepEarth),
+              title: const Text(
+                'Copy text',
+                style: TextStyle(fontFamily: 'DM Sans', fontWeight: FontWeight.w600),
+              ),
+              onTap: onCopy,
+            ),
+
+            // Pin / Unpin Action
+            if (canPin)
+              ListTile(
+                leading: Icon(
+                  message.isPinned ? Icons.push_pin_outlined : Icons.push_pin_rounded,
+                  color: AppColors.primary,
+                ),
+                title: Text(
+                  message.isPinned ? 'Unpin message' : 'Pin message as announcement',
+                  style: const TextStyle(
+                    fontFamily: 'DM Sans',
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                onTap: onTogglePin,
+              ),
+
+            // Delete Action
+            if (onDelete != null)
+              ListTile(
+                leading: const Icon(Icons.delete_outline_rounded,
+                    color: Color(0xFFEF4444)),
+                title: const Text(
+                  'Delete message',
+                  style: TextStyle(
+                    fontFamily: 'DM Sans',
+                    color: Color(0xFFEF4444),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                onTap: onDelete,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Pinned Messages Modal Sheet ───────────────────────────────────────────────
+
+class _PinnedMessagesSheet extends StatelessWidget {
+  final List<ChatMessage> messages;
+  final bool isOrganizer;
+  final ValueChanged<String> onUnpin;
+
+  const _PinnedMessagesSheet({
+    required this.messages,
+    required this.isOrganizer,
+    required this.onUnpin,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.7,
+      ),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+      child: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.cardBorder,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                const Icon(Icons.push_pin_rounded, color: AppColors.primary, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Pinned Announcements (${messages.length})',
+                  style: const TextStyle(
+                    fontFamily: 'Playfair Display',
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.deepEarth,
+                  ),
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 20),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            const Divider(color: AppColors.dividerLight),
+            const SizedBox(height: 8),
+            Expanded(
+              child: ListView.separated(
+                itemCount: messages.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 10),
+                itemBuilder: (ctx, i) {
+                  final msg = messages[i];
+                  return Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.sand,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: AppColors.primaryLight.withValues(alpha: 0.5),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              msg.senderName,
+                              style: const TextStyle(
+                                fontFamily: 'DM Sans',
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.darkAccent,
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              _formatTime(msg.createdAt),
+                              style: const TextStyle(
+                                fontFamily: 'DM Sans',
+                                fontSize: 10,
+                                color: AppColors.muted,
+                              ),
+                            ),
+                            if (isOrganizer) ...[
+                              const SizedBox(width: 8),
+                              GestureDetector(
+                                onTap: () => onUnpin(msg.id),
+                                child: const Icon(Icons.close_rounded,
+                                    size: 16, color: AppColors.deepEarth),
+                              ),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          msg.text,
+                          style: const TextStyle(
+                            fontFamily: 'DM Sans',
+                            fontSize: 13,
+                            color: AppColors.deepEarth,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Trip & Members Info Sheet ─────────────────────────────────────────────────
+
+class _TripInfoSheet extends StatelessWidget {
+  final String tripTitle;
+  final int memberCount;
+  final dynamic trip;
+
+  const _TripInfoSheet({
+    required this.tripTitle,
+    required this.memberCount,
+    required this.trip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+      child: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.cardBorder,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              tripTitle,
+              style: const TextStyle(
+                fontFamily: 'Playfair Display',
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppColors.deepEarth,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '$memberCount travelers connected in this trip',
+              style: const TextStyle(
+                fontFamily: 'DM Sans',
+                fontSize: 13,
+                color: AppColors.warmMuted,
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Divider(color: AppColors.dividerLight),
+            const SizedBox(height: 8),
+
+            ListTile(
+              leading: const Icon(Icons.people_outline_rounded, color: AppColors.primary),
+              title: const Text('View All Members & Permissions',
+                  style: TextStyle(fontFamily: 'DM Sans', fontWeight: FontWeight.w600)),
+              trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.muted),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/members');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.map_outlined, color: AppColors.amber),
+              title: const Text('Open Trip Details',
+                  style: TextStyle(fontFamily: 'DM Sans', fontWeight: FontWeight.w600)),
+              trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.muted),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/trip-detail');
+              },
+            ),
           ],
         ),
       ),
