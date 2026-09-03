@@ -263,6 +263,32 @@ public.member_locations (
   updated_at timestamptz default now(),
   unique (trip_id, user_id)
 );
+
+-- 18. TRIP PERSONAL ALLOWANCES (Migration 023)
+public.trip_personal_allowances (
+  id uuid primary key default gen_random_uuid(),
+  trip_id uuid references public.trips(id) on delete cascade not null,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  total_allowance numeric(12,2) not null default 0.00,
+  emergency_buffer_percent numeric(4,2) not null default 0.10,
+  cash_on_hand numeric(12,2) not null default 0.00,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (trip_id, user_id)
+);
+
+-- 19. PERSONAL EXPENSES (Solo Out-of-Pocket Purchases - Migration 023)
+public.personal_expenses (
+  id uuid primary key default gen_random_uuid(),
+  trip_id uuid references public.trips(id) on delete cascade not null,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  description text not null,
+  amount numeric(12,2) not null,
+  category text not null default 'custom',
+  payment_mode text not null default 'cash' check (payment_mode in ('cash', 'digital')),
+  date timestamptz not null default now(),
+  created_at timestamptz not null default now()
+);
 ```
 
 ---
@@ -421,7 +447,13 @@ Client Tier               Storage Tier                Transport Tier
 - `Future<Map<String, dynamic>?> getRemoteProfile(String userId)` — Direct Supabase read with 3-Layer decryption.
 - `Future<void> saveRemoteProfile(String userId, Map<String, dynamic> data)` — Direct Supabase upsert with 3-Layer encryption.
 
-### 9. Core Infrastructure Services
+### 9. `PersonalAllowanceRepository` (`lib/core/repositories/personal_allowance_repository.dart`)
+- `Future<PersonalAllowanceModel?> getPersonalAllowance(String tripId, String userId)` — Reads user-isolated allowance configuration and personal expenses from `trip_personal_allowances` and `personal_expenses`.
+- `Future<void> savePersonalAllowance(PersonalAllowanceModel allowance)` — Upserts personal budget target, 10% emergency buffer, and cash on hand.
+- `Future<void> addPersonalExpense(PersonalExpenseItem expense)` — Inserts solo private purchase into `personal_expenses` (zero group split pollution).
+- `Future<void> deletePersonalExpense(String expenseId)` — Removes solo personal expense.
+
+### 10. Core Infrastructure Services
 - **`SecureSessionRepository.instance`** (`lib/core/auth/data/secure_session_repository.dart`):
   - `persistSession(Session session)`: Saves access/refresh tokens in Keystore.
   - `restoreSession()`: Recovers Supabase session using refresh token.

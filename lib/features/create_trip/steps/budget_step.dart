@@ -24,6 +24,7 @@ class BudgetStep extends StatefulWidget {
 
 class _BudgetStepState extends State<BudgetStep> {
   late TextEditingController _budgetCtrl;
+  late TextEditingController _allowanceCtrl;
   String? _budgetError;
 
   @override
@@ -33,11 +34,17 @@ class _BudgetStepState extends State<BudgetStep> {
         ? CurrencyUtils.formatAmount(widget.trip.totalBudget!)
         : '';
     _budgetCtrl = TextEditingController(text: initial);
+
+    final initialAllowance = widget.trip.personalAllowance != null && widget.trip.personalAllowance! > 0
+        ? CurrencyUtils.formatAmount(widget.trip.personalAllowance!)
+        : '';
+    _allowanceCtrl = TextEditingController(text: initialAllowance);
   }
 
   @override
   void dispose() {
     _budgetCtrl.dispose();
+    _allowanceCtrl.dispose();
     super.dispose();
   }
 
@@ -51,6 +58,10 @@ class _BudgetStepState extends State<BudgetStep> {
       return;
     }
     widget.trip.totalBudget = val;
+
+    final rawAllowance = _allowanceCtrl.text.trim().replaceAll(',', '');
+    widget.trip.personalAllowance = double.tryParse(rawAllowance);
+
     widget.onNext();
   }
 
@@ -122,6 +133,21 @@ class _BudgetStepState extends State<BudgetStep> {
                         final clean = v.replaceAll(',', '');
                         final val = double.tryParse(clean) ?? 0;
                         widget.trip.totalBudget = val;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Personal pocket money / allowance input (Optional)
+                    AppNumericField(
+                      label: 'My personal allowance (Optional)',
+                      controller: _allowanceCtrl,
+                      hint: 'e.g. 10,000 for solo snacks & shopping',
+                      decimal: false,
+                      semanticsLabel: 'Personal allowance input',
+                      onChanged: (v) {
+                        final clean = v.replaceAll(',', '');
+                        final val = double.tryParse(clean);
+                        widget.trip.personalAllowance = val;
                       },
                     ),
                     const SizedBox(height: 20),

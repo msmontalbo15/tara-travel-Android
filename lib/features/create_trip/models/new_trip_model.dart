@@ -10,6 +10,7 @@ class NewTripModel {
   String tripType;
   List<TravelerModel> travelers;
   double? totalBudget;
+  double? personalAllowance;
   String currency;
   bool splitEqually;
   String splitMode; // 'equal', 'fixed', 'percentage', 'treat'
@@ -30,6 +31,7 @@ class NewTripModel {
     this.tripType = 'beach',
     List<TravelerModel>? travelers,
     this.totalBudget,
+    this.personalAllowance,
     this.currency = 'Philippine Peso (₱)',
     this.splitEqually = true,
     this.splitMode = 'equal',

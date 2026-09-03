@@ -2,8 +2,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/models/trip_model.dart';
 import '../../core/models/member_model.dart';
+import '../../core/models/personal_allowance_model.dart';
 import '../../core/providers/repository_providers.dart';
 import '../../core/providers/selected_trip_provider.dart';
 import '../../core/providers/trip_provider.dart';
@@ -142,6 +144,25 @@ class _CreateTripFlowState extends ConsumerState<CreateTripFlow> {
         await packingRepo.seedDefaultItems(tripId);
       } catch (e) {
         debugPrint('[CreateTripFlow] packing seed error: $e');
+      }
+
+      // Persist personal allowance if entered by creator
+      if (_draft.personalAllowance != null && _draft.personalAllowance! > 0) {
+        try {
+          final userId = Supabase.instance.client.auth.currentUser?.id;
+          if (userId != null) {
+            final allowanceRepo = ref.read(personalAllowanceRepositoryProvider);
+            await allowanceRepo.savePersonalAllowance(
+              PersonalAllowanceModel(
+                tripId: tripId,
+                userId: userId,
+                totalAllowance: _draft.personalAllowance!,
+              ),
+            );
+          }
+        } catch (e) {
+          debugPrint('[CreateTripFlow] personal allowance save error: $e');
+        }
       }
 
       // Set as selected trip and refresh providers

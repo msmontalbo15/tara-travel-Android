@@ -93,6 +93,8 @@ class MemberContributionCard extends StatelessWidget {
                               fontWeight: FontWeight.w600,
                               color: AppColors.deepEarth,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                           Text(
                             member.roles.map((r) => r.name).join(' · '),
@@ -101,10 +103,13 @@ class MemberContributionCard extends StatelessWidget {
                               fontSize: 11,
                               color: AppColors.muted,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
                     ),
+                    const SizedBox(width: 10),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [

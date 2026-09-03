@@ -1443,6 +1443,116 @@
 - **Verification**:
   - `flutter analyze` completed cleanly with 0 errors and 0 warnings.
 
+---
+
+### `IMP-078` · Feature / Personal Allowance & Dual-Scope Trip Budget Tracker
+- **Date**: September 3, 2026
+- **Scope & Objectives**:
+  1. **Supabase Database Isolation (`023_personal_allowance_and_expenses.sql`)**:
+     - Added `public.trip_personal_allowances` for personal budget target, 10% emergency buffer, and cash on hand.
+     - Added `public.personal_expenses` for private solo purchases (souvenirs, personal snacks, solo rides).
+     - Strict Row Level Security (`auth.uid() = user_id`) protecting personal pocket money privacy from other trip members and organizers.
+  2. **Core Data & State Layer**:
+     - Created `PersonalAllowanceModel` and `PersonalExpenseItem` in `lib/core/models/personal_allowance_model.dart`.
+     - Created `PersonalAllowanceRepository` in `lib/core/repositories/personal_allowance_repository.dart` and registered in `repository_providers.dart`.
+     - Created `personalAllowanceProvider`, `myGroupLiabilityProvider`, and `PersonalAllowanceController` in `lib/core/providers/personal_allowance_provider.dart`.
+  3. **Dual-Scope Budget Dashboard**:
+     - Upgraded `BudgetScreen` with top-level scope switcher: `[ 👥 Group Fund ]` vs `[ 👤 My Allowance ]`.
+     - `PersonalAllowanceCard`: Hero widget showing personal allowance target, safe remaining, and 10% emergency lock badge.
+     - `DailyPacingCard`: Dynamic burn-rate velocity tracker (`Safe-to-Spend Today = remainingOperational / daysRemaining`) with green/amber/red pacing status.
+     - `CashVsDigitalCard`: Visual balance comparison between physical Cash on Hand and digital payments (GCash / Maya / Card) with instant ATM cash-in modal.
+     - `PersonalExpenseList`: Private transaction list with category badges and instant deletion.
+     - `SetAllowanceSheet`: Modal with quick presets (`₱3,000`, `₱5,000`, `₱10,000`, `₱15,000`, `₱25,000`), custom numeric input, and emergency buffer selector.
+  4. **Expense Logging & Create Trip Integration**:
+     - Added scope toggle (`Group Expense` vs `Personal Pocket`) in `AddExpenseForm` to route solo spending away from group debts.
+     - Added optional `My personal allowance` input in `BudgetStep` and persisted upon trip confirmation in `CreateTripFlow`.
+- **Modified / Created Files**:
+  - `supabase/migrations/023_personal_allowance_and_expenses.sql` [NEW]
+  - `lib/core/models/personal_allowance_model.dart` [NEW]
+  - `lib/core/repositories/personal_allowance_repository.dart` [NEW]
+  - `lib/core/providers/personal_allowance_provider.dart` [NEW]
+  - `lib/core/providers/repository_providers.dart` [MODIFIED]
+  - `lib/features/budget/widgets/set_allowance_sheet.dart` [NEW]
+  - `lib/features/budget/widgets/personal_allowance_card.dart` [NEW]
+  - `lib/features/budget/widgets/daily_pacing_card.dart` [NEW]
+  - `lib/features/budget/widgets/cash_vs_digital_card.dart` [NEW]
+  - `lib/features/budget/widgets/personal_expense_list.dart` [NEW]
+  - `lib/features/budget/widgets/add_expense_form.dart` [MODIFIED]
+  - `lib/features/budget/budget_screen.dart` [MODIFIED]
+  - `lib/features/create_trip/models/new_trip_model.dart` [MODIFIED]
+  - `lib/features/create_trip/steps/budget_step.dart` [MODIFIED]
+  - `lib/features/create_trip/create_trip_flow.dart` [MODIFIED]
+  - `test/core/personal_allowance_test.dart` [NEW]
+- **Verification**:
+  - `flutter analyze` completed with 0 issues across all modified modules and tests.
+
+---
+
+### `IMP-079` · Enhancement / Budget & Personal Allowance UX Polish
+- **Date**: September 3, 2026
+- **Scope & Objectives**:
+  1. **Dynamic Daily Pacing Card UX**:
+     - Upgraded with proportional animated burn-rate gauge and color-coded status badge with pulsing live indicator.
+     - Added smart contextual budgeting tip footer with days-remaining countdown.
+  2. **Multi-Segment Stacked Gauge in Hero Card**:
+     - `PersonalAllowanceCard` now features a stacked horizontal bar showing exact ratios for Solo Spent, Group Share, Buffer Reserve, and Available Balance with a clean color legend.
+  3. **Floating Quick-Add Bottom Sheet**:
+     - Added persistent `FloatingActionButton.extended` on `BudgetScreen` switching between "Log Group Bill" and "Log Pocket Expense".
+     - Opens a responsive modal bottom sheet to log purchases immediately without scrolling past existing expenses.
+  4. **Live Breakdown Calculator in Set Allowance Sheet**:
+     - Displays real-time calculations as the traveler types or selects presets (Spendable Budget vs. Emergency Reserve).
+     - Enhanced full-width preset grid with active elevation styling.
+  5. **Cash vs. Digital Balance Enhancements**:
+     - Added proportional split bar and enhanced ATM Cash-In modal with current wallet balance reference.
+  6. **Interactive Solo Expense List**:
+     - Added swipe-to-delete with confirmation modal, category color coding, payment mode badges, and date formatting.
+  7. **Quick Amount Chips in Expense Form**:
+     - Added one-tap incremental chips (`+₱50`, `+₱100`, `+₱200`, `+₱500`, `+₱1,000`) for logging fares and street snacks.
+  8. **My Allowance as Primary Landing View**:
+     - Configured `👤 My Allowance` as the default first tab in `BudgetScreen` and `Personal Pocket` as the primary left option in `AddExpenseForm`.
+- **Target Files**:
+  - `lib/features/budget/widgets/daily_pacing_card.dart` [MODIFIED]
+  - `lib/features/budget/widgets/personal_allowance_card.dart` [MODIFIED]
+  - `lib/features/budget/widgets/cash_vs_digital_card.dart` [MODIFIED]
+  - `lib/features/budget/widgets/set_allowance_sheet.dart` [MODIFIED]
+  - `lib/features/budget/widgets/personal_expense_list.dart` [MODIFIED]
+  - `lib/features/budget/widgets/add_expense_form.dart` [MODIFIED]
+  - `lib/features/budget/budget_screen.dart` [MODIFIED]
+- **Verification**:
+  - `flutter analyze` completed with 0 errors and 0 warnings.
+
+
+### `IMP-080` · Trip Title Display & Universal Content Overflow Prevention
+- **Date**: September 4, 2026
+- **Scope & Objectives**:
+  1. **Trip Title Presentation**:
+     - Prominently integrated trip title (`trip.name`) into the header of `BudgetScreen`, replacing generic "Budget & Allowance" with the custom trip name (with fallback).
+     - Added `tripName` to `BudgetOverviewCard` and `PersonalAllowanceCard` so both Group Fund and Personal Allowance hero cards explicitly showcase the trip title.
+     - Enhanced the active trip badge (`📍 [Emoji] [Destination] ▾`) with trip switcher bottom sheet.
+  2. **Universal Content Overflow Prevention**:
+     - `budget_screen.dart`: Made destination pill text flexible with single-line ellipsis to prevent horizontal overflows.
+     - `budget_overview_card.dart`: Wrapped title row in `Expanded`, large budget currency in `Flexible`, and remaining/spent descriptions with single-line ellipsis.
+     - `personal_allowance_card.dart`: Added `Expanded` + `Flexible` to the header title row, `Flexible` to the large allowance amount, `Expanded` to the Emergency Buffer row, and `Wrap` to the legend dot indicators.
+     - `daily_pacing_card.dart`: Made title and status pill in the header row flexible, and wrapped large safe-spend figure in `Flexible`.
+     - `cash_vs_digital_card.dart`: Protected header row with `Expanded`/`Flexible`, and wrapped cash and digital currency values in `FittedBox` with `BoxFit.scaleDown`.
+     - `set_allowance_sheet.dart`: Replaced rigid 5-column `Row` of `Expanded` preset buttons with a responsive `Wrap`, eliminating horizontal clipping, and protected live breakdown label rows with `Expanded`.
+     - `personal_expense_list.dart`: Wrapped date string in `Flexible` and expense amounts in `FittedBox`.
+     - `member_contribution_card.dart`: Added ellipsis to member names and roles, and spacing between columns.
+     - `expense_log.dart`: Added ellipsis to descriptions and flexible wrapping to date/status pills.
+- **Target Files**:
+  - `lib/features/budget/budget_screen.dart` [MODIFIED]
+  - `lib/features/budget/widgets/budget_overview_card.dart` [MODIFIED]
+  - `lib/features/budget/widgets/personal_allowance_card.dart` [MODIFIED]
+  - `lib/features/budget/widgets/daily_pacing_card.dart` [MODIFIED]
+  - `lib/features/budget/widgets/cash_vs_digital_card.dart` [MODIFIED]
+  - `lib/features/budget/widgets/set_allowance_sheet.dart` [MODIFIED]
+  - `lib/features/budget/widgets/personal_expense_list.dart` [MODIFIED]
+  - `lib/features/budget/widgets/member_contribution_card.dart` [MODIFIED]
+  - `lib/features/budget/widgets/expense_log.dart` [MODIFIED]
+- **Verification**:
+  - `flutter analyze` completed with 0 errors and 0 warnings across the entire repository.
+
+
 
 
 

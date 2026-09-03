@@ -102,6 +102,8 @@ class ExpenseLog extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                     color: Colors.black,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
                 Row(
@@ -125,13 +127,17 @@ class ExpenseLog extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 6),
-                    Text(
-                      '${DateFormat('MMM d').format(expense.date)} · ${expense.status.name.toUpperCase()}',
-                      style: TextStyle(
-                        fontFamily: 'DM Sans',
-                        fontSize: 11,
-                        color: _getStatusColor(expense.status),
-                        fontWeight: FontWeight.w500,
+                    Flexible(
+                      child: Text(
+                        '${DateFormat('MMM d').format(expense.date)} · ${expense.status.name.toUpperCase()}',
+                        style: TextStyle(
+                          fontFamily: 'DM Sans',
+                          fontSize: 11,
+                          color: _getStatusColor(expense.status),
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -139,13 +145,17 @@ class ExpenseLog extends StatelessWidget {
               ],
             ),
           ),
-          Text(
-            '₱${CurrencyUtils.formatAmount(expense.amount)}',
-            style: const TextStyle(
-              fontFamily: 'DM Sans',
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: Colors.black,
+          const SizedBox(width: 8),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              '₱${CurrencyUtils.formatAmount(expense.amount)}',
+              style: const TextStyle(
+                fontFamily: 'DM Sans',
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: Colors.black,
+              ),
             ),
           ),
         ],

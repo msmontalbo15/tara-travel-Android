@@ -8,6 +8,7 @@ class BudgetOverviewCard extends StatelessWidget {
   final double totalSpent;
   final int memberCount;
   final String? tripSubtitle;
+  final String? tripName;
 
   const BudgetOverviewCard({
     super.key,
@@ -15,6 +16,7 @@ class BudgetOverviewCard extends StatelessWidget {
     required this.totalSpent,
     this.memberCount = 4,
     this.tripSubtitle,
+    this.tripName,
   });
 
   @override
@@ -26,35 +28,60 @@ class BudgetOverviewCard extends StatelessWidget {
 
     return Column(
       children: [
+        // Trip Name Title
+        if (tripName != null && tripName!.isNotEmpty) ...[
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              tripName!,
+              style: const TextStyle(
+                fontFamily: 'Playfair Display',
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+                height: 1.1,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(height: 4),
+        ],
         // Hero Header Row
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Budget Tracker',
-                  style: TextStyle(
-                    fontFamily: 'Playfair Display',
-                    fontSize: 26,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                    height: 1.1,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Budget Tracker',
+                    style: TextStyle(
+                      fontFamily: 'Playfair Display',
+                      fontSize: 26,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      height: 1.1,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                Text(
-                  tripSubtitle ?? 'Trip budget overview',
-                  style: TextStyle(
-                    fontFamily: 'DM Sans',
-                    fontSize: 12,
-                    color: Colors.white.withValues(alpha: 0.45),
-                    fontWeight: FontWeight.w400,
+                  Text(
+                    tripSubtitle ?? 'Trip budget overview',
+                    style: TextStyle(
+                      fontFamily: 'DM Sans',
+                      fontSize: 12,
+                      color: Colors.white.withValues(alpha: 0.45),
+                      fontWeight: FontWeight.w400,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
+            const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
@@ -116,14 +143,18 @@ class BudgetOverviewCard extends StatelessWidget {
                             fontWeight: FontWeight.w400,
                           ),
                         ),
-                        Text(
-                          CurrencyUtils.formatAmount(totalBudget),
-                          style: const TextStyle(
-                            fontFamily: 'Playfair Display',
-                            fontSize: 30,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                            height: 1.0,
+                        Flexible(
+                          child: Text(
+                            CurrencyUtils.formatAmount(totalBudget),
+                            style: const TextStyle(
+                              fontFamily: 'Playfair Display',
+                              fontSize: 30,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                              height: 1.0,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
@@ -148,6 +179,8 @@ class BudgetOverviewCard extends StatelessWidget {
                             ? const Color(0xFFFF6B6B) 
                             : (isWarn ? AppColors.amber : const Color(0xFF34C759)),
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -157,6 +190,8 @@ class BudgetOverviewCard extends StatelessWidget {
                         fontSize: 11,
                         color: Colors.white.withValues(alpha: 0.4),
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),

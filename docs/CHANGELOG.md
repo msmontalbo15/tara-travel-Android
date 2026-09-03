@@ -1742,6 +1742,116 @@
   - Provided 4 brand variants: `glass` (frosted blur for dark headers), `light` (white with card border for light headers), `brand` (sand with coral accent), and `ghost`.
   - Replaced ad-hoc and inconsistent back buttons across all app screens with `AppBackButton`.
 - **Verification**:
+</details>
+
+---
+
+## 2026-09-03
+
+### IMP-078 - Personal Allowance & Dual-Scope Trip Budget Tracker
+
+**Component**: Budget & Personal Allowance
+
+**Summary**: Added dedicated personal allowance tracking, daily safe-to-spend velocity pacing, cash-on-hand vs digital payments balance, private solo expenses, and dual-scope budget dashboard without polluting group split debts.
+
+<details>
+<summary>Full implementation detail</summary>
+
+- **Date**: September 3, 2026
+- **Target Files**:
+  - `supabase/migrations/023_personal_allowance_and_expenses.sql` [NEW]
+  - `lib/core/models/personal_allowance_model.dart` [NEW]
+  - `lib/core/repositories/personal_allowance_repository.dart` [NEW]
+  - `lib/core/providers/personal_allowance_provider.dart` [NEW]
+  - `lib/core/providers/repository_providers.dart` [MODIFIED]
+  - `lib/features/budget/widgets/set_allowance_sheet.dart` [NEW]
+  - `lib/features/budget/widgets/personal_allowance_card.dart` [NEW]
+  - `lib/features/budget/widgets/daily_pacing_card.dart` [NEW]
+  - `lib/features/budget/widgets/cash_vs_digital_card.dart` [NEW]
+  - `lib/features/budget/widgets/personal_expense_list.dart` [NEW]
+  - `lib/features/budget/widgets/add_expense_form.dart` [MODIFIED]
+  - `lib/features/budget/budget_screen.dart` [MODIFIED]
+  - `lib/features/create_trip/models/new_trip_model.dart` [MODIFIED]
+  - `lib/features/create_trip/steps/budget_step.dart` [MODIFIED]
+  - `lib/features/create_trip/create_trip_flow.dart` [MODIFIED]
+  - `test/core/personal_allowance_test.dart` [NEW]
+- **Scope & Objectives**:
+  - Cloud-synced personal budget tracking via Supabase `trip_personal_allowances` and `personal_expenses` tables with strict RLS isolation (`auth.uid() = user_id`).
+  - Added dynamic daily burn-rate pacing engine: `Safe-to-Spend Today = remainingOperational / daysRemaining`.
+  - Added physical Cash on Hand vs E-Wallet tracking with instant ATM cash-in modal.
+  - Upgraded `BudgetScreen` with dual-scope switcher (`Group Fund` vs `My Allowance`).
+  - Added personal allowance setup during Create Trip (`BudgetStep`) and via `SetAllowanceSheet` modal with quick presets (`₱3,000` to `₱25,000`).
+- **Verification**:
+  - `flutter analyze` completed with 0 errors across all modified modules and tests.
+
+</details>
+
+---
+
+## 2026-09-03
+
+### IMP-079 - Budget & Personal Allowance UX Polish
+
+**Component**: Budget & Personal Allowance UI/UX
+
+**Summary**: Enhanced UX across the trip budget tracker and personal allowance suite, featuring a floating quick-add bottom sheet, multi-segment progress gauge, live allowance preview breakdown, contextual daily burn-rate tips, swipe-to-delete personal receipts, and one-tap incremental amount chips.
+
+<details>
+<summary>Full implementation detail</summary>
+
+- **Date**: September 3, 2026
+- **Target Files**:
+  - `lib/features/budget/widgets/daily_pacing_card.dart` [MODIFIED]
+  - `lib/features/budget/widgets/personal_allowance_card.dart` [MODIFIED]
+  - `lib/features/budget/widgets/cash_vs_digital_card.dart` [MODIFIED]
+  - `lib/features/budget/widgets/set_allowance_sheet.dart` [MODIFIED]
+  - `lib/features/budget/widgets/personal_expense_list.dart` [MODIFIED]
+  - `lib/features/budget/widgets/add_expense_form.dart` [MODIFIED]
+  - `lib/features/budget/budget_screen.dart` [MODIFIED]
+- **Scope & Objectives**:
+  - Proportional multi-segment stacked bar in `PersonalAllowanceCard` with custom color-coded legend.
+  - Floating action button on `BudgetScreen` opening a quick-add modal bottom sheet without scrolling.
+  - Live budget breakdown preview in `SetAllowanceSheet` displaying emergency reserve vs spendable balance in real-time.
+  - Contextual smart tips with days-remaining countdown in `DailyPacingCard`.
+  - Proportional cash vs digital spending ratio bar and enriched ATM cash-in modal.
+  - Swipe-to-delete with confirmation dialog in `PersonalExpenseList`.
+  - Incremental amount chips (`+₱50`, `+₱100`, `+₱200`, `+₱500`, `+₱1,000`) in `AddExpenseForm`.
+  - Reordered tabs to make `👤 My Allowance` the primary first tab and `Personal Pocket` the default scope.
+- **Verification**:
+  - `flutter analyze` passed with 0 errors and 0 warnings.
+
+</details>
+
+---
+
+## 2026-09-04
+
+### IMP-080 - Trip Title Display & Universal Content Overflow Prevention
+
+**Component**: Budget Screen & Cards
+
+**Summary**: Displayed custom trip title prominently in the Budget screen header and hero cards, and eliminated all potential horizontal and vertical content overflows across all budget widgets with responsive wrappers and graceful scaling.
+
+<details>
+<summary>Full implementation detail</summary>
+
+- **Date**: September 4, 2026
+- **Target Files**:
+  - `lib/features/budget/budget_screen.dart` [MODIFIED]
+  - `lib/features/budget/widgets/budget_overview_card.dart` [MODIFIED]
+  - `lib/features/budget/widgets/personal_allowance_card.dart` [MODIFIED]
+  - `lib/features/budget/widgets/daily_pacing_card.dart` [MODIFIED]
+  - `lib/features/budget/widgets/cash_vs_digital_card.dart` [MODIFIED]
+  - `lib/features/budget/widgets/set_allowance_sheet.dart` [MODIFIED]
+  - `lib/features/budget/widgets/personal_expense_list.dart` [MODIFIED]
+  - `lib/features/budget/widgets/member_contribution_card.dart` [MODIFIED]
+  - `lib/features/budget/widgets/expense_log.dart` [MODIFIED]
+- **Scope & Objectives**:
+  - Trip title (`trip.name`) prominently displayed in the top header and inside hero budget cards.
+  - Protected header switcher pill and titles with single-line ellipsis and flexible layouts.
+  - Replaced rigid 5-column preset buttons in `SetAllowanceSheet` with responsive `Wrap`.
+  - Added `FittedBox` scaling and `Flexible` text wrappers to currency amounts and dates across `CashVsDigitalCard`, `PersonalExpenseList`, `ExpenseLog`, and `DailyPacingCard`.
+- **Verification**:
   - `flutter analyze` passed with 0 errors and 0 warnings.
 
 </details>
@@ -1749,5 +1859,3 @@
 ---
 
 *Generated by tools/generate_changelog.ps1*
-
-

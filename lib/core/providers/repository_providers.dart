@@ -9,6 +9,7 @@ import '../repositories/expense_repository.dart';
 import '../repositories/itinerary_repository.dart';
 import '../repositories/profile_repository.dart';
 import '../repositories/packing_repository.dart';
+import '../repositories/personal_allowance_repository.dart';
 import '../services/connectivity_service.dart';
 
 // ── SERVICES ─────────────────────────────────────────────────────────────────
@@ -42,3 +43,8 @@ final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
 final packingRepositoryProvider = Provider<PackingRepository>((ref) {
   return PackingRepository();
 });
+
+final personalAllowanceRepositoryProvider = Provider<PersonalAllowanceRepository>((ref) {
+  return PersonalAllowanceRepository();
+});
+
