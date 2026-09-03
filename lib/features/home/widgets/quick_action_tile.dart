@@ -63,7 +63,7 @@ class _QuickActionTileState extends State<QuickActionTile>
             );
           },
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
             decoration: BoxDecoration(
               gradient: widget.orange
                   ? const LinearGradient(
@@ -76,7 +76,7 @@ class _QuickActionTileState extends State<QuickActionTile>
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
-              borderRadius: BorderRadius.circular(22),
+              borderRadius: BorderRadius.circular(18),
               border: widget.orange
                   ? Border.all(
                       color: const Color(0xFFE87040).withValues(alpha: 0.5))
@@ -84,21 +84,21 @@ class _QuickActionTileState extends State<QuickActionTile>
               boxShadow: widget.orange
                   ? [
                       BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.30),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
+                        color: AppColors.primary.withValues(alpha: 0.28),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
                       ),
                       BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.10),
-                        blurRadius: 6,
+                        color: AppColors.primary.withValues(alpha: 0.08),
+                        blurRadius: 4,
                         offset: const Offset(0, 2),
                       ),
                     ]
                   : [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 16,
-                        offset: const Offset(0, 6),
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 14,
+                        offset: const Offset(0, 4),
                       ),
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.02),
@@ -112,17 +112,17 @@ class _QuickActionTileState extends State<QuickActionTile>
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  width: 34,
-                  height: 34,
+                  width: 30,
+                  height: 30,
                   decoration: BoxDecoration(
                     color: widget.orange
                         ? Colors.white.withValues(alpha: 0.22)
                         : AppColors.sand,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(9),
                   ),
                   child: Icon(
                     widget.icon,
-                    size: 17,
+                    size: 16,
                     color: widget.orange ? Colors.white : AppColors.primary,
                   ),
                 ),
@@ -137,7 +137,7 @@ class _QuickActionTileState extends State<QuickActionTile>
                         widget.label,
                         style: TextStyle(
                           fontFamily: 'DM Sans',
-                          fontSize: 14,
+                          fontSize: 13.5,
                           fontWeight: FontWeight.w700,
                           color: widget.orange
                               ? Colors.white
@@ -145,7 +145,8 @@ class _QuickActionTileState extends State<QuickActionTile>
                         ),
                       ),
                     ),
-                    if (widget.sublabel != null)
+                    if (widget.sublabel != null) ...[
+                      const SizedBox(height: 1),
                       FittedBox(
                         fit: BoxFit.scaleDown,
                         alignment: Alignment.centerLeft,
@@ -156,12 +157,14 @@ class _QuickActionTileState extends State<QuickActionTile>
                           style: TextStyle(
                             fontFamily: 'DM Sans',
                             fontSize: 11,
+                            fontWeight: FontWeight.w500,
                             color: widget.orange
-                                ? Colors.white.withValues(alpha: 0.7)
+                                ? Colors.white.withValues(alpha: 0.75)
                                 : AppColors.textSecondary,
                           ),
                         ),
                       ),
+                    ],
                   ],
                 ),
               ],

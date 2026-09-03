@@ -63,6 +63,7 @@
 | **`IMP-077`** | 2026-09-03 | UI / Brand-Aligned Back Button Standardization | Standardized and upgraded `AppBackButton` with Tara Travel brand tokens (12px radius, frosted glass, light, brand, and ghost variants) and replaced one-off back buttons across all screens (Packing, Friends, Navigation, Live Navigation, Chat, Notifications, Activity Log, Create Trip, and MapPinPicker). |
 | **`IMP-078`** | 2026-09-04 | Chat, Polls & Firebase FCM | Interactive In-Chat Travel Polls, real-time live vote sync, one-tap winner resolution to itinerary, pinned announcements drawer, quick travel action chips, branded Coral gradient UI, and Firebase FCM notification service. |
 | **`IMP-079`** | 2026-09-04 | Architecture & UI Standards | Formalized Mobile Responsive Layout Standards and Strict Overflow Prevention Patterns in `SOFTWARE_DESIGN_PATTERNS.md` & `MEMORY.md` (bounded flex, scrollable viewports, dynamic font ellipsis, and zero RenderFlex overflow tolerance). |
+| **`IMP-080`** | 2026-09-04 | UI & Home / Quick Actions Grid | Refined Quick Actions Grid layout, card dimensions, and aesthetics: calibrated `childAspectRatio` from 1.34 to 1.52, compact padding, 30x30 icon containers, crisp typography, and responsive `_PulsingGuide` border alignment. |
 
 ---
 
@@ -1649,6 +1650,9 @@
      - Auto-scroll only triggers if user is already near bottom, preventing scroll disruptions while reading older messages.
   5. **Quick Travel Attachment Sheet (`+` Button)**:
      - Expandable bottom sheet exposing rich travel actions: Group Poll, Late Alert (10m), Meeting Spot Check-in, and Expense Split reminders.
+  6. **Calm & Non-Intimidating Input Bar Aesthetics**:
+     - Removed aggressive colored drop shadows (`BoxShadow` with coral/red glows) from the send button, attachment `+` button, quick chips, and message bubbles.
+     - Implemented flat, friendly, and soft input pill styling with clean hairline border separation.
 - **Target Files**:
   - `lib/features/chat/chat_screen.dart` [MODIFIED]
   - `lib/features/chat/widgets/poll_card.dart` [MODIFIED]
@@ -1656,6 +1660,27 @@
 - **Verification**:
   - `flutter analyze lib/features/chat/` executed with 0 errors and 0 warnings.
   - Verified keyboard inset avoidance, context menu clipboard copy, and poll finalization dialogs.
+
+---
+
+### `IMP-080` · Home Quick Actions Grid — Compact Card Refinement & Sizing Alignment
+- **Date**: September 04, 2026
+- **Scope & Objectives**:
+  1. **Aspect Ratio & Card Proportion**:
+     - Adjusted `GridView.count` `childAspectRatio` from `1.34` to `1.52`, eliminating awkward vertical bloat and giving tiles a balanced, sleek, modern travel card feel.
+  2. **Internal Dimensions & Visual Balance**:
+     - Tuned container padding to `EdgeInsets.symmetric(horizontal: 14, vertical: 11)`.
+     - Scaled icon square badge to `30x30` with `BorderRadius.circular(9)` and `16px` icon size.
+     - Adjusted card radius to `BorderRadius.circular(18)` for an organic fit alongside other card components.
+     - Calibrated typography: `13.5px` bold for primary action labels, and `11px` medium with `1px` top offset for sublabels.
+  3. **Pulsing First-Run Guide Outline Fix**:
+     - Replaced the fixed `140x100` box in `_PulsingGuide` with `Positioned.fill` and `BorderRadius.circular(20)` to accurately wrap the rounded card bounds without awkward misaligned corners.
+- **Target Files**:
+  - `lib/features/home/home_screen.dart` [MODIFIED]
+  - `lib/features/home/widgets/quick_action_tile.dart` [MODIFIED]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+- **Verification**:
+  - `flutter analyze lib/features/home/` executed with 0 errors and 0 warnings (18.9s).
 
 
 

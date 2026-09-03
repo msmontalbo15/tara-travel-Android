@@ -467,45 +467,26 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
                               crossAxisCount: 2,
                               crossAxisSpacing: 12,
                               mainAxisSpacing: 12,
-                              childAspectRatio: 1.34,
+                              childAspectRatio: 1.52,
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
                               children: [
-                                _TourFocus(
-                                  highlight: _tourVisible && _tourStep == 3,
-                                  borderRadius: 24,
-                                  child: _PulsingGuide(
-                                    active: profile.isFirstRun ||
-                                        (_tourVisible && _tourStep == 3),
-                                    onTap: () async {
-                                      final canProceed = await JitGuard.checkCreateTripGuard(context, ref);
-                                      if (!canProceed || !context.mounted) return;
-                                      ref
-                                          .read(profileProvider.notifier)
-                                          .setFirstRunCompleted();
-                                      Navigator.pushNamed(
-                                        context,
-                                        '/create-trip',
-                                      );
-                                    },
-                                    child: QuickActionTile(
-                                      icon: Icons.add_rounded,
-                                      label: 'New trip',
-                                      sublabel: 'Start planning',
-                                      orange: true,
-                                      onTap: () async {
-                                        final canProceed = await JitGuard.checkCreateTripGuard(context, ref);
-                                        if (!canProceed || !context.mounted) return;
-                                        ref
-                                            .read(profileProvider.notifier)
-                                            .setFirstRunCompleted();
-                                        Navigator.pushNamed(
-                                          context,
-                                          '/create-trip',
-                                        );
-                                      },
-                                    ),
-                                  ),
+                                QuickActionTile(
+                                  icon: Icons.add_rounded,
+                                  label: 'New trip',
+                                  sublabel: 'Start planning',
+                                  orange: true,
+                                  onTap: () async {
+                                    final canProceed = await JitGuard.checkCreateTripGuard(context, ref);
+                                    if (!canProceed || !context.mounted) return;
+                                    ref
+                                        .read(profileProvider.notifier)
+                                        .setFirstRunCompleted();
+                                    Navigator.pushNamed(
+                                      context,
+                                      '/create-trip',
+                                    );
+                                  },
                                 ),
                                 QuickActionTile(
                                   icon: Icons.person_add_outlined,
@@ -821,25 +802,26 @@ class _PulsingGuideState extends State<_PulsingGuide>
     return GestureDetector(
       onTap: widget.onTap,
       child: Stack(
+        clipBehavior: Clip.none,
         alignment: Alignment.center,
         children: [
-          AnimatedBuilder(
-            animation: _pulseAnim,
-            builder: (context, child) {
-              return Container(
-                width: 140,
-                height: 100,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: AppColors.primary.withValues(
-                      alpha: 1.0 - _pulseAnim.value,
+          Positioned.fill(
+            child: AnimatedBuilder(
+              animation: _pulseAnim,
+              builder: (context, child) {
+                return Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: AppColors.primary.withValues(
+                        alpha: (1.0 - _pulseAnim.value).clamp(0.0, 1.0),
+                      ),
+                      width: 2.5 * _pulseAnim.value + 0.5,
                     ),
-                    width: 4 * _pulseAnim.value,
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
           widget.child,
         ],

@@ -597,7 +597,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             onQuickMessage: _sendQuickTravelMessage,
           ),
 
-          // ── Input Bar ────────────────────────────────────────────
+          // ── Input Bar (Calm, Soft & Non-Intimidating Design) ───────
           _InputBar(
             controller: _ctrl,
             isSending: _isSending,
@@ -642,13 +642,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             border: Border.all(
               color: AppColors.primaryLight.withValues(alpha: 0.35),
             ),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x0A000000),
-                blurRadius: 4,
-                offset: Offset(0, 1),
-              ),
-            ],
           ),
           child: Text(
             text,
@@ -704,13 +697,6 @@ class _ChatHeader extends StatelessWidget {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0x2A000000),
-            blurRadius: 8,
-            offset: Offset(0, 3),
-          ),
-        ],
       ),
       child: Row(
         children: [
@@ -730,13 +716,6 @@ class _ChatHeader extends StatelessWidget {
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x33D85A30),
-                    blurRadius: 6,
-                    offset: Offset(0, 2),
-                  ),
-                ],
               ),
               child: const Icon(Icons.groups_rounded, color: Colors.white, size: 22),
             ),
@@ -779,13 +758,6 @@ class _ChatHeader extends StatelessWidget {
                           decoration: const BoxDecoration(
                             color: AppColors.greenBright,
                             shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Color(0x6610B981),
-                                blurRadius: 4,
-                                spreadRadius: 1,
-                              ),
-                            ],
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -892,13 +864,6 @@ class _PinnedAnnouncementBanner extends StatelessWidget {
             border: Border.all(
               color: AppColors.primaryLight.withValues(alpha: 0.6),
             ),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x10000000),
-                blurRadius: 4,
-                offset: Offset(0, 2),
-              ),
-            ],
           ),
           child: Row(
             children: [
@@ -1000,23 +965,14 @@ class _QuickActionChips extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
-            // Create Poll CTA Chip
+            // Create Poll CTA Chip (clean, flat, non-intimidating)
             GestureDetector(
               onTap: onCreatePoll,
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppColors.primary, Color(0xFFE56338)],
-                  ),
+                  color: AppColors.primary,
                   borderRadius: BorderRadius.circular(16),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x2ADB5A30),
-                      blurRadius: 6,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
                 ),
                 child: const Row(
                   children: [
@@ -1117,7 +1073,7 @@ class _QuickChip extends StatelessWidget {
   }
 }
 
-// ── Input Bar ─────────────────────────────────────────────────────────────────
+// ── Input Bar (Calm, Soft & Non-Intimidating Design) ───────────────────────────
 
 class _InputBar extends StatelessWidget {
   final TextEditingController controller;
@@ -1148,14 +1104,14 @@ class _InputBar extends StatelessWidget {
       decoration: const BoxDecoration(
         color: Colors.white,
         border: Border(
-          top: BorderSide(color: AppColors.dividerLight),
+          top: BorderSide(color: AppColors.dividerLight, width: 1),
         ),
       ),
       padding: EdgeInsets.fromLTRB(12, 8, 12, effectiveBottom),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          // Attachment / Quick action button
+          // Attachment / Quick action button (Flat, soft, non-intimidating)
           Padding(
             padding: const EdgeInsets.only(bottom: 2),
             child: GestureDetector(
@@ -1166,9 +1122,6 @@ class _InputBar extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: AppColors.sand,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: AppColors.primaryLight.withValues(alpha: 0.4),
-                  ),
                 ),
                 child: const Icon(
                   Icons.add_rounded,
@@ -1180,7 +1133,7 @@ class _InputBar extends StatelessWidget {
           ),
           const SizedBox(width: 8),
 
-          // Multi-line expandable text field
+          // Multi-line expandable text field (Clean soft pill, no harsh shadow)
           Expanded(
             child: Container(
               constraints: const BoxConstraints(
@@ -1193,8 +1146,9 @@ class _InputBar extends StatelessWidget {
                 borderRadius: BorderRadius.circular(22),
                 border: Border.all(
                   color: isComposing
-                      ? AppColors.primary.withValues(alpha: 0.6)
+                      ? AppColors.primaryLight.withValues(alpha: 0.5)
                       : AppColors.cardBorder,
+                  width: 1,
                 ),
               ),
               child: TextField(
@@ -1227,7 +1181,7 @@ class _InputBar extends StatelessWidget {
           ),
           const SizedBox(width: 8),
 
-          // Dynamic Send Button
+          // Flat, Friendly Send Button (No intimidating drop shadow or harsh glow)
           Padding(
             padding: const EdgeInsets.only(bottom: 2),
             child: GestureDetector(
@@ -1237,26 +1191,8 @@ class _InputBar extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  gradient: (isOffline || isSending || !isComposing)
-                      ? null
-                      : const LinearGradient(
-                          colors: [AppColors.primary, Color(0xFFE56338)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                  color: (isOffline || isSending || !isComposing)
-                      ? AppColors.cardBorder
-                      : null,
+                  color: isComposing ? AppColors.primary : AppColors.cardBorder,
                   shape: BoxShape.circle,
-                  boxShadow: isComposing
-                      ? const [
-                          BoxShadow(
-                            color: Color(0x33D85A30),
-                            blurRadius: 6,
-                            offset: Offset(0, 2),
-                          ),
-                        ]
-                      : null,
                 ),
                 child: isSending
                     ? const Padding(
@@ -1278,7 +1214,7 @@ class _InputBar extends StatelessWidget {
   }
 }
 
-// ── My Message Bubble (Brand Coral Gradient) ───────────────────────────────────
+// ── My Message Bubble (Brand Coral) ───────────────────────────────────────────
 
 class _MyBubble extends StatelessWidget {
   final ChatMessage msg;
@@ -1310,30 +1246,13 @@ class _MyBubble extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
                 decoration: BoxDecoration(
-                  gradient: isQuickTravel
-                      ? const LinearGradient(
-                          colors: [Color(0xFFE65100), AppColors.primary],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        )
-                      : const LinearGradient(
-                          colors: [AppColors.primary, Color(0xFFE56338)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
+                  color: isQuickTravel ? const Color(0xFFD35400) : AppColors.primary,
                   borderRadius: BorderRadius.only(
                     topLeft: const Radius.circular(16),
                     topRight: isConsecutive ? const Radius.circular(6) : const Radius.circular(16),
                     bottomLeft: const Radius.circular(16),
                     bottomRight: const Radius.circular(4),
                   ),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x22D85A30),
-                      blurRadius: 6,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -1471,15 +1390,8 @@ class _TheirBubble extends StatelessWidget {
                 width: 32,
                 height: 32,
                 margin: const EdgeInsets.only(bottom: 2),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      AppColors.deepEarth,
-                      Color((msg.senderName.hashCode & 0x00FFFFFF) | 0xFF000000),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                decoration: const BoxDecoration(
+                  color: AppColors.deepEarth,
                   shape: BoxShape.circle,
                 ),
                 child: Center(
@@ -1533,13 +1445,6 @@ class _TheirBubble extends StatelessWidget {
                             : AppColors.cardBorder,
                         width: isQuickTravel ? 1.5 : 1.0,
                       ),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x0A000000),
-                          blurRadius: 4,
-                          offset: Offset(0, 1),
-                        ),
-                      ],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1658,9 +1563,9 @@ class _ScrollToBottomButton extends StatelessWidget {
           border: Border.all(color: AppColors.cardBorder),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x20000000),
-              blurRadius: 8,
-              offset: Offset(0, 3),
+              color: Color(0x10000000),
+              blurRadius: 6,
+              offset: Offset(0, 2),
             ),
           ],
         ),
@@ -1702,13 +1607,6 @@ class _EmptyChat extends StatelessWidget {
                   color: AppColors.primaryLight.withValues(alpha: 0.5),
                   width: 1.5,
                 ),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x15000000),
-                    blurRadius: 10,
-                    offset: Offset(0, 4),
-                  ),
-                ],
               ),
               child: const Icon(Icons.forum_rounded,
                   color: AppColors.primary, size: 36),

@@ -1441,3 +1441,99 @@ final tripWeatherProvider = FutureProvider.family<List<DayForecast>, String>((re
 
 > **Status**: In Progress / Core Complete
 
+---
+
+## 💡 IDEA-014: Over-The-Air (OTA) Remote Updates via Shorebird Code Push + Supabase Version Gate [PROPOSED]
+
+### 1. Context & Motivation
+Currently, deploying bugfixes, UI updates, or urgent travel calculation corrections requires building a new Android App Bundle (`.aab`) or APK and waiting for Google Play Store review (which can take 24–72 hours). Additionally, when breaking backend database migrations or API changes occur, there is no remote kill-switch to enforce that outdated client versions update before corrupting data.
+
+### 2. Core Proposal: Two-Tier Remote Update Architecture
+Implement a dual-tier remote update and version control system:
+1. **Tier 1 (Shorebird OTA Code Push)**: Instant over-the-air Dart patches pushed directly to users' devices within minutes, skipping app store reviews entirely for Dart code, UI, logic, and bugfixes.
+2. **Tier 2 (Supabase Remote Version Gate & Kill-Switch)**: A server-driven version configuration table (`app_version_config`) hosted on Supabase that controls minimum supported versions, soft/forced updates, and maintenance mode.
+
+---
+
+### 3. Recommended Architectural & Data Design
+
+```
++-------------------------------------------------------------+
+|                       Tara Travel App                       |
++-------------------------------------------------------------+
+          |                                        |
+          v (On App Launch)                        v (Silent Background)
++---------------------------+            +----------------------------------+
+| Supabase Remote Version   |            | Shorebird Code Push Engine       |
+| Gate (`app_version_gate`) |            | (`shorebird_code_push`)          |
++---------------------------+            +----------------------------------+
+          |                                        |
+   Version Check:                           Check OTA Patch:
+   current < min_required?                  - Checks Shorebird patch server
+          |                                 - Downloads Dart patch silently
+     +----+----+                            - Applies cleanly on next restart
+     |         |                                    |
+   (YES)      (NO)                           Zero Store Delay!
+     |         |
+[Hard Block] [Continue to AuthGate]
+"Update App"
+(URL Launcher)
+```
+
+#### A. Shorebird Integration
+- **Package**: `shorebird_code_push`
+- **Workflow**:
+  - Baseline release: `shorebird release android`
+  - Over-the-air live patch: `shorebird patch android`
+- **Execution**: Background service checks for updates on boot; silently downloads and prepares the patch for the next app restart without disrupting active itineraries.
+
+#### B. Supabase Remote Version Gate (`app_version_config` Table)
+- **Schema**:
+  - `platform` (`text`, primary key: `'android'`, `'ios'`)
+  - `min_supported_version` (`text`, e.g. `'1.0.0'`)
+  - `min_supported_build_number` (`int`, e.g. `1`)
+  - `latest_version` (`text`, e.g. `'1.0.2'`)
+  - `force_update` (`boolean`, default `false`)
+  - `store_url` (`text`, Google Play Store or APK URL)
+  - `release_notes` (`text`)
+  - `maintenance_mode` (`boolean`, default `false`)
+  - `maintenance_message` (`text`)
+- **Security & RLS**: Read-only public access (`anon` and `authenticated`), write access restricted to service-role / admin.
+
+#### C. Presentation & Guard Flow (`AppVersionGate`)
+- Wraps root `TaraApp` before `AuthGate`.
+- **States**:
+  1. **Maintenance Mode**: Full-screen brand-styled screen (`#FAECE7` Sand / `#D85A30` Coral) explaining scheduled maintenance with a "Check Again" CTA.
+  2. **Mandatory Update (Hard Gate)**: Non-dismissible dialog blocking app navigation when `currentVersion < min_supported_version` or `force_update == true`. CTA opens Play Store via `url_launcher`.
+  3. **Optional Update (Soft Banner)**: Non-intrusive dismissible banner in Settings/Profile indicating a newer build is available.
+  4. **Normal Execution**: Passes directly through to `AuthGate`.
+
+#### D. Middleware / Gateway Interceptor Integration (`GatewayInterceptor`)
+Using the application's existing HTTP/Dio middleware (`lib/core/middleware/gateway_interceptor.dart`) creates an active, real-time update detection channel without relying solely on cold app restarts:
+
+1. **Outbound Handshake Headers (`onRequest`)**:
+   - The middleware injects `X-App-Version: 1.0.0` and `X-Platform: android` into every outbound request.
+2. **Inbound Upgrade Headers (`onResponse` / `onError`)**:
+   - Backend APIs or Supabase Edge Functions return status headers:
+     - `X-Upgrade-Required: true`: Triggers immediate event via an event bus / Riverpod notifier (`appUpdateRequiredNotifierProvider`).
+     - `HTTP 426 Upgrade Required`: Intercepted directly in `onError`, immediately presenting the non-dismissible `UpdateRequiredDialog` without corrupting downstream response parsing.
+3. **Mid-Session OTA Trigger**:
+   - When the backend signals that a critical patch is ready (`X-Shorebird-Patch-Available: true`), the middleware silently invokes `AppUpdateService.downloadShorebirdPatchInBackground()`.
+
+---
+
+### 4. Implementation Steps
+1. [ ] **Dependencies**: Add `package_info_plus` and `shorebird_code_push` to `pubspec.yaml`.
+2. [ ] **Database Migration**: Create `supabase/migrations/20260904_app_version_gate.sql` provisioning `app_version_config` and RLS policy.
+3. [ ] **Service & Models**: Build `AppVersionConfigModel` and `AppUpdateService` in `lib/core/services/app_update_service.dart`.
+4. [ ] **Middleware Hook**: Update `GatewayInterceptor` (`gateway_interceptor.dart`):
+   - Inject `X-App-Version` & `X-Platform` in `onRequest`.
+   - Intercept `HTTP 426 Upgrade Required` & `X-Upgrade-Required` headers in `onResponse`/`onError` to trigger real-time version gate.
+5. [ ] **UI Component**: Build `AppVersionGate` and `UpdateRequiredDialog` in `lib/core/widgets/app_version_gate.dart`.
+6. [ ] **App Root Injection**: Mount `AppVersionGate` in `lib/main.dart` wrapping `TaraApp`.
+7. [ ] **Operational Playbook**: Add `docs/REMOTE_UPDATES_GUIDE.md` documenting Shorebird release/patch commands and Supabase version control workflows.
+
+> **Status**: Proposed
+
+
+
