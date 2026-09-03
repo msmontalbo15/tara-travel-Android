@@ -61,6 +61,7 @@
 | **`IMP-074`** | 2026-09-02 | UI & Home / Quick-Action Red Notification Dot Indicator | Implemented IDEA-010: Contextual Red Notification Dot Indicator (`🔴`) on TripCard quick action buttons for new or modified content inside (Itinerary, Packing, Members, Expenses, Chat) using Keystore-backed `ModuleViewTrackerService`, self-action exemption, and reactive Riverpod stream diffing. |
 | **`IMP-075`** | 2026-09-02 | UI & Itinerary / Stop Detail Sheet Live GPS ETA & Stop Sharing | Implemented real-time Estimated Time of Arrival (Live GPS ETA & inter-stop Haversine routing fallback) and 1-tap Stop Details Sharing (`share_plus`) inside `StopDetailSheet`, with 6-pillar information hierarchy and `previousStop` contextual routing handoff. |
 | **`IMP-077`** | 2026-09-03 | UI / Brand-Aligned Back Button Standardization | Standardized and upgraded `AppBackButton` with Tara Travel brand tokens (12px radius, frosted glass, light, brand, and ghost variants) and replaced one-off back buttons across all screens (Packing, Friends, Navigation, Live Navigation, Chat, Notifications, Activity Log, Create Trip, and MapPinPicker). |
+| **`IMP-078`** | 2026-09-04 | Chat, Polls & Firebase FCM | Interactive In-Chat Travel Polls, real-time live vote sync, one-tap winner resolution to itinerary, pinned announcements drawer, quick travel action chips, branded Coral gradient UI, and Firebase FCM notification service. |
 
 ---
 
@@ -1547,10 +1548,49 @@
   - `lib/features/budget/widgets/cash_vs_digital_card.dart` [MODIFIED]
   - `lib/features/budget/widgets/set_allowance_sheet.dart` [MODIFIED]
   - `lib/features/budget/widgets/personal_expense_list.dart` [MODIFIED]
-  - `lib/features/budget/widgets/member_contribution_card.dart` [MODIFIED]
-  - `lib/features/budget/widgets/expense_log.dart` [MODIFIED]
+
+---
+
+## 🚀 [IMP-078] In-Chat Real-Time Travel Polls, Pinned Announcements & Tara Brand UI/UX Overhaul
+- **Date**: 2026-09-04
+- **Motivation**:
+  - Group travel planning suffered from chaotic disjointed decision-making (*"Where are we eating?"*, *"What time do we leave?"*, *"Boat rental consensus"*).
+  - Chat screen was a basic text-only stream with no collaborative tools, no real-time poll voting, and no resolution back to the trip itinerary.
+- **Architectural Implementation**:
+  1. **Database Migration `024_trip_polls_and_chat_enhancements.sql`**:
+     - Created `public.trip_polls` with JSONB options array, category (`food`, `departure`, `activity`, `budget`, `custom`), `is_closed`, `allow_multiple`, and `winner_option_id`.
+     - Created `public.trip_poll_votes` with unique constraint `(poll_id, user_id, option_id)` for idempotent toggle-voting.
+     - Added `is_pinned`, `poll_id`, and `message_type` (`text`, `poll`, `announcement`, `quick_travel`) to `public.trip_messages`.
+     - Added `fcm_token` column to `public.users` for Firebase Cloud Messaging push notifications.
+     - Enforced anti-recursive RLS policies via `public.is_trip_member(trip_id)`.
+     - Published `trip_polls` and `trip_poll_votes` to `supabase_realtime`.
+  2. **Core Domain & Repositories**:
+     - `TripPoll` & `PollOption` models with immutable vote percentage calculation, privacy-preserving voter name formatting (`MemberModel.formatDisplayName(hideSurname: true)`), and winner detection.
+     - Upgraded `ChatRepository` with Poll CRUD (`createPoll`, `castVote`, `removeVote`, `closePoll`), message pinning (`togglePinMessage`), and real-time streams (`pollsStream`, `pollVotesStream`).
+  3. **Riverpod State Architecture**:
+     - `poll_provider.dart`: `pollsProvider` combining real-time polls stream with live vote counts, toggle vote semantics, and automatic winner resolution.
+     - `chat_provider.dart`: Optimistic local rendering on message dispatch and derived `pinnedMessagesProvider`.
+  4. **Brand-Centric UI/UX Widgets**:
+     - `PollCard`: In-chat interactive card with animated progress bars (Coral `#D85A30` / Amber `#EF9F27`), category badge, voter name previews, and **"Add to Itinerary" / "Add to Expenses"** one-tap resolution actions.
+     - `CreatePollSheet`: Modal bottom sheet with quick travel presets (Dinner Spot, Departure Time, Afternoon Activity, Shared Rental), dynamic option list, and multi-choice toggle.
+     - `ChatScreen`: Rebuilt with Playfair Display trip title, online status pulse, collapsible **Pinned Announcement Drawer**, travel **Quick Action Chips** (`📊 Create Poll`, `⏰ Running 10 mins late!`, `📍 Arrived at meeting spot`, `🍽️ Where are we eating?`), Coral gradient sender bubbles, and white companion cards.
+  5. **Firebase Notification Service**:
+     - Created `FirebaseNotificationService` singleton with permission requests, FCM token storage in Supabase `users.fcm_token`, and trip topic subscriptions (`trip_{tripId}`).
+- **Target Files**:
+  - `supabase/migrations/024_trip_polls_and_chat_enhancements.sql` [NEW]
+  - `lib/core/models/trip_poll_model.dart` [NEW]
+  - `lib/core/repositories/chat_repository.dart` [MODIFIED]
+  - `lib/core/providers/poll_provider.dart` [NEW]
+  - `lib/core/providers/chat_provider.dart` [MODIFIED]
+  - `lib/core/services/firebase_notification_service.dart` [NEW]
+  - `lib/features/chat/widgets/poll_card.dart` [NEW]
+  - `lib/features/chat/widgets/create_poll_sheet.dart` [NEW]
+  - `lib/features/chat/chat_screen.dart` [MODIFIED]
+  - `lib/main.dart` [MODIFIED]
+  - `docs/MEMORY.md` [MODIFIED]
 - **Verification**:
-  - `flutter analyze` completed with 0 errors and 0 warnings across the entire repository.
+  - `flutter analyze` completed with 0 errors and 0 warnings across all modified and new files.
+
 
 
 

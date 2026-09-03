@@ -212,9 +212,39 @@ public.trip_messages (
   user_id uuid references public.users(id) on delete cascade,
   sender_name text not null,
   content text not null,
-  message_type text default 'text' check (message_type in ('text','image','system')),
+  message_type text default 'text',        -- 'text', 'poll', 'announcement', 'quick_travel'
   media_url text,
+  is_pinned boolean default false,
+  poll_id uuid references public.trip_polls(id) on delete set null,
   created_at timestamptz default now()
+);
+
+-- 13A. TRIP POLLS (Interactive In-Chat Decision Making)
+public.trip_polls (
+  id uuid primary key default gen_random_uuid(),
+  trip_id uuid not null references public.trips(id) on delete cascade,
+  creator_id uuid not null references public.users(id) on delete cascade,
+  creator_name text not null default 'Anonymous',
+  question text not null,
+  options jsonb not null default '[]'::jsonb,
+  category text not null default 'custom' check (category in ('food', 'departure', 'activity', 'budget', 'custom')),
+  allow_multiple boolean not null default false,
+  is_closed boolean not null default false,
+  winner_option_id text,
+  created_at timestamptz not null default now(),
+  closed_at timestamptz
+);
+
+-- 13B. TRIP POLL VOTES
+public.trip_poll_votes (
+  id uuid primary key default gen_random_uuid(),
+  poll_id uuid not null references public.trip_polls(id) on delete cascade,
+  trip_id uuid not null references public.trips(id) on delete cascade,
+  user_id uuid not null references public.users(id) on delete cascade,
+  voter_name text not null default 'Anonymous',
+  option_id text not null,
+  created_at timestamptz not null default now(),
+  constraint unique_user_poll_option unique (poll_id, user_id, option_id)
 );
 
 -- 14. ACTIVITY LOG

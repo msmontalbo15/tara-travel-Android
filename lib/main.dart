@@ -25,6 +25,7 @@ import 'features/friends/friends_screen.dart';
 import 'core/widgets/auth_gate.dart';
 import 'core/auth/data/secure_session_repository.dart';
 import 'core/security/three_layer_encryption_service.dart';
+import 'core/services/firebase_notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -65,6 +66,9 @@ void main() async {
   // Keys are persisted in platform Keystore/Keychain via flutter_secure_storage.
   // Subsequent calls are instant (keys are cached in memory after first load).
   await ThreeLayerEncryptionService.instance.init();
+
+  // ── 5. Initialise Firebase Notification Service (FCM) ───────────────────────
+  await FirebaseNotificationService.instance.initialize();
 
   runApp(
     const ProviderScope(
