@@ -99,7 +99,16 @@ class TaraApp extends StatelessWidget {
           '/create-trip':  (_) => const CreateTripFlow(),
           '/notifications':(_) => const NotificationsScreen(),
           '/budget':       (_) => const BudgetScreen(),
-          '/itinerary':    (_) => const ItineraryScreen(),
+          '/itinerary':    (context) {
+            final args = ModalRoute.of(context)?.settings.arguments;
+            if (args is Map<String, dynamic>) {
+              return ItineraryScreen(
+                targetStopId: args['targetStopId'] as String?,
+                targetDayNumber: args['targetDayNumber'] as int?,
+              );
+            }
+            return const ItineraryScreen();
+          },
           '/navigation':   (_) => const LiveNavigationScreen(),
           '/packing':      (_) => const PackingScreen(),
           '/members':      (_) => const MembersScreen(),

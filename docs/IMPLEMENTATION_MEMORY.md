@@ -67,6 +67,7 @@
 | **`IMP-082`** | 2026-09-04 | Profile & Avatars / Storage Pipeline | Full unification of user profile photos and companion avatars across 8+ screens via Supabase Storage bucket `avatars` and `MemberAvatarCircle`. |
 | **`IMP-083`** | 2026-09-04 | Chat, Polls & Activity Hub (IDEA-004) | Full rich travel chat hub: migration 025 (metadata & reactions jsonb), interactive rich embeds (Itinerary stops, Expense requests, Packing alerts, GPS location pin drops, Media photos, Tara Bot briefings), crowdsourced poll suggestions, emoji reactions bar with haptic toggle, and offline outbox queue. |
 | **`IMP-084`** | 2026-09-04 | Polls & Votes / Bidirectional Vote Undo | Full vote undo engine: optimistic in-memory toggle and rollback in `PollsNotifier`, `getPollsAndVotesRaw` synchronous hydration, and clean tap-to-toggle unvoting on poll options without UI clutter. |
+| **`IMP-085`** | 2026-09-04 | Polls / Winner Card & Detail Sheet | Replaced flat `_WinnerActions` resolve section with premium gradient `_WinnerCard` (green gradient, trophy badge, vote %, voter chips) that opens `_WinnerDetailSheet` bottom sheet with ranked results breakdown, animated progress bars, voter lists, and quick-action resolution buttons. |
 
 ---
 
@@ -1814,36 +1815,86 @@
 - **Verification**:
   - `flutter analyze lib/features/chat/ lib/core/providers/poll_provider.dart lib/core/repositories/chat_repository.dart` executed: **No issues found! (0 errors, 0 warnings)**.
 
+### `IMP-085` · Polls / Winner Card & Detail Sheet
+- **Date**: September 04, 2026
+- **Scope & Objectives**:
+  1. **Premium Winner Card (`_WinnerCard`)**:
+     - Replaced the flat `_WinnerActions` resolve section with a visually striking, gradient-filled card (deep green → bright green).
+     - Trophy badge pill, large percentage display (28px bold), winner text, vote count, category label, and voter name chips.
+     - Decorative circles with `Clip.hardEdge` for premium glassmorphism effect.
+     - Haptic feedback on tap, with "Tap for results & actions" hint text.
+  2. **Winner Detail Bottom Sheet (`_WinnerDetailSheet`)**:
+     - `DraggableScrollableSheet` (70% initial → 92% max) showing full poll results.
+     - Header: centered trophy icon with gradient background, winner text in Playfair Display, total vote count.
+     - Original question context card with category emoji and creator attribution.
+     - Ranked results breakdown: numbered rank circles, option text, percentage, animated `TweenAnimationBuilder` progress bars, voter name lists.
+     - Winner option highlighted with green background, green border, green rank circle, and 🏆 emoji.
+     - Quick Actions section: "Add to Itinerary" (coral) and "Add to Expenses" (amber) buttons with colored shadow, auto-dismissing sheet before executing callback.
+  3. **Voter Chips (`_VoterChips`)**:
+     - Reusable `Wrap`-based voter name chip row showing up to 4 names with "+N more" overflow pill.
+  4. **Detail Action Button (`_DetailActionButton`)**:
+     - Upgraded from 10px to 14px vertical padding, 14px border radius, colored drop shadow for depth.
+- **Target Files**:
+  - `lib/features/chat/widgets/poll_card.dart` [MODIFIED]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+  - `docs/CHANGELOG.md` [MODIFIED]
+- **Verification**:
+  - `flutter analyze lib/features/chat/widgets/poll_card.dart` executed: **No issues found! (0 errors, 0 warnings)**.
 
+---
 
+### `IMP-086` · Added Winning Option Rich Embed Card & Interactive Detail Sheets
+- **Date**: September 04, 2026
+- **Scope & Objectives**:
+  1. **Rich Embed Message Generation**:
+     - Upgraded `_handleWinnerToItinerary` and `_handleWinnerToExpense` in `ChatScreen` from plain text messages (`sendMessage`) to rich embed cards (`sendRichCard`).
+     - Added full winner metadata (`is_poll_winner: true`, `poll_question`, `poll_category`, `winner_votes`, `total_votes`) to both `ChatMessageType.itinerarySnippet` and `ChatMessageType.expenseRequest`.
+  2. **Interactive Embed Cards (`ItineraryStopEmbed` & `ExpenseRequestEmbed`)**:
+     - Enhanced `ItineraryStopEmbed` with a prominent `🏆 WINNING POLL OPTION` header badge, green border and shadow styling when originated from a poll, and an interactive tap area via `InkWell`.
+     - Enhanced `ExpenseRequestEmbed` with `🏆 WINNING POLL OPTION · DRAFT EXPENSE` header badge, amber styling, draft cost indicator (`₱0.00 · Draft`), and interactive tap area.
+  3. **Full Detail Modal Sheets (`_ItineraryStopDetailSheet` & `_ExpenseDetailSheet`)**:
+     - `_ItineraryStopDetailSheet`: Modal bottom sheet displaying the poll context hero banner, category, day number, stop title (Playfair Display 22px), location pin, notes, and direct actions ("Google Maps" external launcher + "View Itinerary" route navigation to `/itinerary`).
+     - `_ExpenseDetailSheet`: Modal bottom sheet displaying the poll context hero banner, category pill, description (20px bold), large formatted currency amount, draft hint, and direct "View in Budget" CTA to `/budget`.
+  4. **Poll Resolution State & Button Feedback**:
+     - Updated `_DetailActionButton` in `poll_card.dart` to support disabled state gracefully with `Added to Itinerary ✓` / `Added to Expenses ✓` text and muted neutral tones when the poll has already been converted.
+     - Wired `onAddToItinerary` and `onAddToExpenses` in `ChatScreen` to pass `null` when the poll ID is already in `_resolvedItineraryPollIds` or `_resolvedExpensePollIds`.
+- **Target Files**:
+  - `lib/features/chat/chat_screen.dart` [MODIFIED]
+  - `lib/features/chat/widgets/chat_embed_cards.dart` [MODIFIED]
+  - `lib/features/chat/widgets/poll_card.dart` [MODIFIED]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+  - `docs/MEMORY.md` [MODIFIED]
+  - `docs/CHANGELOG.md` [MODIFIED]
+- **Verification**:
+  - `flutter analyze lib/features/chat` executed: **No issues found! (0 errors, 0 warnings)**.
+  - `flutter analyze` full repo: **No issues found! (0 errors, 0 warnings)**.
 
+---
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+### `IMP-087` · Scroll-to-Focused-Stop on "View Itinerary" from Poll Winner
+- **Date**: September 04, 2026
+- **Scope & Objectives**:
+  1. **Route Arguments Forwarding** (`main.dart`):
+     - Updated `/itinerary` named route handler to extract `targetStopId` (String?) and `targetDayNumber` (int?) from `ModalRoute.of(context)?.settings.arguments` and forward them as constructor parameters to `ItineraryScreen`.
+  2. **Day Auto-Switching & Scroll Focus** (`itinerary_screen.dart`):
+     - Added state fields: `_focusedStopId`, `_focusedDayNumber`, `_hasAttemptedScroll`, `_stopKeys` (Map<String, GlobalKey>).
+     - `didChangeDependencies()` fallback: parses route arguments if not provided via constructor.
+     - `_scrollToFocusedStop()`: Uses `Scrollable.ensureVisible(key.currentContext!, alignment: 0.25, duration: 700ms, curve: easeOutCubic)` with a 350ms post-frame delay to allow layout stabilization.
+     - Day-switch logic: When `_focusedDayNumber` differs from `activeDay`, invokes `notifier.setActiveDay(targetIdx)` via `addPostFrameCallback`.
+     - Each stop item wrapped in `Container(key: stopKey)` registered in `_stopKeys` map for scroll targeting.
+  3. **Visual Highlight** (`stop_card.dart`):
+     - `isHighlighted` parameter drives green glow background (`#F0FDF4`), green border (`#22C55E`, 2px), green drop shadow, and a `🏆 GROUP POLL WINNER · FOCUSED` gradient pill banner inside the card.
+  4. **Navigation Sources** (`chat_embed_cards.dart`):
+     - "Itinerary" quick-button on poll winner embed cards passes `targetStopId` + `targetDayNumber` via `Navigator.pushNamed` arguments.
+     - "View Itinerary" button in `_ItineraryStopDetailSheet` passes the same arguments after `Navigator.pop(context)`.
+- **Target Files**:
+  - `lib/main.dart` [MODIFIED]
+  - `lib/features/itinerary/itinerary_screen.dart` [MODIFIED]
+  - `lib/features/itinerary/widgets/stop_card.dart` [MODIFIED]
+  - `lib/features/chat/widgets/chat_embed_cards.dart` [MODIFIED]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+  - `docs/CHANGELOG.md` [MODIFIED]
+- **Verification**:
+  - `flutter analyze lib/features/itinerary lib/features/chat lib/main.dart` executed: **No issues found! (0 errors, 0 warnings)**.
 
 

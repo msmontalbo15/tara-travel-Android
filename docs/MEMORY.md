@@ -1015,7 +1015,26 @@ Client Tier               Storage Tier                Transport Tier
 
 ---
 
+## 23. 💬 TRIP CHAT, POLLS & RICH DECISION EMBEDS (IMP-078, IMP-083–087)
+
+- **Database Tables**:
+  - `public.trip_polls`: id, trip_id, creator_id, question, category, options (jsonb), is_closed, allow_multiple, winner_option_id.
+  - `public.trip_poll_votes`: id, poll_id, user_id, option_id, created_at.
+  - `public.trip_messages`: Extended with `message_type` (`text`, `poll`, `announcement`, `quick_travel`, `itinerary_snippet`, `expense_request`, `packing_alert`, `location_drop`, `media`, `tara_bot`), `poll_id`, `is_pinned`, `metadata` (jsonb), `reactions` (jsonb).
+- **Winning Option Resolution Invariants**:
+  - When the trip organizer taps "Add to Itinerary" or "Add to Expenses" to resolve a group poll, the system converts the option into an `ItineraryStop` or `ExpenseModel` and broadcasts a rich card message (`sendRichCard`) rather than plain text.
+  - Payloads carry `is_poll_winner: true`, `poll_question`, `winner_votes`, and `total_votes`.
+  - Embed cards (`ItineraryStopEmbed`, `ExpenseRequestEmbed`) render with distinct trophy badges and are tap-to-open to display full detail modal sheets with direct route navigation (`/itinerary`, `/budget`) and map integration.
+- **Deep Linking & Itinerary Scroll Focus (IMP-087)**:
+  - `ItineraryScreen` accepts `targetStopId` and `targetDayNumber` (via constructor or `ModalRoute.of(context)?.settings.arguments`).
+  - When present, `ItineraryScreen` checks if `targetDayNumber` matches the active day. If not, it programmatically switches the active day tab (`notifier.setActiveDay`).
+  - A registered map of `GlobalKey` widgets (`_stopKeys`) tracks stop items. A post-frame `Scrollable.ensureVisible` triggers with `Curves.easeOutCubic` and `alignment: 0.25` after a 350ms settle delay.
+  - `StopCard` accepts `isHighlighted: true`, rendering an emerald glow background, green border, and `🏆 GROUP POLL WINNER · FOCUSED` banner.
+
+---
+
 *This document is the single source of architectural truth for Tara Travel. Update this file whenever database schemas, RPC functions, core repositories, or system flows are modified.*
+
 
 
 

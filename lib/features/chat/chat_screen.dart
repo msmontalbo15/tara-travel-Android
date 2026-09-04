@@ -458,17 +458,32 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       _resolvedItineraryPollIds.add(poll.id);
     });
 
-    // Send an automated notification message to chat
+    // Send an automated rich card to chat for the winning option
     final profile = ref.read(profileProvider);
     final senderName = profile.effectiveName.isNotEmpty
         ? MemberModel.formatDisplayName(profile.effectiveName,
             hideSurname: profile.hideSurname)
         : 'Organizer';
 
-    await ref.read(chatProvider.notifier).sendMessage(
-          '📌 Added winning option "${winner.text}" to Day ${targetDay.dayNumber} Itinerary!',
-          senderName,
+    await ref.read(chatProvider.notifier).sendRichCard(
+          type: ChatMessageType.itinerarySnippet,
+          text: '🏆 Added winning option to Day ${targetDay.dayNumber} Itinerary',
+          senderName: senderName,
+          metadata: {
+            'stop_id': newStop.id,
+            'title': newStop.title,
+            'location': newStop.location,
+            'type': newStop.type.label,
+            'day_number': targetDay.dayNumber,
+            'notes': newStop.notes,
+            'is_poll_winner': true,
+            'poll_question': poll.question,
+            'poll_category': poll.category.name,
+            'winner_votes': winner.voteCount,
+            'total_votes': poll.totalVotes,
+          },
         );
+    _scrollToBottom(force: true);
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -518,10 +533,24 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             hideSurname: profile.hideSurname)
         : 'Organizer';
 
-    await ref.read(chatProvider.notifier).sendMessage(
-          '💸 Logged expense draft for "${winner.text}". Fill in the final cost in Budget!',
-          senderName,
+    await ref.read(chatProvider.notifier).sendRichCard(
+          type: ChatMessageType.expenseRequest,
+          text: '🏆 Added winning option to Trip Expenses',
+          senderName: senderName,
+          metadata: {
+            'expense_id': newExpense.id,
+            'description': newExpense.description,
+            'amount': newExpense.amount,
+            'category': newExpense.category.name,
+            'payer_name': senderName,
+            'is_poll_winner': true,
+            'poll_question': poll.question,
+            'poll_category': poll.category.name,
+            'winner_votes': winner.voteCount,
+            'total_votes': poll.totalVotes,
+          },
         );
+    _scrollToBottom(force: true);
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -679,18 +708,22 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                     onClose: () => ref
                                         .read(pollsProvider.notifier)
                                         .closePoll(poll.id),
-                                    onAddToItinerary: () {
-                                      final winner = poll.winnerOption;
-                                      if (winner != null) {
-                                        _handleWinnerToItinerary(poll, winner);
-                                      }
-                                    },
-                                    onAddToExpenses: () {
-                                      final winner = poll.winnerOption;
-                                      if (winner != null) {
-                                        _handleWinnerToExpense(poll, winner);
-                                      }
-                                    },
+                                    onAddToItinerary: _resolvedItineraryPollIds.contains(poll.id)
+                                        ? null
+                                        : () {
+                                            final winner = poll.winnerOption;
+                                            if (winner != null) {
+                                              _handleWinnerToItinerary(poll, winner);
+                                            }
+                                          },
+                                    onAddToExpenses: _resolvedExpensePollIds.contains(poll.id)
+                                        ? null
+                                        : () {
+                                            final winner = poll.winnerOption;
+                                            if (winner != null) {
+                                              _handleWinnerToExpense(poll, winner);
+                                            }
+                                          },
                                   ),
                                 ],
                               );

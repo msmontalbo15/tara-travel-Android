@@ -16,6 +16,7 @@ class StopCard extends StatelessWidget {
   final ItineraryStop stop;
   final List<MemberModel> members;
   final bool isLast;
+  final bool isHighlighted;
   final VoidCallback? onTap;
 
   const StopCard({
@@ -23,6 +24,7 @@ class StopCard extends StatelessWidget {
     required this.stop,
     required this.members,
     this.isLast = false,
+    this.isHighlighted = false,
     this.onTap,
   });
 
@@ -104,24 +106,39 @@ class StopCard extends StatelessWidget {
                 duration: const Duration(milliseconds: 380),
                 margin: EdgeInsets.only(bottom: isLast ? 0 : 12),
                 decoration: BoxDecoration(
-                  color: completed
-                      ? AppColors.greenLight.withValues(alpha: 0.35)
-                      : Colors.white,
+                  color: isHighlighted
+                      ? const Color(0xFFF0FDF4)
+                      : completed
+                          ? AppColors.greenLight.withValues(alpha: 0.35)
+                          : Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  border: completed
+                  border: isHighlighted
                       ? Border.all(
-                          color: AppColors.greenBright.withValues(alpha: 0.4),
-                          width: 1.5,
+                          color: const Color(0xFF22C55E),
+                          width: 2.0,
                         )
-                      : null,
+                      : completed
+                          ? Border.all(
+                              color: AppColors.greenBright.withValues(alpha: 0.4),
+                              width: 1.5,
+                            )
+                          : null,
                   boxShadow: [
-                    BoxShadow(
-                      color: completed
-                          ? AppColors.greenBright.withValues(alpha: 0.08)
-                          : Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
+                    if (isHighlighted)
+                      const BoxShadow(
+                        color: Color(0x3522C55E),
+                        blurRadius: 14,
+                        spreadRadius: 2,
+                        offset: Offset(0, 3),
+                      )
+                    else
+                      BoxShadow(
+                        color: completed
+                            ? AppColors.greenBright.withValues(alpha: 0.08)
+                            : Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
                   ],
                 ),
                 child: Padding(
@@ -129,6 +146,35 @@ class StopCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      if (isHighlighted) ...[
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF15803D), Color(0xFF22C55E)],
+                            ),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text('🏆', style: TextStyle(fontSize: 10)),
+                              SizedBox(width: 4),
+                              Text(
+                                'GROUP POLL WINNER · FOCUSED',
+                                style: TextStyle(
+                                  fontFamily: 'DM Sans',
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       // 1. Time + Status Row
                       Row(
                         children: [

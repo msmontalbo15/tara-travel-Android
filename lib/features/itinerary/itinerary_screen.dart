@@ -44,7 +44,15 @@ enum _StopViewMode { list, timeline }
 /// and a floating action dock.
 class ItineraryScreen extends ConsumerStatefulWidget {
   final bool showHeader;
-  const ItineraryScreen({super.key, this.showHeader = true});
+  final String? targetStopId;
+  final int? targetDayNumber;
+
+  const ItineraryScreen({
+    super.key,
+    this.showHeader = true,
+    this.targetStopId,
+    this.targetDayNumber,
+  });
 
   @override
   ConsumerState<ItineraryScreen> createState() => _ItineraryScreenState();
@@ -53,6 +61,10 @@ class ItineraryScreen extends ConsumerStatefulWidget {
 class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
   _StopViewMode _viewMode = _StopViewMode.list;
   String? _editingStopId;
+  String? _focusedStopId;
+  int? _focusedDayNumber;
+  bool _hasAttemptedScroll = false;
+  final Map<String, GlobalKey> _stopKeys = {};
 
   // ── Arrival Detection & Geofence State ────────────────────────────────────
   ItineraryStop? _nearbyStop;
@@ -63,12 +75,50 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
   @override
   void initState() {
     super.initState();
+    _focusedStopId = widget.targetStopId;
+    _focusedDayNumber = widget.targetDayNumber;
     _startGpsGeofencing();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final trip = ref.read(activeTripProvider).value;
       if (trip != null) {
         ModuleViewTrackerService.instance.markViewed('itinerary', trip.id);
       }
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_focusedStopId == null) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is Map<String, dynamic>) {
+        _focusedStopId = args['targetStopId'] as String?;
+        _focusedDayNumber = args['targetDayNumber'] as int?;
+      }
+    }
+  }
+
+  void _scrollToFocusedStop() {
+    if (_focusedStopId == null || _hasAttemptedScroll) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 350), () {
+        if (!mounted) return;
+        final key = _stopKeys[_focusedStopId];
+        if (key?.currentContext != null) {
+          Scrollable.ensureVisible(
+            key!.currentContext!,
+            duration: const Duration(milliseconds: 700),
+            curve: Curves.easeOutCubic,
+            alignment: 0.25,
+          );
+          if (mounted) {
+            setState(() {
+              _hasAttemptedScroll = true;
+            });
+          }
+        }
+      });
     });
   }
 
@@ -360,6 +410,25 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
           data: (itineraryState) {
             final days = itineraryState.days;
             final activeDay = itineraryState.activeDay;
+            final notifier =
+                ref.read(ref.read(itineraryProvider(trip.id)).notifier);
+
+            // If target day number was provided and differs from activeDay, automatically switch to it
+            if (_focusedDayNumber != null && days.isNotEmpty) {
+              final targetIdx =
+                  days.indexWhere((d) => d.dayNumber == _focusedDayNumber);
+              if (targetIdx != -1 && targetIdx != activeDay) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  notifier.setActiveDay(targetIdx);
+                });
+              }
+            }
+
+            // Trigger scroll to focused winning stop
+            if (_focusedStopId != null && !_hasAttemptedScroll) {
+              _scrollToFocusedStop();
+            }
+
             final currentDay = (days.isNotEmpty && activeDay < days.length)
                 ? days[activeDay]
                 : (days.isNotEmpty ? days.first : null);
@@ -370,9 +439,6 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
             final dailyBudget = (trip.totalBudget > 0 && days.isNotEmpty)
                 ? trip.totalBudget / days.length
                 : 0.0;
-
-            final notifier =
-                ref.read(ref.read(itineraryProvider(trip.id)).notifier);
 
             return Scaffold(
               backgroundColor: AppColors.deepEarth,
@@ -729,92 +795,98 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                 final transitInfo = prevStop != null
                     ? TransitConflictHelper.analyze(from: prevStop, to: stop)
                     : null;
+                final stopKey =
+                    _stopKeys.putIfAbsent(stop.id, () => GlobalKey());
 
                 return KeyedSubtree(
                   key: ValueKey(stop.id),
-                  child: Column(
-                    key: ValueKey('col_${stop.id}'),
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Inter-Stop Transit & Conflict Badge
-                      if (transitInfo != null &&
-                          (transitInfo.distanceKm != null ||
-                              transitInfo.hasWarning))
-                        InterStopTransitBadge(info: transitInfo),
+                  child: Container(
+                    key: stopKey,
+                    child: Column(
+                      key: ValueKey('col_${stop.id}'),
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Inter-Stop Transit & Conflict Badge
+                        if (transitInfo != null &&
+                            (transitInfo.distanceKm != null ||
+                                transitInfo.hasWarning))
+                          InterStopTransitBadge(info: transitInfo),
 
-                      // Swipe-to-delete dismissible
-                      Dismissible(
-                        key: ValueKey('dis_${stop.id}'),
-                        direction: canManage
-                            ? DismissDirection.endToStart
-                            : DismissDirection.none,
-                        background: Container(
-                          margin: const EdgeInsets.only(bottom: 4),
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.only(right: 20),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFEF4444),
-                            borderRadius: BorderRadius.circular(16),
+                        // Swipe-to-delete dismissible
+                        Dismissible(
+                          key: ValueKey('dis_${stop.id}'),
+                          direction: canManage
+                              ? DismissDirection.endToStart
+                              : DismissDirection.none,
+                          background: Container(
+                            margin: const EdgeInsets.only(bottom: 4),
+                            alignment: Alignment.centerRight,
+                            padding: const EdgeInsets.only(right: 20),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEF4444),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: const Icon(
+                              Icons.delete_rounded,
+                              color: Colors.white,
+                              size: 22,
+                            ),
                           ),
-                          child: const Icon(
-                            Icons.delete_rounded,
-                            color: Colors.white,
-                            size: 22,
-                          ),
-                        ),
-                        confirmDismiss: (_) async {
-                          bool confirmed = false;
-                          await AppDialog.showDestructive(
-                            context,
-                            title: 'Delete Stop?',
-                            message:
-                                'Remove "${stop.title}" from Day ${day.dayNumber}?',
-                            confirmLabel: 'Delete',
-                            onConfirm: () => confirmed = true,
-                          );
-                          return confirmed;
-                        },
-                        onDismissed: (_) =>
-                            notifier.deleteStop(dayIndex, stop.id),
-                        child: Padding(
-                          padding: const EdgeInsets.only(bottom: 4),
-                          child: Row(
-                            children: [
-                              // Drag handle
-                              if (canManage)
-                                ReorderableDragStartListener(
-                                  index: i,
-                                  child: const Padding(
-                                    padding: EdgeInsets.only(right: 6),
-                                    child: Icon(
-                                      Icons.drag_handle_rounded,
-                                      size: 18,
-                                      color: AppColors.muted,
+                          confirmDismiss: (_) async {
+                            bool confirmed = false;
+                            await AppDialog.showDestructive(
+                              context,
+                              title: 'Delete Stop?',
+                              message:
+                                  'Remove "${stop.title}" from Day ${day.dayNumber}?',
+                              confirmLabel: 'Delete',
+                              onConfirm: () => confirmed = true,
+                            );
+                            return confirmed;
+                          },
+                          onDismissed: (_) =>
+                              notifier.deleteStop(dayIndex, stop.id),
+                          child: Padding(
+                            padding: const EdgeInsets.only(bottom: 4),
+                            child: Row(
+                              children: [
+                                // Drag handle
+                                if (canManage)
+                                  ReorderableDragStartListener(
+                                    index: i,
+                                    child: const Padding(
+                                      padding: EdgeInsets.only(right: 6),
+                                      child: Icon(
+                                        Icons.drag_handle_rounded,
+                                        size: 18,
+                                        color: AppColors.muted,
+                                      ),
+                                    ),
+                                  ),
+                                Expanded(
+                                  child: StopCard(
+                                    stop: stop,
+                                    members: members,
+                                    isLast: i == day.stops.length - 1,
+                                    isHighlighted: stop.id == _focusedStopId,
+                                    onTap: () => _showStopDetail(
+                                      context,
+                                      stop,
+                                      members,
+                                      dayIndex,
+                                      tripId,
+                                      day.date,
+                                      currentUserId: currentMemberId,
+                                      canManage: canManage,
+                                      previousStop:
+                                          i > 0 ? day.stops[i - 1] : null,
                                     ),
                                   ),
                                 ),
-                              Expanded(
-                                child: StopCard(
-                                  stop: stop,
-                                  members: members,
-                                  isLast: i == day.stops.length - 1,
-                                  onTap: () => _showStopDetail(
-                                    context,
-                                    stop,
-                                    members,
-                                    dayIndex,
-                                    tripId,
-                                    day.date,
-                                    currentUserId: currentMemberId,
-                                    canManage: canManage,
-                                    previousStop: i > 0 ? day.stops[i - 1] : null,
-                                  ),
-                                ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
-                      ),
 
                       // Inline edit form
                       if (isEditing) ...[
@@ -832,7 +904,8 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                       ],
                     ],
                   ),
-                );
+                ),
+              );
               },
             ),
 
