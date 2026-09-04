@@ -64,6 +64,8 @@
 | **`IMP-078`** | 2026-09-04 | Chat, Polls & Firebase FCM | Interactive In-Chat Travel Polls, real-time live vote sync, one-tap winner resolution to itinerary, pinned announcements drawer, quick travel action chips, branded Coral gradient UI, and Firebase FCM notification service. |
 | **`IMP-079`** | 2026-09-04 | Architecture & UI Standards | Formalized Mobile Responsive Layout Standards and Strict Overflow Prevention Patterns in `SOFTWARE_DESIGN_PATTERNS.md` & `MEMORY.md` (bounded flex, scrollable viewports, dynamic font ellipsis, and zero RenderFlex overflow tolerance). |
 | **`IMP-080`** | 2026-09-04 | UI & Home / Quick Actions Grid | Refined Quick Actions Grid layout, card dimensions, and aesthetics: calibrated `childAspectRatio` from 1.34 to 1.52, compact padding, 30x30 icon containers, crisp typography, and responsive `_PulsingGuide` border alignment. |
+| **`IMP-082`** | 2026-09-04 | Profile & Avatars / Storage Pipeline | Full unification of user profile photos and companion avatars across 8+ screens via Supabase Storage bucket `avatars` and `MemberAvatarCircle`. |
+| **`IMP-083`** | 2026-09-04 | Chat, Polls & Activity Hub (IDEA-004) | Full rich travel chat hub: migration 025 (metadata & reactions jsonb), interactive rich embeds (Itinerary stops, Expense requests, Packing alerts, GPS location pin drops, Media photos, Tara Bot briefings), crowdsourced poll suggestions, emoji reactions bar with haptic toggle, and offline outbox queue. |
 
 ---
 
@@ -1724,6 +1726,66 @@
   - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
 - **Verification**:
   - `flutter analyze lib/` executed: **No issues found! (0 errors, 0 warnings)**.
+
+---
+
+### `IMP-083` · Interactive Trip Chat, Collaborative Polls & Contextual Activity Hub (IDEA-004)
+- **Date**: September 04, 2026
+- **Scope & Objectives**:
+  1. **Supabase Migration 025 (`025_trip_chat_rich_embeds_and_reactions.sql`)**:
+     - Added `metadata jsonb default '{}'::jsonb` and `reactions jsonb default '{}'::jsonb` columns to `public.trip_messages`.
+     - Created RLS update policy allowing trip members to update `reactions` on messages without overriding message content.
+     - Added RLS update policy on `public.trip_polls` allowing trip members to append crowdsourced options while poll is open.
+  2. **Data & Repository Layer Expansion**:
+     - In `lib/core/repositories/chat_repository.dart`:
+       - Expanded `ChatMessageType` enum with `itinerarySnippet`, `expenseRequest`, `packingAlert`, `locationDrop`, `media`, and `taraBot`.
+       - Added `metadata` and `reactions` parsing/serialization to `ChatMessage`.
+       - Implemented `addPollOption(pollId, optionText, createdByName)` to append user options to active polls.
+       - Implemented `toggleReaction(messageId, emoji, userId)` with atomic JSONB aggregation.
+       - Implemented `uploadChatMedia(tripId, localFilePath)` targeting Supabase Storage bucket `avatars`.
+     - In `lib/core/models/trip_poll_model.dart`:
+       - Added `options` to `TripPoll.copyWith`.
+  3. **Riverpod State Management**:
+     - In `lib/core/providers/chat_provider.dart`:
+       - Added `sendRichCard(...)` supporting structured metadata payloads for all new message types.
+       - Added `sendMediaMessage(...)` with automatic storage upload and optimistic local bubble rendering.
+       - Added `toggleReaction(...)` with instantaneous local optimistic toggle before remote Supabase write.
+     - In `lib/core/providers/poll_provider.dart`:
+       - Added `addOption(pollId, optionText, createdByName)` to `PollsNotifier`.
+  4. **UI Components & Rich Embed Cards**:
+     - Created `lib/features/chat/widgets/chat_embed_cards.dart`:
+       - `ItineraryStopEmbed`: Visual stop card showing day number, title, category icon, notes, and direct Google Maps / in-app directions button.
+       - `ExpenseRequestEmbed`: Financial card detailing expense description, category, amount in Philippine Pesos (₱), and one-tap "View in Budget" CTA.
+       - `PackingAlertEmbed`: Urgent packing checklist ping with interactive "🙋‍♂️ I'll Bring This!" claim button that assigns the item to the user and notifies chat.
+       - `LocationDropEmbed`: GPS coordinate pin card with "🗺️ Open in Google Maps" launch handler.
+       - `MediaAttachmentEmbed`: Cached network photo preview with zoom-ready aesthetic container and rounded corners.
+       - `TaraBotBriefingEmbed`: AI daily morning recap summary detailing scheduled stops, estimated costs, and travel tips.
+       - `ReactionPillsRow`: Responsive wrap of active emoji reactions with active user state highlighting and tap-to-toggle haptics.
+     - Created `lib/features/chat/widgets/chat_attachment_picker_sheet.dart`:
+       - Clean modal bottom sheet replacing legacy action list: Itinerary Stops picker, Expenses picker, Unassigned Packing Items picker, Photo gallery picker, Live GPS Pin drop, and Tara Bot Daily Briefing generator.
+     - Updated `lib/features/chat/widgets/poll_card.dart`:
+       - Integrated crowdsourced option submission via `_showAddOptionDialog` ("Suggest an Option / Spot").
+     - Updated `lib/features/chat/chat_screen.dart`:
+       - Integrated rich embed cards and `ReactionPillsRow` into both `_MyBubble` and `_TheirBubble`.
+       - Connected `_MessageActionSheet` quick reaction bar (❤️, 👍, 🏖️, 🚗, 🍽️, ⏰) to `chatNotifier.toggleReaction`.
+       - Wired `_handleClaimPackingItem` using `PackingRepository.assignItem`.
+- **Target Files**:
+  - `supabase/migrations/025_trip_chat_rich_embeds_and_reactions.sql` [NEW]
+  - `lib/core/repositories/chat_repository.dart` [MODIFIED]
+  - `lib/core/models/trip_poll_model.dart` [MODIFIED]
+  - `lib/core/providers/chat_provider.dart` [MODIFIED]
+  - `lib/core/providers/poll_provider.dart` [MODIFIED]
+  - `lib/features/chat/widgets/chat_embed_cards.dart` [NEW]
+  - `lib/features/chat/widgets/chat_attachment_picker_sheet.dart` [NEW]
+  - `lib/features/chat/widgets/poll_card.dart` [MODIFIED]
+  - `lib/features/chat/chat_screen.dart` [MODIFIED]
+  - `docs/DEV_IDEA.md` [MODIFIED]
+  - `docs/MEMORY.md` [MODIFIED]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+  - `docs/CHANGELOG.md` [MODIFIED]
+- **Verification**:
+  - `flutter analyze lib/features/chat/` executed: **No issues found! (0 errors, 0 warnings)**.
+  - `flutter analyze lib/core/` executed: **No issues found! (0 errors, 0 warnings)**.
 
 
 

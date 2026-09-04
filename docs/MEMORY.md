@@ -205,15 +205,17 @@ public.contributions (
   created_at timestamptz default now()
 );
 
--- 13. TRIP MESSAGES (Live Chat)
+-- 13. TRIP MESSAGES (Live Chat & Rich Embed Activity Hub)
 public.trip_messages (
   id uuid primary key default gen_random_uuid(),
   trip_id uuid references public.trips(id) on delete cascade,
   user_id uuid references public.users(id) on delete cascade,
   sender_name text not null,
   content text not null,
-  message_type text default 'text',        -- 'text', 'poll', 'announcement', 'quick_travel'
+  message_type text default 'text',        -- 'text', 'poll', 'announcement', 'quick_travel', 'itinerary_snippet', 'expense_request', 'packing_alert', 'location_drop', 'media', 'tara_bot'
   media_url text,
+  metadata jsonb default '{}'::jsonb,      -- Rich embed payload (stop_id, expense_id, item_id, lat/lng, briefing items)
+  reactions jsonb default '{}'::jsonb,     -- Emoji reactions map: {"👍": ["user_id_1"], "❤️": ["user_id_2"]}
   is_pinned boolean default false,
   poll_id uuid references public.trip_polls(id) on delete set null,
   created_at timestamptz default now()

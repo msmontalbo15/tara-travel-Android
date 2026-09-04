@@ -19,6 +19,7 @@ class PollCard extends StatelessWidget {
   final VoidCallback? onClose;
   final VoidCallback? onAddToItinerary;
   final VoidCallback? onAddToExpenses;
+  final ValueChanged<String>? onAddOption;
 
   const PollCard({
     super.key,
@@ -29,6 +30,7 @@ class PollCard extends StatelessWidget {
     this.onClose,
     this.onAddToItinerary,
     this.onAddToExpenses,
+    this.onAddOption,
   });
 
   @override
@@ -151,6 +153,43 @@ class PollCard extends StatelessWidget {
               onAddToExpenses: onAddToExpenses,
             ),
 
+          // ── Crowdsourced "+ Suggest an Option" button ──────────────
+          if (!poll.isClosed && onAddOption != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+              child: InkWell(
+                onTap: () => _showAddOptionDialog(context),
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: AppColors.sand.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: AppColors.primaryLight.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.add_circle_outline_rounded,
+                          size: 14, color: AppColors.primary),
+                      SizedBox(width: 6),
+                      Text(
+                        'Suggest an Option / Spot',
+                        style: TextStyle(
+                          fontFamily: 'DM Sans',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
           // ── Close poll button (organizer / creator only) ───────────
           if (!poll.isClosed && (isOrganizer || poll.isCreator(currentUserId)))
             Padding(
@@ -180,6 +219,73 @@ class PollCard extends StatelessWidget {
             ),
 
           const SizedBox(height: 4),
+        ],
+      ),
+    );
+  }
+
+  void _showAddOptionDialog(BuildContext context) {
+    final ctrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Suggest Option / Spot',
+          style: TextStyle(
+            fontFamily: 'Playfair Display',
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          textCapitalization: TextCapitalization.sentences,
+          decoration: InputDecoration(
+            hintText: 'e.g. Rico\'s Lechon, 8:00 AM, Snorkeling',
+            hintStyle: TextStyle(
+              fontFamily: 'DM Sans',
+              fontSize: 13,
+              color: AppColors.muted.withValues(alpha: 0.6),
+            ),
+            filled: true,
+            fillColor: AppColors.surfaceLight,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppColors.cardBorder),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel',
+                style: TextStyle(fontFamily: 'DM Sans', color: AppColors.muted)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final text = ctrl.text.trim();
+              if (text.isNotEmpty) {
+                Navigator.pop(ctx);
+                onAddOption?.call(text);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text(
+              'Add Option',
+              style: TextStyle(fontFamily: 'DM Sans', fontWeight: FontWeight.bold),
+            ),
+          ),
         ],
       ),
     );

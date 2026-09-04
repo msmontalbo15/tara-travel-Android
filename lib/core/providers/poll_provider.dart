@@ -164,6 +164,18 @@ class PollsNotifier extends AsyncNotifier<List<TripPoll>> {
     }
   }
 
+  /// Adds a crowdsourced option to an open poll.
+  Future<void> addOption({
+    required String pollId,
+    required String optionText,
+  }) async {
+    final repo = ref.read(pollRepositoryProvider);
+    await repo.addPollOption(
+      pollId: pollId,
+      optionText: optionText,
+    );
+  }
+
   /// Closes a poll and auto-resolves the winner.
   Future<void> closePoll(String pollId) async {
     final polls = state.value ?? [];

@@ -20,6 +20,8 @@ import '../../core/services/module_view_tracker_service.dart';
 import '../../core/widgets/buttons/app_back_button.dart';
 import 'widgets/poll_card.dart';
 import 'widgets/create_poll_sheet.dart';
+import 'widgets/chat_embed_cards.dart';
+import 'widgets/chat_attachment_picker_sheet.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   final bool showHeader;
@@ -161,20 +163,148 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   void _openAttachmentMenu() {
     HapticFeedback.lightImpact();
+    final trip = ref.read(activeTripProvider).value;
+    if (trip == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Select an active trip to share attachments.')),
+      );
+      return;
+    }
+
+    final profile = ref.read(profileProvider);
+    final senderName = profile.effectiveName.isNotEmpty
+        ? MemberModel.formatDisplayName(profile.effectiveName,
+            hideSurname: profile.hideSurname)
+        : 'Traveler';
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => _AttachmentActionSheet(
-        onCreatePoll: () {
-          Navigator.pop(ctx);
-          _openCreatePoll();
+      isScrollControlled: true,
+      builder: (ctx) => ChatAttachmentPickerSheet(
+        trip: trip,
+        onCreatePoll: _openCreatePoll,
+        onQuickPreset: _sendQuickTravelMessage,
+        onShareItineraryStop: (stop, dayNumber) async {
+          await ref.read(chatProvider.notifier).sendRichCard(
+                type: ChatMessageType.itinerarySnippet,
+                text: '📍 Shared stop: ${stop.title}',
+                senderName: senderName,
+                metadata: {
+                  'stop_id': stop.id,
+                  'title': stop.title,
+                  'location': stop.location,
+                  'type': stop.type.label,
+                  'day_number': dayNumber,
+                  'notes': stop.notes,
+                },
+              );
+          _scrollToBottom(force: true);
         },
-        onSelectQuickPreset: (text) {
-          Navigator.pop(ctx);
-          _sendQuickTravelMessage(text);
+        onShareExpense: (expense) async {
+          await ref.read(chatProvider.notifier).sendRichCard(
+                type: ChatMessageType.expenseRequest,
+                text: '💸 Expense: ${expense.description}',
+                senderName: senderName,
+                metadata: {
+                  'expense_id': expense.id,
+                  'description': expense.description,
+                  'amount': expense.amount,
+                  'category': expense.category.name,
+                  'payer_name': senderName,
+                },
+              );
+          _scrollToBottom(force: true);
+        },
+        onSharePackingItem: (item) async {
+          await ref.read(chatProvider.notifier).sendRichCard(
+                type: ChatMessageType.packingAlert,
+                text: '🎒 Packing needed: ${item.name}',
+                senderName: senderName,
+                metadata: {
+                  'item_id': item.id,
+                  'item_name': item.name,
+                  'category': item.subCategory ?? 'General',
+                  'is_claimed': item.isAssigned,
+                  'claimed_by': item.assignedMemberName,
+                },
+              );
+          _scrollToBottom(force: true);
+        },
+        onDropLocation: (lat, lng, label) async {
+          await ref.read(chatProvider.notifier).sendRichCard(
+                type: ChatMessageType.locationDrop,
+                text: '📍 Meeting Location: $label',
+                senderName: senderName,
+                metadata: {
+                  'lat': lat,
+                  'lng': lng,
+                  'label': label,
+                },
+              );
+          _scrollToBottom(force: true);
+        },
+        onSharePhoto: (localPath) async {
+          await ref.read(chatProvider.notifier).sendMediaMessage(
+                localPath: localPath,
+                senderName: senderName,
+              );
+          _scrollToBottom(force: true);
+        },
+        onSendMorningBriefing: (briefingText) async {
+          await ref.read(chatProvider.notifier).sendRichCard(
+                type: ChatMessageType.taraBot,
+                text: briefingText,
+                senderName: '🤖 Tara Bot',
+                metadata: {'briefing': true},
+              );
+          _scrollToBottom(force: true);
         },
       ),
     );
+  }
+
+  Future<void> _handleClaimPackingItem(ChatMessage msg) async {
+    final trip = ref.read(activeTripProvider).value;
+    if (trip == null || msg.metadata == null) return;
+
+    final itemId = msg.metadata!['item_id']?.toString() ?? '';
+    final itemName = msg.metadata!['item_name']?.toString() ?? 'item';
+    final profile = ref.read(profileProvider);
+    final myName = profile.effectiveName.isNotEmpty
+        ? MemberModel.formatDisplayName(profile.effectiveName,
+            hideSurname: profile.hideSurname)
+        : 'A traveler';
+    final currentUserId = ref.read(authRepositoryProvider).currentUser?.id ?? '';
+
+    if (itemId.isEmpty || currentUserId.isEmpty) return;
+
+    HapticFeedback.mediumImpact();
+
+    try {
+      final packingRepo = ref.read(packingRepositoryProvider);
+      await packingRepo.assignItem(
+        itemId: itemId,
+        memberId: currentUserId,
+        memberName: myName,
+      );
+
+      await ref.read(chatProvider.notifier).sendMessage(
+            '🙋‍♂️ $myName claimed to bring "$itemName"!',
+            myName,
+          );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('You claimed to bring "$itemName"!'),
+            backgroundColor: AppColors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error claiming packing item: $e');
+    }
   }
 
   void _showTripInfoModal(String tripTitle, int memberCount, dynamic trip) {
@@ -217,6 +347,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         message: msg,
         isMe: isMe,
         canPin: isOrganizer || isMe,
+        onSelectReaction: (emoji) {
+          ref.read(chatProvider.notifier).toggleReaction(
+                messageId: msg.id,
+                emoji: emoji,
+                userId: currentUserId,
+              );
+        },
         onCopy: () {
           Clipboard.setData(ClipboardData(text: msg.text));
           HapticFeedback.selectionClick();
@@ -533,6 +670,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                             voterName: voterName,
                                           );
                                     },
+                                    onAddOption: (optionText) {
+                                      ref.read(pollsProvider.notifier).addOption(
+                                            pollId: poll.id,
+                                            optionText: optionText,
+                                          );
+                                    },
                                     onClose: () => ref
                                         .read(pollsProvider.notifier)
                                         .closePoll(poll.id),
@@ -554,6 +697,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                             }
                           }
 
+                          // If message is a Tara Bot briefing, render special full-width embed
+                          if (msg.messageType == ChatMessageType.taraBot) {
+                            return Column(
+                              children: [
+                                if (showDate) _dateDivider(msg.createdAt),
+                                TaraBotBriefingEmbed(
+                                  text: msg.text,
+                                  metadata: msg.metadata,
+                                ),
+                              ],
+                            );
+                          }
+
                           return Column(
                             children: [
                               if (showDate) _dateDivider(msg.createdAt),
@@ -561,14 +717,34 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                   ? _MyBubble(
                                       msg: msg,
                                       isConsecutive: isConsecutive,
+                                      currentUserId: currentUserId,
                                       onTapActions: () => _showMessageActionsModal(
                                           msg, isOrganizer, currentUserId),
+                                      onToggleReaction: (emoji) =>
+                                          ref.read(chatProvider.notifier).toggleReaction(
+                                                messageId: msg.id,
+                                                emoji: emoji,
+                                                userId: currentUserId,
+                                              ),
+                                      onClaimPackingItem: msg.messageType == ChatMessageType.packingAlert
+                                          ? () => _handleClaimPackingItem(msg)
+                                          : null,
                                     )
                                   : _TheirBubble(
                                       msg: msg,
                                       isConsecutive: isConsecutive,
+                                      currentUserId: currentUserId,
                                       onTapActions: () => _showMessageActionsModal(
                                           msg, isOrganizer, currentUserId),
+                                      onToggleReaction: (emoji) =>
+                                          ref.read(chatProvider.notifier).toggleReaction(
+                                                messageId: msg.id,
+                                                emoji: emoji,
+                                                userId: currentUserId,
+                                              ),
+                                      onClaimPackingItem: msg.messageType == ChatMessageType.packingAlert
+                                          ? () => _handleClaimPackingItem(msg)
+                                          : null,
                                     ),
                             ],
                           );
@@ -1219,17 +1395,24 @@ class _InputBar extends StatelessWidget {
 class _MyBubble extends StatelessWidget {
   final ChatMessage msg;
   final bool isConsecutive;
+  final String currentUserId;
   final VoidCallback onTapActions;
+  final ValueChanged<String> onToggleReaction;
+  final VoidCallback? onClaimPackingItem;
 
   const _MyBubble({
     required this.msg,
     required this.isConsecutive,
+    required this.currentUserId,
     required this.onTapActions,
+    required this.onToggleReaction,
+    this.onClaimPackingItem,
   });
 
   @override
   Widget build(BuildContext context) {
     final isQuickTravel = msg.messageType == ChatMessageType.quickTravel;
+    final hasMetadata = msg.metadata != null;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -1243,111 +1426,144 @@ class _MyBubble extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Flexible(
-              child: Container(
-                padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
-                decoration: BoxDecoration(
-                  color: isQuickTravel ? const Color(0xFFD35400) : AppColors.primary,
-                  borderRadius: BorderRadius.only(
-                    topLeft: const Radius.circular(16),
-                    topRight: isConsecutive ? const Radius.circular(6) : const Radius.circular(16),
-                    bottomLeft: const Radius.circular(16),
-                    bottomRight: const Radius.circular(4),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Pinned badge
-                    if (msg.isPinned)
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 6),
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.black26,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.push_pin_rounded, size: 11, color: Colors.white),
-                            SizedBox(width: 4),
-                            Text(
-                              'Pinned',
-                              style: TextStyle(
-                                fontFamily: 'DM Sans',
-                                fontSize: 9,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                    // Quick travel badge
-                    if (isQuickTravel)
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 6),
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.near_me_rounded, size: 11, color: Colors.white),
-                            SizedBox(width: 4),
-                            Text(
-                              'TRAVEL ALERT',
-                              style: TextStyle(
-                                fontFamily: 'DM Sans',
-                                fontSize: 9,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
-                                letterSpacing: 0.4,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                    // Message text
-                    Text(
-                      msg.text,
-                      style: const TextStyle(
-                        fontFamily: 'DM Sans',
-                        fontSize: 14,
-                        color: Colors.white,
-                        height: 1.35,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
+                    decoration: BoxDecoration(
+                      color: isQuickTravel ? const Color(0xFFD35400) : AppColors.primary,
+                      borderRadius: BorderRadius.only(
+                        topLeft: const Radius.circular(16),
+                        topRight: isConsecutive ? const Radius.circular(6) : const Radius.circular(16),
+                        bottomLeft: const Radius.circular(16),
+                        bottomRight: const Radius.circular(4),
                       ),
                     ),
-                    const SizedBox(height: 4),
-
-                    // Timestamp and delivery status integrated neatly
-                    Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          _formatTime(msg.createdAt),
-                          style: TextStyle(
-                            fontFamily: 'DM Sans',
-                            fontSize: 10,
-                            color: Colors.white.withValues(alpha: 0.8),
+                        // Pinned badge
+                        if (msg.isPinned)
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 6),
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.black26,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.push_pin_rounded, size: 11, color: Colors.white),
+                                SizedBox(width: 4),
+                                Text(
+                                  'Pinned',
+                                  style: TextStyle(
+                                    fontFamily: 'DM Sans',
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
+
+                        // Quick travel badge
+                        if (isQuickTravel)
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 6),
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.near_me_rounded, size: 11, color: Colors.white),
+                                SizedBox(width: 4),
+                                Text(
+                                  'TRAVEL ALERT',
+                                  style: TextStyle(
+                                    fontFamily: 'DM Sans',
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                    letterSpacing: 0.4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                        // Message text
+                        if (msg.text.isNotEmpty)
+                          Text(
+                            msg.text,
+                            style: const TextStyle(
+                              fontFamily: 'DM Sans',
+                              fontSize: 14,
+                              color: Colors.white,
+                              height: 1.35,
+                            ),
+                          ),
+
+                        // Rich embeds
+                        if (hasMetadata) ...[
+                          if (msg.messageType == ChatMessageType.itinerarySnippet)
+                            ItineraryStopEmbed(metadata: msg.metadata!, isMe: true),
+                          if (msg.messageType == ChatMessageType.expenseRequest)
+                            ExpenseRequestEmbed(metadata: msg.metadata!, isMe: true),
+                          if (msg.messageType == ChatMessageType.packingAlert)
+                            PackingAlertEmbed(
+                              metadata: msg.metadata!,
+                              isMe: true,
+                              onClaim: onClaimPackingItem,
+                            ),
+                          if (msg.messageType == ChatMessageType.locationDrop)
+                            LocationDropEmbed(metadata: msg.metadata!, isMe: true),
+                          if (msg.messageType == ChatMessageType.media)
+                            MediaAttachmentEmbed(metadata: msg.metadata!, isMe: true),
+                        ],
+
+                        const SizedBox(height: 4),
+
+                        // Timestamp and delivery status integrated neatly
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              _formatTime(msg.createdAt),
+                              style: TextStyle(
+                                fontFamily: 'DM Sans',
+                                fontSize: 10,
+                                color: Colors.white.withValues(alpha: 0.8),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            if (msg.isPending)
+                              const Icon(Icons.schedule_rounded,
+                                  size: 11, color: Colors.white70)
+                            else
+                              const Icon(Icons.done_all_rounded,
+                                  size: 12, color: Colors.white),
+                          ],
                         ),
-                        const SizedBox(width: 4),
-                        if (msg.isPending)
-                          const Icon(Icons.schedule_rounded,
-                              size: 11, color: Colors.white70)
-                        else
-                          const Icon(Icons.done_all_rounded,
-                              size: 12, color: Colors.white),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+
+                  // Persistent emoji reaction chips
+                  ReactionPillsRow(
+                    reactions: msg.reactions,
+                    currentUserId: currentUserId,
+                    onToggleReaction: onToggleReaction,
+                  ),
+                ],
               ),
             ),
           ],
@@ -1362,17 +1578,24 @@ class _MyBubble extends StatelessWidget {
 class _TheirBubble extends StatelessWidget {
   final ChatMessage msg;
   final bool isConsecutive;
+  final String currentUserId;
   final VoidCallback onTapActions;
+  final ValueChanged<String> onToggleReaction;
+  final VoidCallback? onClaimPackingItem;
 
   const _TheirBubble({
     required this.msg,
     required this.isConsecutive,
+    required this.currentUserId,
     required this.onTapActions,
+    required this.onToggleReaction,
+    this.onClaimPackingItem,
   });
 
   @override
   Widget build(BuildContext context) {
     final isQuickTravel = msg.messageType == ChatMessageType.quickTravel;
+    final hasMetadata = msg.metadata != null;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -1413,6 +1636,7 @@ class _TheirBubble extends StatelessWidget {
             Flexible(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   // Sender name (only if not consecutive)
                   if (!isConsecutive)
@@ -1508,15 +1732,35 @@ class _TheirBubble extends StatelessWidget {
                           ),
 
                         // Message text
-                        Text(
-                          msg.text,
-                          style: const TextStyle(
-                            fontFamily: 'DM Sans',
-                            fontSize: 14,
-                            color: AppColors.deepEarth,
-                            height: 1.35,
+                        if (msg.text.isNotEmpty)
+                          Text(
+                            msg.text,
+                            style: const TextStyle(
+                              fontFamily: 'DM Sans',
+                              fontSize: 14,
+                              color: AppColors.deepEarth,
+                              height: 1.35,
+                            ),
                           ),
-                        ),
+
+                        // Rich embeds
+                        if (hasMetadata) ...[
+                          if (msg.messageType == ChatMessageType.itinerarySnippet)
+                            ItineraryStopEmbed(metadata: msg.metadata!, isMe: false),
+                          if (msg.messageType == ChatMessageType.expenseRequest)
+                            ExpenseRequestEmbed(metadata: msg.metadata!, isMe: false),
+                          if (msg.messageType == ChatMessageType.packingAlert)
+                            PackingAlertEmbed(
+                              metadata: msg.metadata!,
+                              isMe: false,
+                              onClaim: onClaimPackingItem,
+                            ),
+                          if (msg.messageType == ChatMessageType.locationDrop)
+                            LocationDropEmbed(metadata: msg.metadata!, isMe: false),
+                          if (msg.messageType == ChatMessageType.media)
+                            MediaAttachmentEmbed(metadata: msg.metadata!, isMe: false),
+                        ],
+
                         const SizedBox(height: 4),
 
                         // Timestamp
@@ -1530,6 +1774,13 @@ class _TheirBubble extends StatelessWidget {
                         ),
                       ],
                     ),
+                  ),
+
+                  // Persistent emoji reaction chips
+                  ReactionPillsRow(
+                    reactions: msg.reactions,
+                    currentUserId: currentUserId,
+                    onToggleReaction: onToggleReaction,
                   ),
                 ],
               ),
@@ -1722,184 +1973,13 @@ class _IcebreakerChip extends StatelessWidget {
   }
 }
 
-// ── Attachment & Action Sheet ──────────────────────────────────────────────────
-
-class _AttachmentActionSheet extends StatelessWidget {
-  final VoidCallback onCreatePoll;
-  final ValueChanged<String> onSelectQuickPreset;
-
-  const _AttachmentActionSheet({
-    required this.onCreatePoll,
-    required this.onSelectQuickPreset,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-      child: SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.cardBorder,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Share with Travel Group',
-              style: TextStyle(
-                fontFamily: 'Playfair Display',
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.deepEarth,
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Main Action Grid
-            Row(
-              children: [
-                Expanded(
-                  child: _MenuActionCard(
-                    icon: Icons.how_to_vote_rounded,
-                    iconBg: AppColors.sand,
-                    iconColor: AppColors.primary,
-                    title: 'Group Poll',
-                    subtitle: 'Vote on meals & stops',
-                    onTap: onCreatePoll,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _MenuActionCard(
-                    icon: Icons.access_time_rounded,
-                    iconBg: AppColors.amberBg,
-                    iconColor: AppColors.amber,
-                    title: 'Late Alert',
-                    subtitle: 'Running 10 mins late',
-                    onTap: () => onSelectQuickPreset('⏰ Running 10 mins late! Meet you at the lobby.'),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _MenuActionCard(
-                    icon: Icons.place_rounded,
-                    iconBg: AppColors.greenBg,
-                    iconColor: AppColors.green,
-                    title: 'Meeting Spot',
-                    subtitle: 'I have arrived',
-                    onTap: () => onSelectQuickPreset('📍 Arrived at the meeting spot! Where are you guys?'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _MenuActionCard(
-                    icon: Icons.receipt_long_rounded,
-                    iconBg: AppColors.blueLight,
-                    iconColor: AppColors.blue,
-                    title: 'Split Bill',
-                    subtitle: 'Remind crew to log',
-                    onTap: () => onSelectQuickPreset('💸 Friendly reminder: please upload your receipts to the Budget tab for split calculations!'),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _MenuActionCard extends StatelessWidget {
-  final IconData icon;
-  final Color iconBg;
-  final Color iconColor;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  const _MenuActionCard({
-    required this.icon,
-    required this.iconBg,
-    required this.iconColor,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceLight,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.cardBorder),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: iconBg,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: iconColor, size: 20),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              title,
-              style: const TextStyle(
-                fontFamily: 'DM Sans',
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: AppColors.deepEarth,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              subtitle,
-              style: const TextStyle(
-                fontFamily: 'DM Sans',
-                fontSize: 11,
-                color: AppColors.muted,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 // ── Message Context Action Sheet ───────────────────────────────────────────────
 
 class _MessageActionSheet extends StatelessWidget {
   final ChatMessage message;
   final bool isMe;
   final bool canPin;
+  final ValueChanged<String>? onSelectReaction;
   final VoidCallback onCopy;
   final VoidCallback onTogglePin;
   final VoidCallback? onDelete;
@@ -1908,6 +1988,7 @@ class _MessageActionSheet extends StatelessWidget {
     required this.message,
     required this.isMe,
     required this.canPin,
+    this.onSelectReaction,
     required this.onCopy,
     required this.onTogglePin,
     this.onDelete,
@@ -1952,6 +2033,7 @@ class _MessageActionSheet extends StatelessWidget {
                     onTap: () {
                       HapticFeedback.lightImpact();
                       Navigator.pop(context);
+                      onSelectReaction?.call(emoji);
                     },
                     child: Text(emoji, style: const TextStyle(fontSize: 22)),
                   );

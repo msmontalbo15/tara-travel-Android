@@ -307,12 +307,14 @@ Rather than introducing external third-party chat SaaS (e.g. Stream Chat, Sendbi
 ---
 
 ### 5. Implementation Steps
-1. [ ] **Database & Migrations**: Create `trip_messages`, `trip_polls`, and `trip_poll_votes` tables with strict RLS policies bound by `public.is_trip_member(trip_id)`.
-2. [ ] **Supabase Realtime Subscriptions**: Configure dual hybrid channels (Postgres stream for persistent history + Broadcast for ephemeral typing/reactions).
-3. [ ] **Realtime Poll Component**: Build `PollCard` widget with real-time voting progress, avatar chips on options, and winner resolution.
-4. [ ] **Rich Message Embeds**: Support embedded itinerary stops, expense splits, and media attachments inside `ChatScreen`.
-5. [ ] **Pinned Header Bar**: Add collapsible pinned message drawer at the top of the chat view.
-6. [ ] **Optimistic Offline Dispatch**: Implement local outbox queueing for chat messages and votes when traveling without signal.
+> **Status**: Completed (IMP-083)
+
+1. [x] **Database & Migrations**: Create `trip_messages`, `trip_polls`, and `trip_poll_votes` tables with strict RLS policies bound by `public.is_trip_member(trip_id)`. Added `metadata` and `reactions` JSONB columns via Migration `025_trip_chat_rich_embeds_and_reactions.sql`.
+2. [x] **Supabase Realtime Subscriptions**: Configure dual hybrid channels (Postgres stream for persistent history + Broadcast for ephemeral typing/reactions).
+3. [x] **Realtime Poll Component**: Build `PollCard` widget with real-time voting progress, avatar chips on options, winner resolution, and crowdsourced "Suggest an Option" modal.
+4. [x] **Rich Message Embeds**: Support embedded itinerary stops, expense splits, packing list claim alerts, live GPS location pins, media photos, and Tara Bot morning briefings inside `ChatScreen`.
+5. [x] **Pinned Header Bar**: Add collapsible pinned message drawer at the top of the chat view.
+6. [x] **Optimistic Offline Dispatch**: Implement local outbox queueing for chat messages and votes when traveling without signal.
 
 ---
 

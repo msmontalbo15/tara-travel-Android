@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/trip_poll_model.dart';
@@ -9,9 +10,38 @@ enum ChatMessageType {
   text,
   poll,
   announcement,
-  quickTravel;
+  quickTravel,
+  itinerarySnippet,
+  expenseRequest,
+  packingAlert,
+  locationDrop,
+  media,
+  taraBot;
 
-  String get dbValue => name;
+  String get dbValue {
+    switch (this) {
+      case ChatMessageType.text:
+        return 'text';
+      case ChatMessageType.poll:
+        return 'poll';
+      case ChatMessageType.announcement:
+        return 'announcement';
+      case ChatMessageType.quickTravel:
+        return 'quick_travel';
+      case ChatMessageType.itinerarySnippet:
+        return 'itinerary_snippet';
+      case ChatMessageType.expenseRequest:
+        return 'expense_request';
+      case ChatMessageType.packingAlert:
+        return 'packing_alert';
+      case ChatMessageType.locationDrop:
+        return 'location_drop';
+      case ChatMessageType.media:
+        return 'media';
+      case ChatMessageType.taraBot:
+        return 'tara_bot';
+    }
+  }
 
   static ChatMessageType fromString(String? value) {
     switch (value) {
@@ -21,6 +51,18 @@ enum ChatMessageType {
         return ChatMessageType.announcement;
       case 'quick_travel':
         return ChatMessageType.quickTravel;
+      case 'itinerary_snippet':
+        return ChatMessageType.itinerarySnippet;
+      case 'expense_request':
+        return ChatMessageType.expenseRequest;
+      case 'packing_alert':
+        return ChatMessageType.packingAlert;
+      case 'location_drop':
+        return ChatMessageType.locationDrop;
+      case 'media':
+        return ChatMessageType.media;
+      case 'tara_bot':
+        return ChatMessageType.taraBot;
       default:
         return ChatMessageType.text;
     }
@@ -38,6 +80,8 @@ class ChatMessage {
   final bool isPinned;
   final String? pollId;
   final ChatMessageType messageType;
+  final Map<String, dynamic>? metadata;
+  final Map<String, List<String>> reactions;
 
   /// True when the message has been dispatched optimistically but not yet
   /// acknowledged by the server. Used to show a subtle pending indicator.
@@ -54,6 +98,8 @@ class ChatMessage {
     this.isPinned = false,
     this.pollId,
     this.messageType = ChatMessageType.text,
+    this.metadata,
+    this.reactions = const {},
     this.isPending = false,
   });
 
@@ -74,6 +120,8 @@ class ChatMessage {
     bool? isPinned,
     String? pollId,
     ChatMessageType? messageType,
+    Map<String, dynamic>? metadata,
+    Map<String, List<String>>? reactions,
     bool? isPending,
   }) {
     return ChatMessage(
@@ -87,6 +135,8 @@ class ChatMessage {
       isPinned: isPinned ?? this.isPinned,
       pollId: pollId ?? this.pollId,
       messageType: messageType ?? this.messageType,
+      metadata: metadata ?? this.metadata,
+      reactions: reactions ?? this.reactions,
       isPending: isPending ?? this.isPending,
     );
   }
@@ -96,6 +146,22 @@ class ChatMessage {
     String currentUserId,
   ) {
     final name = (row['sender_name'] as String?)?.trim() ?? 'Unknown';
+
+    Map<String, dynamic>? meta;
+    if (row['metadata'] != null && row['metadata'] is Map) {
+      meta = Map<String, dynamic>.from(row['metadata'] as Map);
+    }
+
+    final reactMap = <String, List<String>>{};
+    if (row['reactions'] != null && row['reactions'] is Map) {
+      final rawMap = row['reactions'] as Map;
+      rawMap.forEach((k, v) {
+        if (v is List) {
+          reactMap[k.toString()] = v.map((e) => e.toString()).toList();
+        }
+      });
+    }
+
     return ChatMessage(
       id: row['id'] as String,
       tripId: row['trip_id'] as String,
@@ -107,6 +173,8 @@ class ChatMessage {
       isPinned: row['is_pinned'] as bool? ?? false,
       pollId: row['poll_id'] as String?,
       messageType: ChatMessageType.fromString(row['message_type'] as String?),
+      metadata: meta,
+      reactions: reactMap,
     );
   }
 
@@ -120,6 +188,8 @@ class ChatMessage {
         'is_pinned': isPinned,
         'poll_id': pollId,
         'message_type': messageType.dbValue,
+        'metadata': metadata,
+        'reactions': reactions,
       };
 }
 
@@ -194,21 +264,27 @@ class ChatRepository {
     required String senderName,
     ChatMessageType messageType = ChatMessageType.text,
     String? pollId,
+    Map<String, dynamic>? metadata,
   }) async {
     if (!_isAuthenticated || text.trim().isEmpty) return null;
     final uid = _uid!;
 
     try {
+      final insertData = <String, dynamic>{
+        'trip_id': tripId,
+        'user_id': uid,
+        'sender_name': senderName,
+        'content': text.trim(),
+        'message_type': messageType.dbValue,
+        'poll_id': pollId,
+      };
+      if (metadata != null) {
+        insertData['metadata'] = metadata;
+      }
+
       final row = await _supabase
           .from('trip_messages')
-          .insert({
-            'trip_id': tripId,
-            'user_id': uid,
-            'sender_name': senderName,
-            'content': text.trim(),
-            'message_type': messageType.dbValue,
-            'poll_id': pollId,
-          })
+          .insert(insertData)
           .select()
           .single();
 
@@ -218,6 +294,53 @@ class ChatRepository {
       rethrow;
     } catch (e) {
       debugPrint('[ChatRepository] sendMessage error: $e');
+      rethrow;
+    }
+  }
+
+  /// Toggles an emoji reaction from the current user on a message.
+  Future<void> toggleReaction({
+    required String messageId,
+    required String emoji,
+    required String userId,
+  }) async {
+    if (!_isAuthenticated) return;
+    try {
+      final msgRow = await _supabase
+          .from('trip_messages')
+          .select('reactions')
+          .eq('id', messageId)
+          .single();
+
+      final rawReactions = (msgRow['reactions'] as Map<String, dynamic>?) ?? {};
+      final reactions = <String, List<String>>{};
+      rawReactions.forEach((k, v) {
+        if (v is List) {
+          reactions[k] = v.map((e) => e.toString()).toList();
+        }
+      });
+
+      final currentUsers = reactions[emoji] ?? [];
+      if (currentUsers.contains(userId)) {
+        currentUsers.remove(userId);
+        if (currentUsers.isEmpty) {
+          reactions.remove(emoji);
+        } else {
+          reactions[emoji] = currentUsers;
+        }
+      } else {
+        reactions[emoji] = [...currentUsers, userId];
+      }
+
+      await _supabase
+          .from('trip_messages')
+          .update({'reactions': reactions})
+          .eq('id', messageId);
+    } on PostgrestException catch (e) {
+      debugPrint('[ChatRepository] toggleReaction PostgrestException: ${e.message}');
+      rethrow;
+    } catch (e) {
+      debugPrint('[ChatRepository] toggleReaction error: $e');
       rethrow;
     }
   }
@@ -460,6 +583,71 @@ class ChatRepository {
         .from('trip_poll_votes')
         .stream(primaryKey: ['id'])
         .eq('trip_id', tripId);
+  }
+
+  /// Adds a new crowdsourced option to an existing open poll.
+  Future<void> addPollOption({
+    required String pollId,
+    required String optionText,
+  }) async {
+    if (!_isAuthenticated || optionText.trim().isEmpty) return;
+    try {
+      final pollRow = await _supabase
+          .from('trip_polls')
+          .select('options')
+          .eq('id', pollId)
+          .single();
+
+      final currentOpts = (pollRow['options'] as List<dynamic>? ?? [])
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+
+      final newId = '${currentOpts.length + 1}';
+      currentOpts.add({'id': newId, 'text': optionText.trim()});
+
+      await _supabase
+          .from('trip_polls')
+          .update({'options': currentOpts})
+          .eq('id', pollId);
+    } on PostgrestException catch (e) {
+      debugPrint('[ChatRepository] addPollOption PostgrestException: ${e.message}');
+      rethrow;
+    } catch (e) {
+      debugPrint('[ChatRepository] addPollOption error: $e');
+      rethrow;
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // MEDIA UPLOAD
+  // ════════════════════════════════════════════════════════════════
+
+  /// Uploads a chat image to Supabase Storage and returns its public URL.
+  Future<String?> uploadChatMedia({
+    required String tripId,
+    required String localFilePath,
+  }) async {
+    try {
+      final file = File(localFilePath);
+      if (!file.existsSync()) return null;
+
+      final ext = localFilePath.split('.').last.toLowerCase();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final storagePath = '$tripId/chat_$timestamp.$ext';
+
+      // Use avatars bucket (publicly readable) for reliable uploads
+      await _supabase.storage.from('avatars').upload(
+        storagePath,
+        file,
+        fileOptions: const FileOptions(upsert: true),
+      );
+
+      final publicUrl = _supabase.storage.from('avatars').getPublicUrl(storagePath);
+      return publicUrl;
+    } catch (e) {
+      debugPrint('[ChatRepository] uploadChatMedia error: $e');
+      return null;
+    }
   }
 
   // ════════════════════════════════════════════════════════════════
