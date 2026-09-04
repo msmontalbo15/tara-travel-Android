@@ -606,9 +606,11 @@ Client Tier               Storage Tier                Transport Tier
 | **Warm White** | `#F7F4F0` | `const Color(0xFFF7F4F0)` | Surface Canvas, Cards, Dialogs |
 
 ### Typography Tokens
-- **Display & Headlines**: `Playfair Display` (Bold / SemiBold)
-- **Taglines & Accents**: `Playfair Display` (Italic)
-- **UI Labels & Body**: `DM Sans` (Medium / Regular)
+- **Display & Headlines (`font-heading`)**: `Playfair Display` (Bold / SemiBold) with `Georgia` / `serif` fallback
+- **Taglines & Accents**: `Playfair Display` (Italic) with `Georgia` / `serif` fallback
+- **UI Labels & Body (`font-body`)**: `DM Sans` (Medium / Regular)
+- **Direct Inline Serif Fallback**: `Georgia` (used on splash "Tara TRAVEL" branding and Home greeting name)
+- **Centralized Reference**: `AppTextStyles` (`fontHeading`, `fontBody`, `fontSerifFallback`, `headline1`-`3`, `tagline`, `bodyLarge`-`Small`)
 
 ### Name Privacy Invariant
 - Every user-facing name display MUST invoke `MemberModel.formatDisplayName(name, hideSurname: profile.hideSurname)`.

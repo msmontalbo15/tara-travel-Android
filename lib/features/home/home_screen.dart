@@ -1098,6 +1098,7 @@ class _HomeHeaderDelegate extends SliverPersistentHeaderDelegate {
                     key: ValueKey(profile.displayNameForHome),
                     style: const TextStyle(
                       fontFamily: 'Playfair Display',
+                      fontFamilyFallback: ['Georgia', 'serif'],
                       fontSize: 24,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,

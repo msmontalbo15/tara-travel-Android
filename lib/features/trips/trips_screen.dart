@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../core/providers/trip_provider.dart';
 import '../../core/providers/selected_trip_provider.dart';
 import '../../core/providers/repository_providers.dart';
@@ -42,22 +43,16 @@ class TripsScreen extends ConsumerWidget {
             ),
             child: Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('My Trips',
-                          style: TextStyle(
-                              fontFamily: 'Playfair Display',
-                              fontSize: 28,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white)),
-                      SizedBox(height: 2),
+                      const Text('My Trips', style: AppTextStyles.headlineWhite),
+                      const SizedBox(height: 2),
                       Text('All your journeys',
-                          style: TextStyle(
-                              fontFamily: 'DM Sans',
-                              fontSize: 13,
-                              color: Colors.white54)),
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: Colors.white54,
+                          )),
                     ],
                   ),
                 ),
@@ -160,14 +155,11 @@ class TripsScreen extends ConsumerWidget {
                             const SizedBox(height: 20),
 
                             // ── Headline ─────────────────────────────────────
-                            const Text(
+                            Text(
                               'No trips planned yet',
                               textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontFamily: 'Playfair Display',
+                              style: AppTextStyles.headline2.copyWith(
                                 fontSize: 24,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.textPrimary,
                               ),
                             ),
                             const SizedBox(height: 8),

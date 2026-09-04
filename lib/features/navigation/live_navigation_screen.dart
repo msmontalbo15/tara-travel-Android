@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../core/widgets/buttons/app_back_button.dart';
 import 'models/navigation_models.dart';
 import 'providers/navigation_provider.dart';
@@ -181,10 +182,7 @@ class _NavHeader extends ConsumerWidget {
                     children: [
                       Text(
                         nav.destination.name,
-                        style: TextStyle(
-                          fontFamily: 'Playfair Display',
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
+                        style: AppTextStyles.headlineSmall.copyWith(
                           color: isDark ? Colors.white : AppColors.textPrimary,
                         ),
                       ),

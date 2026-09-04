@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_text_styles.dart';
 import 'feedback_type.dart';
 
 /// Centralized, brand-unified dialog service for confirmations, alerts, and modal prompts.
@@ -60,22 +61,13 @@ class AppDialog {
               Text(
                 title,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontFamily: 'Playfair Display',
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                  letterSpacing: -0.2,
-                ),
+                style: AppTextStyles.titleLarge,
               ),
               const SizedBox(height: 10),
               Text(
                 message,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontFamily: 'DM Sans',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
+                style: AppTextStyles.bodyMedium.copyWith(
                   color: AppColors.textSecondary,
                   height: 1.4,
                 ),
@@ -210,22 +202,13 @@ class AppDialog {
               Text(
                 title,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontFamily: 'Playfair Display',
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                  letterSpacing: -0.2,
-                ),
+                style: AppTextStyles.titleLarge,
               ),
               const SizedBox(height: 10),
               Text(
                 message,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontFamily: 'DM Sans',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
+                style: AppTextStyles.bodyMedium.copyWith(
                   color: AppColors.textSecondary,
                   height: 1.4,
                 ),

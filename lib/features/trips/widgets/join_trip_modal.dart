@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text_styles.dart';
 import '../../../core/providers/repository_providers.dart';
 import '../../../core/providers/trip_provider.dart';
 
@@ -133,23 +134,16 @@ class _JoinTripSheetState extends ConsumerState<_JoinTripSheet> {
                   ),
                 ),
               ),
-              const Text(
+              Text(
                 'Join a Trip',
-                style: TextStyle(
-                  fontFamily: 'Playfair Display',
+                style: AppTextStyles.headline2.copyWith(
                   fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 8),
               const Text(
                 'Enter the 6-character invite code from your trip organizer.',
-                style: TextStyle(
-                  fontFamily: 'DM Sans',
-                  fontSize: 14,
-                  color: AppColors.textSecondary,
-                ),
+                style: AppTextStyles.bodyMedium,
               ),
               const SizedBox(height: 24),
               TextField(

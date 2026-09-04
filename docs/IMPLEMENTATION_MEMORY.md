@@ -68,6 +68,7 @@
 | **`IMP-083`** | 2026-09-04 | Chat, Polls & Activity Hub (IDEA-004) | Full rich travel chat hub: migration 025 (metadata & reactions jsonb), interactive rich embeds (Itinerary stops, Expense requests, Packing alerts, GPS location pin drops, Media photos, Tara Bot briefings), crowdsourced poll suggestions, emoji reactions bar with haptic toggle, and offline outbox queue. |
 | **`IMP-084`** | 2026-09-04 | Polls & Votes / Bidirectional Vote Undo | Full vote undo engine: optimistic in-memory toggle and rollback in `PollsNotifier`, `getPollsAndVotesRaw` synchronous hydration, and clean tap-to-toggle unvoting on poll options without UI clutter. |
 | **`IMP-085`** | 2026-09-04 | Polls / Winner Card & Detail Sheet | Replaced flat `_WinnerActions` resolve section with premium gradient `_WinnerCard` (green gradient, trophy badge, vote %, voter chips) that opens `_WinnerDetailSheet` bottom sheet with ranked results breakdown, animated progress bars, voter lists, and quick-action resolution buttons. |
+| **`IMP-088`** | 2026-09-04 | Typography & Brand Identity Standardization | Formalized system branding font tokens in `AppTextStyles` (`fontHeading`, `fontBody`, `fontSerifFallback`), wired Georgia serif fallback for display headlines, splash "Tara TRAVEL" branding, and Home greeting name, aligned `AppTheme` light theme definitions, and synchronized `MEMORY.md`. |
 
 ---
 
@@ -1896,5 +1897,50 @@
   - `docs/CHANGELOG.md` [MODIFIED]
 - **Verification**:
   - `flutter analyze lib/features/itinerary lib/features/chat lib/main.dart` executed: **No issues found! (0 errors, 0 warnings)**.
+
+---
+
+### `IMP-088` · Typography & Brand Identity Font Tokens Standardization & Clean Code Refactor
+- **Date**: September 04, 2026
+- **Scope & Objectives**:
+  1. **Brand Font Tokens & Semantic Typographic Scale in `AppTextStyles`** (`lib/core/theme/app_text_styles.dart`):
+     - Standardized constants: `fontHeading` (`'Playfair Display'`), `fontBody` (`'DM Sans'`), and `fontSerifFallback` (`'Georgia'`).
+     - Added semantic typography tokens: `titleLarge` (20px, bold), `titleMedium` (16px, bold), `headlineSmall` (18px, bold).
+     - Wired `fontFamilyFallback: const ['Georgia', 'serif']` into all primary serif display styles (`headline1`, `headline2`, `headline3`, `headlineSmall`, `titleLarge`, `titleMedium`, `headlineWhite`, `tagline`).
+  2. **App Theme Alignment** (`lib/core/theme/app_theme.dart`):
+     - Set `fontFamilyFallback: ['Georgia', 'serif']` on `AppBarTheme.titleTextStyle` and `DialogTheme.titleTextStyle`.
+  3. **Brand Display & Greeting Name Fallbacks**:
+     - Added `fontFamilyFallback: ['Georgia', 'serif']` to `SplashScreen` brand wordmark ('Tara' and 'TRAVEL').
+     - Added `fontFamilyFallback: const ['Georgia', 'serif']` to `AppBrandLogo` wordmark texts.
+     - Added `fontFamilyFallback: ['Georgia', 'serif']` to `HomeScreen` personalized greeting name display.
+  4. **Anti-Hardcoding Clean Code Refactor**:
+     - Replaced scattered ad-hoc `TextStyle(fontFamily: ...)` instances across:
+       - `lib/core/widgets/feedback/app_dialog.dart` (confirmation & alert dialog title and body tokens)
+       - `lib/shared/widgets/trip_type_carousel.dart` (carousel card label, subtitle, and category badge)
+       - `lib/features/trip_detail/trip_detail_screen.dart` (hero header title, dialogs, and collapsed bar title)
+       - `lib/features/trips/trips_screen.dart` (header title and empty state headline)
+       - `lib/features/trips/widgets/join_trip_modal.dart` (sheet header and description)
+       - `lib/features/notifications/notifications_screen.dart` (app bar title)
+       - `lib/features/navigation/live_navigation_screen.dart` (navigation destination title)
+  5. **Architectural Memory Sync**:
+     - Updated `docs/MEMORY.md`, `docs/SOFTWARE_DESIGN_PATTERNS.md`, `.agents/rules/brand-identity.md`, and `docs/IMPLEMENTATION_MEMORY.md`.
+- **Target Files**:
+  - `lib/core/theme/app_text_styles.dart` [MODIFIED]
+  - `lib/core/theme/app_theme.dart` [MODIFIED]
+  - `lib/core/widgets/feedback/app_dialog.dart` [MODIFIED]
+  - `lib/shared/widgets/trip_type_carousel.dart` [MODIFIED]
+  - `lib/features/trip_detail/trip_detail_screen.dart` [MODIFIED]
+  - `lib/features/trips/trips_screen.dart` [MODIFIED]
+  - `lib/features/trips/widgets/join_trip_modal.dart` [MODIFIED]
+  - `lib/features/notifications/notifications_screen.dart` [MODIFIED]
+  - `lib/features/navigation/live_navigation_screen.dart` [MODIFIED]
+  - `lib/features/splash/splash_screen.dart` [MODIFIED]
+  - `lib/features/home/home_screen.dart` [MODIFIED]
+  - `lib/core/widgets/app_brand_logo.dart` [MODIFIED]
+  - `docs/MEMORY.md` [MODIFIED]
+  - `docs/SOFTWARE_DESIGN_PATTERNS.md` [MODIFIED]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+- **Verification**:
+  - `flutter analyze`: **No issues found! (0 errors, 0 warnings)**.
 
 

@@ -33,10 +33,9 @@ mention) when you need to see things rendered — don't load it every turn.
 
 ## Typography
 
-- Headlines → Playfair Display, Bold
-- Taglines → Playfair Display, Italic
-- UI labels → DM Sans, Medium
-- Body copy → DM Sans, Regular
+- **DM Sans** — The primary font, applied as the default body font and UI elements (`font-dm-sans`). Medium for UI labels, Regular for body copy.
+- **Playfair Display** — A decorative serif mapped for headings/display text (`font-playfair` / `font-heading`). Bold for headlines, Italic for taglines.
+- **Georgia (serif)** — Used as a direct inline fallback in specific display spots, such as the loading splash ("Tara TRAVEL" logo) and the Home page greeting name.
 
 ## Components
 

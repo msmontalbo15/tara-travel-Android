@@ -193,6 +193,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                                 'Tara',
                                 style: TextStyle(
                                   fontFamily: 'Playfair Display',
+                                  fontFamilyFallback: ['Georgia', 'serif'],
                                   fontSize: 52,
                                   fontWeight: FontWeight.w700,
                                   color: Colors.white,
@@ -209,6 +210,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                                     'TRAVEL',
                                     style: TextStyle(
                                       fontFamily: 'Playfair Display',
+                                      fontFamilyFallback: const ['Georgia', 'serif'],
                                       fontSize: 15,
                                       fontWeight: FontWeight.w600,
                                       fontStyle: FontStyle.italic,

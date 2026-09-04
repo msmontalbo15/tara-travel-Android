@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 import '../../core/providers/selected_trip_provider.dart';
 import '../../core/providers/trip_provider.dart';
 import '../../core/providers/repository_providers.dart';
@@ -71,11 +72,10 @@ class _TripDashboardState extends ConsumerState<_TripDashboard> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Publish Trip',
-            style: TextStyle(fontFamily: 'Playfair Display', fontWeight: FontWeight.w700)),
-        content: const Text(
+        title: const Text('Publish Trip', style: AppTextStyles.titleLarge),
+        content: Text(
           'Publishing this trip will make it active, allowing you to track schedules, manage members, and split expenses.',
-          style: TextStyle(fontFamily: 'DM Sans', fontSize: 14),
+          style: AppTextStyles.bodyMedium.copyWith(fontSize: 14),
         ),
         actions: [
           TextButton(
@@ -339,8 +339,7 @@ class _CollapsibleHeroHeader extends ConsumerWidget {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Trip',
-            style: TextStyle(fontFamily: 'Playfair Display', fontWeight: FontWeight.w700)),
+        title: const Text('Delete Trip', style: AppTextStyles.titleLarge),
         content: Text('Are you sure you want to delete "${trip.name}"? This action cannot be undone.'),
         actions: [
           TextButton(
@@ -522,10 +521,7 @@ class _CollapsibleHeroHeader extends ConsumerWidget {
                               trip.name,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontFamily: 'Playfair Display',
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
+                              style: AppTextStyles.titleMedium.copyWith(
                                 color: Colors.white,
                               ),
                             ),
@@ -634,14 +630,7 @@ class _CollapsibleHeroHeader extends ConsumerWidget {
                           trip.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontFamily: 'Playfair Display',
-                            fontSize: 28,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                            height: 1.15,
-                            letterSpacing: -0.4,
-                          ),
+                          style: AppTextStyles.headlineWhite,
                         ),
                         const SizedBox(height: 6),
 

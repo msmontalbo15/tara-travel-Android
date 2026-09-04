@@ -61,6 +61,7 @@ class AppBrandLogo extends StatelessWidget {
               'Tara',
               style: TextStyle(
                 fontFamily: 'Playfair Display',
+                fontFamilyFallback: const ['Georgia', 'serif'],
                 fontSize: size * 0.65,
                 fontWeight: FontWeight.w700,
                 color: isDark ? Colors.white : AppColors.textPrimary,
@@ -71,6 +72,7 @@ class AppBrandLogo extends StatelessWidget {
               subtitle ?? 'TRAVEL',
               style: TextStyle(
                 fontFamily: 'Playfair Display',
+                fontFamilyFallback: const ['Georgia', 'serif'],
                 fontSize: (size * 0.28).clamp(9.0, 13.0),
                 fontWeight: FontWeight.w400,
                 fontStyle: FontStyle.italic,

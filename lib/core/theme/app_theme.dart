@@ -22,6 +22,7 @@ class AppTheme {
       centerTitle: true,
       titleTextStyle: TextStyle(
         fontFamily: 'Playfair Display',
+        fontFamilyFallback: ['Georgia', 'serif'],
         fontSize: 20,
         fontWeight: FontWeight.w700,
         color: AppColors.textPrimary,
@@ -140,6 +141,7 @@ class AppTheme {
       ),
       titleTextStyle: const TextStyle(
         fontFamily: 'Playfair Display',
+        fontFamilyFallback: ['Georgia', 'serif'],
         fontSize: 20,
         fontWeight: FontWeight.w700,
         color: AppColors.textPrimary,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/constants/trip_types.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 
 /// Reusable trip-type carousel used in both Create Trip and Edit Trip flows.
 ///
@@ -240,10 +241,7 @@ class _TripTypeCarouselState extends State<TripTypeCarousel> {
                                             const SizedBox(width: 8),
                                             Text(
                                               option.category,
-                                              style: const TextStyle(
-                                                fontFamily: 'DM Sans',
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.w700,
+                                              style: AppTextStyles.badge.copyWith(
                                                 color: Colors.white,
                                                 letterSpacing: 0.3,
                                               ),
@@ -287,13 +285,10 @@ class _TripTypeCarouselState extends State<TripTypeCarousel> {
                                     children: [
                                       Text(
                                         option.label,
-                                        style: const TextStyle(
-                                          fontFamily: 'Playfair Display',
-                                          fontSize: 22,
-                                          fontWeight: FontWeight.w700,
+                                        style: AppTextStyles.headline3.copyWith(
                                           color: Colors.white,
                                           height: 1.1,
-                                          shadows: [
+                                          shadows: const [
                                             Shadow(
                                               color: Colors.black26,
                                               offset: Offset(0, 1),
@@ -305,12 +300,10 @@ class _TripTypeCarouselState extends State<TripTypeCarousel> {
                                       const SizedBox(height: 2),
                                       Text(
                                         option.subtitle,
-                                        style: TextStyle(
-                                          fontFamily: 'DM Sans',
+                                        style: AppTextStyles.bodySmall.copyWith(
                                           fontSize: 11.5,
                                           fontWeight: FontWeight.w500,
-                                          color: Colors.white
-                                              .withValues(alpha: 0.90),
+                                          color: Colors.white.withValues(alpha: 0.90),
                                           letterSpacing: 0.2,
                                         ),
                                         maxLines: 1,

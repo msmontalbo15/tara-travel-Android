@@ -2,14 +2,23 @@ import 'package:flutter/material.dart';
 import 'app_colors.dart';
 
 /// Centralized text styles matching the Tara Travel brand identity.
-/// Playfair Display → Headlines & taglines
-/// DM Sans → UI labels, body copy, buttons
+/// Playfair Display — a serif display font mapped for headings/titles (font-heading style token).
+/// DM Sans — the main font, used everywhere for body text and UI elements.
+/// Georgia — serif fallback for prominent brand display and greeting names.
 class AppTextStyles {
   AppTextStyles._();
 
-  // ── Headlines (Playfair Display Bold) ────────────────────────
+  // ── Brand Font Family Constants ──────────────────────────────
+  static const String fontHeading = 'Playfair Display';
+  static const String fontBody = 'DM Sans';
+  static const String fontSerifFallback = 'Georgia';
+
+  // ── Headlines (Playfair Display Bold with Georgia Fallback) ──
+  static const List<String> _serifFallbacks = ['Georgia', 'serif'];
+
   static const TextStyle headline1 = TextStyle(
-    fontFamily: 'Playfair Display',
+    fontFamily: fontHeading,
+    fontFamilyFallback: _serifFallbacks,
     fontSize: 32,
     fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
@@ -18,7 +27,8 @@ class AppTextStyles {
   );
 
   static const TextStyle headline2 = TextStyle(
-    fontFamily: 'Playfair Display',
+    fontFamily: fontHeading,
+    fontFamilyFallback: _serifFallbacks,
     fontSize: 26,
     fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
@@ -27,24 +37,53 @@ class AppTextStyles {
   );
 
   static const TextStyle headline3 = TextStyle(
-    fontFamily: 'Playfair Display',
+    fontFamily: fontHeading,
+    fontFamilyFallback: _serifFallbacks,
     fontSize: 22,
     fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
     height: 1.2,
   );
 
+  static const TextStyle headlineSmall = TextStyle(
+    fontFamily: fontHeading,
+    fontFamilyFallback: _serifFallbacks,
+    fontSize: 18,
+    fontWeight: FontWeight.w700,
+    color: AppColors.textPrimary,
+    height: 1.2,
+  );
+
+  static const TextStyle titleLarge = TextStyle(
+    fontFamily: fontHeading,
+    fontFamilyFallback: _serifFallbacks,
+    fontSize: 20,
+    fontWeight: FontWeight.w700,
+    color: AppColors.textPrimary,
+    letterSpacing: -0.2,
+  );
+
+  static const TextStyle titleMedium = TextStyle(
+    fontFamily: fontHeading,
+    fontFamilyFallback: _serifFallbacks,
+    fontSize: 16,
+    fontWeight: FontWeight.w700,
+    color: AppColors.textPrimary,
+  );
+
   static const TextStyle headlineWhite = TextStyle(
-    fontFamily: 'Playfair Display',
+    fontFamily: fontHeading,
+    fontFamilyFallback: _serifFallbacks,
     fontSize: 28,
     fontWeight: FontWeight.w700,
     color: Colors.white,
     height: 1.15,
   );
 
-  // ── Tagline (Playfair Display Italic) ────────────────────────
+  // ── Tagline (Playfair Display Italic with Georgia Fallback) ───
   static const TextStyle tagline = TextStyle(
-    fontFamily: 'Playfair Display',
+    fontFamily: fontHeading,
+    fontFamilyFallback: _serifFallbacks,
     fontSize: 15,
     fontWeight: FontWeight.w400,
     fontStyle: FontStyle.italic,

@@ -101,7 +101,11 @@
   * Never place an unbounded `ListView` or `SingleChildScrollView` directly inside a `Column` without wrapping it in an `Expanded` or `Flexible` widget.
 
 ### 3. Safe Dynamic Typography & Text Overflow Defense
-* **Standard:** Typography must gracefully handle accessibility font scaling (large system text sizes) and multi-locale string lengths.
+* **Standard:** Typography must follow the canonical brand font pairing and gracefully handle accessibility font scaling (large system text sizes) and multi-locale string lengths.
+* **Brand Font Hierarchy:**
+  * **DM Sans** (`font-dm-sans`): Primary font, applied as the default body font (`ThemeData.fontFamily`), UI labels (Medium), and body copy (Regular).
+  * **Playfair Display** (`font-playfair` / `font-heading`): Decorative serif mapped for headings/display text (`AppTextStyles.headline1`-`3`, `tagline`, AppBar and Dialog titles).
+  * **Georgia (serif)**: Used as a direct inline fallback in designated display locations (loading splash "Tara TRAVEL" logo and Home greeting name).
 * **Rule:**
   * Always provide explicit `overflow: TextOverflow.ellipsis` and `maxLines` on single-line or bounded multi-line text.
   * For critical buttons or headers, wrap with `FittedBox(fit: BoxFit.scaleDown)` or allow multi-line wrapping instead of hardcoding fixed container widths.
