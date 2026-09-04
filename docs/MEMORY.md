@@ -1066,9 +1066,31 @@ Client Tier               Storage Tier                Transport Tier
     - **Content**: `DailyPacingCard` (daily burn rate & velocity tips), `CashVsDigitalCard` (cash-in & digital split), `CategoryBudgetChart` (trip category breakdown summary), and `PersonalExpenseList` (pocket expense history).
   - Trip context switcher carousel: pure UI state allowing seamless trip flipping without state mutation or persistence overhead.
 
+## 26. 🧭 TRIP STATUS ARCHITECTURE & LIFECYCLE (IMP-090)
+
+- **TripStatus Canonical Enum**:
+  - `TripStatus.draft`: Incomplete or unfinalized trip (`isDraft == true`).
+  - `TripStatus.planning`: Future trip scheduled ahead of today (`today < fromDate`).
+  - `TripStatus.ongoing`: Active trip happening right now (`fromDate <= today <= toDate`).
+  - `TripStatus.completed`: Concluded or archived trip (`toDate < today` or `isArchived == true`).
+- **Dynamic Status Derivation (`TripModel.status`)**:
+  - Centralized single source of truth on `TripModel.status` with helper getters `isPlanning`, `isOngoing`, and `isCompleted`. Eliminates scattered inline date comparisons.
+- **Dedicated ONGOING Section in Trips Screen**:
+  - `TripsScreen` cleanly splits trips into 4 distinct chronological buckets:
+    1. `DRAFTS` (if drafts exist)
+    2. `ONGOING` (active trips happening today, pinned prominently above upcoming)
+    3. `UPCOMING` (future trips still in planning)
+    4. `PAST TRIPS` (completed/archived trips)
+- **State Management & Home Prioritization (`tripStatusProvider` & `activeTripProvider`)**:
+  - `tripStatusProvider`: Reactive Riverpod provider (`Provider.family<TripStatus, TripModel>`) providing instant status observation.
+  - `activeTripProvider`: Automatically prioritizes `ongoing` trips first, then `planning` trips, ensuring travelers on an active vacation immediately see their live trip on the home screen.
+- **Live Day Counter & Badge in NextTripCard**:
+  - When a trip is `ongoing`, `NextTripCard` displays an `ONGOING TRIP` pill badge with emerald pulse dot and switches countdown to a live day-of-trip counter (`Day X of Y days` / `Day of trip`).
+
 ---
 
 *This document is the single source of architectural truth for Tara Travel. Update this file whenever database schemas, RPC functions, core repositories, or system flows are modified.*
+
 
 
 

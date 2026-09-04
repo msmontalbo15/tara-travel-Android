@@ -82,6 +82,13 @@ class _NextTripCardState extends State<NextTripCard>
 
     final tripDuration =
         widget.trip.toDate.difference(widget.trip.fromDate).inDays + 1;
+    final isOngoing = widget.trip.isOngoing;
+    final currentDay = (now
+                .difference(DateTime(widget.trip.fromDate.year,
+                    widget.trip.fromDate.month, widget.trip.fromDate.day))
+                .inDays +
+            1)
+        .clamp(1, tripDuration);
 
     final dateLabel =
         '${DateFormat('MMM d').format(widget.trip.fromDate)} – ${DateFormat('MMM d').format(widget.trip.toDate)}';
@@ -108,19 +115,21 @@ class _NextTripCardState extends State<NextTripCard>
               border: Border.all(color: themeColor.withValues(alpha: 0.35)),
             ),
             child: Stack(
-              clipBehavior: Clip.hardEdge,
               children: [
-                // Ambient glow blob
+                // Top-right decorative circular gradient bloom
                 Positioned(
-                  right: -24,
-                  top: -24,
-                  child: IgnorePointer(
-                    child: Container(
-                      width: 130,
-                      height: 130,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: themeColor.withValues(alpha: 0.28),
+                  top: -20,
+                  right: -20,
+                  child: Container(
+                    width: 140,
+                    height: 140,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          themeColor.withValues(alpha: 0.35),
+                          Colors.transparent,
+                        ],
                       ),
                     ),
                   ),
@@ -154,19 +163,40 @@ class _NextTripCardState extends State<NextTripCard>
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: themeColor.withValues(alpha: 0.25),
+                              color: isOngoing
+                                  ? AppColors.green.withValues(alpha: 0.35)
+                                  : themeColor.withValues(alpha: 0.25),
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.30)),
+                                  color: isOngoing
+                                      ? AppColors.greenBright
+                                          .withValues(alpha: 0.60)
+                                      : Colors.white.withValues(alpha: 0.30)),
                             ),
-                            child: const Text(
-                              'NEXT TRIP',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                                letterSpacing: 1.4,
-                              ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (isOngoing) ...[
+                                  Container(
+                                    width: 6,
+                                    height: 6,
+                                    decoration: const BoxDecoration(
+                                      color: AppColors.greenBright,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 5),
+                                ],
+                                Text(
+                                  isOngoing ? 'ONGOING TRIP' : 'NEXT TRIP',
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                    letterSpacing: 1.4,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           const Spacer(),
@@ -201,7 +231,7 @@ class _NextTripCardState extends State<NextTripCard>
                         children: [
                           const SizedBox(height: 12),
 
-                          // Days countdown
+                          // Days countdown or ongoing day counter
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.baseline,
                             textBaseline: TextBaseline.alphabetic,
@@ -212,7 +242,9 @@ class _NextTripCardState extends State<NextTripCard>
                                   final glow =
                                       0.25 + (_pulseCtrl.value * 0.35);
                                   return Text(
-                                    daysAway > 0 ? '$daysAway' : '0',
+                                    isOngoing
+                                        ? '$currentDay'
+                                        : (daysAway > 0 ? '$daysAway' : '0'),
                                     style: TextStyle(
                                       fontFamily: AppTextStyles.fontBody,
                                       fontSize: 52,
@@ -222,7 +254,9 @@ class _NextTripCardState extends State<NextTripCard>
                                       height: 1,
                                       shadows: [
                                         Shadow(
-                                          color: themeColor
+                                          color: (isOngoing
+                                                  ? AppColors.greenBright
+                                                  : themeColor)
                                               .withValues(alpha: glow),
                                           blurRadius: 24,
                                         ),
@@ -239,7 +273,7 @@ class _NextTripCardState extends State<NextTripCard>
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Text(
-                                      'days away',
+                                      isOngoing ? 'Day of trip' : 'days away',
                                       style: TextStyle(
                                         fontSize: 15,
                                         fontWeight: FontWeight.w600,
@@ -248,7 +282,9 @@ class _NextTripCardState extends State<NextTripCard>
                                       ),
                                     ),
                                     Text(
-                                      '$tripDuration day${tripDuration == 1 ? '' : 's'} trip',
+                                      isOngoing
+                                          ? 'Day $currentDay of $tripDuration days'
+                                          : '$tripDuration day${tripDuration == 1 ? '' : 's'} trip',
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
@@ -376,11 +412,15 @@ class _NextTripCardState extends State<NextTripCard>
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              '${daysAway > 0 ? daysAway : 0}d away',
+                              isOngoing
+                                  ? 'Day $currentDay of $tripDuration'
+                                  : '${daysAway > 0 ? daysAway : 0}d away',
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
-                                color: themeColor.withValues(alpha: 0.90),
+                                color: isOngoing
+                                    ? AppColors.greenBright
+                                    : themeColor.withValues(alpha: 0.90),
                               ),
                             ),
                           ],

@@ -63,7 +63,7 @@ if ($origin -match "github\.com[:/](.+?)(?:\.git)?$") { $ghBase = "https://githu
 # 5. Generate CHANGELOG.md
 $now = Get-Date -Format "yyyy-MM-dd HH:mm"
 $sb  = [System.Text.StringBuilder]::new()
-$sb.AppendLine("# Tara Travel — Version Changelog") | Out-Null
+$sb.AppendLine("# Tara Travel - Version Changelog") | Out-Null
 $sb.AppendLine("") | Out-Null
 $sb.AppendLine("> Auto-generated from IMPLEMENTATION_MEMORY.md + git log") | Out-Null
 $sb.AppendLine("> Last updated: **$now PHT**") | Out-Null

@@ -27,14 +27,25 @@ final activeTripProvider = FutureProvider<TripModel?>((ref) async {
   final selected = await ref.watch(selectedTripProvider.future);
   if (selected != null && !selected.isArchived) return selected;
 
-  // Fallback: use the first upcoming (non-draft, non-archived) trip from the list.
+  // Fallback: prioritize ongoing trips first, then upcoming planning trips, then any active trip.
   final trips = await ref.watch(allTripsProvider.future);
   if (trips.isEmpty) return null;
+  final ongoingTrips = trips.where((t) => t.isOngoing).toList();
+  if (ongoingTrips.isNotEmpty) return ongoingTrips.first;
+  final planningTrips = trips.where((t) => t.isPlanning).toList();
+  if (planningTrips.isNotEmpty) return planningTrips.first;
   final activeUpcoming =
       trips.where((t) => !t.isDraft && !t.isArchived).toList();
   if (activeUpcoming.isNotEmpty) return activeUpcoming.first;
   return null;
 });
+
+// ── Trip Status Provider ───────────────────────────────────────────────────────
+//
+// Single source of truth for dynamic trip status (draft, planning, ongoing, completed).
+
+final tripStatusProvider =
+    Provider.family<TripStatus, TripModel>((ref, trip) => trip.status);
 
 // ── Current Member ─────────────────────────────────────────────────────────────
 //

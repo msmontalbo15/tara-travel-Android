@@ -2029,6 +2029,38 @@
 - **Verification**:
   - Code review and verification completed. All numeric readouts confirmed on `AppTextStyles.fontBody` (`DM Sans`).
 
+---
+
+### `IMP-090` — 2026-09-05: TripStatus Enum, Dedicated Ongoing Section & Lifecycle Integration
+- **Description**: Centralized dynamic trip status across the application with the introduction of the canonical `TripStatus` enum, added a dedicated `ONGOING` section to `TripsScreen`, introduced `tripStatusProvider`, prioritized ongoing trips in `activeTripProvider`, and enriched `NextTripCard` with real-time day counters.
+- **Architectural Implementation**:
+  1. **Canonical `TripStatus` Enum & Dynamic Getters (`TripModel`)**:
+     - Introduced enum `TripStatus { draft, planning, ongoing, completed }` with human-readable `.label`.
+     - Created `trip.status` getter evaluating `isDraft`, `isArchived`, `fromDate`, and `toDate` against current calendar day.
+     - Added convenience boolean getters: `isPlanning`, `isOngoing`, and `isCompleted`.
+  2. **Dedicated ONGOING Section (`TripsScreen`)**:
+     - Upgraded trip list partitioning from 3 to 4 canonical categories: `DRAFTS`, `ONGOING`, `UPCOMING`, and `PAST TRIPS`.
+     - Active ongoing trips are now pinned prominently at the top of the trips feed.
+     - Enriched `_TripListCard` with a dedicated green `'Ongoing'` badge (`AppColors.greenBg` / `AppColors.green`) when `trip.isOngoing`.
+     - Cleaned up unused variables and inline date math.
+  3. **Reactive Providers (`trip_provider.dart`)**:
+     - Added `tripStatusProvider = Provider.family<TripStatus, TripModel>((ref, trip) => trip.status)` for reactive status listening.
+     - Updated `activeTripProvider` fallback ordering to prioritize `ongoing` trips first, then upcoming `planning` trips, ensuring travelers actively on vacation immediately see their ongoing trip on the Home screen.
+  4. **Home Screen & Detail Integration**:
+     - `NextTripCard`: Displays `ONGOING TRIP` pill badge with green dot and transforms the countdown into a live day counter (`Day X of Y days` / `Day of trip`), as well as in the collapsed app bar header.
+     - `TripDetailScreen`: Replaced inline date calculations with `trip.isOngoing` and updated status badge label to `'Ongoing'`.
+- **Target Files**:
+  - `lib/core/models/trip_model.dart` [MODIFIED]
+  - `lib/core/providers/trip_provider.dart` [MODIFIED]
+  - `lib/features/trips/trips_screen.dart` [MODIFIED]
+  - `lib/features/home/widgets/next_trip_card.dart` [MODIFIED]
+  - `lib/features/trip_detail/trip_detail_screen.dart` [MODIFIED]
+  - `docs/MEMORY.md` [MODIFIED]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+- **Verification**:
+  - `dart analyze lib`: **No issues found! (0 errors, 0 warnings)**.
+
+
 
 
 

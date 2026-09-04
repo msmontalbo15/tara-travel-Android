@@ -20,7 +20,6 @@ class TripsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final allTripsAsync = ref.watch(allTripsProvider);
-    final now = DateTime.now();
 
     return Scaffold(
       backgroundColor: AppColors.deepEarth,
@@ -689,6 +688,8 @@ class _TripListCardState extends ConsumerState<_TripListCard>
                               _badge('Draft', AppColors.surfaceLight, AppColors.warmMuted)
                             else if (widget.isArchived)
                               _badge('Past', AppColors.surfaceLight, AppColors.warmMuted)
+                            else if (trip.isOngoing)
+                              _badge('Ongoing', AppColors.greenBg, AppColors.green)
                             else if (trip.isIncomplete)
                               _badge('Incomplete', AppColors.surfaceLight, AppColors.warmMuted)
                             else if (daysLeft == 0)

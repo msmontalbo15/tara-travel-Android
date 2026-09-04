@@ -185,8 +185,7 @@ class _TripDashboardState extends ConsumerState<_TripDashboard> {
     }
 
     final nights = trip.toDate.difference(trip.fromDate).inDays;
-    final now = DateTime.now();
-    final isActive = now.isAfter(trip.fromDate) && now.isBefore(trip.toDate);
+    final isActive = trip.isOngoing;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F3F0),
@@ -711,7 +710,7 @@ class _StatusBadge extends StatelessWidget {
     final label = isDraft
         ? 'Draft'
         : isActive
-            ? 'Active'
+            ? 'Ongoing'
             : isArchived
                 ? 'Completed'
                 : 'Planning';
