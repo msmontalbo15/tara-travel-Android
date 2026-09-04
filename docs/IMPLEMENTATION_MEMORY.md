@@ -66,6 +66,7 @@
 | **`IMP-080`** | 2026-09-04 | UI & Home / Quick Actions Grid | Refined Quick Actions Grid layout, card dimensions, and aesthetics: calibrated `childAspectRatio` from 1.34 to 1.52, compact padding, 30x30 icon containers, crisp typography, and responsive `_PulsingGuide` border alignment. |
 | **`IMP-082`** | 2026-09-04 | Profile & Avatars / Storage Pipeline | Full unification of user profile photos and companion avatars across 8+ screens via Supabase Storage bucket `avatars` and `MemberAvatarCircle`. |
 | **`IMP-083`** | 2026-09-04 | Chat, Polls & Activity Hub (IDEA-004) | Full rich travel chat hub: migration 025 (metadata & reactions jsonb), interactive rich embeds (Itinerary stops, Expense requests, Packing alerts, GPS location pin drops, Media photos, Tara Bot briefings), crowdsourced poll suggestions, emoji reactions bar with haptic toggle, and offline outbox queue. |
+| **`IMP-084`** | 2026-09-04 | Polls & Votes / Bidirectional Vote Undo | Full vote undo engine: optimistic in-memory toggle and rollback in `PollsNotifier`, `getPollsAndVotesRaw` synchronous hydration, PollCard explicit "↩️ Undo vote" header button, "Tap to undo" option badge, and interactive SnackBar Undo/Re-vote action feedback. |
 
 ---
 
@@ -1786,6 +1787,36 @@
 - **Verification**:
   - `flutter analyze lib/features/chat/` executed: **No issues found! (0 errors, 0 warnings)**.
   - `flutter analyze lib/core/` executed: **No issues found! (0 errors, 0 warnings)**.
+
+---
+
+### `IMP-084` · Polls & Votes / Bidirectional Vote Undo & Optimistic State Sync
+- **Date**: September 04, 2026
+- **Scope & Objectives**:
+  1. **Synchronous Raw State Hydration**:
+     - Added `getPollsAndVotesRaw(tripId)` to `ChatRepository` returning both polls and votes for immediate local cache seeding on provider build.
+  2. **Optimistic Local Updates with Rollback**:
+     - Updated `castVote` in `PollsNotifier` to optimistically append a synthetic vote into `_rawVotes` and rebuild state instantly before remote write. Reverts if Supabase rejects the write.
+     - Updated `removeVote` in `PollsNotifier` to optimistically remove the user's vote from `_rawVotes` and rebuild state immediately with fallback restore on failure.
+     - Enhanced `toggleVote` to pass `currentUserId` and properly unvote when tapping an already voted option.
+     - Added `undoAllVotes({required TripPoll poll, required String currentUserId})` to retract all votes for a poll with a single tap.
+  3. **UI Affordances & Undo Actions in PollCard**:
+     - Added `onUndoVote` callback parameter to `PollCard`.
+     - In the poll header row (`by Creator · N votes`), added an explicit **"↩️ Undo vote"** button when `userVotedIds.isNotEmpty` and `!poll.isClosed`.
+     - In `_OptionBar`, added a subtle **"Tap to undo"** badge for options currently voted by the user, making bidirectional vote retracting instantly discoverable.
+  4. **Interactive SnackBar Feedback in ChatScreen**:
+     - When voting on an option, display a SnackBar with an interactive **"Undo"** action (`SnackBarAction`) allowing 1-tap revocation within 4 seconds.
+     - When unvoting an option, display a SnackBar with a **"Re-vote"** action for quick correction.
+- **Target Files**:
+  - `lib/core/repositories/chat_repository.dart` [MODIFIED]
+  - `lib/core/providers/poll_provider.dart` [MODIFIED]
+  - `lib/features/chat/widgets/poll_card.dart` [MODIFIED]
+  - `lib/features/chat/chat_screen.dart` [MODIFIED]
+  - `docs/MEMORY.md` [MODIFIED]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+  - `docs/CHANGELOG.md` [MODIFIED]
+- **Verification**:
+  - `flutter analyze lib/features/chat/ lib/core/providers/poll_provider.dart lib/core/repositories/chat_repository.dart` executed: **No issues found! (0 errors, 0 warnings)**.
 
 
 

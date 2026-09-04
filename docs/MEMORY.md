@@ -237,7 +237,7 @@ public.trip_polls (
   closed_at timestamptz
 );
 
--- 13B. TRIP POLL VOTES
+-- 13B. TRIP POLL VOTES (Undoable & Optimistic)
 public.trip_poll_votes (
   id uuid primary key default gen_random_uuid(),
   poll_id uuid not null references public.trip_polls(id) on delete cascade,
@@ -248,6 +248,8 @@ public.trip_poll_votes (
   created_at timestamptz not null default now(),
   constraint unique_user_poll_option unique (poll_id, user_id, option_id)
 );
+-- Invariant: Votes are fully undoable via PollCard 'Undo vote' header button,
+-- OptionBar 'Tap to undo', or interactive SnackBar 'Undo' action with optimistic rollback.
 
 -- 14. ACTIVITY LOG
 public.activity_log (

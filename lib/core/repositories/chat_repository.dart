@@ -566,6 +566,31 @@ class ChatRepository {
     }
   }
 
+  /// Fetches raw poll and vote rows for synchronous state hydration.
+  Future<({List<Map<String, dynamic>> polls, List<Map<String, dynamic>> votes})> getPollsAndVotesRaw(String tripId) async {
+    if (!_isAuthenticated) return (polls: <Map<String, dynamic>>[], votes: <Map<String, dynamic>>[]);
+    try {
+      final pollRows = await _supabase
+          .from('trip_polls')
+          .select()
+          .eq('trip_id', tripId)
+          .order('created_at', ascending: false);
+
+      final voteRows = await _supabase
+          .from('trip_poll_votes')
+          .select()
+          .eq('trip_id', tripId);
+
+      return (
+        polls: (pollRows as List).map((e) => (e as Map).cast<String, dynamic>()).toList(),
+        votes: (voteRows as List).map((e) => (e as Map).cast<String, dynamic>()).toList(),
+      );
+    } catch (e) {
+      debugPrint('[ChatRepository] getPollsAndVotesRaw error: $e');
+      return (polls: <Map<String, dynamic>>[], votes: <Map<String, dynamic>>[]);
+    }
+  }
+
   /// Real-time stream of all polls for a trip.
   Stream<List<Map<String, dynamic>>> pollsStream(String tripId) {
     if (!_isAuthenticated) return const Stream.empty();
