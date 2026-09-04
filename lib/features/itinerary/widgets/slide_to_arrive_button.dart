@@ -160,7 +160,6 @@ class _SlideToArriveButtonState extends State<SlideToArriveButton>
                       Text(
                         widget.label,
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
@@ -195,7 +194,6 @@ class _SlideToArriveButtonState extends State<SlideToArriveButton>
                       Text(
                         widget.confirmedLabel,
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,

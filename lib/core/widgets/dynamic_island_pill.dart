@@ -57,7 +57,6 @@ class DynamicIslandPill extends StatelessWidget {
                     Text(
                       title,
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
@@ -68,7 +67,6 @@ class DynamicIslandPill extends StatelessWidget {
                       Text(
                         subtitle!,
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
                           color: Colors.white.withValues(alpha: 0.65),

@@ -189,7 +189,6 @@ class _JoinTripSheetState extends ConsumerState<_JoinTripSheet> {
                   ),
                 ),
                 style: const TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 4,
@@ -227,7 +226,6 @@ class _JoinTripSheetState extends ConsumerState<_JoinTripSheet> {
                       : const Text(
                           'Join Trip',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
                           ),

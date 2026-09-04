@@ -99,7 +99,6 @@ class ItineraryBottomDock extends StatelessWidget {
                             Text(
                               'Live Nav',
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
                                 color: Colors.white,
@@ -157,7 +156,6 @@ class ItineraryBottomDock extends StatelessWidget {
                             Text(
                               hasStops ? 'Day Map' : 'Map',
                               style: const TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 13.5,
                                 fontWeight: FontWeight.w700,
                                 color: Colors.white,
@@ -206,7 +204,6 @@ class ItineraryBottomDock extends StatelessWidget {
                             Text(
                               'Stop',
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 13.5,
                                 fontWeight: FontWeight.w700,
                                 color: Colors.white,

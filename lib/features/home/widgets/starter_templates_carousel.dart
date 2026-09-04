@@ -63,7 +63,6 @@ class StarterTemplatesCarousel extends ConsumerWidget {
               const Text(
                 'Need inspiration?',
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,
@@ -73,7 +72,6 @@ class StarterTemplatesCarousel extends ConsumerWidget {
               Text(
                 'Tap to use',
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
                   color: AppColors.textSecondary.withValues(alpha: 0.7),
@@ -244,7 +242,6 @@ class _TemplateCardState extends State<_TemplateCard>
                     child: Text(
                       '${d.durationDays}D',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         color: d.accentColor,
@@ -261,7 +258,6 @@ class _TemplateCardState extends State<_TemplateCard>
                   Text(
                     d.shortName,
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimary,
@@ -273,7 +269,6 @@ class _TemplateCardState extends State<_TemplateCard>
                   Text(
                     d.tagline,
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 11,
                       color: AppColors.textSecondary,
                     ),

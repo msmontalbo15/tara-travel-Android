@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_text_styles.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/profile_provider.dart';
 import '../theme/app_colors.dart';
@@ -24,7 +25,7 @@ class JitGuard {
             Text(
               'Quick Profile Setup',
               style: TextStyle(
-                fontFamily: 'Playfair Display',
+                fontFamily: AppTextStyles.fontHeading,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -33,7 +34,7 @@ class JitGuard {
         ),
         content: const Text(
           'Setting your home location helps us recommend local transport and currency conversions for your trips.',
-          style: TextStyle(fontFamily: 'DM Sans', fontSize: 14),
+          style: TextStyle( fontSize: 14),
         ),
         actions: [
           TextButton(
@@ -83,14 +84,14 @@ class JitGuard {
                 SizedBox(width: 12),
                 Text(
                   'Add Payment Info',
-                  style: TextStyle(fontFamily: 'Playfair Display', fontSize: 20, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontFamily: AppTextStyles.fontHeading, fontSize: 20, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
             const SizedBox(height: 12),
             const Text(
               'Your GCash number is missing. Adding payment info lets your travel group settle expenses directly with you.',
-              style: TextStyle(fontFamily: 'DM Sans', fontSize: 14, color: AppColors.textPrimary),
+              style: TextStyle( fontSize: 14, color: AppColors.textPrimary),
             ),
             const SizedBox(height: 24),
             Row(
@@ -150,7 +151,7 @@ class JitGuard {
             Text(
               'Schedule Conflict',
               style: TextStyle(
-                fontFamily: 'Playfair Display',
+                fontFamily: AppTextStyles.fontHeading,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: AppColors.deepEarth,
@@ -165,7 +166,6 @@ class JitGuard {
             const Text(
               'You already have an existing trip scheduled during these dates:',
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 14,
                 color: AppColors.textPrimary,
               ),
@@ -182,7 +182,6 @@ class JitGuard {
               child: Text(
                 tripListText,
                 style: const TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: AppColors.deepEarth,
@@ -193,7 +192,6 @@ class JitGuard {
             const Text(
               'Do you still want to proceed with these dates?',
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 13,
                 color: AppColors.warmMuted,
               ),
@@ -206,7 +204,6 @@ class JitGuard {
             child: const Text(
               'Change Dates',
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontWeight: FontWeight.w600,
                 color: AppColors.warmMuted,
               ),
@@ -224,7 +221,6 @@ class JitGuard {
             child: const Text(
               'Proceed Anyway',
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontWeight: FontWeight.w700,
               ),
             ),

@@ -59,7 +59,6 @@ class DistributionCard extends StatelessWidget {
                 const Text(
                   '₱36,500',
                   style: TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     color: AppColors.deepEarth,
@@ -68,7 +67,6 @@ class DistributionCard extends StatelessWidget {
                 Text(
                   'spent',
                   style: TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 9,
                     color: Colors.grey.shade500,
                   ),
@@ -96,7 +94,6 @@ class DistributionCard extends StatelessWidget {
             child: Text(
               label,
               style: const TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 12,
                 color: AppColors.deepEarth,
                 fontWeight: FontWeight.w500,
@@ -106,7 +103,6 @@ class DistributionCard extends StatelessWidget {
           Text(
             pct,
             style: const TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 12,
               fontWeight: FontWeight.w700,
               color: AppColors.deepEarth,

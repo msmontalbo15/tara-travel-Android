@@ -89,7 +89,7 @@ class _TimelineViewState extends State<TimelineView> {
               padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
               child: Text(
                 'NO TIME ASSIGNED',
-                style: TextStyle(fontFamily: 'DM Sans', fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.4, color: AppColors.warmMuted),
+                style: TextStyle( fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.4, color: AppColors.warmMuted),
               ),
             ),
             ...untimedStops.map((s) => _UntimedStopRow(stop: s, onTap: () => widget.onStopTap(s))),
@@ -99,7 +99,7 @@ class _TimelineViewState extends State<TimelineView> {
             padding: EdgeInsets.fromLTRB(20, 8, 20, 8),
             child: Text(
               'DAILY TIMELINE',
-              style: TextStyle(fontFamily: 'DM Sans', fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.4, color: AppColors.warmMuted),
+              style: TextStyle( fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.4, color: AppColors.warmMuted),
             ),
           ),
           if (timedStops.isEmpty)
@@ -108,7 +108,7 @@ class _TimelineViewState extends State<TimelineView> {
                 padding: EdgeInsets.all(32),
                 child: Text(
                   'Add start & end times to stops\nto see them in the timeline.',
-                  style: TextStyle(fontFamily: 'DM Sans', fontSize: 13, color: AppColors.muted),
+                  style: TextStyle( fontSize: 13, color: AppColors.muted),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -144,7 +144,7 @@ class _TimelineViewState extends State<TimelineView> {
                   width: _hourWidth,
                   child: Text(
                     h == 0 ? '12am' : h < 12 ? '${h}am' : h == 12 ? '12pm' : '${h - 12}pm',
-                    style: const TextStyle(fontFamily: 'DM Sans', fontSize: 10, color: AppColors.muted),
+                    style: const TextStyle( fontSize: 10, color: AppColors.muted),
                   ),
                 );
               }),
@@ -186,7 +186,7 @@ class _TimelineViewState extends State<TimelineView> {
               children: [
                 Container(width: 10, height: 10, decoration: BoxDecoration(color: t.color, borderRadius: BorderRadius.circular(3))),
                 const SizedBox(width: 4),
-                Text(t.label, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 10, color: AppColors.muted)),
+                Text(t.label, style: const TextStyle( fontSize: 10, color: AppColors.muted)),
               ],
             )).toList(),
           ),
@@ -230,14 +230,14 @@ class _TimelineViewState extends State<TimelineView> {
             children: [
               Text(
                 stop.title,
-                style: const TextStyle(fontFamily: 'DM Sans', fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white),
+                style: const TextStyle( fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
               if (width > 60)
                 Text(
                   stop.duration,
-                  style: TextStyle(fontFamily: 'DM Sans', fontSize: 9, color: Colors.white.withValues(alpha: 0.8)),
+                  style: TextStyle( fontSize: 9, color: Colors.white.withValues(alpha: 0.8)),
                   maxLines: 1,
                 ),
             ],
@@ -281,11 +281,11 @@ class _UntimedStopRow extends StatelessWidget {
             Icon(stop.type.icon, size: 18, color: stop.type.color),
             const SizedBox(width: 10),
             Expanded(
-              child: Text(stop.title, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 13.5, fontWeight: FontWeight.w600, color: AppColors.deepEarth)),
+              child: Text(stop.title, style: const TextStyle( fontSize: 13.5, fontWeight: FontWeight.w600, color: AppColors.deepEarth)),
             ),
             const Icon(Icons.schedule_rounded, size: 15, color: AppColors.muted),
             const SizedBox(width: 4),
-            const Text('No time', style: TextStyle(fontFamily: 'DM Sans', fontSize: 11.5, color: AppColors.muted)),
+            const Text('No time', style: TextStyle( fontSize: 11.5, color: AppColors.muted)),
           ],
         ),
       ),

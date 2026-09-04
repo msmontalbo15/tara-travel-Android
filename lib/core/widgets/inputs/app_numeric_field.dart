@@ -39,7 +39,6 @@ class AppNumericField extends StatelessWidget {
           Text(
             label,
             style: const TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 14,
               fontWeight: FontWeight.w600,
               color: AppColors.deepEarth,
@@ -56,7 +55,6 @@ class AppNumericField extends StatelessWidget {
             onChanged: onChanged,
             validator: validator,
             style: const TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 18,
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimary,
@@ -64,14 +62,12 @@ class AppNumericField extends StatelessWidget {
             decoration: InputDecoration(
               hintText: hint ?? '0.00',
               hintStyle: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
                 color: AppColors.warmMuted.withValues(alpha: 0.5),
               ),
               errorText: errorText,
               errorStyle: const TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 12,
                 color: AppColors.red,
               ),
@@ -83,7 +79,6 @@ class AppNumericField extends StatelessWidget {
                   child: Text(
                     currencySymbol,
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                       color: AppColors.primary,

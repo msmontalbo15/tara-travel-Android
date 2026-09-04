@@ -136,7 +136,6 @@ class _QuickActionTileState extends State<QuickActionTile>
                       child: Text(
                         widget.label,
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 13.5,
                           fontWeight: FontWeight.w700,
                           color: widget.orange
@@ -155,7 +154,6 @@ class _QuickActionTileState extends State<QuickActionTile>
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
                             color: widget.orange

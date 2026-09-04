@@ -94,13 +94,11 @@ class _CheckInNotification extends StatelessWidget {
                   children: [
                     Text('Tara Travel',
                         style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: Colors.white)),
                     Text('now',
                         style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 10,
                             color: Colors.white38)),
                   ],
@@ -114,7 +112,6 @@ class _CheckInNotification extends StatelessWidget {
           Text(
             "You've arrived at $destinationName!",
             style: const TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: Colors.white),
@@ -123,7 +120,6 @@ class _CheckInNotification extends StatelessWidget {
           const Text(
             'See live arrival updates from your trip group.',
             style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 11,
                 color: Colors.white60),
           ),
@@ -144,7 +140,6 @@ class _CheckInNotification extends StatelessWidget {
                     alignment: Alignment.center,
                     child: const Text('Check in',
                         style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: AppColors.primary)),
@@ -164,7 +159,6 @@ class _CheckInNotification extends StatelessWidget {
                     alignment: Alignment.center,
                     child: const Text('Later',
                         style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 12,
                             color: Colors.white38)),
                   ),
@@ -215,7 +209,6 @@ class _MessageNotification extends StatelessWidget {
                 alignment: Alignment.center,
                 child: Text(member.initials,
                     style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                         color: Colors.white)),
@@ -229,14 +222,12 @@ class _MessageNotification extends StatelessWidget {
                         ? '${member.name} · $subtitle'
                         : member.name,
                     style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: Colors.white),
                   ),
                   Text(timeLabel,
                       style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 10,
                           color: Colors.white38)),
                 ],
@@ -246,7 +237,6 @@ class _MessageNotification extends StatelessWidget {
           const SizedBox(height: 6),
           Text(message,
               style: const TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 12,
                   color: Colors.white70)),
         ],
@@ -275,7 +265,6 @@ class _ArrivalSummary extends StatelessWidget {
           const Text(
             'ARRIVAL SUMMARY',
             style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 10,
                 fontWeight: FontWeight.w600,
                 color: Colors.white30,
@@ -332,7 +321,6 @@ class _ArrivalRow extends StatelessWidget {
             alignment: Alignment.center,
             child: Text(member.initials,
                 style: const TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                     color: Colors.white)),
@@ -341,7 +329,6 @@ class _ArrivalRow extends StatelessWidget {
           Text(
             member.name.split(' ').first,
             style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 13,
                 color: isOffline ? const Color(0xFF8E8E93) : Colors.white),
           ),
@@ -357,7 +344,6 @@ class _ArrivalRow extends StatelessWidget {
               const SizedBox(width: 5),
               Text(statusText,
                   style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: statusColor)),
@@ -394,13 +380,11 @@ class _NextItineraryPill extends StatelessWidget {
               children: [
                 const Text('Next on itinerary',
                     style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 11,
                         color: Colors.white60)),
                 Text(
                   '$label · $time',
                   style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: Colors.white),

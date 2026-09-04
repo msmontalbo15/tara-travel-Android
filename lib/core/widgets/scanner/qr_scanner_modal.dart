@@ -111,7 +111,6 @@ class _QrScannerModalState extends State<QrScannerModal> {
                       widget.title,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 17,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
@@ -180,7 +179,6 @@ class _QrScannerModalState extends State<QrScannerModal> {
                         widget.instruction,
                         textAlign: TextAlign.center,
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 13,
                           color: Colors.white,
                           fontWeight: FontWeight.w500,

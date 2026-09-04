@@ -187,7 +187,6 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
                             Text(
                               'Personal Pocket',
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
                                 color: _isPersonal ? Colors.white : const Color(0xFF6B7280),
@@ -218,7 +217,6 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
                             Text(
                               'Group Expense',
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
                                 color: !_isPersonal ? Colors.white : const Color(0xFF6B7280),
@@ -239,7 +237,6 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
               const Text(
                 'Payment Method',
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: AppColors.deepEarth,
@@ -273,7 +270,6 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
                             Text(
                               'Cash on Hand',
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
                                 color: Color(0xFF047857),
@@ -310,7 +306,6 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
                             Text(
                               'GCash / Card',
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
                                 color: Color(0xFF1D4ED8),
@@ -363,7 +358,6 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
                     child: Text(
                       '+₱$amt',
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         color: AppColors.primary,
@@ -460,7 +454,6 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
                   const Text(
                     'Split With',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: AppColors.deepEarth,
@@ -479,7 +472,6 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
                     child: Text(
                       _splitWithMemberIds.length == widget.members.length ? 'Clear All' : 'All Members',
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                         color: AppColors.primary,
@@ -528,7 +520,6 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
                             Text(
                               m.name.split(' ').first,
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
                                 color: active ? Colors.white : m.color,
@@ -565,7 +556,6 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
                                 ? '₱${perPerson.toStringAsFixed(2)} / person (${_splitWithMemberIds.length} travelers)'
                                 : 'Split equally among ${_splitWithMemberIds.length} travelers',
                             style: const TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
                               color: AppColors.primary,
@@ -602,7 +592,6 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
                 label: Text(
                   _isPersonal ? 'Log Personal Expense' : 'Add Group Expense',
                   style: const TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                   ),

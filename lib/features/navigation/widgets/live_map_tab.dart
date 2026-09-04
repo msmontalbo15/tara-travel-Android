@@ -248,7 +248,6 @@ class _LiveMapTabState extends ConsumerState<LiveMapTab> {
                           Text(
                             nav.isGhostActive ? 'GHOST MODE' : 'LIVE GPS',
                             style: TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                               color: nav.isGhostActive
@@ -276,7 +275,6 @@ class _LiveMapTabState extends ConsumerState<LiveMapTab> {
                             Text(
                               'Group view ${nav.isGroupViewOn ? 'ON' : 'OFF'}',
                               style: const TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 10,
                                 fontWeight: FontWeight.w600,
                                 color: Colors.white,
@@ -298,7 +296,6 @@ class _LiveMapTabState extends ConsumerState<LiveMapTab> {
                             Text(
                               'Navigating to ${nav.activeMemberRoute!.name}',
                               style: const TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
                                 color: Colors.white,
@@ -454,7 +451,6 @@ class _RealDestinationMarker extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
@@ -463,7 +459,6 @@ class _RealDestinationMarker extends StatelessWidget {
               Text(
                 'ETA $eta',
                 style: const TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 9,
                   color: AppColors.sand,
                 ),
@@ -504,7 +499,6 @@ class _RealPeerMarker extends StatelessWidget {
             member.name.split(' ').first,
             maxLines: 1,
             style: const TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 9,
               fontWeight: FontWeight.w700,
               color: Colors.white,
@@ -534,7 +528,6 @@ class _RealPeerMarker extends StatelessWidget {
               child: Text(
                 member.initials,
                 style: const TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
@@ -607,7 +600,6 @@ class _RealUserMarker extends StatelessWidget {
           child: Text(
             member.initials,
             style: const TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 11,
               fontWeight: FontWeight.w700,
               color: Colors.white,
@@ -782,7 +774,6 @@ class _TurnCard extends StatelessWidget {
                     Text(
                       turn.distanceLabel,
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: AppColors.primaryLight,
@@ -792,7 +783,6 @@ class _TurnCard extends StatelessWidget {
                     Text(
                       turn.instruction,
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
@@ -811,7 +801,6 @@ class _TurnCard extends StatelessWidget {
                   Text(
                     turn.kmLeft.toStringAsFixed(1),
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
                       color: Colors.white,
@@ -820,7 +809,6 @@ class _TurnCard extends StatelessWidget {
                   const Text(
                     'km left',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
                       color: Colors.white38,
@@ -857,7 +845,6 @@ class _TurnCard extends StatelessWidget {
                     Text(
                       'Launch Google Maps Turn-by-Turn',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
@@ -911,7 +898,6 @@ class _BottomStrip extends StatelessWidget {
               child: const Text(
                 'Exit Nav',
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 12.5,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
@@ -938,7 +924,6 @@ class _StatCell extends StatelessWidget {
         Text(
           label,
           style: const TextStyle(
-            fontFamily: 'DM Sans',
             fontSize: 10,
             color: Color(0xFF8E8E93),
           ),
@@ -946,7 +931,6 @@ class _StatCell extends StatelessWidget {
         Text(
           value,
           style: const TextStyle(
-            fontFamily: 'DM Sans',
             fontSize: 15,
             fontWeight: FontWeight.w700,
             color: Colors.black,

@@ -23,7 +23,7 @@ class CategoryBudgetChart extends StatelessWidget {
         decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18)),
         child: const Text(
           'No approved expenses yet.',
-          style: TextStyle(fontFamily: 'DM Sans', color: AppColors.warmMuted),
+          style: TextStyle( color: AppColors.warmMuted),
           textAlign: TextAlign.center,
         ),
       );
@@ -68,7 +68,6 @@ class CategoryBudgetChart extends StatelessWidget {
                     Text(
                       entry.key,
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: AppColors.deepEarth,
@@ -77,7 +76,6 @@ class CategoryBudgetChart extends StatelessWidget {
                     Text(
                       '₱${CurrencyUtils.formatAmount(entry.value)} (${pct.toStringAsFixed(0)}%)',
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,

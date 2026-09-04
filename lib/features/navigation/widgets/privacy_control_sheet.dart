@@ -73,7 +73,6 @@ class PrivacyControlSheet extends ConsumerWidget {
                     Text(
                       'Location Privacy & Battery',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 17,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
@@ -82,7 +81,6 @@ class PrivacyControlSheet extends ConsumerWidget {
                     Text(
                       'Control how and when your GPS coordinates are shared',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 12,
                         color: AppColors.textSecondary,
                       ),
@@ -98,7 +96,6 @@ class PrivacyControlSheet extends ConsumerWidget {
           const Text(
             'GPS PRECISION LEVEL',
             style: TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 11,
               fontWeight: FontWeight.w700,
               color: Color(0xFF8E8E93),
@@ -163,7 +160,6 @@ class PrivacyControlSheet extends ConsumerWidget {
                       Text(
                         'Battery Saver Polling',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                           color: AppColors.textPrimary,
@@ -172,7 +168,6 @@ class PrivacyControlSheet extends ConsumerWidget {
                       Text(
                         'Reduces GPS polling frequency to preserve battery',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 11,
                           color: AppColors.textSecondary,
                         ),
@@ -218,7 +213,6 @@ class PrivacyControlSheet extends ConsumerWidget {
             const Text(
               'Pause Location Sharing Duration',
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
@@ -250,7 +244,6 @@ class PrivacyControlSheet extends ConsumerWidget {
       title: Text(
         label,
         style: const TextStyle(
-          fontFamily: 'DM Sans',
           fontSize: 13,
           fontWeight: FontWeight.w600,
         ),
@@ -314,7 +307,6 @@ class _OptionCard extends StatelessWidget {
                   Text(
                     title,
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: isSelected
@@ -326,7 +318,6 @@ class _OptionCard extends StatelessWidget {
                   Text(
                     subtitle,
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 11,
                       color: AppColors.textSecondary,
                     ),

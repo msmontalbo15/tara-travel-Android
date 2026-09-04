@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -136,7 +137,6 @@ class ItineraryStopEmbed extends StatelessWidget {
                         const Text(
                           'WINNING POLL OPTION',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 9,
                             fontWeight: FontWeight.w800,
                             color: Colors.white,
@@ -154,7 +154,6 @@ class ItineraryStopEmbed extends StatelessWidget {
                             child: Text(
                               '$winnerVotes votes',
                               style: const TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 8,
                                 fontWeight: FontWeight.w700,
                                 color: Colors.white,
@@ -177,7 +176,6 @@ class ItineraryStopEmbed extends StatelessWidget {
                       child: Text(
                         'DAY $dayNumber · $typeName'.toUpperCase(),
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 9,
                           fontWeight: FontWeight.w800,
                           color: isPollWinner ? const Color(0xFF2D6E0F) : AppColors.darkAccent,
@@ -197,7 +195,7 @@ class ItineraryStopEmbed extends StatelessWidget {
                 Text(
                   title,
                   style: const TextStyle(
-                    fontFamily: 'Playfair Display',
+                    fontFamily: AppTextStyles.fontHeading,
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
                     color: AppColors.deepEarth,
@@ -213,7 +211,6 @@ class ItineraryStopEmbed extends StatelessWidget {
                         child: Text(
                           location,
                           style: const TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 11,
                             color: AppColors.muted,
                           ),
@@ -229,7 +226,6 @@ class ItineraryStopEmbed extends StatelessWidget {
                   Text(
                     notes,
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 11,
                       fontStyle: FontStyle.italic,
                       color: AppColors.warmMuted,
@@ -250,7 +246,6 @@ class ItineraryStopEmbed extends StatelessWidget {
                             icon: const Icon(Icons.directions_rounded, size: 14),
                             label: const Text('Maps',
                                 style: TextStyle(
-                                    fontFamily: 'DM Sans',
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold)),
                             style: ElevatedButton.styleFrom(
@@ -286,7 +281,6 @@ class ItineraryStopEmbed extends StatelessWidget {
                           icon: const Icon(Icons.info_outline_rounded, size: 14),
                           label: const Text('Details',
                               style: TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold)),
                           style: OutlinedButton.styleFrom(
@@ -387,7 +381,6 @@ class _ItineraryStopDetailSheet extends StatelessWidget {
                         const Text(
                           'DECIDED BY GROUP POLL',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 10,
                             fontWeight: FontWeight.w800,
                             color: Colors.white,
@@ -399,7 +392,6 @@ class _ItineraryStopDetailSheet extends StatelessWidget {
                           Text(
                             '"$pollQuestion"',
                             style: const TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 12,
                               color: Colors.white70,
                               fontStyle: FontStyle.italic,
@@ -419,7 +411,6 @@ class _ItineraryStopDetailSheet extends StatelessWidget {
                       child: Text(
                         '$winnerVotes votes',
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
@@ -442,7 +433,6 @@ class _ItineraryStopDetailSheet extends StatelessWidget {
                 child: Text(
                   'DAY $dayNumber'.toUpperCase(),
                   style: const TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 10,
                     fontWeight: FontWeight.w800,
                     color: AppColors.darkAccent,
@@ -459,7 +449,6 @@ class _ItineraryStopDetailSheet extends StatelessWidget {
                 child: Text(
                   typeName.toUpperCase(),
                   style: const TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 10,
                     fontWeight: FontWeight.w800,
                     color: AppColors.primary,
@@ -472,7 +461,7 @@ class _ItineraryStopDetailSheet extends StatelessWidget {
           Text(
             title,
             style: const TextStyle(
-              fontFamily: 'Playfair Display',
+              fontFamily: AppTextStyles.fontHeading,
               fontSize: 22,
               fontWeight: FontWeight.bold,
               color: AppColors.deepEarth,
@@ -488,7 +477,6 @@ class _ItineraryStopDetailSheet extends StatelessWidget {
                   child: Text(
                     location,
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 13,
                       color: AppColors.muted,
                     ),
@@ -516,7 +504,6 @@ class _ItineraryStopDetailSheet extends StatelessWidget {
                     child: Text(
                       notes!,
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 12,
                         fontStyle: FontStyle.italic,
                         color: AppColors.deepEarth,
@@ -540,7 +527,7 @@ class _ItineraryStopDetailSheet extends StatelessWidget {
                     },
                     icon: const Icon(Icons.directions_rounded, size: 16),
                     label: const Text('Google Maps',
-                        style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, fontWeight: FontWeight.bold)),
+                        style: TextStyle( fontSize: 12, fontWeight: FontWeight.bold)),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.primary,
                       side: const BorderSide(color: AppColors.primary),
@@ -566,7 +553,7 @@ class _ItineraryStopDetailSheet extends StatelessWidget {
                   },
                   icon: const Icon(Icons.event_note_rounded, size: 16),
                   label: const Text('View Itinerary',
-                      style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, fontWeight: FontWeight.bold)),
+                      style: TextStyle( fontSize: 12, fontWeight: FontWeight.bold)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
@@ -697,7 +684,6 @@ class ExpenseRequestEmbed extends StatelessWidget {
                         Text(
                           'WINNING POLL OPTION · DRAFT EXPENSE',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 9,
                             fontWeight: FontWeight.w800,
                             color: Colors.white,
@@ -724,7 +710,6 @@ class ExpenseRequestEmbed extends StatelessWidget {
                           Text(
                             category.toUpperCase(),
                             style: const TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 9,
                               fontWeight: FontWeight.w800,
                               color: AppColors.amber,
@@ -738,7 +723,6 @@ class ExpenseRequestEmbed extends StatelessWidget {
                     Text(
                       'Paid by $payer',
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 10,
                         color: AppColors.muted,
                       ),
@@ -749,7 +733,6 @@ class ExpenseRequestEmbed extends StatelessWidget {
                 Text(
                   desc,
                   style: const TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                     color: AppColors.deepEarth,
@@ -761,7 +744,7 @@ class ExpenseRequestEmbed extends StatelessWidget {
                       ? '₱0.00 · Draft (set cost in Budget)'
                       : formattedAmount,
                   style: TextStyle(
-                    fontFamily: 'Playfair Display',
+                    fontFamily: AppTextStyles.fontHeading,
                     fontSize: amount == 0.0 && isPollWinner ? 14 : 18,
                     fontWeight: FontWeight.bold,
                     color: AppColors.primary,
@@ -781,7 +764,6 @@ class ExpenseRequestEmbed extends StatelessWidget {
                           icon: const Icon(Icons.account_balance_wallet_outlined, size: 14),
                           label: const Text('Budget Tab',
                               style: TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold)),
                           style: OutlinedButton.styleFrom(
@@ -813,7 +795,6 @@ class ExpenseRequestEmbed extends StatelessWidget {
                           icon: const Icon(Icons.info_outline_rounded, size: 14),
                           label: const Text('Details',
                               style: TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold)),
                           style: OutlinedButton.styleFrom(
@@ -903,7 +884,6 @@ class _ExpenseDetailSheet extends StatelessWidget {
                         const Text(
                           'DECIDED BY GROUP POLL',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 10,
                             fontWeight: FontWeight.w800,
                             color: Colors.white,
@@ -915,7 +895,6 @@ class _ExpenseDetailSheet extends StatelessWidget {
                           Text(
                             '"$pollQuestion"',
                             style: const TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 12,
                               color: Colors.white70,
                               fontStyle: FontStyle.italic,
@@ -935,7 +914,6 @@ class _ExpenseDetailSheet extends StatelessWidget {
                       child: Text(
                         '$winnerVotes votes',
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
@@ -963,7 +941,6 @@ class _ExpenseDetailSheet extends StatelessWidget {
                     Text(
                       category.toUpperCase(),
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 10,
                         fontWeight: FontWeight.w800,
                         color: AppColors.amber,
@@ -976,7 +953,6 @@ class _ExpenseDetailSheet extends StatelessWidget {
               Text(
                 'Logged by $payer',
                 style: const TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 11,
                   color: AppColors.muted,
                 ),
@@ -987,7 +963,6 @@ class _ExpenseDetailSheet extends StatelessWidget {
           Text(
             desc,
             style: const TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: AppColors.deepEarth,
@@ -1008,7 +983,6 @@ class _ExpenseDetailSheet extends StatelessWidget {
                 const Text(
                   'AMOUNT',
                   style: TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 10,
                     fontWeight: FontWeight.w800,
                     color: AppColors.warmMuted,
@@ -1019,7 +993,7 @@ class _ExpenseDetailSheet extends StatelessWidget {
                 Text(
                   formattedAmount,
                   style: const TextStyle(
-                    fontFamily: 'Playfair Display',
+                    fontFamily: AppTextStyles.fontHeading,
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: AppColors.primary,
@@ -1030,7 +1004,6 @@ class _ExpenseDetailSheet extends StatelessWidget {
                   const Text(
                     'Draft expense created from winning poll option. Set the final price in the Budget tab.',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 11,
                       color: AppColors.warmMuted,
                       fontStyle: FontStyle.italic,
@@ -1053,7 +1026,7 @@ class _ExpenseDetailSheet extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
                   child: const Text('Close',
-                      style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, fontWeight: FontWeight.bold)),
+                      style: TextStyle( fontSize: 12, fontWeight: FontWeight.bold)),
                 ),
               ),
               const SizedBox(width: 10),
@@ -1065,7 +1038,7 @@ class _ExpenseDetailSheet extends StatelessWidget {
                   },
                   icon: const Icon(Icons.account_balance_wallet_rounded, size: 16),
                   label: const Text('View in Budget',
-                      style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, fontWeight: FontWeight.bold)),
+                      style: TextStyle( fontSize: 12, fontWeight: FontWeight.bold)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.amber,
                     foregroundColor: Colors.white,
@@ -1135,7 +1108,6 @@ class PackingAlertEmbed extends StatelessWidget {
                     Text(
                       'PACKING NEEDED · $category'.toUpperCase(),
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 9,
                         fontWeight: FontWeight.w800,
                         color: AppColors.blue,
@@ -1153,7 +1125,6 @@ class PackingAlertEmbed extends StatelessWidget {
           Text(
             itemName,
             style: const TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 14,
               fontWeight: FontWeight.bold,
               color: AppColors.deepEarth,
@@ -1165,7 +1136,6 @@ class PackingAlertEmbed extends StatelessWidget {
                 ? '✅ Claimed by ${claimedBy ?? 'a traveler'}'
                 : 'Nobody has claimed to bring this item yet.',
             style: TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 11,
               color: isClaimed ? AppColors.green : AppColors.warmMuted,
             ),
@@ -1179,7 +1149,7 @@ class PackingAlertEmbed extends StatelessWidget {
               icon: Icon(isClaimed ? Icons.check_circle_rounded : Icons.pan_tool_rounded, size: 14),
               label: Text(
                 isClaimed ? 'Already Claimed' : "I'll bring this! 🙋‍♂️",
-                style: const TextStyle(fontFamily: 'DM Sans', fontSize: 11, fontWeight: FontWeight.bold),
+                style: const TextStyle( fontSize: 11, fontWeight: FontWeight.bold),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: isClaimed ? AppColors.greenBg : AppColors.primary,
@@ -1252,7 +1222,6 @@ class LocationDropEmbed extends StatelessWidget {
                     Text(
                       'GPS LOCATION DROP',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 9,
                         fontWeight: FontWeight.w800,
                         color: AppColors.green,
@@ -1270,7 +1239,6 @@ class LocationDropEmbed extends StatelessWidget {
           Text(
             label,
             style: const TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 14,
               fontWeight: FontWeight.bold,
               color: AppColors.deepEarth,
@@ -1280,7 +1248,6 @@ class LocationDropEmbed extends StatelessWidget {
           Text(
             'Coordinates: ${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}',
             style: const TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 11,
               color: AppColors.muted,
             ),
@@ -1293,7 +1260,7 @@ class LocationDropEmbed extends StatelessWidget {
               onPressed: () => _openCoordinates(lat, lng),
               icon: const Icon(Icons.explore_rounded, size: 14),
               label: const Text('Navigate to Pin',
-                  style: TextStyle(fontFamily: 'DM Sans', fontSize: 11, fontWeight: FontWeight.bold)),
+                  style: TextStyle( fontSize: 11, fontWeight: FontWeight.bold)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.green,
                 foregroundColor: Colors.white,
@@ -1406,7 +1373,6 @@ class MediaAttachmentEmbed extends StatelessWidget {
                   child: Text(
                     caption,
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 11,
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
@@ -1473,7 +1439,6 @@ class TaraBotBriefingEmbed extends StatelessWidget {
                       Text(
                         'TARA BOT BRIEFING',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 9,
                           fontWeight: FontWeight.w800,
                           color: Colors.white,
@@ -1487,7 +1452,6 @@ class TaraBotBriefingEmbed extends StatelessWidget {
                 const Text(
                   'Daily Travel Update',
                   style: TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 10,
                     color: Colors.white70,
                   ),
@@ -1501,7 +1465,6 @@ class TaraBotBriefingEmbed extends StatelessWidget {
             child: Text(
               text,
               style: const TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 13,
                 color: Color(0xFFFAF4F0),
                 height: 1.45,
@@ -1570,7 +1533,6 @@ class ReactionPillsRow extends StatelessWidget {
                   Text(
                     '${userIds.length}',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                       color: isMine ? AppColors.darkAccent : AppColors.deepEarth,

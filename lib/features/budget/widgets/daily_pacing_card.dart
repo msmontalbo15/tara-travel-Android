@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../../core/models/personal_allowance_model.dart';
@@ -105,7 +106,6 @@ class DailyPacingCard extends StatelessWidget {
                         child: Text(
                           'Safe-to-Spend Today',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
                             color: AppColors.deepEarth,
@@ -139,7 +139,6 @@ class DailyPacingCard extends StatelessWidget {
                       Text(
                         statusText,
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
                           color: statusColor,
@@ -164,7 +163,7 @@ class DailyPacingCard extends StatelessWidget {
                   child: Text(
                     '₱${CurrencyUtils.formatAmount(max(0.0, dailySafe - todaySpent))}',
                     style: TextStyle(
-                      fontFamily: 'Playfair Display',
+                      fontFamily: AppTextStyles.fontHeading,
                       fontSize: 28,
                       fontWeight: FontWeight.w700,
                       color: isOver ? const Color(0xFFEF4444) : AppColors.deepEarth,
@@ -177,7 +176,6 @@ class DailyPacingCard extends StatelessWidget {
                 Text(
                   'left today',
                   style: TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 12,
                     color: Colors.grey.shade500,
                   ),
@@ -235,7 +233,6 @@ class DailyPacingCard extends StatelessWidget {
                     RichText(
                       text: TextSpan(
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 10,
                           color: Color(0xFF9CA3AF),
                         ),
@@ -254,7 +251,6 @@ class DailyPacingCard extends StatelessWidget {
                     RichText(
                       text: TextSpan(
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 10,
                           color: Color(0xFF9CA3AF),
                         ),
@@ -291,7 +287,6 @@ class DailyPacingCard extends StatelessWidget {
                   child: Text(
                     '$tipText  ·  $daysRemaining day${daysRemaining > 1 ? 's' : ''} remaining',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 11,
                       color: statusColor.withValues(alpha: 0.85),
                     ),

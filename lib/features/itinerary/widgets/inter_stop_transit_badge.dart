@@ -72,7 +72,6 @@ class InterStopTransitBadge extends StatelessWidget {
               child: Text(
                 info.warningMessage ?? parts.join(' · '),
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 11,
                   fontWeight: info.hasWarning ? FontWeight.w700 : FontWeight.w600,
                   color: textColor,

@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -240,7 +241,6 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
           ? Text(
               profile.initials,
               style: const TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
                 color: Colors.white,
@@ -353,7 +353,6 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
                                             const Text(
                                               'Your trips',
                                               style: TextStyle(
-                                                fontFamily: 'DM Sans',
                                                 fontSize: 16,
                                                 fontWeight: FontWeight.w700,
                                                 color: AppColors.textPrimary,
@@ -376,7 +375,6 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
                                                 child: const Text(
                                                   'See all',
                                                   style: TextStyle(
-                                                    fontFamily: 'DM Sans',
                                                     fontSize: 12,
                                                     fontWeight: FontWeight.w600,
                                                     color: AppColors.primary,
@@ -455,7 +453,6 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
                               child: const Text(
                                 'Quick actions',
                                 style: TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
                                   color: AppColors.textPrimary,
@@ -671,7 +668,6 @@ class _TourCard extends StatelessWidget {
             Text(
               'Quick tour $step of $totalSteps',
               style: const TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
                 color: AppColors.primaryLight,
@@ -681,7 +677,7 @@ class _TourCard extends StatelessWidget {
             Text(
               title,
               style: const TextStyle(
-                fontFamily: 'Playfair Display',
+                fontFamily: AppTextStyles.fontHeading,
                 fontSize: 26,
                 fontWeight: FontWeight.w700,
                 color: Colors.white,
@@ -692,7 +688,6 @@ class _TourCard extends StatelessWidget {
             Text(
               description,
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 14,
                 height: 1.5,
                 color: Colors.white.withValues(alpha: 0.72),
@@ -706,7 +701,6 @@ class _TourCard extends StatelessWidget {
                   child: Text(
                     'Skip',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontWeight: FontWeight.w600,
                       color: Colors.white.withValues(alpha: 0.7),
                     ),
@@ -729,7 +723,6 @@ class _TourCard extends StatelessWidget {
                   child: Text(
                     actionLabel,
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -1045,7 +1038,6 @@ class _HomeHeaderDelegate extends SliverPersistentHeaderDelegate {
                                         child: Text(
                                           '$unreadCount',
                                           style: const TextStyle(
-                                            fontFamily: 'DM Sans',
                                             fontSize: 9,
                                             fontWeight: FontWeight.w700,
                                             color: Colors.white,
@@ -1083,7 +1075,6 @@ class _HomeHeaderDelegate extends SliverPersistentHeaderDelegate {
           Text(
             greeting,
             style: TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 12,
               color: Colors.white.withValues(alpha: 0.6),
             ),
@@ -1097,8 +1088,8 @@ class _HomeHeaderDelegate extends SliverPersistentHeaderDelegate {
                     profile.displayNameForHome,
                     key: ValueKey(profile.displayNameForHome),
                     style: const TextStyle(
-                      fontFamily: 'Playfair Display',
-                      fontFamilyFallback: ['Georgia', 'serif'],
+                      fontFamily: AppTextStyles.fontHeading,
+                      fontFamilyFallback: AppTextStyles.serifFallbacks,
                       fontSize: 24,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,

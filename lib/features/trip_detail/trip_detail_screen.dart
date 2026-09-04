@@ -449,7 +449,7 @@ class _CollapsibleHeroHeader extends ConsumerWidget {
                 children: [
                   Icon(Icons.edit_outlined, size: 18, color: Colors.white70),
                   SizedBox(width: 12),
-                  Text('Edit Trip', style: TextStyle(fontFamily: 'DM Sans', color: Colors.white)),
+                  Text('Edit Trip', style: TextStyle( color: Colors.white)),
                 ],
               ),
             ),
@@ -465,7 +465,7 @@ class _CollapsibleHeroHeader extends ConsumerWidget {
                   const SizedBox(width: 12),
                   Text(
                     trip.isArchived ? 'Unarchive Trip' : 'Archive Trip',
-                    style: const TextStyle(fontFamily: 'DM Sans', color: Colors.white),
+                    style: const TextStyle( color: Colors.white),
                   ),
                 ],
               ),
@@ -478,7 +478,7 @@ class _CollapsibleHeroHeader extends ConsumerWidget {
                   Icon(Icons.delete_outline_rounded, size: 18, color: Colors.redAccent),
                   SizedBox(width: 12),
                   Text('Delete Trip',
-                      style: TextStyle(fontFamily: 'DM Sans', color: Colors.redAccent)),
+                      style: TextStyle( color: Colors.redAccent)),
                 ],
               ),
             ),
@@ -645,7 +645,6 @@ class _CollapsibleHeroHeader extends ConsumerWidget {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 13,
                                   color: Colors.white.withValues(alpha: 0.75),
                                   fontWeight: FontWeight.w500,
@@ -676,7 +675,6 @@ class _CollapsibleHeroHeader extends ConsumerWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 12,
                             color: Colors.white.withValues(alpha: 0.55),
                           ),
@@ -748,7 +746,6 @@ class _StatusBadge extends StatelessWidget {
               Text(
                 label,
                 style: const TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
@@ -842,7 +839,6 @@ class _ItineraryHubCard extends StatelessWidget {
                         Text(
                           'NEXT UP · $timeStr${dateStr.isNotEmpty ? ' ($dateStr)' : ''}',
                           style: const TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
                             color: AppColors.primary,
@@ -857,7 +853,6 @@ class _ItineraryHubCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
                         color: Color(0xFF1A1A1A),
@@ -875,7 +870,6 @@ class _ItineraryHubCard extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 12,
                                 color: Color(0xFF8E8E93),
                               ),
@@ -944,7 +938,6 @@ class _ItineraryHubCard extends StatelessWidget {
                   Text(
                     isCompleted ? 'All Stops Completed 🎉' : 'Trip Itinerary',
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF1A1A1A),
@@ -956,7 +949,6 @@ class _ItineraryHubCard extends StatelessWidget {
                         ? '$visitedStops of $totalStops stops visited · $dayCount days'
                         : 'Plan activities, food, hotels & stops',
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 12,
                       color: Color(0xFF8E8E93),
                     ),
@@ -1052,7 +1044,6 @@ class _LogisticsCard extends StatelessWidget {
                   Text(
                     'Logistics & Departure',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF1A1A1A),
@@ -1075,7 +1066,6 @@ class _LogisticsCard extends StatelessWidget {
                       Text(
                         _formatTransportLabel(transportMode),
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                           color: AppColors.primary,
@@ -1108,7 +1098,6 @@ class _LogisticsCard extends StatelessWidget {
                       const Text(
                         'MEETUP / DEPARTURE POINT',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 9,
                           fontWeight: FontWeight.w700,
                           color: Color(0xFF8E8E93),
@@ -1121,7 +1110,6 @@ class _LogisticsCard extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: Color(0xFF1A1A1A),
@@ -1214,7 +1202,6 @@ class _SquadPreviewCard extends StatelessWidget {
                         child: Text(
                           '+$remainingCount',
                           style: const TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
@@ -1233,7 +1220,6 @@ class _SquadPreviewCard extends StatelessWidget {
                   Text(
                     '${members.length} Squad ${members.length == 1 ? 'Member' : 'Members'}',
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF1A1A1A),
@@ -1243,7 +1229,6 @@ class _SquadPreviewCard extends StatelessWidget {
                   const Text(
                     'Manage roles & split participants',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 11,
                       color: Color(0xFF8E8E93),
                     ),
@@ -1263,7 +1248,6 @@ class _SquadPreviewCard extends StatelessWidget {
                   Text(
                     'Manage',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF1A1A1A),
@@ -1360,7 +1344,6 @@ class _BudgetCard extends StatelessWidget {
                         const Text(
                           'Trip Budget & Expenses',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
                             color: Color(0xFF1A1A1A),
@@ -1369,7 +1352,6 @@ class _BudgetCard extends StatelessWidget {
                         Text(
                           splitEqually ? 'Equal Split' : 'Custom Split',
                           style: const TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
                             color: Color(0xFF8E8E93),
@@ -1390,7 +1372,6 @@ class _BudgetCard extends StatelessWidget {
                     child: Text(
                       '${(budgetPct * 100).round()}% used',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                         color: _pctColor,
@@ -1408,7 +1389,6 @@ class _BudgetCard extends StatelessWidget {
                     child: const Text(
                       'No Budget Set',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: Color(0xFF8E8E93),
@@ -1497,13 +1477,11 @@ class _BudgetStat extends StatelessWidget {
       children: [
         Text(label,
             style: const TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 11,
                 color: Color(0xFF8E8E93))),
         const SizedBox(height: 2),
         Text(value,
             style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
                 color: valueColor)),
@@ -1575,7 +1553,6 @@ class _QuickTile extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFF1A1A1A),
@@ -1587,7 +1564,6 @@ class _QuickTile extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 11,
                 color: Color(0xFF8E8E93),
               ),
@@ -1649,7 +1625,6 @@ class _NavButton extends StatelessWidget {
             Text(
               'Start Navigation',
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
                 color: Colors.white,
@@ -1740,7 +1715,6 @@ class _InviteCardState extends ConsumerState<_InviteCard> {
                         Text(
                           'INVITE CODE',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
                             color: Colors.white.withValues(alpha: 0.40),
@@ -1751,7 +1725,6 @@ class _InviteCardState extends ConsumerState<_InviteCard> {
                         Text(
                           widget.trip.inviteCode,
                           style: const TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 28,
                             fontWeight: FontWeight.w800,
                             color: Colors.white,
@@ -1762,7 +1735,6 @@ class _InviteCardState extends ConsumerState<_InviteCard> {
                         Text(
                           'Share with your squad to join this trip',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 11,
                             color: Colors.white.withValues(alpha: 0.35),
                           ),
@@ -1884,7 +1856,6 @@ class _DraftPublishCard extends StatelessWidget {
                 Text(
                   'Draft Trip',
                   style: TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
@@ -1894,7 +1865,6 @@ class _DraftPublishCard extends StatelessWidget {
                 Text(
                   'Publish this trip to activate live tracking, member sharing, and packing lists.',
                   style: TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 12,
                     color: AppColors.textSecondary,
                     height: 1.3,
@@ -1927,7 +1897,6 @@ class _DraftPublishCard extends StatelessWidget {
                 : const Text(
                     'Publish',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                     ),

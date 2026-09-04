@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 
@@ -133,7 +134,6 @@ class _HealthSafetyStepState extends State<HealthSafetyStep>
                           child: const Text(
                             'Step 5 of 6',
                             style: TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                               color: AppColors.primary,
@@ -144,7 +144,7 @@ class _HealthSafetyStepState extends State<HealthSafetyStep>
                         const Text(
                           'Safety & health',
                           style: TextStyle(
-                            fontFamily: 'Playfair Display',
+                            fontFamily: AppTextStyles.fontHeading,
                             fontSize: 32,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimary,
@@ -155,7 +155,6 @@ class _HealthSafetyStepState extends State<HealthSafetyStep>
                         const Text(
                           'Optional info to help organizers look out\nfor you during group trips.',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 14,
                             color: AppColors.textSecondary,
                             height: 1.5,
@@ -167,7 +166,6 @@ class _HealthSafetyStepState extends State<HealthSafetyStep>
                         const Text(
                           'Blood Type',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimary,
@@ -177,7 +175,6 @@ class _HealthSafetyStepState extends State<HealthSafetyStep>
                         const Text(
                           'Select your ABO/Rh blood type.',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 12,
                             color: AppColors.textSecondary,
                           ),
@@ -194,7 +191,6 @@ class _HealthSafetyStepState extends State<HealthSafetyStep>
                         const Text(
                           'Health & Medical Info',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimary,
@@ -231,7 +227,6 @@ class _HealthSafetyStepState extends State<HealthSafetyStep>
                                 title: Text(
                                   option,
                                   style: const TextStyle(
-                                    fontFamily: 'DM Sans',
                                     fontSize: 15,
                                     fontWeight: FontWeight.w500,
                                     color: AppColors.textPrimary,
@@ -255,7 +250,6 @@ class _HealthSafetyStepState extends State<HealthSafetyStep>
                         const Text(
                           'Specific details',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimary,
@@ -294,7 +288,6 @@ class _HealthSafetyStepState extends State<HealthSafetyStep>
                                 child: Text(
                                   'This info is private and only shared with organizers of trips you join.',
                                   style: TextStyle(
-                                    fontFamily: 'DM Sans',
                                     fontSize: 13,
                                     color: AppColors.primary.withValues(alpha: 0.8),
                                     height: 1.4,
@@ -331,7 +324,6 @@ class _HealthSafetyStepState extends State<HealthSafetyStep>
                           child: const Text(
                             'Continue',
                             style: TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
                             ),
@@ -344,7 +336,6 @@ class _HealthSafetyStepState extends State<HealthSafetyStep>
                         child: const Text(
                           'Skip for now',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                             color: AppColors.textSecondary,
@@ -406,7 +397,6 @@ class BloodTypeDropdown extends StatelessWidget {
               Text(
                 'Select blood type...',
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 14,
                   color: AppColors.warmMuted,
                 ),
@@ -419,7 +409,6 @@ class BloodTypeDropdown extends StatelessWidget {
           dropdownColor: Colors.white,
           elevation: 4,
           style: const TextStyle(
-            fontFamily: 'DM Sans',
             fontSize: 15,
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
@@ -445,7 +434,6 @@ class BloodTypeDropdown extends StatelessWidget {
                   Text(
                     type,
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,

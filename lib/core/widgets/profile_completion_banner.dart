@@ -76,7 +76,6 @@ class _ProfileCompletionBannerState
                     const Text(
                       'Complete your profile setup',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
@@ -88,7 +87,6 @@ class _ProfileCompletionBannerState
                           ? 'Almost done! Review your profile settings.'
                           : 'Next: ${missingTasks.first}',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 12,
                         color: AppColors.textPrimary.withValues(alpha: 0.7),
                       ),
@@ -126,7 +124,6 @@ class _ProfileCompletionBannerState
               Text(
                 '${(progress * 100).toInt()}% completed',
                 style: const TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                   color: AppColors.primary,
@@ -145,7 +142,6 @@ class _ProfileCompletionBannerState
                   child: const Text(
                     'Finish setup',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: Colors.white,

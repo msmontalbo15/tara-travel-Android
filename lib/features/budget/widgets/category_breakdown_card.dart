@@ -74,7 +74,6 @@ class CategoryBreakdownCard extends StatelessWidget {
                 Text(
                   name,
                   style: const TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: AppColors.deepEarth,
@@ -91,7 +90,6 @@ class CategoryBreakdownCard extends StatelessWidget {
                     child: Text(
                       tag,
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 9,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
@@ -107,7 +105,6 @@ class CategoryBreakdownCard extends StatelessWidget {
                 Text(
                   '₱${spent.toInt()}',
                   style: TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     color: tag != null ? color : AppColors.deepEarth,
@@ -116,7 +113,6 @@ class CategoryBreakdownCard extends StatelessWidget {
                 Text(
                   'of ₱${budget.toInt()}',
                   style: const TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 11,
                     color: AppColors.muted,
                   ),

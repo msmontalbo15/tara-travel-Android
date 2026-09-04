@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/itinerary_model.dart';
@@ -55,7 +56,7 @@ class ItineraryMapSheet extends ConsumerWidget {
                 const Text(
                   'Day Map & Live Tracker',
                   style: TextStyle(
-                    fontFamily: 'Playfair Display',
+                    fontFamily: AppTextStyles.fontHeading,
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
@@ -87,7 +88,6 @@ class ItineraryMapSheet extends ConsumerWidget {
                         Text(
                           '${riders.length} Live',
                           style: const TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             color: AppColors.greenBright,
@@ -162,7 +162,6 @@ class ItineraryMapSheet extends ConsumerWidget {
                               Text(
                                 s.title,
                                 style: const TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                   color: Colors.white,
@@ -174,7 +173,6 @@ class ItineraryMapSheet extends ConsumerWidget {
                                 Text(
                                   s.location!,
                                   style: const TextStyle(
-                                    fontFamily: 'DM Sans',
                                     fontSize: 10,
                                     color: Colors.white54,
                                   ),

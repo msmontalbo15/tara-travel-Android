@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -61,7 +62,7 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
             body: Center(
               child: Text(
                 'No active trip found',
-                style: TextStyle(color: Colors.white, fontFamily: 'DM Sans'),
+                style: TextStyle(color: Colors.white,),
               ),
             ),
           );
@@ -126,7 +127,7 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
                                 const Text(
                                   'Packing List',
                                   style: TextStyle(
-                                    fontFamily: 'Playfair Display',
+                                    fontFamily: AppTextStyles.fontHeading,
                                     fontSize: 22,
                                     fontWeight: FontWeight.w700,
                                     color: Colors.white,
@@ -137,7 +138,6 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
-                                    fontFamily: 'DM Sans',
                                     fontSize: 12,
                                     color: Colors.white54,
                                   ),
@@ -179,7 +179,6 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
                                       Text(
                                         'Templates',
                                         style: TextStyle(
-                                          fontFamily: 'DM Sans',
                                           fontSize: 12,
                                           fontWeight: FontWeight.w700,
                                           color: Colors.white,
@@ -251,12 +250,10 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
                         labelColor: Colors.white,
                         unselectedLabelColor: Colors.white54,
                         labelStyle: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                         ),
                         unselectedLabelStyle: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
                         ),
@@ -340,7 +337,6 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
                         Text(
                           allPacked ? '🎉 All packed!' : 'Trip Pack Progress',
                           style: const TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
@@ -352,7 +348,6 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
                             child: Text(
                               'Tara na! Ready to go!',
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 11,
                                 color: AppColors.greenBright,
                               ),
@@ -364,7 +359,6 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
                     Text(
                       '${packing.packedItems} of ${packing.totalItems} items packed across all members',
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 11,
                         color: Colors.white54,
                       ),
@@ -393,7 +387,7 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
               Text(
                 '$percent%',
                 style: TextStyle(
-                  fontFamily: 'Playfair Display',
+                  fontFamily: AppTextStyles.fontHeading,
                   fontSize: 34,
                   fontWeight: FontWeight.w700,
                   color: allPacked ? AppColors.greenBright : Colors.white,
@@ -508,7 +502,6 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
               Text(
                 'CATEGORIES (${filteredCategories.length})',
                 style: const TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.3,
@@ -537,7 +530,6 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
                       Text(
                         _allExpanded ? 'Collapse All' : 'Expand All',
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                           color: AppColors.primary,
@@ -590,7 +582,6 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
                       Text(
                         'Suggest List',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                           color: AppColors.purple,
@@ -660,7 +651,6 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
                   Text(
                     'Add Custom Category',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: AppColors.primary,
@@ -694,7 +684,6 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
               const Text(
                 'PACK STATUS BY MEMBER',
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.4,
@@ -705,7 +694,6 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
               Text(
                 '${trip.members.length} travelers',
                 style: const TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 12,
                   color: AppColors.muted,
                 ),
@@ -725,7 +713,7 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
                 child: Text(
                   'No members joined yet. Invite friends to assign packing items!',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontFamily: 'DM Sans', color: AppColors.muted),
+                  style: TextStyle( color: AppColors.muted),
                 ),
               ),
             )
@@ -762,7 +750,6 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
               label: const Text(
                 'Send Reminder to All Members',
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
                 ),
@@ -835,7 +822,6 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
                   child: Text(
                     member.initials,
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
@@ -851,7 +837,6 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
                     Text(
                       member.name,
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                         color: AppColors.deepEarth,
@@ -863,7 +848,6 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
                           ? 'No items assigned'
                           : '$packed / $total items packed (${(progress * 100).round()}%)',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                         color: allDone ? AppColors.green : AppColors.muted,
@@ -899,7 +883,6 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
                         Text(
                           'Remind (${total - packed})',
                           style: const TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
                             color: AppColors.primary,
@@ -926,7 +909,6 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
                       Text(
                         'Ready!',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                           color: AppColors.green,
@@ -965,7 +947,6 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
                   const Text(
                     'REMAINING TO PACK:',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 9,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1.1,
@@ -978,7 +959,6 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 11,
                       color: AppColors.deepEarth,
                     ),
@@ -1023,7 +1003,6 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
         child: Text(
           label,
           style: TextStyle(
-            fontFamily: 'DM Sans',
             fontSize: 12,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
             color: isSelected ? Colors.white : AppColors.deepEarth,
@@ -1080,7 +1059,6 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
             Text(
               '${member.name} (${stats.$1}/${stats.$2})',
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 12,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 color: isSelected ? member.color : AppColors.deepEarth,
@@ -1129,7 +1107,7 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
               const Text(
                 'Packing List Templates',
                 style: TextStyle(
-                  fontFamily: 'Playfair Display',
+                  fontFamily: AppTextStyles.fontHeading,
                   fontSize: 19,
                   fontWeight: FontWeight.w700,
                   color: AppColors.deepEarth,
@@ -1149,7 +1127,6 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
                 title: const Text(
                   'Save packing list as template',
                   style: TextStyle(
-                    fontFamily: 'DM Sans',
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
                   ),
@@ -1157,7 +1134,6 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
                 subtitle: Text(
                   'Saves ${packing.totalItems} items from this trip',
                   style: const TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 12,
                     color: AppColors.muted,
                   ),
@@ -1191,7 +1167,6 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
                 title: const Text(
                   'Load from Ready-made Templates',
                   style: TextStyle(
-                    fontFamily: 'DM Sans',
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
                   ),
@@ -1199,7 +1174,6 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
                 subtitle: const Text(
                   'Beach, Mountain, Road Trip, City & saved checklists',
                   style: TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 12,
                     color: AppColors.muted,
                   ),
@@ -1304,7 +1278,7 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
                 const Text(
                   'Add New Category',
                   style: TextStyle(
-                    fontFamily: 'Playfair Display',
+                    fontFamily: AppTextStyles.fontHeading,
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
                     color: AppColors.deepEarth,
@@ -1314,7 +1288,6 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
                 const Text(
                   'Pick a suggested category or create your own.',
                   style: TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 13,
                     color: AppColors.muted,
                   ),
@@ -1325,7 +1298,6 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
                 const Text(
                   'QUICK SUGGESTIONS',
                   style: TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.8,
@@ -1369,7 +1341,6 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
                             Text(
                               preset.name,
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 12,
                                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                                 color: isSelected ? preset.color : AppColors.deepEarth,
@@ -1390,7 +1361,6 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
                   decoration: InputDecoration(
                     hintText: 'Category name (e.g. Scuba Gear)',
                     hintStyle: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 14,
                       color: AppColors.muted,
                     ),
@@ -1445,7 +1415,6 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
                     child: const Text(
                       'Add Category',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
@@ -1549,7 +1518,7 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
                         Text(
                           'Reminder Sent to ${member.name}!',
                           style: const TextStyle(
-                            fontFamily: 'Playfair Display',
+                            fontFamily: AppTextStyles.fontHeading,
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
                             color: AppColors.deepEarth,
@@ -1558,7 +1527,6 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
                         const Text(
                           'In-app notification delivered',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 12,
                             color: AppColors.muted,
                           ),
@@ -1579,7 +1547,6 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
                 child: Text(
                   reminderText,
                   style: const TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 12,
                     color: AppColors.deepEarth,
                     height: 1.4,
@@ -1604,7 +1571,6 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
                   label: const Text(
                     'Copy Reminder Text for Chat / SMS',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                     ),
@@ -1831,7 +1797,6 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
                             Text(
                               'Add Sub-category to ${cat.name}',
                               style: const TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.deepEarth,
@@ -1841,7 +1806,6 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
                             const Text(
                               'Organize items into menus, groups, or sections.',
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 12,
                                 color: AppColors.muted,
                               ),
@@ -1858,7 +1822,6 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
                     const Text(
                       'Suggested Sub-categories:',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: AppColors.deepEarth,
@@ -1891,7 +1854,6 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
                             child: Text(
                               '+ $preset',
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 12,
                                 fontWeight: textCtrl.text == preset
                                     ? FontWeight.w700
@@ -1913,7 +1875,6 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
                     controller: textCtrl,
                     autofocus: availablePresets.isEmpty,
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
@@ -1962,7 +1923,6 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
                           child: const Text(
                             'Cancel',
                             style: TextStyle(
-                              fontFamily: 'DM Sans',
                               fontWeight: FontWeight.w600,
                               color: AppColors.muted,
                             ),
@@ -1994,7 +1954,6 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
                           child: const Text(
                             'Create & Filter',
                             style: TextStyle(
-                              fontFamily: 'DM Sans',
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
                             ),
@@ -2050,7 +2009,6 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
               Text(
                 'Sub-category for "${item.name}"',
                 style: const TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                   color: AppColors.deepEarth,
@@ -2060,7 +2018,6 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
               const Text(
                 'Assign this item to a specific menu or section.',
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 12,
                   color: AppColors.muted,
                 ),
@@ -2071,7 +2028,6 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
                 const Text(
                   'Existing Sub-categories:',
                   style: TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: AppColors.deepEarth,
@@ -2100,7 +2056,6 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
                         child: const Text(
                           'None (General)',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: AppColors.muted,
@@ -2130,7 +2085,6 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
                           child: Text(
                             sc,
                             style: TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 12,
                               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                               color: isSelected ? cat.color : AppColors.deepEarth,
@@ -2148,7 +2102,6 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
               TextField(
                 controller: textCtrl,
                 style: const TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                 ),
@@ -2220,7 +2173,6 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
                       child: const Text(
                         'Save Sub-category',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
                         ),
@@ -2326,7 +2278,6 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
                                   color: AppColors.deepEarth,
@@ -2344,7 +2295,6 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
                                 child: Text(
                                   '${subCats.length} sections',
                                   style: TextStyle(
-                                    fontFamily: 'DM Sans',
                                     fontSize: 10,
                                     fontWeight: FontWeight.w700,
                                     color: cat.color,
@@ -2360,7 +2310,6 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
                               ? 'No items'
                               : '${cat.packedCount}/${cat.totalCount} packed',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 11,
                             color: cat.allPacked
                                 ? AppColors.green
@@ -2393,7 +2342,6 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
                           Text(
                             '${(cat.progress * 100).round()}%',
                             style: const TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 9,
                               fontWeight: FontWeight.w700,
                               color: AppColors.deepEarth,
@@ -2503,7 +2451,6 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
                             Text(
                               'Sub-category',
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
                                 color: cat.color,
@@ -2528,7 +2475,6 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
                     const Text(
                       'No items in this category yet.',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 13,
                         color: AppColors.muted,
                       ),
@@ -2542,7 +2488,6 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
                         style: TextButton.styleFrom(
                           foregroundColor: AppColors.primary,
                           textStyle: const TextStyle(
-                            fontFamily: 'DM Sans',
                             fontWeight: FontWeight.w700,
                             fontSize: 13,
                           ),
@@ -2560,7 +2505,6 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
                       'No items tagged under "$_selectedSubCategory" yet.',
                       textAlign: TextAlign.center,
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 13,
                         color: AppColors.muted,
                       ),
@@ -2574,7 +2518,6 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
                         style: TextButton.styleFrom(
                           foregroundColor: cat.color,
                           textStyle: const TextStyle(
-                            fontFamily: 'DM Sans',
                             fontWeight: FontWeight.w700,
                             fontSize: 13,
                           ),
@@ -2608,7 +2551,6 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
                         controller: _addCtrl,
                         autofocus: true,
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 13,
                         ),
                         decoration: InputDecoration(
@@ -2670,7 +2612,6 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
                             ? 'Add item to "$_selectedSubCategory"'
                             : 'Add item to this category',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: cat.color,
@@ -2723,7 +2664,6 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
             Text(
               label,
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 11,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
                 color: isSelected ? Colors.white : AppColors.deepEarth,
@@ -2741,7 +2681,6 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
               child: Text(
                 '$count',
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
                   color: isSelected ? Colors.white : AppColors.muted,
@@ -2864,7 +2803,6 @@ class _PackingItemRow extends StatelessWidget {
                           child: Text(
                             item.name,
                             style: TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 13,
                               fontWeight: item.isCritical
                                   ? FontWeight.w700
@@ -2890,7 +2828,6 @@ class _PackingItemRow extends StatelessWidget {
                             child: const Text(
                               '✦ AI',
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 9,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.purple,
@@ -2909,7 +2846,6 @@ class _PackingItemRow extends StatelessWidget {
                             child: const Text(
                               'Missing!',
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 9,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.red,
@@ -2944,7 +2880,6 @@ class _PackingItemRow extends StatelessWidget {
                             Text(
                               item.subCategory!,
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 10,
                                 fontWeight: FontWeight.w600,
                                 color: categoryColor,
@@ -2977,7 +2912,6 @@ class _PackingItemRow extends StatelessWidget {
                             Text(
                               'Tag section',
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 9.5,
                                 fontWeight: FontWeight.w500,
                                 color: AppColors.muted,
@@ -3023,7 +2957,6 @@ class _PackingItemRow extends StatelessWidget {
                                 Text(
                                   '${item.assignedMemberIds.length} assignees',
                                   style: TextStyle(
-                                    fontFamily: 'DM Sans',
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,
                                     color: memberColor ?? AppColors.primary,
@@ -3064,7 +2997,6 @@ class _PackingItemRow extends StatelessWidget {
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
-                                        fontFamily: 'DM Sans',
                                         fontSize: 11,
                                         fontWeight: FontWeight.w700,
                                         color: memberColor ?? AppColors.primary,
@@ -3075,7 +3007,6 @@ class _PackingItemRow extends StatelessWidget {
                                       Text(
                                         item.assignedMemberRole!,
                                         style: TextStyle(
-                                          fontFamily: 'DM Sans',
                                           fontSize: 9,
                                           color: (memberColor ?? AppColors.primary)
                                               .withValues(alpha: 0.7),
@@ -3103,7 +3034,6 @@ class _PackingItemRow extends StatelessWidget {
                           Text(
                             'Assign',
                             style: TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 11,
                               fontWeight: FontWeight.w500,
                               color: AppColors.muted,
@@ -3185,7 +3115,6 @@ class _SmartSuggestionBanner extends StatelessWidget {
                     child: const Text(
                       '✦ AI SUGGESTIONS',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 1.1,
@@ -3205,7 +3134,6 @@ class _SmartSuggestionBanner extends StatelessWidget {
                     child: Text(
                       '${suggestions.length}',
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         color: Colors.white70,
@@ -3262,7 +3190,6 @@ class _SmartSuggestionBanner extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 11,
                       color: Colors.white54,
                     ),
@@ -3271,7 +3198,6 @@ class _SmartSuggestionBanner extends StatelessWidget {
                     Text(
                       '  +${suggestions.length - 2} more',
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 11,
                         color: Color(0xFFC084FC),
                         fontWeight: FontWeight.w600,
@@ -3288,7 +3214,6 @@ class _SmartSuggestionBanner extends StatelessWidget {
               child: Text(
                 'Based on $contextLabel',
                 style: const TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 12,
                   color: Colors.white70,
                 ),
@@ -3322,7 +3247,6 @@ class _SmartSuggestionBanner extends StatelessWidget {
                           Text(
                             s.text,
                             style: const TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
                               color: Colors.white,

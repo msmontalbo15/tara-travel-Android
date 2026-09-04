@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 
 /// Reusable circular avatar widget that renders:
 ///  1. A [CachedNetworkImage] if [photoUrl] starts with `http`
@@ -25,7 +26,7 @@ class MemberAvatarCircle extends StatelessWidget {
   /// Optional border to apply around the avatar.
   final Border? border;
 
-  /// Font family for initials text. Defaults to 'DM Sans'.
+  /// Font family for initials text. Defaults to [AppTextStyles.fontBody].
   final String fontFamily;
 
   const MemberAvatarCircle({
@@ -35,7 +36,7 @@ class MemberAvatarCircle extends StatelessWidget {
     required this.color,
     this.size = 36,
     this.border,
-    this.fontFamily = 'DM Sans',
+    this.fontFamily = AppTextStyles.fontBody,
   });
 
   @override

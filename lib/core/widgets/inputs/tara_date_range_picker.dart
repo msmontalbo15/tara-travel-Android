@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/trip_model.dart';
@@ -159,7 +160,7 @@ class _TaraDateRangePickerSheetState extends State<TaraDateRangePickerSheet> {
                       const Text(
                         'Select Trip Dates',
                         style: TextStyle(
-                          fontFamily: 'Playfair Display',
+                          fontFamily: AppTextStyles.fontHeading,
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
                           color: AppColors.deepEarth,
@@ -173,7 +174,6 @@ class _TaraDateRangePickerSheetState extends State<TaraDateRangePickerSheet> {
                                 ? 'Select end date (1 day selected)'
                                 : '$totalDays ${totalDays == 1 ? 'day' : 'days'} (${DateFormat('MMM d').format(_start!)} – ${DateFormat('MMM d, yyyy').format(_end!)})',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 13,
                           color: _start != null ? AppColors.primary : AppColors.warmMuted,
                           fontWeight: _start != null ? FontWeight.w600 : FontWeight.normal,
@@ -190,7 +190,6 @@ class _TaraDateRangePickerSheetState extends State<TaraDateRangePickerSheet> {
                       child: const Text(
                         'Reset',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: AppColors.warmMuted,
@@ -215,7 +214,6 @@ class _TaraDateRangePickerSheetState extends State<TaraDateRangePickerSheet> {
                   Text(
                     DateFormat('MMMM yyyy').format(_displayedMonth),
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: AppColors.deepEarth,
@@ -239,7 +237,6 @@ class _TaraDateRangePickerSheetState extends State<TaraDateRangePickerSheet> {
                       child: Text(
                         day,
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: AppColors.warmMuted,
@@ -280,7 +277,6 @@ class _TaraDateRangePickerSheetState extends State<TaraDateRangePickerSheet> {
                           const Text(
                             'Dates overlap with existing trip:',
                             style: TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
                               color: AppColors.amber,
@@ -289,7 +285,6 @@ class _TaraDateRangePickerSheetState extends State<TaraDateRangePickerSheet> {
                           Text(
                             conflicts.map((t) => '${t.name} (${DateFormat('MMM d').format(t.fromDate)}–${DateFormat('MMM d').format(t.toDate)})').join(', '),
                             style: const TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
                               color: AppColors.deepEarth,
@@ -325,7 +320,6 @@ class _TaraDateRangePickerSheetState extends State<TaraDateRangePickerSheet> {
                       const Text(
                         'Scheduled Trip',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 11,
                           color: AppColors.warmMuted,
                         ),
@@ -347,7 +341,6 @@ class _TaraDateRangePickerSheetState extends State<TaraDateRangePickerSheet> {
                       const Text(
                         'Selection',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 11,
                           color: AppColors.warmMuted,
                         ),
@@ -386,7 +379,6 @@ class _TaraDateRangePickerSheetState extends State<TaraDateRangePickerSheet> {
                   child: Text(
                     _start == null ? 'Select Dates' : 'Apply Dates',
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                     ),
@@ -478,7 +470,6 @@ class _TaraDateRangePickerSheetState extends State<TaraDateRangePickerSheet> {
                     Text(
                       '$dayNumber',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 13,
                         fontWeight: (isRangeStart || isRangeEnd || isToday)
                             ? FontWeight.w700

@@ -189,7 +189,6 @@ class _NavHeader extends ConsumerWidget {
                       Text(
                         _phaseLabel(nav),
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 11,
                           color: isDark
                               ? Colors.white54
@@ -228,12 +227,10 @@ class _NavHeader extends ConsumerWidget {
                     ))
                 .toList(),
             labelStyle: const TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
             unselectedLabelStyle: const TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 12,
               fontWeight: FontWeight.w500,
             ),
@@ -308,7 +305,6 @@ class _LiveBadgeState extends State<_LiveBadge>
             Text(
               'Arrived',
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFF34A853),
@@ -341,7 +337,6 @@ class _LiveBadgeState extends State<_LiveBadge>
           const Text(
             'LIVE',
             style: TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 11,
               fontWeight: FontWeight.w700,
               color: Colors.white,
@@ -397,7 +392,6 @@ class _SosPanicButton extends StatelessWidget {
             Text(
               'SOS',
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
                 color: Color(0xFFE24A4A),

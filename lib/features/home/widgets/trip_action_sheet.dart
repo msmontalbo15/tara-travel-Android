@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/trip_model.dart';
@@ -155,7 +156,7 @@ class TripActionSheet extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontFamily: 'Playfair Display',
+                        fontFamily: AppTextStyles.fontHeading,
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
@@ -167,7 +168,6 @@ class TripActionSheet extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 13,
                         color: AppColors.textSecondary,
                       ),
@@ -279,7 +279,6 @@ class _ActionItem extends StatelessWidget {
                     Text(
                       title,
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                         color: isDestructive ? const Color(0xFFEB4D4B) : AppColors.textPrimary,
@@ -289,7 +288,6 @@ class _ActionItem extends StatelessWidget {
                     Text(
                       subtitle,
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 12,
                         color: AppColors.textSecondary,
                       ),

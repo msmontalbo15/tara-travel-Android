@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -188,7 +189,7 @@ class _GCashMpinViewState extends ConsumerState<GCashMpinView>
                       child: Text(
                         profile.initials,
                         style: const TextStyle(
-                          fontFamily: 'Playfair Display',
+                          fontFamily: AppTextStyles.fontHeading,
                           fontSize: 26,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
@@ -200,7 +201,6 @@ class _GCashMpinViewState extends ConsumerState<GCashMpinView>
                   Text(
                     'Welcome back,',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 13,
                       color: AppColors.warmMuted.withValues(alpha: 0.8),
                     ),
@@ -209,7 +209,7 @@ class _GCashMpinViewState extends ConsumerState<GCashMpinView>
                   Text(
                     greetingName,
                     style: const TextStyle(
-                      fontFamily: 'Playfair Display',
+                      fontFamily: AppTextStyles.fontHeading,
                       fontSize: 26,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimary,
@@ -230,7 +230,6 @@ class _GCashMpinViewState extends ConsumerState<GCashMpinView>
                         Text(
                           '30-Day Session: $_daysRemaining days remaining',
                           style: const TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                             color: AppColors.primary,
@@ -259,7 +258,6 @@ class _GCashMpinViewState extends ConsumerState<GCashMpinView>
                   const Text(
                     'Enter your 4-Digit MPIN',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textSecondary,
@@ -291,7 +289,6 @@ class _GCashMpinViewState extends ConsumerState<GCashMpinView>
                     Text(
                       _errorMessage!,
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 12,
                         color: Color(0xFFEF4444),
                         fontWeight: FontWeight.w600,
@@ -365,7 +362,6 @@ class _GCashMpinViewState extends ConsumerState<GCashMpinView>
                   Text(
                     'Sign in with Google / Switch Account',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: AppColors.primary,
@@ -394,7 +390,6 @@ class _GCashMpinViewState extends ConsumerState<GCashMpinView>
       child: Text(
         digit,
         style: const TextStyle(
-          fontFamily: 'DM Sans',
           fontSize: 24,
           fontWeight: FontWeight.w700,
           color: AppColors.textPrimary,

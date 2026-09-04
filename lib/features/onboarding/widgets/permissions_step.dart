@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -95,7 +96,6 @@ class _PermissionsStepState extends State<PermissionsStep>
                   child: const Text(
                     'Step 2 of 6',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: AppColors.primary,
@@ -108,7 +108,7 @@ class _PermissionsStepState extends State<PermissionsStep>
                 const Text(
                   'Quick\npermissions',
                   style: TextStyle(
-                    fontFamily: 'Playfair Display',
+                    fontFamily: AppTextStyles.fontHeading,
                     fontSize: 36,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
@@ -119,7 +119,6 @@ class _PermissionsStepState extends State<PermissionsStep>
                 const Text(
                   'Enable what you need. Change these anytime in Settings.',
                   style: TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 14,
                     color: AppColors.textSecondary,
                   ),
@@ -187,7 +186,6 @@ class _PermissionsStepState extends State<PermissionsStep>
                     'Tara will ask again when you use features\nthat need these permissions.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 12,
                       color: AppColors.warmMuted.withValues(alpha: 0.7),
                       height: 1.5,
@@ -220,7 +218,6 @@ class _PermissionsStepState extends State<PermissionsStep>
                     child: const Text(
                       'Continue',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
@@ -236,7 +233,6 @@ class _PermissionsStepState extends State<PermissionsStep>
                     child: const Text(
                       'Skip for now',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
                         color: AppColors.primary,
@@ -307,7 +303,6 @@ class _PermissionRow extends StatelessWidget {
                 Text(
                   title,
                   style: const TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
@@ -316,7 +311,6 @@ class _PermissionRow extends StatelessWidget {
                 Text(
                   subtitle,
                   style: const TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 12,
                     color: AppColors.textSecondary,
                   ),

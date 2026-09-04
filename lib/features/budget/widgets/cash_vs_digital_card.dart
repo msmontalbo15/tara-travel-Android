@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -38,7 +39,7 @@ class CashVsDigitalCard extends ConsumerWidget {
             const Text(
               'ATM / Cash In',
               style: TextStyle(
-                fontFamily: 'Playfair Display',
+                fontFamily: AppTextStyles.fontHeading,
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
                 color: AppColors.deepEarth,
@@ -53,7 +54,6 @@ class CashVsDigitalCard extends ConsumerWidget {
             Text(
               'Current cash on hand: ₱${CurrencyUtils.formatAmount(allowance.remainingCashOnHand)}',
               style: const TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: Color(0xFF6B7280),
@@ -63,7 +63,6 @@ class CashVsDigitalCard extends ConsumerWidget {
             const Text(
               'Enter the amount of cash you just withdrew or received:',
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 12,
                 color: Color(0xFF9CA3AF),
               ),
@@ -75,21 +74,18 @@ class CashVsDigitalCard extends ConsumerWidget {
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               autofocus: true,
               style: const TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
               ),
               decoration: InputDecoration(
                 prefixText: '₱ ',
                 prefixStyle: const TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                   color: AppColors.primary,
                 ),
                 hintText: 'Amount added',
                 hintStyle: const TextStyle(
-                  fontFamily: 'DM Sans',
                   fontWeight: FontWeight.w400,
                   color: Color(0xFFD1D5DB),
                 ),
@@ -114,7 +110,7 @@ class CashVsDigitalCard extends ConsumerWidget {
             onPressed: () => Navigator.pop(ctx),
             child: const Text(
               'Cancel',
-              style: TextStyle(fontFamily: 'DM Sans', color: Color(0xFF6B7280)),
+              style: TextStyle( color: Color(0xFF6B7280)),
             ),
           ),
           ElevatedButton.icon(
@@ -143,7 +139,7 @@ class CashVsDigitalCard extends ConsumerWidget {
             icon: const Icon(Icons.add_rounded, size: 16),
             label: const Text(
               'Add Cash',
-              style: TextStyle(fontFamily: 'DM Sans', fontWeight: FontWeight.w700),
+              style: TextStyle( fontWeight: FontWeight.w700),
             ),
           ),
         ],
@@ -201,7 +197,6 @@ class CashVsDigitalCard extends ConsumerWidget {
                         child: Text(
                           'Cash vs. Digital',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
                             color: AppColors.deepEarth,
@@ -238,7 +233,6 @@ class CashVsDigitalCard extends ConsumerWidget {
                           Text(
                             'Cash In',
                             style: TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                               color: Color(0xFF10B981),
@@ -297,7 +291,6 @@ class CashVsDigitalCard extends ConsumerWidget {
                       Text(
                         '${(cashRatio * 100).toStringAsFixed(0)}% cash',
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 9,
                           fontWeight: FontWeight.w600,
                           color: Color(0xFF10B981),
@@ -306,7 +299,6 @@ class CashVsDigitalCard extends ConsumerWidget {
                       Text(
                         '${(digitalRatio * 100).toStringAsFixed(0)}% digital',
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 9,
                           fontWeight: FontWeight.w600,
                           color: Color(0xFF3B82F6),
@@ -360,7 +352,6 @@ class CashVsDigitalCard extends ConsumerWidget {
                             const Text(
                               'Cash on Hand',
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 10,
                                 fontWeight: FontWeight.w600,
                                 color: Color(0xFF065F46),
@@ -375,7 +366,6 @@ class CashVsDigitalCard extends ConsumerWidget {
                           child: Text(
                             '₱${CurrencyUtils.formatAmount(cashLeft)}',
                             style: const TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 18,
                               fontWeight: FontWeight.w800,
                               color: Color(0xFF065F46),
@@ -386,7 +376,6 @@ class CashVsDigitalCard extends ConsumerWidget {
                         Text(
                           '₱${CurrencyUtils.formatAmount(cashSpent)} paid in cash',
                           style: const TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 9,
                             color: Color(0xFF047857),
                           ),
@@ -433,7 +422,6 @@ class CashVsDigitalCard extends ConsumerWidget {
                             const Text(
                               'GCash / Card',
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 10,
                                 fontWeight: FontWeight.w600,
                                 color: Color(0xFF1E40AF),
@@ -448,7 +436,6 @@ class CashVsDigitalCard extends ConsumerWidget {
                           child: Text(
                             '₱${CurrencyUtils.formatAmount(digitalSpent)}',
                             style: const TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 18,
                               fontWeight: FontWeight.w800,
                               color: Color(0xFF1E40AF),
@@ -459,7 +446,6 @@ class CashVsDigitalCard extends ConsumerWidget {
                         const Text(
                           'Digital payments',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 9,
                             color: Color(0xFF2563EB),
                           ),

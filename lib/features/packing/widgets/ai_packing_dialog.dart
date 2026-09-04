@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 
@@ -137,7 +138,7 @@ class _AiPackingDialogState extends State<AiPackingDialog> {
                         Text(
                           'AI Packing Suggestions',
                           style: TextStyle(
-                            fontFamily: 'Playfair Display',
+                            fontFamily: AppTextStyles.fontHeading,
                             fontSize: 19,
                             fontWeight: FontWeight.w700,
                             color: AppColors.deepEarth,
@@ -146,7 +147,6 @@ class _AiPackingDialogState extends State<AiPackingDialog> {
                         Text(
                           'Context-aware checklist tailored to your trip',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 12,
                             color: AppColors.muted,
                           ),
@@ -162,7 +162,6 @@ class _AiPackingDialogState extends State<AiPackingDialog> {
               const Text(
                 'DESTINATION',
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.2,
@@ -191,7 +190,6 @@ class _AiPackingDialogState extends State<AiPackingDialog> {
               const Text(
                 'TRIP VIBE & TYPE',
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.2,
@@ -210,7 +208,6 @@ class _AiPackingDialogState extends State<AiPackingDialog> {
                     onSelected: (sel) => setState(() => _selectedType = type),
                     selectedColor: AppColors.primary.withValues(alpha: 0.15),
                     labelStyle: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 12,
                       fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
                       color: isSel ? AppColors.primary : AppColors.deepEarth,
@@ -230,7 +227,6 @@ class _AiPackingDialogState extends State<AiPackingDialog> {
               const Text(
                 'WEATHER FORECAST',
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.2,
@@ -249,7 +245,6 @@ class _AiPackingDialogState extends State<AiPackingDialog> {
                     onSelected: (sel) => setState(() => _selectedWeather = weather),
                     selectedColor: AppColors.amber.withValues(alpha: 0.15),
                     labelStyle: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 12,
                       fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
                       color: isSel ? AppColors.amber : AppColors.deepEarth,
@@ -269,7 +264,6 @@ class _AiPackingDialogState extends State<AiPackingDialog> {
               const Text(
                 'MODE OF TRANSPORT',
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.2,
@@ -288,7 +282,6 @@ class _AiPackingDialogState extends State<AiPackingDialog> {
                     onSelected: (sel) => setState(() => _selectedTransport = trans),
                     selectedColor: AppColors.blue.withValues(alpha: 0.15),
                     labelStyle: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 12,
                       fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
                       color: isSel ? AppColors.blue : AppColors.deepEarth,
@@ -323,7 +316,6 @@ class _AiPackingDialogState extends State<AiPackingDialog> {
                   label: const Text(
                     'Generate Smart Suggestions',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                     ),

@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -185,7 +186,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               title: Text(
                 step == 0 ? 'Enter New MPIN' : 'Confirm MPIN',
                 style: const TextStyle(
-                    fontFamily: 'Playfair Display',
+                    fontFamily: AppTextStyles.fontHeading,
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary),
@@ -198,7 +199,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ? 'Enter a 4-digit MPIN to secure your account.'
                         : 'Re-enter the same 4-digit MPIN to confirm.',
                     style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 13,
                         color: AppColors.textSecondary),
                   ),
@@ -207,7 +207,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     Text(
                       errorText!,
                       style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: AppColors.red),
@@ -236,15 +235,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 TextButton(
                   onPressed: () => Navigator.pop(ctx),
                   child: const Text('Cancel',
-                      style: TextStyle(
-                          fontFamily: 'DM Sans', color: AppColors.warmMuted)),
+                      style: TextStyle( color: AppColors.warmMuted)),
                 ),
                 TextButton(
                   onPressed: processPinSubmit,
                   child: Text(
                     step == 0 ? 'Next' : 'Confirm',
                     style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontWeight: FontWeight.w700,
                         color: AppColors.primary),
                   ),
@@ -334,7 +331,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ? profile.effectiveName
                         : (profile.isLoaded ? 'Traveler' : ''),
                     style: const TextStyle(
-                      fontFamily: 'Playfair Display',
+                      fontFamily: AppTextStyles.fontHeading,
                       fontSize: 24,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
@@ -348,7 +345,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             : '${profile.homeCity}, Philippines')
                         : 'Philippines',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 13,
                       color: Colors.white.withValues(alpha: 0.4),
                     ),
@@ -367,7 +363,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         children: [
                           const Text('🔵', style: TextStyle(fontSize: 12)),
                           const SizedBox(width: 6),
-                          Text(profile.accountEmail ?? '', style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, color: Colors.white.withValues(alpha: 0.5))),
+                          Text(profile.accountEmail ?? '', style: TextStyle( fontSize: 12, color: Colors.white.withValues(alpha: 0.5))),
                         ],
                       ),
                     ),
@@ -403,7 +399,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   Text(
                                     'ID: ${currentUserId.length > 12 ? "${currentUserId.substring(0, 8)}…" : currentUserId}',
                                     style: const TextStyle(
-                                      fontFamily: 'DM Sans',
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
                                       color: Colors.white,
@@ -434,7 +429,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   Text(
                                     'My QR',
                                     style: TextStyle(
-                                      fontFamily: 'DM Sans',
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
                                       color: Colors.white,
@@ -558,7 +552,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                         const Text(
                                           'Hide Surname from Members',
                                           style: TextStyle(
-                                            fontFamily: 'DM Sans',
                                             fontSize: 13,
                                             fontWeight: FontWeight.w600,
                                             color: AppColors.textPrimary,
@@ -570,7 +563,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                               ? 'Active — Surname hidden from members'
                                               : 'Off — Full name visible to members',
                                           style: TextStyle(
-                                            fontFamily: 'DM Sans',
                                             fontSize: 12,
                                             color: profile.hideSurname ? AppColors.primary : AppColors.textSecondary,
                                             fontWeight: profile.hideSurname ? FontWeight.w600 : FontWeight.normal,
@@ -607,7 +599,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                             ? 'Other members see you as: "${profile.effectiveNameForPeers}"'
                                             : 'When enabled, your name appears as "${profile.effectiveName.split(' ').length > 1 ? '${profile.effectiveName.split(' ').first} ${profile.effectiveName.split(' ').last[0]}.' : profile.effectiveName}" to other trip members.',
                                         style: const TextStyle(
-                                          fontFamily: 'DM Sans',
                                           fontSize: 11.5,
                                           color: AppColors.deepEarth,
                                           fontWeight: FontWeight.w500,
@@ -634,7 +625,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Private by default. Share with Organizer when needed.', style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, color: AppColors.textSecondary)),
+                              const Text('Private by default. Share with Organizer when needed.', style: TextStyle( fontSize: 12, color: AppColors.textSecondary)),
                               const SizedBox(height: 14),
 
                               // ── Blood Type Row ──────────────────────────────
@@ -666,11 +657,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
-                                            const Text('Blood Type', style: TextStyle(fontFamily: 'DM Sans', fontSize: 11, color: AppColors.warmMuted)),
+                                            const Text('Blood Type', style: TextStyle( fontSize: 11, color: AppColors.warmMuted)),
                                             Text(
                                               profile.bloodType ?? 'Tap to select',
                                               style: TextStyle(
-                                                fontFamily: 'DM Sans',
                                                 fontSize: 13,
                                                 fontWeight: FontWeight.w600,
                                                 color: profile.bloodType != null
@@ -696,7 +686,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               const SizedBox(height: 12),
 
                               if (profile.healthNotes.isEmpty)
-                                const Text('No health notes added', style: TextStyle(fontFamily: 'DM Sans', fontSize: 13, color: AppColors.warmMuted))
+                                const Text('No health notes added', style: TextStyle( fontSize: 13, color: AppColors.warmMuted))
                               else
                                 ...profile.healthNotes.map((note) => _HealthTag(
                                   label: note,
@@ -717,7 +707,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                     children: [
                                       Icon(Icons.add_rounded, size: 14, color: AppColors.primary),
                                       SizedBox(width: 6),
-                                      Text('Add health note', style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary)),
+                                      Text('Add health note', style: TextStyle( fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary)),
                                     ],
                                   ),
                                 ),
@@ -731,8 +721,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text('Share with Organizer', style: TextStyle(fontFamily: 'DM Sans', fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
-                                        Text('Organizer can see this per trip', style: TextStyle(fontFamily: 'DM Sans', fontSize: 11, color: AppColors.textSecondary)),
+                                        Text('Share with Organizer', style: TextStyle( fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                                        Text('Organizer can see this per trip', style: TextStyle( fontSize: 11, color: AppColors.textSecondary)),
                                       ],
                                     ),
                                   ),
@@ -773,8 +763,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        const Text('GCash Number', style: TextStyle(fontFamily: 'DM Sans', fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
-                                        Text(profile.gcashNumber ?? 'Not set', style: const TextStyle(fontFamily: 'DM Sans', fontSize: 12, color: AppColors.textSecondary)),
+                                        const Text('GCash Number', style: TextStyle( fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                                        Text(profile.gcashNumber ?? 'Not set', style: const TextStyle( fontSize: 12, color: AppColors.textSecondary)),
                                       ],
                                     ),
                                   ),
@@ -786,7 +776,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                         color: AppColors.sand,
                                         borderRadius: BorderRadius.circular(8),
                                       ),
-                                      child: const Text('Edit', style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary)),
+                                      child: const Text('Edit', style: TextStyle( fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary)),
                                     ),
                                   ),
                                 ],
@@ -808,7 +798,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                     children: [
                                       Icon(Icons.qr_code_scanner_rounded, color: AppColors.primary, size: 20),
                                       SizedBox(width: 8),
-                                      Text('Upload GCash QR Code', style: TextStyle(fontFamily: 'DM Sans', fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.primary)),
+                                      Text('Upload GCash QR Code', style: TextStyle( fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.primary)),
                                     ],
                                   ),
                                 ),
@@ -873,13 +863,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        const Text('4-Digit MPIN', style: TextStyle(fontFamily: 'DM Sans', fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                                        const Text('4-Digit MPIN', style: TextStyle( fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
                                         Text(
                                           _hasMpin
                                               ? 'Active • $_mpinDaysRemaining days remaining'
                                               : 'Not set — Tap to configure',
                                           style: TextStyle(
-                                            fontFamily: 'DM Sans',
                                             fontSize: 12,
                                             color: _hasMpin ? AppColors.primary : AppColors.warmMuted,
                                             fontWeight: _hasMpin ? FontWeight.w600 : FontWeight.normal,
@@ -899,7 +888,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                           color: AppColors.primary,
                                           borderRadius: BorderRadius.circular(10),
                                         ),
-                                        child: Text(_hasMpin ? 'Change' : 'Set MPIN', style: const TextStyle(fontFamily: 'DM Sans', fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
+                                        child: Text(_hasMpin ? 'Change' : 'Set MPIN', style: const TextStyle( fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
                                       ),
                                     ),
                                 ],
@@ -921,12 +910,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        const Text('Fingerprint Unlock', style: TextStyle(fontFamily: 'DM Sans', fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                                        const Text('Fingerprint Unlock', style: TextStyle( fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
                                         Text(
                                           !_biometricsAvailable
                                               ? 'Hardware unavailable or not enrolled'
                                               : (_biometricsRegistered ? 'Registered & Active' : 'Not registered yet'),
-                                          style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, color: _biometricsRegistered ? AppColors.primary : AppColors.warmMuted, fontWeight: _biometricsRegistered ? FontWeight.w600 : FontWeight.normal),
+                                          style: TextStyle( fontSize: 12, color: _biometricsRegistered ? AppColors.primary : AppColors.warmMuted, fontWeight: _biometricsRegistered ? FontWeight.w600 : FontWeight.normal),
                                         ),
                                       ],
                                     ),
@@ -959,10 +948,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        const Text('Face Verification (Optional)', style: TextStyle(fontFamily: 'DM Sans', fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                                        const Text('Face Verification (Optional)', style: TextStyle( fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
                                         Text(
                                           _faceVerificationEnabled ? 'Enabled — Extra security layer active' : 'Optional — Enable for Face ID login',
-                                          style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, color: _faceVerificationEnabled ? AppColors.primary : AppColors.warmMuted, fontWeight: _faceVerificationEnabled ? FontWeight.w600 : FontWeight.normal),
+                                          style: TextStyle( fontSize: 12, color: _faceVerificationEnabled ? AppColors.primary : AppColors.warmMuted, fontWeight: _faceVerificationEnabled ? FontWeight.w600 : FontWeight.normal),
                                         ),
                                       ],
                                     ),
@@ -994,7 +983,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                         _hasMpin
                                             ? '30-Day session active: $_mpinDaysRemaining days remaining before Google re-authentication required.'
                                             : 'Set a 4-Digit MPIN to enable 30-Day sessions. Log in with MPIN or Biometrics without Google for 30 days.',
-                                        style: const TextStyle(fontFamily: 'DM Sans', fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.w500),
+                                        style: const TextStyle( fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.w500),
                                       ),
                                     ),
                                   ],
@@ -1032,8 +1021,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text('Google Account', style: TextStyle(fontFamily: 'DM Sans', fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
-                                    Text(profile.isGoogleConnected ? (profile.accountEmail ?? 'Connected') : 'Not connected', style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, color: profile.isGoogleConnected ? AppColors.textSecondary : AppColors.warmMuted)),
+                                    const Text('Google Account', style: TextStyle( fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                                    Text(profile.isGoogleConnected ? (profile.accountEmail ?? 'Connected') : 'Not connected', style: TextStyle( fontSize: 12, color: profile.isGoogleConnected ? AppColors.textSecondary : AppColors.warmMuted)),
                                   ],
                                 ),
                               ),
@@ -1046,7 +1035,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                       color: AppColors.primary,
                                       borderRadius: BorderRadius.circular(10),
                                     ),
-                                    child: const Text('Connect', style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
+                                    child: const Text('Connect', style: TextStyle( fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
                                   ),
                                 ),
                             ],
@@ -1073,8 +1062,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text('Terms & NPC Data Privacy', style: TextStyle(fontFamily: 'DM Sans', fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
-                                      Text('Republic Act No. 10173 • privacy.gov.ph', style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, color: AppColors.textSecondary)),
+                                      Text('Terms & NPC Data Privacy', style: TextStyle( fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                                      Text('Republic Act No. 10173 • privacy.gov.ph', style: TextStyle( fontSize: 12, color: AppColors.textSecondary)),
                                     ],
                                   ),
                                 ),
@@ -1103,7 +1092,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           children: [
                             Icon(Icons.logout_rounded, color: AppColors.red, size: 18),
                             SizedBox(width: 8),
-                            Text('Sign Out', style: TextStyle(fontFamily: 'DM Sans', fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.red)),
+                            Text('Sign Out', style: TextStyle( fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.red)),
                           ],
                         ),
                       ),
@@ -1151,7 +1140,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ? Text(
               profile.initials,
               style: const TextStyle(
-                fontFamily: 'Playfair Display',
+                fontFamily: AppTextStyles.fontHeading,
                 fontSize: 32,
                 fontWeight: FontWeight.w700,
                 color: Colors.white,
@@ -1167,7 +1156,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Widget _sectionTitle(String t) => Padding(
     padding: const EdgeInsets.only(bottom: 10),
-    child: Text(t, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.warmMuted, letterSpacing: 1.5)),
+    child: Text(t, style: const TextStyle( fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.warmMuted, letterSpacing: 1.5)),
   );
 
   Widget _divider() => const Divider(height: 0.5, color: AppColors.dividerLight, indent: 14, endIndent: 14);
@@ -1193,8 +1182,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(label, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 11, color: AppColors.warmMuted)),
-                  Text(value, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                  Text(label, style: const TextStyle( fontSize: 11, color: AppColors.warmMuted)),
+                  Text(value, style: const TextStyle( fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
                 ],
               ),
             ),
@@ -1245,7 +1234,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               const Text(
                 'My Friend Code & QR',
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,
@@ -1256,7 +1244,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 'Share your personal QR or ID so friends can add you on Tara Travel',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 13,
                   color: AppColors.textSecondary,
                 ),
@@ -1295,7 +1282,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               Text(
                 displayName.isNotEmpty ? displayName : 'Traveler',
                 style: const TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,
@@ -1307,7 +1293,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   Clipboard.setData(ClipboardData(text: userId));
                   ScaffoldMessenger.of(ctx).showSnackBar(
                     const SnackBar(
-                      content: Text('Friend ID copied!', style: TextStyle(fontFamily: 'DM Sans')),
+                      content: Text('Friend ID copied!', style: TextStyle()),
                       backgroundColor: AppColors.green,
                       behavior: SnackBarBehavior.floating,
                     ),
@@ -1328,7 +1314,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       Text(
                         userId.length > 12 ? '${userId.substring(0, 8)}…' : userId,
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 12,
                           color: AppColors.textSecondary,
                           letterSpacing: 0.5,
@@ -1356,7 +1341,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   label: const Text(
                     'Share Profile Code',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                     ),
@@ -1391,7 +1375,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             child: Icon(icon, size: 16, color: value ? AppColors.primary : AppColors.warmMuted),
           ),
           const SizedBox(width: 12),
-          Expanded(child: Text(label, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary))),
+          Expanded(child: Text(label, style: const TextStyle( fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary))),
           Switch.adaptive(value: value, onChanged: onChanged, activeThumbColor: AppColors.primary, activeTrackColor: AppColors.primaryLight),
         ],
       ),
@@ -1403,8 +1387,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Display Name', style: TextStyle(fontFamily: 'Playfair Display')),
-        content: TextField(controller: ctrl, autofocus: true, decoration: const InputDecoration(hintText: 'Your name', hintStyle: TextStyle(fontFamily: 'DM Sans'))),
+        title: const Text('Display Name', style: TextStyle(fontFamily: AppTextStyles.fontHeading)),
+        content: TextField(controller: ctrl, autofocus: true, decoration: const InputDecoration(hintText: 'Your name', hintStyle: TextStyle())),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           ElevatedButton(
@@ -1424,8 +1408,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Nickname', style: TextStyle(fontFamily: 'Playfair Display')),
-        content: TextField(controller: ctrl, autofocus: true, decoration: const InputDecoration(hintText: 'Preferred name / nickname', hintStyle: TextStyle(fontFamily: 'DM Sans'))),
+        title: const Text('Nickname', style: TextStyle(fontFamily: AppTextStyles.fontHeading)),
+        content: TextField(controller: ctrl, autofocus: true, decoration: const InputDecoration(hintText: 'Preferred name / nickname', hintStyle: TextStyle())),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           ElevatedButton(
@@ -1517,7 +1501,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   const Text(
                     'Select Blood Type',
                     style: TextStyle(
-                      fontFamily: 'Playfair Display',
+                      fontFamily: AppTextStyles.fontHeading,
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimary,
@@ -1529,7 +1513,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               const Text(
                 'Choose your blood type from the dropdown below.',
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 12,
                   color: AppColors.textSecondary,
                 ),
@@ -1542,7 +1525,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 decoration: InputDecoration(
                   hintText: 'Select blood type...',
                   hintStyle: const TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 14,
                     color: AppColors.warmMuted,
                   ),
@@ -1569,7 +1551,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 dropdownColor: Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 style: const TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                   color: AppColors.textPrimary,
@@ -1580,7 +1561,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     child: Text(
                       type,
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
@@ -1612,7 +1592,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ),
                       child: const Text('Clear',
                           style: TextStyle(
-                              fontFamily: 'DM Sans',
                               fontWeight: FontWeight.w600)),
                     ),
                   ),
@@ -1635,7 +1614,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       child: const Text(
                         'Save',
                         style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 15,
                             fontWeight: FontWeight.w700),
                       ),
@@ -1655,11 +1633,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Health Note', style: TextStyle(fontFamily: 'Playfair Display')),
+        title: const Text('Health Note', style: TextStyle(fontFamily: AppTextStyles.fontHeading)),
         content: TextField(
           controller: _healthCtrl,
           autofocus: true,
-          decoration: const InputDecoration(hintText: 'e.g. Shellfish allergy, Asthmatic...', hintStyle: TextStyle(fontFamily: 'DM Sans')),
+          decoration: const InputDecoration(hintText: 'e.g. Shellfish allergy, Asthmatic...', hintStyle: TextStyle()),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
@@ -1703,14 +1681,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Contact Number',
-            style: TextStyle(fontFamily: 'Playfair Display')),
+            style: TextStyle(fontFamily: AppTextStyles.fontHeading)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
               'Enter your phone number. An SMS verification code will be sent to verify.',
-              style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, color: AppColors.textSecondary),
+              style: TextStyle( fontSize: 12, color: AppColors.textSecondary),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -1719,7 +1697,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               keyboardType: TextInputType.phone,
               decoration: const InputDecoration(
                 hintText: '+63 9XX XXX XXXX',
-                hintStyle: TextStyle(fontFamily: 'DM Sans'),
+                hintStyle: TextStyle(),
                 prefixIcon: Icon(Icons.phone_outlined, size: 20, color: AppColors.warmMuted),
               ),
             ),
@@ -1783,7 +1761,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 child: const Icon(Icons.sms_rounded, color: AppColors.primary, size: 20),
               ),
               const SizedBox(width: 10),
-              const Text('Verify Phone OTP', style: TextStyle(fontFamily: 'Playfair Display', fontSize: 18)),
+              const Text('Verify Phone OTP', style: TextStyle(fontFamily: AppTextStyles.fontHeading, fontSize: 18)),
             ],
           ),
           content: Column(
@@ -1792,7 +1770,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             children: [
               Text(
                 'Enter the 6-digit verification code sent to\n$phoneNumber',
-                style: const TextStyle(fontFamily: 'DM Sans', fontSize: 13, color: AppColors.textSecondary),
+                style: const TextStyle( fontSize: 13, color: AppColors.textSecondary),
               ),
               const SizedBox(height: 16),
               TextField(
@@ -1800,13 +1778,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 autofocus: true,
                 keyboardType: TextInputType.number,
                 maxLength: 6,
-                style: const TextStyle(fontFamily: 'DM Sans', fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 4),
+                style: const TextStyle( fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 4),
                 textAlign: TextAlign.center,
                 decoration: InputDecoration(
                   hintText: '123456',
                   hintStyle: TextStyle(color: AppColors.warmMuted.withValues(alpha: 0.5), letterSpacing: 4),
                   errorText: errorText,
-                  errorStyle: const TextStyle(fontFamily: 'DM Sans', fontSize: 12),
+                  errorStyle: const TextStyle( fontSize: 12),
                   filled: true,
                   fillColor: AppColors.surfaceLight,
                   contentPadding: const EdgeInsets.symmetric(vertical: 12),
@@ -1818,7 +1796,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           actions: [
             TextButton(
               onPressed: isLoading ? null : () => Navigator.pop(dialogCtx),
-              child: const Text('Cancel', style: TextStyle(fontFamily: 'DM Sans', color: AppColors.textSecondary)),
+              child: const Text('Cancel', style: TextStyle( color: AppColors.textSecondary)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -1877,7 +1855,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     },
               child: isLoading
                   ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : const Text('Verify & Save', style: TextStyle(fontFamily: 'DM Sans', fontWeight: FontWeight.w700)),
+                  : const Text('Verify & Save', style: TextStyle( fontWeight: FontWeight.w700)),
             ),
           ],
         ),
@@ -1905,8 +1883,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('GCash Number', style: TextStyle(fontFamily: 'Playfair Display')),
-        content: TextField(controller: ctrl, autofocus: true, keyboardType: TextInputType.phone, decoration: const InputDecoration(hintText: '+63 9XX XXX XXXX', hintStyle: TextStyle(fontFamily: 'DM Sans'))),
+        title: const Text('GCash Number', style: TextStyle(fontFamily: AppTextStyles.fontHeading)),
+        content: TextField(controller: ctrl, autofocus: true, keyboardType: TextInputType.phone, decoration: const InputDecoration(hintText: '+63 9XX XXX XXXX', hintStyle: TextStyle())),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           ElevatedButton(
@@ -1953,7 +1931,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     const Text(
                       'Home Location',
                       style: TextStyle(
-                        fontFamily: 'Playfair Display',
+                        fontFamily: AppTextStyles.fontHeading,
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
@@ -1965,7 +1943,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 const Text(
                   'Select your region, city, and barangay.',
                   style: TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 12,
                     color: AppColors.textSecondary,
                   ),
@@ -2016,7 +1993,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       child: const Text(
                         'Save',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -2040,7 +2016,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       context: context,
       builder: (_) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          title: const Text('Preferred Currency', style: TextStyle(fontFamily: 'Playfair Display')),
+          title: const Text('Preferred Currency', style: TextStyle(fontFamily: AppTextStyles.fontHeading)),
           content: DropdownButtonFormField<String>(
             initialValue: selectedCurrency,
             items: currencies.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
@@ -2082,7 +2058,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               decoration: BoxDecoration(color: AppColors.cardBorder, borderRadius: BorderRadius.circular(2)),
             ),
             const SizedBox(height: 20),
-            const Text('Profile Photo', style: TextStyle(fontFamily: 'Playfair Display', fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+            const Text('Profile Photo', style: TextStyle(fontFamily: AppTextStyles.fontHeading, fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
             const SizedBox(height: 20),
             _photoOption(Icons.camera_alt_rounded, 'Take a photo', AppColors.primary, () async {
               Navigator.pop(context);
@@ -2196,7 +2172,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       Text(
                         'New Account Confirmation',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: AppColors.primary,
@@ -2277,7 +2252,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   ? displayName
                                   : 'Google User',
                               style: const TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.textPrimary,
@@ -2289,7 +2263,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             Text(
                               email,
                               style: const TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 13,
                                 color: AppColors.textSecondary,
                               ),
@@ -2309,7 +2282,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   'Create your Tara Travel account?',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontFamily: 'Playfair Display',
+                    fontFamily: AppTextStyles.fontHeading,
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
@@ -2321,7 +2294,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   'No account was found for this Google email. Would you like to create a new profile to start planning and syncing your trips?',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 13,
                     color: AppColors.textSecondary,
                     height: 1.4,
@@ -2353,7 +2325,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           child: RichText(
                             text: const TextSpan(
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 11,
                                 color: AppColors.textSecondary,
                                 height: 1.3,
@@ -2399,7 +2370,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         child: const Text(
                           'Cancel',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                           ),
@@ -2423,7 +2393,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         child: const Text(
                           'Create Account',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
                           ),
@@ -2451,7 +2420,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       child: Text(
         initial,
         style: const TextStyle(
-          fontFamily: 'Playfair Display',
+          fontFamily: AppTextStyles.fontHeading,
           fontSize: 20,
           fontWeight: FontWeight.bold,
           color: AppColors.primary,
@@ -2491,7 +2460,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           children: [
             Icon(icon, color: color, size: 22),
             const SizedBox(width: 14),
-            Text(label, style: TextStyle(fontFamily: 'DM Sans', fontSize: 14, fontWeight: FontWeight.w600, color: color)),
+            Text(label, style: TextStyle( fontSize: 14, fontWeight: FontWeight.w600, color: color)),
           ],
         ),
       ),
@@ -2534,7 +2503,7 @@ class _HealthTag extends StatelessWidget {
         children: [
           const Icon(Icons.health_and_safety_outlined, size: 13, color: AppColors.red),
           const SizedBox(width: 6),
-          Text(label, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.red)),
+          Text(label, style: const TextStyle( fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.red)),
           const SizedBox(width: 8),
           GestureDetector(onTap: onRemove, child: const Icon(Icons.close_rounded, size: 13, color: AppColors.red)),
         ],
@@ -2678,7 +2647,6 @@ class _PinInputRowState extends State<_PinInputRow> {
               obscureText: true,
               obscuringCharacter: '●',
               style: const TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary,

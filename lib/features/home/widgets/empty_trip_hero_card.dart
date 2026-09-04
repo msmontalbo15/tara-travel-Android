@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -202,7 +203,6 @@ class _EmptyTripHeroCardState extends ConsumerState<EmptyTripHeroCard>
                               child: Text(
                                 currentBadge.text,
                                 style: const TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 10,
                                   fontWeight: FontWeight.w800,
                                   color: AppColors.primaryLight,
@@ -223,7 +223,7 @@ class _EmptyTripHeroCardState extends ConsumerState<EmptyTripHeroCard>
                     const Text(
                       'No active trips\non your radar',
                       style: TextStyle(
-                        fontFamily: 'Playfair Display',
+                        fontFamily: AppTextStyles.fontHeading,
                         fontSize: 19,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
@@ -265,7 +265,6 @@ class _EmptyTripHeroCardState extends ConsumerState<EmptyTripHeroCard>
                                       child: Text(
                                         'Plan a Trip',
                                         style: TextStyle(
-                                          fontFamily: 'DM Sans',
                                           fontSize: 13,
                                           fontWeight: FontWeight.w700,
                                           color: Colors.white,
@@ -305,7 +304,6 @@ class _EmptyTripHeroCardState extends ConsumerState<EmptyTripHeroCard>
                                       child: Text(
                                         'Join with Code',
                                         style: TextStyle(
-                                          fontFamily: 'DM Sans',
                                           fontSize: 12,
                                           fontWeight: FontWeight.w600,
                                           color: Colors.white

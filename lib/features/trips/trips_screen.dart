@@ -94,7 +94,6 @@ class TripsScreen extends ConsumerWidget {
                         SizedBox(width: 4),
                         Text('New',
                             style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
                                 color: Colors.white)),
@@ -169,7 +168,6 @@ class TripsScreen extends ConsumerWidget {
                               'Your next adventure starts with a plan.\nCreate a new trip or join one with an invite code.',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 14,
                                 height: 1.55,
                                 color: AppColors.textSecondary,
@@ -208,7 +206,6 @@ class TripsScreen extends ConsumerWidget {
                                       Text(
                                         'Create a Trip',
                                         style: TextStyle(
-                                          fontFamily: 'DM Sans',
                                           fontSize: 15,
                                           fontWeight: FontWeight.w700,
                                           color: Colors.white,
@@ -238,7 +235,6 @@ class TripsScreen extends ConsumerWidget {
                                     Text(
                                       'Have an invite code? Join Trip',
                                       style: TextStyle(
-                                        fontFamily: 'DM Sans',
                                         fontSize: 13,
                                         fontWeight: FontWeight.w600,
                                         color: AppColors.primary,
@@ -323,7 +319,6 @@ class TripsScreen extends ConsumerWidget {
                       Text('Could not load trips\n$e',
                           textAlign: TextAlign.center,
                           style: const TextStyle(
-                              fontFamily: 'DM Sans',
                               color: AppColors.muted)),
                       const SizedBox(height: 16),
                       TextButton(
@@ -345,7 +340,6 @@ class TripsScreen extends ConsumerWidget {
       padding: const EdgeInsets.only(bottom: 12),
       child: Text(title,
           style: const TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 10,
               fontWeight: FontWeight.w600,
               color: AppColors.warmMuted,
@@ -670,7 +664,6 @@ class _TripListCardState extends ConsumerState<_TripListCard>
                               child: Text(
                                 trip.name,
                                 style: TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
                                   color: isMuted
@@ -701,7 +694,6 @@ class _TripListCardState extends ConsumerState<_TripListCard>
                               child: Text(
                                 trip.destination,
                                 style: const TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 12,
                                   color: AppColors.textSecondary,
                                 ),
@@ -724,7 +716,6 @@ class _TripListCardState extends ConsumerState<_TripListCard>
                                   Text(
                                     typeOpt.label,
                                     style: TextStyle(
-                                      fontFamily: 'DM Sans',
                                       fontSize: 10,
                                       fontWeight: FontWeight.w600,
                                       color: typeOpt.accentColor,
@@ -742,7 +733,6 @@ class _TripListCardState extends ConsumerState<_TripListCard>
                             Text(
                               '${DateFormat('MMM d').format(trip.fromDate)} – ${DateFormat('MMM d, yyyy').format(trip.toDate)}',
                               style: const TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 11,
                                 color: AppColors.warmMuted,
                               ),
@@ -758,7 +748,6 @@ class _TripListCardState extends ConsumerState<_TripListCard>
                                     Text(
                                       'Actions',
                                       style: TextStyle(
-                                        fontFamily: 'DM Sans',
                                         fontSize: 10,
                                         fontWeight: FontWeight.w600,
                                         color: AppColors.warmMuted.withValues(alpha: 0.7),
@@ -795,7 +784,6 @@ class _TripListCardState extends ConsumerState<_TripListCard>
       child: Text(
         label,
         style: TextStyle(
-          fontFamily: 'DM Sans',
           fontSize: 10,
           fontWeight: FontWeight.w700,
           color: fg,
@@ -840,7 +828,6 @@ class _SwipeActionBtn extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
                 color: Colors.white.withValues(alpha: 0.9),

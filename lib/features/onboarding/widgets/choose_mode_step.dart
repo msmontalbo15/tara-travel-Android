@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -154,7 +155,6 @@ class _ChooseModeStepState extends ConsumerState<ChooseModeStep>
                       Text(
                         'New Account Confirmation',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: AppColors.primary,
@@ -232,7 +232,6 @@ class _ChooseModeStepState extends ConsumerState<ChooseModeStep>
                                   ? displayName
                                   : 'Google User',
                               style: const TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.textPrimary,
@@ -244,7 +243,6 @@ class _ChooseModeStepState extends ConsumerState<ChooseModeStep>
                             Text(
                               email,
                               style: const TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 13,
                                 color: AppColors.textSecondary,
                               ),
@@ -264,7 +262,7 @@ class _ChooseModeStepState extends ConsumerState<ChooseModeStep>
                   'Create your Tara Travel account?',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontFamily: 'Playfair Display',
+                    fontFamily: AppTextStyles.fontHeading,
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
@@ -276,7 +274,6 @@ class _ChooseModeStepState extends ConsumerState<ChooseModeStep>
                   'No account was found for this Google email. Would you like to create a new profile to start planning and syncing your trips?',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 13,
                     color: AppColors.textSecondary,
                     height: 1.4,
@@ -307,7 +304,6 @@ class _ChooseModeStepState extends ConsumerState<ChooseModeStep>
                           child: RichText(
                             text: const TextSpan(
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 11,
                                 color: AppColors.textSecondary,
                                 height: 1.3,
@@ -354,7 +350,6 @@ class _ChooseModeStepState extends ConsumerState<ChooseModeStep>
                         child: const Text(
                           'Cancel',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                           ),
@@ -380,7 +375,6 @@ class _ChooseModeStepState extends ConsumerState<ChooseModeStep>
                         child: const Text(
                           'Create Account',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
                           ),
@@ -407,7 +401,7 @@ class _ChooseModeStepState extends ConsumerState<ChooseModeStep>
       child: Text(
         initial,
         style: const TextStyle(
-          fontFamily: 'Playfair Display',
+          fontFamily: AppTextStyles.fontHeading,
           fontSize: 20,
           fontWeight: FontWeight.bold,
           color: AppColors.primary,
@@ -519,7 +513,7 @@ class _ChooseModeStepState extends ConsumerState<ChooseModeStep>
                         const Text(
                           'Welcome to\nTara Travel',
                           style: TextStyle(
-                            fontFamily: 'Playfair Display',
+                            fontFamily: AppTextStyles.fontHeading,
                             fontSize: 32,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimary,
@@ -530,7 +524,7 @@ class _ChooseModeStepState extends ConsumerState<ChooseModeStep>
                         const Text(
                           'Your journey, your way',
                           style: TextStyle(
-                            fontFamily: 'Playfair Display',
+                            fontFamily: AppTextStyles.fontHeading,
                             fontSize: 14,
                             fontStyle: FontStyle.italic,
                             color: AppColors.darkAccent,
@@ -541,7 +535,6 @@ class _ChooseModeStepState extends ConsumerState<ChooseModeStep>
                         const Text(
                           'Sign in with your Google account to automatically set up your profile and sync your trips.',
                           style: TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 14,
                               color: AppColors.textSecondary),
                         ),
@@ -578,7 +571,6 @@ class _ChooseModeStepState extends ConsumerState<ChooseModeStep>
                                 'Your Google account data is encrypted & secure.',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 11,
                                   color: AppColors.warmMuted.withValues(alpha: 0.8),
                                 ),
@@ -595,7 +587,6 @@ class _ChooseModeStepState extends ConsumerState<ChooseModeStep>
                                     Text(
                                       'NPC Compliant • Terms & Data Privacy (RA 10173)',
                                       style: TextStyle(
-                                        fontFamily: 'DM Sans',
                                         fontSize: 11,
                                         fontWeight: FontWeight.w600,
                                         color: AppColors.primary,
@@ -627,7 +618,6 @@ class _ChooseModeStepState extends ConsumerState<ChooseModeStep>
             color: AppColors.sand, borderRadius: BorderRadius.circular(20)),
         child: const Text('Authentication',
             style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: AppColors.primary)),
@@ -649,7 +639,6 @@ class _ChooseModeStepState extends ConsumerState<ChooseModeStep>
             Expanded(
               child: Text(msg,
                   style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 13,
                       color: Color(0xFFEF4444))),
             ),
@@ -732,7 +721,6 @@ class _PrimaryGoogleButton extends StatelessWidget {
                           Text(
                             'Continue with Google',
                             style: TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
@@ -747,7 +735,6 @@ class _PrimaryGoogleButton extends StatelessWidget {
                       Text(
                         '1-tap sign in or automatic registration',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 11,
                           color: Colors.white70,
                         ),
@@ -850,7 +837,6 @@ class _BiometricQuickTile extends StatelessWidget {
                           Text(
                             _title,
                             style: const TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
                               color: AppColors.textPrimary,
@@ -869,7 +855,6 @@ class _BiometricQuickTile extends StatelessWidget {
                             child: Text(
                               isRegistered ? 'Registered' : 'Not setup',
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 10,
                                 fontWeight: FontWeight.w600,
                                 color: isRegistered
@@ -884,7 +869,6 @@ class _BiometricQuickTile extends StatelessWidget {
                       Text(
                         _subtitle,
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 11,
                           color: isRegistered
                               ? AppColors.textSecondary

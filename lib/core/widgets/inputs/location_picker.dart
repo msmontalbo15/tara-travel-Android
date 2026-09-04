@@ -265,7 +265,6 @@ class _LocationPickerState extends State<LocationPicker> {
             Text(
               widget.label,
               style: const TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: AppColors.deepEarth,
@@ -288,7 +287,6 @@ class _LocationPickerState extends State<LocationPicker> {
                       Text(
                         'Pin on Map',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                           color: AppColors.primary,
@@ -309,7 +307,6 @@ class _LocationPickerState extends State<LocationPicker> {
               readOnly: widget.openMapOnTap,
               onTap: widget.openMapOnTap ? _openMapPinPicker : null,
               style: const TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 15,
                 color: AppColors.textPrimary,
               ),
@@ -416,7 +413,6 @@ class _LocationPickerState extends State<LocationPicker> {
                               Text(
                                 'Philippine Places (OpenStreetMap)',
                                 style: TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
                                   color: Color(0xFF5F6368),
@@ -460,7 +456,6 @@ class _LocationPickerState extends State<LocationPicker> {
                                         Text(
                                           'Set pin directly on map',
                                           style: TextStyle(
-                                            fontFamily: 'DM Sans',
                                             fontSize: 13,
                                             fontWeight: FontWeight.w700,
                                             color: AppColors.primary,
@@ -469,7 +464,6 @@ class _LocationPickerState extends State<LocationPicker> {
                                         Text(
                                           'Drag pin and pinpoint exact location',
                                           style: TextStyle(
-                                            fontFamily: 'DM Sans',
                                             fontSize: 11,
                                             color: AppColors.darkAccent,
                                           ),
@@ -508,7 +502,6 @@ class _LocationPickerState extends State<LocationPicker> {
                                         Text(
                                           'Searching Philippine places...',
                                           style: TextStyle(
-                                            fontFamily: 'DM Sans',
                                             fontSize: 13,
                                             color: AppColors.muted,
                                           ),
@@ -550,7 +543,6 @@ class _LocationPickerState extends State<LocationPicker> {
                                       title: Text(
                                         mainTitle,
                                         style: const TextStyle(
-                                          fontFamily: 'DM Sans',
                                           fontSize: 13,
                                           fontWeight: FontWeight.w700,
                                           color: AppColors.textPrimary,
@@ -563,7 +555,6 @@ class _LocationPickerState extends State<LocationPicker> {
                                           ? Text(
                                               subTitle,
                                               style: TextStyle(
-                                                fontFamily: 'DM Sans',
                                                 fontSize: 11,
                                                 color: AppColors.warmMuted
                                                     .withValues(alpha: 0.9),

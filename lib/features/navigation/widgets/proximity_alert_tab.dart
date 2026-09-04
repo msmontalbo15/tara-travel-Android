@@ -46,7 +46,6 @@ class ProximityAlertTab extends ConsumerWidget {
                       child: Text(
                        nav.destination.name,
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
@@ -77,7 +76,6 @@ class ProximityAlertTab extends ConsumerWidget {
                         alignment: Alignment.center,
                         child: const Text('S',
                             style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
                                 color: Colors.white)),
@@ -103,7 +101,6 @@ class ProximityAlertTab extends ConsumerWidget {
                     child: const Text(
                       '300 m away',
                       style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 9,
                           fontWeight: FontWeight.w600,
                           color: Colors.white),
@@ -167,7 +164,6 @@ class ProximityAlertTab extends ConsumerWidget {
                             const Text(
                               'Almost there!',
                               style: TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
                                   color: Colors.black,
@@ -176,7 +172,6 @@ class ProximityAlertTab extends ConsumerWidget {
                             Text(
                                '300 m from ${nav.destination.name}',
                               style: const TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 12,
                                   color: Color(0xFF8E8E93)),
                             ),
@@ -193,7 +188,6 @@ class ProximityAlertTab extends ConsumerWidget {
                         child: const Text(
                           '2 min',
                           style: TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
                               color: Color(0xFF3B6D11)),
@@ -217,7 +211,6 @@ class ProximityAlertTab extends ConsumerWidget {
                         const Text(
                           'Next stop on itinerary',
                           style: TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 11,
                               color: Color(0xFF8E8E93)),
                         ),
@@ -225,7 +218,6 @@ class ProximityAlertTab extends ConsumerWidget {
                         Text(
                            'Check-in at ${nav.destination.name}',
                           style: const TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                               color: Colors.black),
@@ -234,7 +226,6 @@ class ProximityAlertTab extends ConsumerWidget {
                         Text(
                            'Station 1, White Beach · Confirmation #${nav.destination.confirmationCode}',
                           style: const TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 12,
                               color: Color(0xFF8E8E93)),
                         ),
@@ -261,7 +252,6 @@ class ProximityAlertTab extends ConsumerWidget {
                   const Text(
                     'GROUP STATUS',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       color: Color(0xFF8E8E93),
@@ -290,7 +280,6 @@ class ProximityAlertTab extends ConsumerWidget {
                           ),
                           child: const Text('Open in Maps',
                               style: TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600)),
                         ),
@@ -360,7 +349,6 @@ class _GroupStatusRow extends StatelessWidget {
             alignment: Alignment.center,
             child: Text(member.initials,
                 style: const TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 9,
                     fontWeight: FontWeight.w700,
                     color: Colors.white)),
@@ -369,7 +357,6 @@ class _GroupStatusRow extends StatelessWidget {
           Text(
             member.name.split(' ').first,
             style: TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 12,
               color: isOffline ? const Color(0xFF8E8E93) : Colors.black,
             ),
@@ -390,7 +377,6 @@ class _GroupStatusRow extends StatelessWidget {
           const Spacer(),
           Text(statusText,
               style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: statusColor)),
@@ -415,7 +401,6 @@ class _InfoChip extends StatelessWidget {
           BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
       child: Text(label,
           style: TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 10,
               fontWeight: FontWeight.w600,
               color: fg)),

@@ -165,7 +165,6 @@ class AppFeedback {
                     Text(
                       title,
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontWeight: FontWeight.w700,
                         fontSize: 13.5,
                         color: fgColor,
@@ -176,7 +175,6 @@ class AppFeedback {
                   Text(
                     message,
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontWeight: FontWeight.w500,
                       fontSize: 13,
                       color: AppColors.textPrimary,
@@ -199,7 +197,6 @@ class AppFeedback {
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   foregroundColor: fgColor,
                   textStyle: const TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 12.5,
                     fontWeight: FontWeight.w700,
                   ),

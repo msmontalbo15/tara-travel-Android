@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
@@ -345,7 +346,7 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                       Text(
                         stop.title,
                         style: const TextStyle(
-                          fontFamily: 'Playfair Display',
+                          fontFamily: AppTextStyles.fontHeading,
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
                           color: AppColors.deepEarth,
@@ -357,7 +358,6 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                         Text(
                           '${_formatTime(stop.startTime!)}${stop.duration.isNotEmpty ? ' · ${stop.duration}' : ''}',
                           style: const TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: AppColors.muted,
@@ -408,7 +408,6 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                           Text(
                             'Edit',
                             style: TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 12.5,
                               fontWeight: FontWeight.w700,
                               color: AppColors.primary,
@@ -492,7 +491,6 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                             label: const Text(
                               'Navigate Maps',
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 14.5,
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: 0.2,
@@ -525,7 +523,6 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                               label: const Text(
                                 'Expense',
                                 style: TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 13.5,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -570,7 +567,6 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                     const Text(
                       'Notes',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                         color: AppColors.muted,
@@ -588,7 +584,6 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                       child: Text(
                         stop.notes!,
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 13,
                           color: AppColors.deepEarth,
                           height: 1.4,
@@ -603,7 +598,6 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                     const Text(
                       'Attachments',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                         color: AppColors.muted,
@@ -638,7 +632,6 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                                 Text(
                                   'Attachment ${index + 1}',
                                   style: const TextStyle(
-                                    fontFamily: 'DM Sans',
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
                                     color: AppColors.primary,
@@ -741,7 +734,6 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                   const Text(
                     'Stop Completed',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 13.5,
                       fontWeight: FontWeight.w700,
                       color: AppColors.greenBright,
@@ -752,7 +744,6 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                         ? '${stop.arrivedAtLabel!} · All set!'
                         : 'Arrival recorded in trip itinerary',
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 11.5,
                       color: AppColors.deepEarth,
                     ),
@@ -821,7 +812,6 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
             Text(
               'Calculating live GPS ETA...',
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 12.5,
                 color: AppColors.muted,
               ),
@@ -895,7 +885,6 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                       const Text(
                         'ESTIMATED TIME OF ARRIVAL',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 10,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 1.0,
@@ -905,7 +894,7 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                       Text(
                         formattedEta,
                         style: const TextStyle(
-                          fontFamily: 'Playfair Display',
+                          fontFamily: AppTextStyles.fontHeading,
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
                           color: AppColors.deepEarth,
@@ -934,7 +923,6 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                         Text(
                           'LIVE GPS',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 9.5,
                             fontWeight: FontWeight.w700,
                             color: Color(0xFF10B981),
@@ -986,7 +974,6 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                               const Text(
                                 'REAL DISTANCE',
                                 style: TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 8.5,
                                   fontWeight: FontWeight.w700,
                                   color: AppColors.muted,
@@ -996,7 +983,6 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                               Text(
                                 distanceLabel,
                                 style: const TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
                                   color: AppColors.deepEarth,
@@ -1049,7 +1035,6 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                               const Text(
                                 'TRAVEL TIME',
                                 style: TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 8.5,
                                   fontWeight: FontWeight.w700,
                                   color: AppColors.muted,
@@ -1059,7 +1044,6 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                               Text(
                                 travelTimeLabel,
                                 style: const TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
                                   color: AppColors.deepEarth,
@@ -1083,7 +1067,6 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                 child: Text(
                   'Calculated $calculationSource (${stop.transportMode?.label ?? 'Driving'})',
                   style: const TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 10.5,
                     color: AppColors.muted,
                   ),
@@ -1112,7 +1095,6 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
               child: Text(
                 'Scheduled for ${_formatTime(stop.startTime!)}',
                 style: const TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 12.5,
                   fontWeight: FontWeight.w600,
                   color: AppColors.deepEarth,
@@ -1165,7 +1147,6 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                       ? '✓ You ${stop.arrivedAtLabel!}'
                       : '✓ You Arrived',
                   style: const TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 13.5,
                     fontWeight: FontWeight.w700,
                     color: AppColors.greenBright,
@@ -1174,7 +1155,6 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                 const Text(
                   'Arrival recorded · Stop completed',
                   style: TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 11,
                     color: AppColors.muted,
                   ),
@@ -1212,7 +1192,6 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                     Text(
                       'Undo',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                         color: AppColors.deepEarth,
@@ -1275,7 +1254,6 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                         Text(
                           'Members ($checkedInCount/$totalMembers Arrived)',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
                             color: allArrived
@@ -1288,7 +1266,6 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                               ? 'All companions present'
                               : '${totalMembers - checkedInCount} companions not yet arrived',
                           style: const TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 11,
                             color: AppColors.muted,
                           ),
@@ -1382,7 +1359,6 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                                   Text(
                                     formattedName,
                                     style: const TextStyle(
-                                      fontFamily: 'DM Sans',
                                       fontSize: 13.5,
                                       fontWeight: FontWeight.w600,
                                       color: AppColors.deepEarth,
@@ -1395,7 +1371,6 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                                             : '✓ Arrived')
                                         : 'Not yet arrived',
                                     style: TextStyle(
-                                      fontFamily: 'DM Sans',
                                       fontSize: 11,
                                       color: isPresent
                                           ? AppColors.greenBright
@@ -1452,7 +1427,6 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                                         Text(
                                           isPresent ? 'Undo' : 'Mark Arrived',
                                           style: TextStyle(
-                                            fontFamily: 'DM Sans',
                                             fontSize: 12,
                                             fontWeight: FontWeight.w700,
                                             color: isPresent
@@ -1487,7 +1461,6 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                         label: const Text(
                           'Mark Everyone as Arrived',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 13.5,
                             fontWeight: FontWeight.w700,
                             color: AppColors.primary,
@@ -1528,7 +1501,6 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
             child: Text(
               text,
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 13,
                 fontWeight:
                     color != null ? FontWeight.w600 : FontWeight.normal,

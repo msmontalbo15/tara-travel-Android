@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/currency_utils.dart';
@@ -35,7 +36,7 @@ class BudgetOverviewCard extends StatelessWidget {
             child: Text(
               tripName!,
               style: const TextStyle(
-                fontFamily: 'Playfair Display',
+                fontFamily: AppTextStyles.fontHeading,
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
                 color: Colors.white,
@@ -58,7 +59,7 @@ class BudgetOverviewCard extends StatelessWidget {
                   const Text(
                     'Budget Tracker',
                     style: TextStyle(
-                      fontFamily: 'Playfair Display',
+                      fontFamily: AppTextStyles.fontHeading,
                       fontSize: 26,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
@@ -70,7 +71,6 @@ class BudgetOverviewCard extends StatelessWidget {
                   Text(
                     tripSubtitle ?? 'Trip budget overview',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 12,
                       color: Colors.white.withValues(alpha: 0.45),
                       fontWeight: FontWeight.w400,
@@ -92,7 +92,6 @@ class BudgetOverviewCard extends StatelessWidget {
               child: Text(
                 '${(percentage * 100).toInt()}% used',
                 style: const TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                   color: AppColors.primaryLight,
@@ -137,7 +136,6 @@ class BudgetOverviewCard extends StatelessWidget {
                         Text(
                           '₱',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 16,
                             color: Colors.white.withValues(alpha: 0.4),
                             fontWeight: FontWeight.w400,
@@ -147,7 +145,7 @@ class BudgetOverviewCard extends StatelessWidget {
                           child: Text(
                             CurrencyUtils.formatAmount(totalBudget),
                             style: const TextStyle(
-                              fontFamily: 'Playfair Display',
+                              fontFamily: AppTextStyles.fontHeading,
                               fontSize: 30,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
@@ -163,7 +161,6 @@ class BudgetOverviewCard extends StatelessWidget {
                     Text(
                       'Total trip budget',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 11,
                         color: Colors.white.withValues(alpha: 0.4),
                       ),
@@ -172,7 +169,6 @@ class BudgetOverviewCard extends StatelessWidget {
                     Text(
                       '₱${CurrencyUtils.formatAmount(remaining)} remaining',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: isDanger 
@@ -186,7 +182,6 @@ class BudgetOverviewCard extends StatelessWidget {
                     Text(
                       '₱${CurrencyUtils.formatAmount(totalSpent)} spent by $memberCount members',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 11,
                         color: Colors.white.withValues(alpha: 0.4),
                       ),

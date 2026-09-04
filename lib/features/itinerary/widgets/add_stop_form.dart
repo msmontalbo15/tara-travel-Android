@@ -130,7 +130,7 @@ class _AddStopFormState extends State<AddStopForm> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Add New Stop', style: TextStyle(fontFamily: 'DM Sans', fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.deepEarth)),
+          const Text('Add New Stop', style: TextStyle( fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.deepEarth)),
           const SizedBox(height: 12),
 
           // Stop type chips
@@ -153,7 +153,7 @@ class _AddStopFormState extends State<AddStopForm> {
                       children: [
                         Icon(t.icon, size: 14, color: active ? Colors.white : t.color),
                         const SizedBox(width: 4),
-                        Text(t.label, style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, fontWeight: FontWeight.w600, color: active ? Colors.white : t.color)),
+                        Text(t.label, style: TextStyle( fontSize: 12, fontWeight: FontWeight.w600, color: active ? Colors.white : t.color)),
                       ],
                     ),
                   ),
@@ -165,7 +165,7 @@ class _AddStopFormState extends State<AddStopForm> {
 
           // Transport mode picker (only when Transport type selected)
           if (_selectedType == StopType.transport) ...[
-            const Text('Transport Mode', style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.muted)),
+            const Text('Transport Mode', style: TextStyle( fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.muted)),
             const SizedBox(height: 8),
             _buildTransportModePicker(),
             const SizedBox(height: 12),
@@ -249,12 +249,12 @@ class _AddStopFormState extends State<AddStopForm> {
           if (widget.members.isNotEmpty) ...[
             Row(
               children: [
-                const Text('Assign to', style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.muted)),
+                const Text('Assign to', style: TextStyle( fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.muted)),
                 const Spacer(),
                 if (_assignedMemberIds.isNotEmpty)
                   GestureDetector(
                     onTap: () => setState(() => _assignedMemberIds.clear()),
-                    child: const Text('Clear', style: TextStyle(fontFamily: 'DM Sans', fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.primary)),
+                    child: const Text('Clear', style: TextStyle( fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.primary)),
                   ),
               ],
             ),
@@ -294,7 +294,6 @@ class _AddStopFormState extends State<AddStopForm> {
                           Text(
                             m.name.split(' ').first,
                             style: TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                               color: active ? Colors.white : m.color,
@@ -316,7 +315,7 @@ class _AddStopFormState extends State<AddStopForm> {
             child: ElevatedButton.icon(
               onPressed: _submit,
               icon: const Icon(Icons.add_rounded, size: 18),
-              label: const Text('Add Stop', style: TextStyle(fontFamily: 'DM Sans', fontSize: 14, fontWeight: FontWeight.w600)),
+              label: const Text('Add Stop', style: TextStyle( fontSize: 14, fontWeight: FontWeight.w600)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
@@ -365,7 +364,6 @@ class _AddStopFormState extends State<AddStopForm> {
                 Text(
                   m.label,
                   style: TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                     color: active ? Colors.white : AppColors.deepEarth,
@@ -398,7 +396,7 @@ class _AddStopFormState extends State<AddStopForm> {
             Expanded(
               child: Text(
                 display,
-                style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, color: time != null ? AppColors.deepEarth : AppColors.muted),
+                style: TextStyle( fontSize: 12, color: time != null ? AppColors.deepEarth : AppColors.muted),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),

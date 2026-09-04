@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:add_2_calendar/add_2_calendar.dart';
@@ -145,7 +146,7 @@ class ItineraryActionSheet extends StatelessWidget {
             const Text(
               'Move Stop to Another Day',
               style: TextStyle(
-                fontFamily: 'Playfair Display',
+                fontFamily: AppTextStyles.fontHeading,
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
                 color: AppColors.deepEarth,
@@ -170,7 +171,6 @@ class ItineraryActionSheet extends StatelessWidget {
                       child: Text(
                         stop.title,
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),
@@ -207,7 +207,7 @@ class ItineraryActionSheet extends StatelessWidget {
                           value: e.key,
                           child: Text(
                             'Move to Day ${e.key + 1}',
-                            style: const TextStyle(fontFamily: 'DM Sans'),
+                            style: const TextStyle(),
                           ),
                         );
                       }).toList(),
@@ -283,7 +283,7 @@ class ItineraryActionSheet extends StatelessWidget {
                             ? 'Day ${currentDay.dayNumber} · Hub Actions'
                             : 'Itinerary Actions',
                         style: const TextStyle(
-                          fontFamily: 'Playfair Display',
+                          fontFamily: AppTextStyles.fontHeading,
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
                           color: AppColors.deepEarth,
@@ -292,7 +292,6 @@ class ItineraryActionSheet extends StatelessWidget {
                       Text(
                         trip.name,
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 12,
                           color: AppColors.muted,
                         ),
@@ -377,7 +376,6 @@ class ItineraryActionSheet extends StatelessWidget {
                 child: Text(
                   'SHIFT SCHEDULE',
                   style: TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 1.2,
@@ -519,7 +517,6 @@ class ItineraryActionSheet extends StatelessWidget {
           child: Text(
             label,
             style: const TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 11,
               fontWeight: FontWeight.w700,
               color: AppColors.deepEarth,
@@ -572,7 +569,6 @@ class _HubActionTile extends StatelessWidget {
               Text(
                 label,
                 style: const TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   color: AppColors.deepEarth,
@@ -616,7 +612,6 @@ class _ListActionItem extends StatelessWidget {
       title: Text(
         title,
         style: const TextStyle(
-          fontFamily: 'DM Sans',
           fontSize: 13,
           fontWeight: FontWeight.w700,
           color: AppColors.deepEarth,
@@ -625,7 +620,6 @@ class _ListActionItem extends StatelessWidget {
       subtitle: Text(
         subtitle,
         style: const TextStyle(
-          fontFamily: 'DM Sans',
           fontSize: 11,
           color: AppColors.muted,
         ),

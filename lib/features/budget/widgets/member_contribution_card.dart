@@ -27,7 +27,7 @@ class MemberContributionCard extends StatelessWidget {
         child: const Center(
           child: Text(
             'No members in this trip yet.',
-            style: TextStyle(fontFamily: 'DM Sans', fontSize: 13, color: AppColors.warmMuted),
+            style: TextStyle( fontSize: 13, color: AppColors.warmMuted),
           ),
         ),
       );
@@ -88,7 +88,6 @@ class MemberContributionCard extends StatelessWidget {
                           Text(
                             member.name,
                             style: const TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                               color: AppColors.deepEarth,
@@ -99,7 +98,6 @@ class MemberContributionCard extends StatelessWidget {
                           Text(
                             member.roles.map((r) => r.name).join(' · '),
                             style: const TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 11,
                               color: AppColors.muted,
                             ),
@@ -116,7 +114,6 @@ class MemberContributionCard extends StatelessWidget {
                         Text(
                           '₱${CurrencyUtils.formatAmount(contributed)}',
                           style: const TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
                             color: AppColors.deepEarth,

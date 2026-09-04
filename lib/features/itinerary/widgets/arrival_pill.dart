@@ -207,7 +207,6 @@ class _ActionBackground extends StatelessWidget {
                   Text(
                     'Check In',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: AppColors.greenBright,
@@ -235,7 +234,6 @@ class _ActionBackground extends StatelessWidget {
                   Text(
                     'Dismiss',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: AppColors.red,
@@ -324,7 +322,6 @@ class _PillContent extends StatelessWidget {
               const Text(
                 "YOU'VE ARRIVED",
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 9,
                   fontWeight: FontWeight.w700,
                   color: AppColors.greenBright,
@@ -335,7 +332,6 @@ class _PillContent extends StatelessWidget {
               Text(
                 stop.title,
                 style: const TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
                   color: AppColors.deepEarth,
@@ -352,7 +348,6 @@ class _PillContent extends StatelessWidget {
                     Text(
                       '${checkedInMembers.length} already here',
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 11,
                         color: AppColors.muted,
                       ),
@@ -364,7 +359,6 @@ class _PillContent extends StatelessWidget {
               const Text(
                 '← Dismiss    Check In →',
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 9,
                   color: AppColors.warmMuted,
                   letterSpacing: 0.3,
@@ -407,7 +401,6 @@ class _PillContent extends StatelessWidget {
                   'Check\nIn',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     color: AppColors.greenBright,
@@ -443,7 +436,6 @@ class _ConfirmedContent extends StatelessWidget {
               const Text(
                 'CHECKED IN!',
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 9,
                   fontWeight: FontWeight.w700,
                   color: Colors.white70,
@@ -453,7 +445,6 @@ class _ConfirmedContent extends StatelessWidget {
               Text(
                 stop.title,
                 style: const TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
@@ -464,7 +455,6 @@ class _ConfirmedContent extends StatelessWidget {
               const Text(
                 'Squad notified 🎉',
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 11,
                   color: Colors.white70,
                 ),

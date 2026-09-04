@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/theme/app_colors.dart';
@@ -73,7 +74,6 @@ class PollCard extends StatelessWidget {
                     child: const Text(
                       'Multi-select',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
                         color: AppColors.blue,
@@ -91,7 +91,6 @@ class PollCard extends StatelessWidget {
                     child: const Text(
                       '✅ Closed',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: AppColors.green,
@@ -108,7 +107,6 @@ class PollCard extends StatelessWidget {
             child: Text(
               poll.question,
               style: const TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
                 color: AppColors.deepEarth,
@@ -122,7 +120,6 @@ class PollCard extends StatelessWidget {
             child: Text(
               'by ${poll.creatorName}  ·  $totalVotes ${totalVotes == 1 ? 'vote' : 'votes'}',
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 11,
                 color: AppColors.warmMuted.withValues(alpha: 0.8),
               ),
@@ -178,7 +175,6 @@ class PollCard extends StatelessWidget {
                       Text(
                         'Suggest an Option / Spot',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                           color: AppColors.primary,
@@ -208,7 +204,6 @@ class PollCard extends StatelessWidget {
                   child: const Text(
                     'Close Poll & Decide Winner',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: AppColors.deepEarth,
@@ -233,7 +228,7 @@ class PollCard extends StatelessWidget {
         title: const Text(
           'Suggest Option / Spot',
           style: TextStyle(
-            fontFamily: 'Playfair Display',
+            fontFamily: AppTextStyles.fontHeading,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -244,7 +239,6 @@ class PollCard extends StatelessWidget {
           decoration: InputDecoration(
             hintText: 'e.g. Rico\'s Lechon, 8:00 AM, Snorkeling',
             hintStyle: TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 13,
               color: AppColors.muted.withValues(alpha: 0.6),
             ),
@@ -264,7 +258,7 @@ class PollCard extends StatelessWidget {
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: const Text('Cancel',
-                style: TextStyle(fontFamily: 'DM Sans', color: AppColors.muted)),
+                style: TextStyle( color: AppColors.muted)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -283,7 +277,7 @@ class PollCard extends StatelessWidget {
             ),
             child: const Text(
               'Add Option',
-              style: TextStyle(fontFamily: 'DM Sans', fontWeight: FontWeight.bold),
+              style: TextStyle( fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -299,14 +293,13 @@ class PollCard extends StatelessWidget {
         title: const Text(
           'Finalize & Close Poll?',
           style: TextStyle(
-            fontFamily: 'Playfair Display',
+            fontFamily: AppTextStyles.fontHeading,
             fontWeight: FontWeight.bold,
           ),
         ),
         content: const Text(
           'Closing this poll will end voting for all travelers and finalize the winning option.',
           style: TextStyle(
-            fontFamily: 'DM Sans',
             fontSize: 13,
             color: AppColors.deepEarth,
           ),
@@ -315,7 +308,7 @@ class PollCard extends StatelessWidget {
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: const Text('Keep Open',
-                style: TextStyle(fontFamily: 'DM Sans', color: AppColors.muted)),
+                style: TextStyle( color: AppColors.muted)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -331,7 +324,7 @@ class PollCard extends StatelessWidget {
             ),
             child: const Text(
               'Finalize Winner',
-              style: TextStyle(fontFamily: 'DM Sans', fontWeight: FontWeight.bold),
+              style: TextStyle( fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -357,7 +350,6 @@ class _CategoryPill extends StatelessWidget {
       child: Text(
         '${category.emoji} ${category.label}',
         style: const TextStyle(
-          fontFamily: 'DM Sans',
           fontSize: 11,
           fontWeight: FontWeight.w600,
           color: AppColors.darkAccent,
@@ -441,7 +433,6 @@ class _OptionBar extends StatelessWidget {
                   child: Text(
                     option.text,
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 13,
                       fontWeight:
                           isWinner ? FontWeight.w700 : FontWeight.w500,
@@ -460,7 +451,6 @@ class _OptionBar extends StatelessWidget {
                     child: const Text(
                       '🏆 Winner',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
@@ -473,7 +463,6 @@ class _OptionBar extends StatelessWidget {
                   Text(
                     pctStr,
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                       color: isWinner ? AppColors.green : AppColors.primary,
@@ -512,7 +501,6 @@ class _OptionBar extends StatelessWidget {
               Text(
                 _formatVoterNames(option.voterNames),
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 10,
                   color: AppColors.warmMuted.withValues(alpha: 0.8),
                 ),
@@ -629,7 +617,6 @@ class _WinnerCard extends StatelessWidget {
                             Text(
                               'Winner',
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
                                 color: Colors.white,
@@ -643,7 +630,6 @@ class _WinnerCard extends StatelessWidget {
                       Text(
                         pctStr,
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 28,
                           fontWeight: FontWeight.w800,
                           color: Colors.white.withValues(alpha: 0.95),
@@ -657,7 +643,6 @@ class _WinnerCard extends StatelessWidget {
                   Text(
                     winner.text,
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 17,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
@@ -675,7 +660,6 @@ class _WinnerCard extends StatelessWidget {
                       Text(
                         '${winner.voteCount} ${winner.voteCount == 1 ? 'vote' : 'votes'}',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
                           color: Colors.white.withValues(alpha: 0.7),
@@ -685,7 +669,6 @@ class _WinnerCard extends StatelessWidget {
                       Text(
                         '${poll.category.emoji} ${poll.category.label}',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
                           color: Colors.white.withValues(alpha: 0.7),
@@ -710,7 +693,6 @@ class _WinnerCard extends StatelessWidget {
                       Text(
                         'Tap for results & actions',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
                           color: Colors.white.withValues(alpha: 0.5),
@@ -768,7 +750,6 @@ class _VoterChips extends StatelessWidget {
               child: Text(
                 name,
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
                   color: Colors.white.withValues(alpha: 0.85),
@@ -786,7 +767,6 @@ class _VoterChips extends StatelessWidget {
             child: Text(
               '+$remaining more',
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 10,
                 fontWeight: FontWeight.w600,
                 color: Colors.white.withValues(alpha: 0.6),
@@ -880,7 +860,7 @@ class _WinnerDetailSheet extends StatelessWidget {
                       winner.text,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
-                        fontFamily: 'Playfair Display',
+                        fontFamily: AppTextStyles.fontHeading,
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
                         color: AppColors.deepEarth,
@@ -893,7 +873,6 @@ class _WinnerDetailSheet extends StatelessWidget {
                     child: Text(
                       'Decided by group poll  ·  ${poll.totalVotes} total votes',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 12,
                         color: AppColors.warmMuted.withValues(alpha: 0.9),
                       ),
@@ -924,7 +903,6 @@ class _WinnerDetailSheet extends StatelessWidget {
                               Text(
                                 poll.question,
                                 style: const TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.deepEarth,
@@ -934,7 +912,6 @@ class _WinnerDetailSheet extends StatelessWidget {
                               Text(
                                 'by ${poll.creatorName}  ·  ${poll.category.label}',
                                 style: TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 11,
                                   color: AppColors.warmMuted
                                       .withValues(alpha: 0.8),
@@ -952,7 +929,6 @@ class _WinnerDetailSheet extends StatelessWidget {
                   const Text(
                     'Results Breakdown',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                       color: AppColors.deepEarth,
@@ -1000,7 +976,6 @@ class _WinnerDetailSheet extends StatelessWidget {
                                   child: Text(
                                     '$rank',
                                     style: TextStyle(
-                                      fontFamily: 'DM Sans',
                                       fontSize: 11,
                                       fontWeight: FontWeight.w700,
                                       color: isWinner
@@ -1015,7 +990,6 @@ class _WinnerDetailSheet extends StatelessWidget {
                                 child: Text(
                                   opt.text,
                                   style: TextStyle(
-                                    fontFamily: 'DM Sans',
                                     fontSize: 13,
                                     fontWeight: isWinner
                                         ? FontWeight.w700
@@ -1031,7 +1005,6 @@ class _WinnerDetailSheet extends StatelessWidget {
                               Text(
                                 '${pct.toStringAsFixed(0)}%',
                                 style: TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
                                   color: isWinner
@@ -1074,7 +1047,6 @@ class _WinnerDetailSheet extends StatelessWidget {
                                   ? opt.voterNames.join(', ')
                                   : '${opt.voterNames.take(3).join(', ')} +${opt.voterNames.length - 3} more',
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 10,
                                 color: AppColors.warmMuted
                                     .withValues(alpha: 0.8),
@@ -1091,7 +1063,6 @@ class _WinnerDetailSheet extends StatelessWidget {
                   const Text(
                     'Quick Actions',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                       color: AppColors.deepEarth,
@@ -1200,7 +1171,6 @@ class _DetailActionButton extends StatelessWidget {
                     ? '${label.replaceAll('Add to ', 'Added to ')} ✓'
                     : label,
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                   color: effectiveTextColor,

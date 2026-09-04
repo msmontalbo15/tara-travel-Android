@@ -114,7 +114,6 @@ class MapMemberPin extends StatelessWidget {
           child: Text(
             labelText,
             style: const TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 9,
               fontWeight: FontWeight.w600,
               color: Color(0xFFF0997B),

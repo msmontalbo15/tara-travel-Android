@@ -79,7 +79,6 @@ class NavigateToMemberSheet extends ConsumerWidget {
                           child: Text(
                             member.name,
                             style: const TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 17,
                               fontWeight: FontWeight.w700,
                               color: AppColors.textPrimary,
@@ -100,7 +99,6 @@ class NavigateToMemberSheet extends ConsumerWidget {
                             child: const Text(
                               'You',
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
                                 color: AppColors.primary,
@@ -114,7 +112,6 @@ class NavigateToMemberSheet extends ConsumerWidget {
                     Text(
                       '${member.role} · ${member.status == MemberStatus.enRoute ? "Moving" : "Stationary"}',
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 12,
                         color: AppColors.textSecondary,
                       ),
@@ -145,7 +142,6 @@ class NavigateToMemberSheet extends ConsumerWidget {
                       Text(
                         '${member.batteryLevel}%',
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                           color: AppColors.textPrimary,
@@ -261,7 +257,6 @@ class NavigateToMemberSheet extends ConsumerWidget {
                       ? 'Meet Halfway Active'
                       : 'Meet Halfway (${(distKm / 2).toStringAsFixed(1)} km midpoint)',
                   style: const TextStyle(
-                    fontFamily: 'DM Sans',
                     fontWeight: FontWeight.w600,
                     color: AppColors.deepEarth,
                   ),
@@ -281,7 +276,6 @@ class NavigateToMemberSheet extends ConsumerWidget {
             const Text(
               'OPEN IN EXTERNAL GPS',
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFF8E8E93),
@@ -370,7 +364,6 @@ class _TelemetryMetric extends StatelessWidget {
             Text(
               value,
               style: const TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary,
@@ -382,7 +375,6 @@ class _TelemetryMetric extends StatelessWidget {
         Text(
           label,
           style: const TextStyle(
-            fontFamily: 'DM Sans',
             fontSize: 10,
             color: Color(0xFF8E8E93),
           ),
@@ -429,7 +421,6 @@ class _ExternalNavButton extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
                 color: textColor ?? color,

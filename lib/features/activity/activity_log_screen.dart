@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -25,7 +26,7 @@ class ActivityLogScreen extends ConsumerWidget {
                 ),
               )
             : null,
-        title: const Text('Activity Log', style: TextStyle(fontFamily: 'Playfair Display', fontWeight: FontWeight.w700)),
+        title: const Text('Activity Log', style: TextStyle(fontFamily: AppTextStyles.fontHeading, fontWeight: FontWeight.w700)),
         elevation: 0,
       ),
       body: _ActivityList(),
@@ -56,7 +57,7 @@ class _ActivityList extends ConsumerWidget {
           return const Center(
             child: Text(
               'No activity yet.',
-              style: TextStyle(fontFamily: 'DM Sans', color: AppColors.warmMuted),
+              style: TextStyle( color: AppColors.warmMuted),
             ),
           );
         }
@@ -108,7 +109,7 @@ class _ActivityRow extends StatelessWidget {
                 children: [
                   RichText(
                     text: TextSpan(
-                      style: const TextStyle(fontFamily: 'DM Sans', fontSize: 13, color: AppColors.deepEarth),
+                      style: const TextStyle( fontSize: 13, color: AppColors.deepEarth),
                       children: [
                         TextSpan(text: '${item.type.emoji}  '),
                         TextSpan(text: item.actorName, style: const TextStyle(fontWeight: FontWeight.w700)),
@@ -117,7 +118,7 @@ class _ActivityRow extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(_formatTime(item.timestamp), style: const TextStyle(fontFamily: 'DM Sans', fontSize: 11, color: AppColors.warmMuted)),
+                  Text(_formatTime(item.timestamp), style: const TextStyle( fontSize: 11, color: AppColors.warmMuted)),
                 ],
               ),
             ),

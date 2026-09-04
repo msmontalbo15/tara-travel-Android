@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
@@ -406,8 +407,8 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Step 2 of 4', style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, color: Colors.white54)),
-                          Text('Transport Mode', style: TextStyle(fontFamily: 'Playfair Display', fontSize: 22, fontWeight: FontWeight.w700, color: Colors.white)),
+                          Text('Step 2 of 4', style: TextStyle( fontSize: 12, color: Colors.white54)),
+                          Text('Transport Mode', style: TextStyle(fontFamily: AppTextStyles.fontHeading, fontSize: 22, fontWeight: FontWeight.w700, color: Colors.white)),
                         ],
                       ),
                     ),
@@ -484,7 +485,7 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
                           children: [
                             Text(
                               'Continue to Budget',
-                              style: TextStyle(fontFamily: 'DM Sans', fontSize: 16, fontWeight: FontWeight.w600),
+                              style: TextStyle( fontSize: 16, fontWeight: FontWeight.w600),
                             ),
                             SizedBox(width: 8),
                             Icon(Icons.arrow_forward_rounded, size: 18),
@@ -523,7 +524,6 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
               label: Text(
                 cat.$2,
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 12,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                   color: isSelected ? Colors.white : AppColors.deepEarth,
@@ -556,7 +556,7 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
         height: 140,
         child: Center(
           child: Text('No transportation modes found in this category',
-              style: TextStyle(fontFamily: 'DM Sans', color: AppColors.muted)),
+              style: TextStyle( color: AppColors.muted)),
         ),
       );
     }
@@ -633,7 +633,6 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: isSelected ? 13 : 11,
                           fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                           color: isSelected ? AppColors.primary : AppColors.deepEarth,
@@ -649,7 +648,6 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
                         child: Text(
                           '~${m.averageSpeedKmh.round()} km/h',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 9,
                             fontWeight: FontWeight.w600,
                             color: isSelected ? AppColors.primary : AppColors.warmMuted,
@@ -697,7 +695,6 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
                   Text(
                     'ROUTE & ESTIMATE',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFFD85A30),
@@ -716,7 +713,6 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
                   child: Text(
                     '${_calculatedDistanceKm!.toStringAsFixed(0)} km est.',
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
@@ -761,7 +757,6 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: _departureCtrl.text.isNotEmpty ? Colors.white : Colors.white54,
@@ -773,7 +768,6 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
@@ -799,7 +793,6 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
                     Text(
                       'Smart travel estimate via ${_selected.label}:',
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 11,
                         color: Colors.white70,
                       ),
@@ -809,7 +802,6 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
                 Text(
                   _calculatedEstimatedTime!,
                   style: const TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     color: Color(0xFFEF9F27),
@@ -850,7 +842,6 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
                   Text(
                     '${_selected.label} Details',
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: AppColors.deepEarth,
@@ -867,7 +858,6 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
                 child: Text(
                   _selected.category.name.toUpperCase(),
                   style: const TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                     color: AppColors.primary,
@@ -1004,7 +994,6 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
                   Text(
                     _showAdvancedFields ? 'Hide additional info' : 'Add booking reference & notes',
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                       color: AppColors.primary,
@@ -1049,7 +1038,6 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
         const Text(
           'Quick Philippine Hubs',
           style: TextStyle(
-            fontFamily: 'DM Sans',
             fontSize: 11,
             fontWeight: FontWeight.w600,
             color: AppColors.warmMuted,
@@ -1066,7 +1054,6 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
                 child: ActionChip(
                   label: Text('${hub.icon} ${hub.shortLabel}'),
                   labelStyle: TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 11,
                     fontWeight: isPicked ? FontWeight.w700 : FontWeight.w500,
                     color: isPicked ? AppColors.primary : AppColors.deepEarth,
@@ -1127,15 +1114,15 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
       children: [
         Text(
           label,
-          style: const TextStyle(fontFamily: 'DM Sans', fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.muted),
+          style: const TextStyle( fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.muted),
         ),
         const SizedBox(height: 6),
         TextField(
           controller: ctrl,
-          style: const TextStyle(fontFamily: 'DM Sans', fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.deepEarth),
+          style: const TextStyle( fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.deepEarth),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(fontFamily: 'DM Sans', fontSize: 12, color: AppColors.muted),
+            hintStyle: const TextStyle( fontSize: 12, color: AppColors.muted),
             filled: true,
             fillColor: AppColors.surfaceLight,
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
@@ -1156,16 +1143,16 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
       children: [
         Text(
           label,
-          style: const TextStyle(fontFamily: 'DM Sans', fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.muted),
+          style: const TextStyle( fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.muted),
         ),
         const SizedBox(height: 6),
         TextField(
           controller: ctrl,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          style: const TextStyle(fontFamily: 'DM Sans', fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.deepEarth),
+          style: const TextStyle( fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.deepEarth),
           decoration: InputDecoration(
             hintText: '0.00',
-            hintStyle: const TextStyle(fontFamily: 'DM Sans', fontSize: 13, color: AppColors.muted),
+            hintStyle: const TextStyle( fontSize: 13, color: AppColors.muted),
             prefixIcon: const Padding(
               padding: EdgeInsets.only(left: 12, right: 6),
               child: Align(
@@ -1173,7 +1160,7 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
                 widthFactor: 1.0,
                 child: Text(
                   '₱',
-                  style: TextStyle(fontFamily: 'DM Sans', fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.primary),
+                  style: TextStyle( fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.primary),
                 ),
               ),
             ),
@@ -1202,11 +1189,11 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
               children: [
                 Text(
                   'Number of Vehicles',
-                  style: TextStyle(fontFamily: 'DM Sans', fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.deepEarth),
+                  style: TextStyle( fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.deepEarth),
                 ),
                 Text(
                   'Carpooling / Convoy fleet',
-                  style: TextStyle(fontFamily: 'DM Sans', fontSize: 10, color: AppColors.warmMuted),
+                  style: TextStyle( fontSize: 10, color: AppColors.warmMuted),
                 ),
               ],
             ),
@@ -1222,7 +1209,7 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
                 alignment: Alignment.center,
                 child: Text(
                   '$_vehicleCount',
-                  style: const TextStyle(fontFamily: 'DM Sans', fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.deepEarth),
+                  style: const TextStyle( fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.deepEarth),
                 ),
               ),
               _stepperBtn(Icons.add_rounded, () => setState(() => _vehicleCount++)),
@@ -1264,11 +1251,11 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
               children: [
                 Text(
                   'Split Gas & Tolls',
-                  style: TextStyle(fontFamily: 'DM Sans', fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.deepEarth),
+                  style: TextStyle( fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.deepEarth),
                 ),
                 Text(
                   'Include in group expense split',
-                  style: TextStyle(fontFamily: 'DM Sans', fontSize: 10, color: AppColors.warmMuted),
+                  style: TextStyle( fontSize: 10, color: AppColors.warmMuted),
                 ),
               ],
             ),

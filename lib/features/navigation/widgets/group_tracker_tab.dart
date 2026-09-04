@@ -32,7 +32,6 @@ class GroupTrackerTab extends ConsumerWidget {
           const Text(
             'MEMBERS · 4 TRAVELERS',
             style: TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 10,
               fontWeight: FontWeight.w600,
               color: Color(0xFF8E8E93),
@@ -146,7 +145,6 @@ class _MiniMap extends StatelessWidget {
                         child: Text(
                           m.initials,
                           style: const TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 8,
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
@@ -178,7 +176,6 @@ class _MiniMap extends StatelessWidget {
                     Text(
                       'Live Group Radar',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 9,
                         fontWeight: FontWeight.w600,
                         color: Colors.white,
@@ -238,7 +235,6 @@ class _MemberRow extends ConsumerWidget {
                         Text(
                           member.name,
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                             color: isOffline
@@ -250,7 +246,6 @@ class _MemberRow extends ConsumerWidget {
                           const SizedBox(width: 4),
                           const Text(' (you)',
                               style: TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 10,
                                   color: Color(0xFF8E8E93))),
                         ]
@@ -260,7 +255,6 @@ class _MemberRow extends ConsumerWidget {
                     Text(
                       _statusText(),
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
                         color: _statusColor(),
@@ -276,14 +270,12 @@ class _MemberRow extends ConsumerWidget {
                     Text(
                       '${member.speedKmh!.toInt()} km/h',
                       style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                           color: Colors.black),
                     ),
                     const Text('speed',
                         style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 10,
                             color: Color(0xFF8E8E93))),
                   ],
@@ -305,7 +297,6 @@ class _MemberRow extends ConsumerWidget {
                         Text(
                           '${member.batteryLevel}%',
                           style: const TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 10,
                             color: Color(0xFF8E8E93),
                           ),
@@ -356,7 +347,6 @@ class _MemberRow extends ConsumerWidget {
                             Text(
                               'Navigate',
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.primary,
@@ -393,7 +383,6 @@ class _MemberRow extends ConsumerWidget {
                     Text(
                       member.lastSeenLabel ?? 'Location sharing paused',
                       style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
                           color: Color(0xFF854F0B)),
@@ -466,7 +455,6 @@ class _RoleChip extends StatelessWidget {
       child: Text(
         role,
         style: TextStyle(
-            fontFamily: 'DM Sans',
             fontSize: 10,
             fontWeight: FontWeight.w600,
             color: _textColor),
@@ -494,7 +482,6 @@ class _EtaChip extends StatelessWidget {
       child: Text(
         label,
         style: TextStyle(
-          fontFamily: 'DM Sans',
           fontSize: 10,
           fontWeight: FontWeight.w600,
           color: isLate ? const Color(0xFF854F0B) : const Color(0xFF3B6D11),
@@ -528,7 +515,6 @@ class _GroupSpreadBanner extends StatelessWidget {
                 Text(
                   'Group spread: ${spreadKm.toStringAsFixed(1)} km',
                   style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       color: Color(0xFFA32D2D)),
@@ -536,7 +522,6 @@ class _GroupSpreadBanner extends StatelessWidget {
                 const Text(
                   'Carlo is falling behind · 6 min gap',
                   style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 10,
                       color: Color(0xFFA32D2D)),
                 ),
@@ -548,7 +533,6 @@ class _GroupSpreadBanner extends StatelessWidget {
             child: const Text(
               'Alert',
               style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                   color: AppColors.primary),

@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -192,8 +193,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                               const Text(
                                 'Tara',
                                 style: TextStyle(
-                                  fontFamily: 'Playfair Display',
-                                  fontFamilyFallback: ['Georgia', 'serif'],
+                                  fontFamily: AppTextStyles.fontHeading,
+                                  fontFamilyFallback: AppTextStyles.serifFallbacks,
                                   fontSize: 52,
                                   fontWeight: FontWeight.w700,
                                   color: Colors.white,
@@ -209,8 +210,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                                   child: Text(
                                     'TRAVEL',
                                     style: TextStyle(
-                                      fontFamily: 'Playfair Display',
-                                      fontFamilyFallback: const ['Georgia', 'serif'],
+                                      fontFamily: AppTextStyles.fontHeading,
+                                      fontFamilyFallback: AppTextStyles.serifFallbacks,
                                       fontSize: 15,
                                       fontWeight: FontWeight.w600,
                                       fontStyle: FontStyle.italic,
@@ -224,7 +225,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                               Text(
                                 'Your journey, your way',
                                 style: TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 14,
                                   color: Colors.white.withValues(alpha: 0.45),
                                   letterSpacing: 0.5,
@@ -272,7 +272,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                                 child: const Text(
                                   'Get started',
                                   style: TextStyle(
-                                    fontFamily: 'DM Sans',
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
                                   ),

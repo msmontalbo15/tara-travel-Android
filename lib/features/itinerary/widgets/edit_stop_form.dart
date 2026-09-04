@@ -133,7 +133,7 @@ class _EditStopFormState extends State<EditStopForm> {
             children: [
               const Text(
                 'Edit Stop',
-                style: TextStyle(fontFamily: 'DM Sans', fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.deepEarth),
+                style: TextStyle( fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.deepEarth),
               ),
               const Spacer(),
               GestureDetector(
@@ -164,7 +164,7 @@ class _EditStopFormState extends State<EditStopForm> {
                       children: [
                         Icon(t.icon, size: 14, color: active ? Colors.white : t.color),
                         const SizedBox(width: 4),
-                        Text(t.label, style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, fontWeight: FontWeight.w600, color: active ? Colors.white : t.color)),
+                        Text(t.label, style: TextStyle( fontSize: 12, fontWeight: FontWeight.w600, color: active ? Colors.white : t.color)),
                       ],
                     ),
                   ),
@@ -233,12 +233,12 @@ class _EditStopFormState extends State<EditStopForm> {
           if (widget.members.isNotEmpty) ...[
             Row(
               children: [
-                const Text('Assign to', style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.muted)),
+                const Text('Assign to', style: TextStyle( fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.muted)),
                 const Spacer(),
                 if (_assignedMemberIds.isNotEmpty)
                   GestureDetector(
                     onTap: () => setState(() => _assignedMemberIds.clear()),
-                    child: const Text('Clear', style: TextStyle(fontFamily: 'DM Sans', fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.primary)),
+                    child: const Text('Clear', style: TextStyle( fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.primary)),
                   ),
               ],
             ),
@@ -278,7 +278,6 @@ class _EditStopFormState extends State<EditStopForm> {
                           Text(
                             m.name.split(' ').first,
                             style: TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                               color: active ? Colors.white : m.color,
@@ -305,7 +304,7 @@ class _EditStopFormState extends State<EditStopForm> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
-                  child: const Text('Cancel', style: TextStyle(fontFamily: 'DM Sans', fontSize: 14, fontWeight: FontWeight.w600)),
+                  child: const Text('Cancel', style: TextStyle( fontSize: 14, fontWeight: FontWeight.w600)),
                 ),
               ),
               const SizedBox(width: 10),
@@ -313,7 +312,7 @@ class _EditStopFormState extends State<EditStopForm> {
                 child: ElevatedButton.icon(
                   onPressed: _submit,
                   icon: const Icon(Icons.save_rounded, size: 16),
-                  label: const Text('Save', style: TextStyle(fontFamily: 'DM Sans', fontSize: 14, fontWeight: FontWeight.w600)),
+                  label: const Text('Save', style: TextStyle( fontSize: 14, fontWeight: FontWeight.w600)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
@@ -343,7 +342,7 @@ class _EditStopFormState extends State<EditStopForm> {
           children: [
             const Icon(Icons.access_time_rounded, size: 16, color: AppColors.muted),
             const SizedBox(width: 6),
-            Text(display, style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, color: time != null ? AppColors.deepEarth : AppColors.muted)),
+            Text(display, style: TextStyle( fontSize: 12, color: time != null ? AppColors.deepEarth : AppColors.muted)),
           ],
         ),
       ),

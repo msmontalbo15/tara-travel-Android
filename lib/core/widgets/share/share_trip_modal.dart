@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
@@ -268,7 +269,7 @@ class _ShareTripModalState extends ConsumerState<ShareTripModal> {
                           Text(
                             'Share Trip',
                             style: TextStyle(
-                              fontFamily: 'Playfair Display',
+                              fontFamily: AppTextStyles.fontHeading,
                               fontSize: 20,
                               fontWeight: FontWeight.w700,
                               color: AppColors.deepEarth,
@@ -277,7 +278,6 @@ class _ShareTripModalState extends ConsumerState<ShareTripModal> {
                           Text(
                             'Messenger-ready format with Google Maps links',
                             style: TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 12,
                               color: AppColors.textSecondary,
                             ),
@@ -330,7 +330,6 @@ class _ShareTripModalState extends ConsumerState<ShareTripModal> {
                         child: Text(
                           '${scope.emoji}  ${scope.label}',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
                             color: active ? Colors.white : AppColors.warmMuted,
@@ -408,7 +407,6 @@ class _ShareTripModalState extends ConsumerState<ShareTripModal> {
                               Text(
                                 _copied ? 'Copied!' : 'Copy Text',
                                 style: TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
                                   color: _copied ? Colors.white : AppColors.textSecondary,
@@ -450,7 +448,6 @@ class _ShareTripModalState extends ConsumerState<ShareTripModal> {
                               Text(
                                 'Share to Messenger / Apps',
                                 style: TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
                                   color: Colors.white,

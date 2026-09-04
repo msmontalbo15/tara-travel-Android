@@ -26,12 +26,12 @@ class TransportBadge extends StatelessWidget {
               children: [
                 Text(
                   '${transport.mode.label}${transport.vehicleCount != null ? ' (${transport.vehicleCount} vehicles)' : ''}',
-                  style: const TextStyle(fontFamily: 'DM Sans', fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white),
+                  style: const TextStyle( fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white),
                 ),
                 if (transport.departurePoint != null)
                   Text(
                     '${transport.departurePoint} · ${transport.estimatedDuration}',
-                    style: const TextStyle(fontFamily: 'DM Sans', fontSize: 11, color: Colors.white54),
+                    style: const TextStyle( fontSize: 11, color: Colors.white54),
                   ),
               ],
             ),
@@ -39,7 +39,7 @@ class TransportBadge extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(6)),
-            child: Text(transport.estimatedDuration, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.primary)),
+            child: Text(transport.estimatedDuration, style: const TextStyle( fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.primary)),
           ),
         ],
       ),

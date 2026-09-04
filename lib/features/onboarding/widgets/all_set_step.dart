@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 
@@ -86,7 +87,6 @@ class _AllSetStepState extends State<AllSetStep>
                 child: const Text(
                   'Step 6 of 6',
                   style: TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: AppColors.primaryLight,
@@ -102,7 +102,7 @@ class _AllSetStepState extends State<AllSetStep>
                   "You're all set,\n${widget.userName}!",
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                    fontFamily: 'Playfair Display',
+                    fontFamily: AppTextStyles.fontHeading,
                     fontSize: 36,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
@@ -118,7 +118,6 @@ class _AllSetStepState extends State<AllSetStep>
                   'Connected with Google. Your first adventure is\nwaiting to be planned.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 14,
                     color: Colors.white.withValues(alpha: 0.45),
                     height: 1.5,
@@ -189,7 +188,6 @@ class _AllSetStepState extends State<AllSetStep>
                   child: const Text(
                     "Tara na! Let's go",
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
@@ -239,7 +237,6 @@ class _SetupRow extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 13,
               color: Colors.white.withValues(alpha: 0.35),
             ),
@@ -260,7 +257,6 @@ class _SetupRow extends StatelessWidget {
               Text(
                 value,
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
                   color: valueColor ?? Colors.white70,

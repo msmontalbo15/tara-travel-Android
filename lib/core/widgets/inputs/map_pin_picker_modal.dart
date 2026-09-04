@@ -252,7 +252,6 @@ class _MapPinPickerModalState extends State<MapPinPickerModal> {
                     child: Text(
                       _isGeocoding ? 'Locating...' : 'Set Pin Here',
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
@@ -305,14 +304,12 @@ class _MapPinPickerModalState extends State<MapPinPickerModal> {
                           controller: _searchCtrl,
                           focusNode: _searchFocusNode,
                           style: const TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 14,
                             color: AppColors.textPrimary,
                           ),
                           decoration: const InputDecoration(
                             hintText: 'Search Philippine places...',
                             hintStyle: TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 13,
                               color: AppColors.muted,
                             ),
@@ -373,7 +370,6 @@ class _MapPinPickerModalState extends State<MapPinPickerModal> {
                           title: Text(
                             item.displayName,
                             style: const TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
                               color: AppColors.textPrimary,
@@ -449,7 +445,6 @@ class _MapPinPickerModalState extends State<MapPinPickerModal> {
                             Text(
                               _placeName,
                               style: const TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.textPrimary,
@@ -461,7 +456,6 @@ class _MapPinPickerModalState extends State<MapPinPickerModal> {
                               Text(
                                 _fullAddress,
                                 style: const TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 12,
                                   color: AppColors.muted,
                                 ),
@@ -503,7 +497,6 @@ class _MapPinPickerModalState extends State<MapPinPickerModal> {
                           Text(
                             'Confirm Pin Location',
                             style: TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,

@@ -113,7 +113,6 @@ class ItineraryFulfillmentBanner extends StatelessWidget {
                           Text(
                             '$pct%',
                             style: const TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 14,
                               fontWeight: FontWeight.w800,
                               color: Colors.white,
@@ -134,7 +133,6 @@ class ItineraryFulfillmentBanner extends StatelessWidget {
                       Text(
                         '$completed of $total stops visited',
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
@@ -151,7 +149,6 @@ class ItineraryFulfillmentBanner extends StatelessWidget {
                               child: Text(
                                 'Next: ${nextStop.title}',
                                 style: const TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 11,
                                   color: AppColors.amber,
                                   fontWeight: FontWeight.w600,
@@ -194,7 +191,6 @@ class ItineraryFulfillmentBanner extends StatelessWidget {
                         Text(
                           'Go',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
                             color: AppColors.amber,
@@ -253,7 +249,6 @@ class _SquadPresenceRow extends StatelessWidget {
                   child: Text(
                     m.initials.substring(0, 1),
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 9,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
@@ -271,7 +266,6 @@ class _SquadPresenceRow extends StatelessWidget {
                 ? '${members.first.name.split(' ').first} is out there'
                 : '${members.length} members on the move',
             style: TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 11,
               color: Colors.white.withValues(alpha: 0.6),
             ),

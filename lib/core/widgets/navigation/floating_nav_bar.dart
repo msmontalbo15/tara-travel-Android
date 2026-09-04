@@ -140,7 +140,6 @@ class FloatingNavBar extends StatelessWidget {
               Text(
                 label,
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 10,
                   fontWeight: active ? FontWeight.w600 : FontWeight.w500,
                   color: active ? AppColors.primary : AppColors.warmMuted,

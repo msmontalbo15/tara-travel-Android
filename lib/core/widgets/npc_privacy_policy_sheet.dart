@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../theme/app_colors.dart';
@@ -87,7 +88,7 @@ class NpcPrivacyPolicySheet extends StatelessWidget {
                       Text(
                         'Terms & Data Privacy Policy',
                         style: TextStyle(
-                          fontFamily: 'Playfair Display',
+                          fontFamily: AppTextStyles.fontHeading,
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
                           color: AppColors.textPrimary,
@@ -97,7 +98,6 @@ class NpcPrivacyPolicySheet extends StatelessWidget {
                       Text(
                         'Republic Act No. 10173 (DPA of 2012) • NPC Compliant',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 11,
                           color: AppColors.textSecondary,
                           fontWeight: FontWeight.w500,
@@ -151,7 +151,6 @@ class NpcPrivacyPolicySheet extends StatelessWidget {
                             Text(
                               'National Privacy Commission Compliance',
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.textPrimary,
@@ -163,7 +162,6 @@ class NpcPrivacyPolicySheet extends StatelessWidget {
                         const Text(
                           'Tara Travel strictly adheres to the data privacy principles of Transparency, Legitimate Purpose, and Proportionality as mandated by the National Privacy Commission of the Philippines (NPC).',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 12,
                             color: AppColors.textSecondary,
                             height: 1.4,
@@ -178,7 +176,6 @@ class NpcPrivacyPolicySheet extends StatelessWidget {
                               Text(
                                 'Visit Official NPC Website (privacy.gov.ph)',
                                 style: TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.primary,
@@ -262,7 +259,6 @@ class NpcPrivacyPolicySheet extends StatelessWidget {
                       child: const Text(
                         'I Understand & Agree',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                         ),
@@ -287,7 +283,6 @@ class NpcPrivacyPolicySheet extends StatelessWidget {
           Text(
             title,
             style: const TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 14,
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimary,
@@ -297,7 +292,6 @@ class NpcPrivacyPolicySheet extends StatelessWidget {
           Text(
             content,
             style: const TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 13,
               color: AppColors.textSecondary,
               height: 1.45,

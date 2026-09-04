@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -94,7 +95,7 @@ class ChatAttachmentPickerSheet extends ConsumerWidget {
             const Text(
               'Select Itinerary Stop to Share',
               style: TextStyle(
-                fontFamily: 'Playfair Display',
+                fontFamily: AppTextStyles.fontHeading,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: AppColors.deepEarth,
@@ -121,14 +122,13 @@ class ChatAttachmentPickerSheet extends ConsumerWidget {
                     title: Text(
                       item.stop.title,
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),
                     ),
                     subtitle: Text(
                       'Day ${item.dayNumber} · ${(item.stop.location != null && item.stop.location!.isNotEmpty) ? item.stop.location! : 'No location specified'}',
-                      style: const TextStyle(fontFamily: 'DM Sans', fontSize: 11, color: AppColors.muted),
+                      style: const TextStyle( fontSize: 11, color: AppColors.muted),
                     ),
                     trailing: const Icon(Icons.send_rounded, color: AppColors.primary, size: 18),
                     onTap: () {
@@ -193,7 +193,7 @@ class ChatAttachmentPickerSheet extends ConsumerWidget {
             const Text(
               'Select Expense / Bill to Share',
               style: TextStyle(
-                fontFamily: 'Playfair Display',
+                fontFamily: AppTextStyles.fontHeading,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: AppColors.deepEarth,
@@ -220,14 +220,13 @@ class ChatAttachmentPickerSheet extends ConsumerWidget {
                     title: Text(
                       exp.description,
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),
                     ),
                     subtitle: Text(
                       '₱${exp.amount.toStringAsFixed(2)} · ${exp.category.name.toUpperCase()}',
-                      style: const TextStyle(fontFamily: 'DM Sans', fontSize: 11, color: AppColors.muted),
+                      style: const TextStyle( fontSize: 11, color: AppColors.muted),
                     ),
                     trailing: const Icon(Icons.send_rounded, color: AppColors.primary, size: 18),
                     onTap: () {
@@ -296,7 +295,7 @@ class ChatAttachmentPickerSheet extends ConsumerWidget {
             const Text(
               'Select Urgent Packing Item',
               style: TextStyle(
-                fontFamily: 'Playfair Display',
+                fontFamily: AppTextStyles.fontHeading,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: AppColors.deepEarth,
@@ -323,7 +322,6 @@ class ChatAttachmentPickerSheet extends ConsumerWidget {
                     title: Text(
                       item.name,
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),
@@ -331,7 +329,6 @@ class ChatAttachmentPickerSheet extends ConsumerWidget {
                     subtitle: Text(
                       item.isAssigned ? 'Assigned' : '⚠️ Needs someone to bring this',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 11,
                         color: item.isAssigned ? AppColors.muted : AppColors.primary,
                       ),
@@ -448,7 +445,7 @@ class ChatAttachmentPickerSheet extends ConsumerWidget {
               const Text(
                 'Trip Actions & Attachments',
                 style: TextStyle(
-                  fontFamily: 'Playfair Display',
+                  fontFamily: AppTextStyles.fontHeading,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: AppColors.deepEarth,
@@ -579,7 +576,6 @@ class ChatAttachmentPickerSheet extends ConsumerWidget {
               const Text(
                 'QUICK TRAVEL ALERTS',
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
                   color: AppColors.darkAccent,
@@ -674,7 +670,6 @@ class _AttachmentTile extends StatelessWidget {
                   Text(
                     title,
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 12.5,
                       fontWeight: FontWeight.w700,
                       color: AppColors.deepEarth,
@@ -686,7 +681,6 @@ class _AttachmentTile extends StatelessWidget {
                   Text(
                     subtitle,
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 10.5,
                       color: AppColors.muted,
                     ),
@@ -732,7 +726,6 @@ class _QuickChip extends StatelessWidget {
           Text(
             text,
             style: const TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 11,
               fontWeight: FontWeight.w600,
               color: AppColors.deepEarth,

@@ -204,7 +204,6 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                         child: Text(
                           'Complete your profile setup',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimary,
@@ -220,7 +219,6 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                         child: const Text(
                           'Action Required',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
@@ -233,7 +231,6 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                   Text(
                     'Add your ${missingTasks.join(' and ')} to easily settle group expenses and unlock all features.',
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
                       color: AppColors.textPrimary,
@@ -246,7 +243,6 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                       Text(
                         'Complete setup now',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                           color: AppColors.primary,
@@ -304,7 +300,6 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
               child: const Text(
                 'Mark all read',
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: AppColors.primary,
@@ -343,7 +338,6 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                       child: Text(
                         filter,
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: isSelected ? Colors.white : AppColors.textSecondary,
@@ -367,7 +361,6 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                         Text(
                           'No notifications found.',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 15,
                             color: AppColors.warmMuted,
                           ),
@@ -448,7 +441,6 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                                           child: Text(
                                             item.title,
                                             style: const TextStyle(
-                                              fontFamily: 'DM Sans',
                                               fontSize: 14,
                                               fontWeight: FontWeight.w700,
                                               color: AppColors.textPrimary,
@@ -458,7 +450,6 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                                         Text(
                                           _formatTime(item.timestamp),
                                           style: const TextStyle(
-                                            fontFamily: 'DM Sans',
                                             fontSize: 11,
                                             fontWeight: FontWeight.w500,
                                             color: AppColors.warmMuted,
@@ -470,7 +461,6 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                                     Text(
                                       item.message,
                                       style: TextStyle(
-                                        fontFamily: 'DM Sans',
                                         fontSize: 13,
                                         fontWeight: item.isRead
                                             ? FontWeight.w400

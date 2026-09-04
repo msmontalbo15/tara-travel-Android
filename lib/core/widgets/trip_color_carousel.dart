@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
@@ -256,7 +257,6 @@ class _TripColorCarouselState extends State<TripColorCarousel> {
                                             Text(
                                               theme.tag,
                                               style: const TextStyle(
-                                                fontFamily: 'DM Sans',
                                                 fontSize: 10,
                                                 fontWeight: FontWeight.w600,
                                                 color: Colors.white,
@@ -288,7 +288,7 @@ class _TripColorCarouselState extends State<TripColorCarousel> {
                                       Text(
                                         theme.name,
                                         style: const TextStyle(
-                                          fontFamily: 'Playfair Display',
+                                          fontFamily: AppTextStyles.fontHeading,
                                           fontSize: 20,
                                           fontWeight: FontWeight.w700,
                                           color: Colors.white,
@@ -299,7 +299,6 @@ class _TripColorCarouselState extends State<TripColorCarousel> {
                                       Text(
                                         '#${theme.colorValue.toRadixString(16).substring(2).toUpperCase()}',
                                         style: TextStyle(
-                                          fontFamily: 'DM Sans',
                                           fontSize: 11,
                                           fontWeight: FontWeight.w600,
                                           color: Colors.white.withValues(alpha: 0.75),

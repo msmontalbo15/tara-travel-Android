@@ -48,7 +48,6 @@ class BudgetRingChart extends StatelessWidget {
                 Text(
                   '${(percentage * 100).toInt()}%',
                   style: const TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
@@ -58,7 +57,6 @@ class BudgetRingChart extends StatelessWidget {
                 Text(
                   label.toUpperCase(),
                   style: TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 9,
                     fontWeight: FontWeight.w500,
                     color: Colors.white.withValues(alpha: 0.45),

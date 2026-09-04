@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
@@ -128,7 +129,6 @@ class _NicknameBirthdayStepState extends State<NicknameBirthdayStep>
                           child: const Text(
                             'Step 4 of 7',
                             style: TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                               color: AppColors.primary,
@@ -139,7 +139,7 @@ class _NicknameBirthdayStepState extends State<NicknameBirthdayStep>
                         const Text(
                           'Nickname & Birthday',
                           style: TextStyle(
-                            fontFamily: 'Playfair Display',
+                            fontFamily: AppTextStyles.fontHeading,
                             fontSize: 32,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimary,
@@ -150,7 +150,6 @@ class _NicknameBirthdayStepState extends State<NicknameBirthdayStep>
                         const Text(
                           'Help your travel companions know what to call you and when to celebrate!',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 14,
                             color: AppColors.textSecondary,
                             height: 1.5,
@@ -162,7 +161,6 @@ class _NicknameBirthdayStepState extends State<NicknameBirthdayStep>
                         const Text(
                           'Nickname / Preferred Name',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                             color: AppColors.textPrimary,
@@ -172,8 +170,7 @@ class _NicknameBirthdayStepState extends State<NicknameBirthdayStep>
                         TextField(
                           controller: _nicknameCtrl,
                           textCapitalization: TextCapitalization.words,
-                          style: const TextStyle(
-                              fontFamily: 'DM Sans', fontSize: 15),
+                          style: const TextStyle( fontSize: 15),
                           decoration: InputDecoration(
                             hintText: 'e.g. Spence, Alex',
                             hintStyle: TextStyle(
@@ -206,7 +203,6 @@ class _NicknameBirthdayStepState extends State<NicknameBirthdayStep>
                         const Text(
                           'Date of Birth',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                             color: AppColors.textPrimary,
@@ -237,7 +233,6 @@ class _NicknameBirthdayStepState extends State<NicknameBirthdayStep>
                                   child: Text(
                                     formattedDobDisplay,
                                     style: TextStyle(
-                                      fontFamily: 'DM Sans',
                                       fontSize: 15,
                                       fontWeight: _selectedDate != null
                                           ? FontWeight.w600
@@ -282,7 +277,6 @@ class _NicknameBirthdayStepState extends State<NicknameBirthdayStep>
                           child: const Text(
                             'Continue',
                             style: TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
                             ),
@@ -295,7 +289,6 @@ class _NicknameBirthdayStepState extends State<NicknameBirthdayStep>
                         child: const Text(
                           'Skip for now',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                             color: AppColors.textSecondary,

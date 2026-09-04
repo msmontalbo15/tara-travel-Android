@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/models/itinerary_model.dart';
@@ -69,7 +70,7 @@ class DayActionsSheet extends StatelessWidget {
             const Text(
               'Move Stop to Another Day',
               style: TextStyle(
-                fontFamily: 'Playfair Display',
+                fontFamily: AppTextStyles.fontHeading,
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
                 color: AppColors.deepEarth,
@@ -92,7 +93,6 @@ class DayActionsSheet extends StatelessWidget {
                         child: Text(
                           stop.title,
                           style: const TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                           ),
@@ -115,7 +115,7 @@ class DayActionsSheet extends StatelessWidget {
                         itemBuilder: (_) => allDays.asMap().entries.where((e) => e.key != activeDayIndex).map((e) {
                           return PopupMenuItem(
                             value: e.key,
-                            child: Text('Move to Day ${e.key + 1}', style: const TextStyle(fontFamily: 'DM Sans')),
+                            child: Text('Move to Day ${e.key + 1}', style: const TextStyle()),
                           );
                         }).toList(),
                       ),
@@ -179,7 +179,7 @@ class DayActionsSheet extends StatelessWidget {
                     Text(
                       'Day ${day.dayNumber} Quick Actions',
                       style: const TextStyle(
-                        fontFamily: 'Playfair Display',
+                        fontFamily: AppTextStyles.fontHeading,
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
                         color: AppColors.deepEarth,
@@ -188,7 +188,6 @@ class DayActionsSheet extends StatelessWidget {
                     Text(
                       '${day.stops.length} stop${day.stops.length == 1 ? '' : 's'} scheduled',
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 12,
                         color: AppColors.muted,
                       ),
@@ -206,7 +205,6 @@ class DayActionsSheet extends StatelessWidget {
             child: Text(
               'SHIFT DAY SCHEDULE',
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.2,
@@ -339,7 +337,6 @@ class DayActionsSheet extends StatelessWidget {
           child: Text(
             label,
             style: const TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 11,
               fontWeight: FontWeight.w700,
               color: AppColors.deepEarth,
@@ -381,7 +378,6 @@ class _ActionTile extends StatelessWidget {
       title: Text(
         title,
         style: const TextStyle(
-          fontFamily: 'DM Sans',
           fontSize: 14,
           fontWeight: FontWeight.w700,
           color: AppColors.deepEarth,
@@ -390,7 +386,6 @@ class _ActionTile extends StatelessWidget {
       subtitle: Text(
         subtitle,
         style: const TextStyle(
-          fontFamily: 'DM Sans',
           fontSize: 11,
           color: AppColors.muted,
         ),

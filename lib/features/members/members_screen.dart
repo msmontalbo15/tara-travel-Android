@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -82,8 +83,8 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Members', style: TextStyle(fontFamily: 'Playfair Display', fontSize: 26, fontWeight: FontWeight.w700, color: Colors.white)),
-                            Text('${approvedMembers.length} travelers · ${trip.name}', style: const TextStyle(fontFamily: 'DM Sans', fontSize: 13, color: Colors.white54)),
+                            const Text('Members', style: TextStyle(fontFamily: AppTextStyles.fontHeading, fontSize: 26, fontWeight: FontWeight.w700, color: Colors.white)),
+                            Text('${approvedMembers.length} travelers · ${trip.name}', style: const TextStyle( fontSize: 13, color: Colors.white54)),
                           ],
                         ),
                       ),
@@ -103,7 +104,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                               children: [
                                 Icon(Icons.logout_rounded, size: 14, color: AppColors.red),
                                 SizedBox(width: 5),
-                                Text('Leave', style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.red)),
+                                Text('Leave', style: TextStyle( fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.red)),
                               ],
                             ),
                           ),
@@ -124,7 +125,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                       const SizedBox(height: 20),
 
                       if (pendingMembers.isNotEmpty) ...[
-                        const Text('PENDING APPROVAL', style: TextStyle(fontFamily: 'DM Sans', fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.amber, letterSpacing: 1.5)),
+                        const Text('PENDING APPROVAL', style: TextStyle( fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.amber, letterSpacing: 1.5)),
                         const SizedBox(height: 12),
                         ...pendingMembers.map((m) => _PendingMemberCard(
                           member: m,
@@ -137,7 +138,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('TRIP MEMBERS', style: TextStyle(fontFamily: 'DM Sans', fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.warmMuted, letterSpacing: 1.5)),
+                          const Text('TRIP MEMBERS', style: TextStyle( fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.warmMuted, letterSpacing: 1.5)),
                           if (canManageMembers && approvedMembers.length > 1)
                             GestureDetector(
                               onTap: () => _showBatchRoleEditor(context, trip.id, approvedMembers),
@@ -155,7 +156,6 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                                     Text(
                                       'Batch Assign',
                                       style: TextStyle(
-                                        fontFamily: 'DM Sans',
                                         fontSize: 11,
                                         fontWeight: FontWeight.w700,
                                         color: AppColors.primary,
@@ -330,7 +330,6 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
               SizedBox(width: 8),
               Text('Trip Invite Code',
                   style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                       color: Colors.white)),
@@ -349,7 +348,6 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                 child: Text(
                   code,
                   style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 24,
                       fontWeight: FontWeight.w800,
                       color: Colors.white,
@@ -363,12 +361,10 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                   children: [
                     const Text('Share this code',
                         style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 12,
                             color: Colors.white70)),
                     const Text('Anyone with this code can join instantly',
                         style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 11,
                             color: Colors.white38)),
                     const SizedBox(height: 8),
@@ -510,9 +506,9 @@ class _PendingMemberCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(member.name, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.deepEarth)),
+                Text(member.name, style: const TextStyle( fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.deepEarth)),
                 const SizedBox(height: 4),
-                const Text('Wants to join', style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, color: AppColors.muted)),
+                const Text('Wants to join', style: TextStyle( fontSize: 12, color: AppColors.muted)),
               ],
             ),
           ),
@@ -622,7 +618,6 @@ class _MemberCard extends StatelessWidget {
                       child: Text(
                         member.name,
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                           color: AppColors.deepEarth,
@@ -651,7 +646,6 @@ class _MemberCard extends StatelessWidget {
                             Text(
                               'Creator',
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 9,
                                 fontWeight: FontWeight.w800,
                                 color: AppColors.primary,
@@ -675,7 +669,6 @@ class _MemberCard extends StatelessWidget {
                   Text(
                     member.gcashNumber!,
                     style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 11,
                         color: AppColors.muted),
                   ),
@@ -747,7 +740,6 @@ class _MemberCard extends StatelessWidget {
       child: Text(
         role.displayName,
         style: TextStyle(
-          fontFamily: 'DM Sans',
           fontSize: 10,
           fontWeight: FontWeight.w700,
           color: role.color,
@@ -800,15 +792,14 @@ class _RoleEditorSheetState extends ConsumerState<_RoleEditorSheet> {
           const SizedBox(height: 20),
           Text('Edit Roles — ${widget.member.name}',
               style: const TextStyle(
-                  fontFamily: 'Playfair Display',
+                  fontFamily: AppTextStyles.fontHeading,
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
                   color: AppColors.deepEarth)),
           const SizedBox(height: 6),
           const Text(
               'Members can have multiple roles simultaneously. Permissions update in real-time.',
-              style: TextStyle(
-                  fontFamily: 'DM Sans', fontSize: 12, color: AppColors.muted)),
+              style: TextStyle( fontSize: 12, color: AppColors.muted)),
           const SizedBox(height: 20),
           ...MemberRole.values.map((role) => _roleCheckbox(role)),
           const SizedBox(height: 20),
@@ -861,7 +852,7 @@ class _RoleEditorSheetState extends ConsumerState<_RoleEditorSheet> {
                       height: 20,
                       child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                   : const Text('Save Changes',
-                      style: TextStyle(fontFamily: 'DM Sans', fontSize: 15, fontWeight: FontWeight.w600)),
+                      style: TextStyle( fontSize: 15, fontWeight: FontWeight.w600)),
             ),
           ),
           // Remove Member — destructive, only for organizers on non-creator members
@@ -885,7 +876,7 @@ class _RoleEditorSheetState extends ConsumerState<_RoleEditorSheet> {
                 ),
                 icon: const Icon(Icons.person_remove_outlined, size: 18),
                 label: const Text('Remove from Trip',
-                    style: TextStyle(fontFamily: 'DM Sans', fontSize: 15, fontWeight: FontWeight.w600)),
+                    style: TextStyle( fontSize: 15, fontWeight: FontWeight.w600)),
               ),
             ),
           ],
@@ -910,13 +901,11 @@ class _RoleEditorSheetState extends ConsumerState<_RoleEditorSheet> {
       },
       title: Text(role.displayName,
           style: const TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 14,
               fontWeight: FontWeight.w600,
               color: AppColors.deepEarth)),
       subtitle: Text(role.description,
-          style: const TextStyle(
-              fontFamily: 'DM Sans', fontSize: 11, color: AppColors.muted)),
+          style: const TextStyle( fontSize: 11, color: AppColors.muted)),
       activeColor: role.color,
       contentPadding: const EdgeInsets.symmetric(horizontal: 0),
     );
@@ -947,7 +936,7 @@ class _ContactSheet extends ConsumerWidget {
             child: Center(child: Text(member.initials, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white))),
           ),
           const SizedBox(height: 12),
-          Text(member.name, style: const TextStyle(fontFamily: 'Playfair Display', fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.deepEarth)),
+          Text(member.name, style: const TextStyle(fontFamily: AppTextStyles.fontHeading, fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.deepEarth)),
           const SizedBox(height: 20),
           _contactRow(
             icon: Icons.person_add_rounded,
@@ -1022,8 +1011,8 @@ class _ContactSheet extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(action, style: TextStyle(fontFamily: 'DM Sans', fontSize: 14, fontWeight: FontWeight.w600, color: color)),
-                  Text(detail, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 12, color: AppColors.muted)),
+                  Text(action, style: TextStyle( fontSize: 14, fontWeight: FontWeight.w600, color: color)),
+                  Text(detail, style: const TextStyle( fontSize: 12, color: AppColors.muted)),
                 ],
               ),
             ),
@@ -1079,7 +1068,7 @@ class _BatchRoleEditorSheetState extends ConsumerState<_BatchRoleEditorSheet> {
           const Text(
             'Batch Assign Roles',
             style: TextStyle(
-              fontFamily: 'Playfair Display',
+              fontFamily: AppTextStyles.fontHeading,
               fontSize: 20,
               fontWeight: FontWeight.w700,
               color: AppColors.deepEarth,
@@ -1089,7 +1078,6 @@ class _BatchRoleEditorSheetState extends ConsumerState<_BatchRoleEditorSheet> {
           const Text(
             'Select multiple members and assign common roles at once.',
             style: TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 12,
               color: AppColors.muted,
             ),
@@ -1103,7 +1091,6 @@ class _BatchRoleEditorSheetState extends ConsumerState<_BatchRoleEditorSheet> {
               const Text(
                 'TARGET MEMBERS',
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   color: AppColors.warmMuted,
@@ -1123,7 +1110,6 @@ class _BatchRoleEditorSheetState extends ConsumerState<_BatchRoleEditorSheet> {
                 child: Text(
                   _selectedMemberIds.length == widget.members.length ? 'Clear All' : 'Select All',
                   style: const TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     color: AppColors.primary,
@@ -1172,7 +1158,6 @@ class _BatchRoleEditorSheetState extends ConsumerState<_BatchRoleEditorSheet> {
                         Text(
                           m.name.split(' ').first,
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: active ? Colors.white : m.color,
@@ -1194,7 +1179,6 @@ class _BatchRoleEditorSheetState extends ConsumerState<_BatchRoleEditorSheet> {
           const Text(
             'SELECT ROLES TO APPLY',
             style: TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 11,
               fontWeight: FontWeight.w700,
               color: AppColors.warmMuted,
@@ -1219,7 +1203,6 @@ class _BatchRoleEditorSheetState extends ConsumerState<_BatchRoleEditorSheet> {
               title: Text(
                 role.displayName,
                 style: const TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: AppColors.deepEarth,
@@ -1228,7 +1211,6 @@ class _BatchRoleEditorSheetState extends ConsumerState<_BatchRoleEditorSheet> {
               subtitle: Text(
                 role.description,
                 style: const TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 11,
                   color: AppColors.muted,
                 ),
@@ -1298,7 +1280,6 @@ class _BatchRoleEditorSheetState extends ConsumerState<_BatchRoleEditorSheet> {
                           ? 'Select members to apply'
                           : 'Apply Roles to ${_selectedMemberIds.length} Members',
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                       ),

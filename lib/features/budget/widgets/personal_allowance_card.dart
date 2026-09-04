@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import '../../../core/models/personal_allowance_model.dart';
 import '../../../core/theme/app_colors.dart';
@@ -80,7 +81,6 @@ class PersonalAllowanceCard extends StatelessWidget {
                             ? 'MY ALLOWANCE · ${tripDestination!.toUpperCase()}'
                             : 'MY TRIP ALLOWANCE',
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 0.8,
@@ -122,7 +122,6 @@ class PersonalAllowanceCard extends StatelessWidget {
                       Text(
                         'Edit',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                           color: Colors.white,
@@ -141,7 +140,7 @@ class PersonalAllowanceCard extends StatelessWidget {
             Text(
               tripName!,
               style: const TextStyle(
-                fontFamily: 'Playfair Display',
+                fontFamily: AppTextStyles.fontHeading,
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
                 color: Colors.white,
@@ -162,7 +161,7 @@ class PersonalAllowanceCard extends StatelessWidget {
                 child: Text(
                   '₱${CurrencyUtils.formatAmount(total)}',
                   style: const TextStyle(
-                    fontFamily: 'Playfair Display',
+                    fontFamily: AppTextStyles.fontHeading,
                     fontSize: 32,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
@@ -176,7 +175,6 @@ class PersonalAllowanceCard extends StatelessWidget {
               Text(
                 'total budget',
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 12,
                   color: Colors.white.withValues(alpha: 0.5),
                 ),
@@ -284,7 +282,6 @@ class PersonalAllowanceCard extends StatelessWidget {
                     child: Text(
                       '₱${CurrencyUtils.formatAmount(contingency)} (${(allowance!.emergencyBufferPercent * 100).toInt()}%) Emergency Reserve',
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: Color(0xFFF59E0B),
@@ -313,7 +310,6 @@ class PersonalAllowanceCard extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 10,
               fontWeight: FontWeight.w500,
               color: Colors.white.withValues(alpha: 0.6),
@@ -323,7 +319,6 @@ class PersonalAllowanceCard extends StatelessWidget {
           Text(
             amount,
             style: TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 13,
               fontWeight: FontWeight.w700,
               color: color,
@@ -356,7 +351,6 @@ class PersonalAllowanceCard extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
-            fontFamily: 'DM Sans',
             fontSize: 10,
             fontWeight: FontWeight.w500,
             color: Colors.white.withValues(alpha: 0.6),
@@ -403,7 +397,7 @@ class PersonalAllowanceCard extends StatelessWidget {
                 ? 'Track Your $tripDestination Allowance'
                 : 'Track Your Personal Allowance',
             style: const TextStyle(
-              fontFamily: 'Playfair Display',
+              fontFamily: AppTextStyles.fontHeading,
               fontSize: 18,
               fontWeight: FontWeight.w700,
               color: AppColors.deepEarth,
@@ -417,7 +411,6 @@ class PersonalAllowanceCard extends StatelessWidget {
             'Set your personal spending target for souvenirs, snacks, and solo activities without affecting group bills.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 12,
               color: Color(0xFF6B7280),
             ),
@@ -429,7 +422,6 @@ class PersonalAllowanceCard extends StatelessWidget {
             label: const Text(
               'Set Personal Allowance',
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
               ),

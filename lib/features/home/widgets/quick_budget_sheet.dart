@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -139,7 +140,7 @@ class _QuickBudgetSheetState extends ConsumerState<QuickBudgetSheet> {
                     const Text(
                       'Trip Budget',
                       style: TextStyle(
-                        fontFamily: 'Playfair Display',
+                        fontFamily: AppTextStyles.fontHeading,
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
                         color: AppColors.deepEarth,
@@ -150,7 +151,6 @@ class _QuickBudgetSheetState extends ConsumerState<QuickBudgetSheet> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
                         color: AppColors.warmMuted,
@@ -178,7 +178,6 @@ class _QuickBudgetSheetState extends ConsumerState<QuickBudgetSheet> {
                   const Text(
                     'Current Total Spent:',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 13,
                       color: AppColors.textSecondary,
                     ),
@@ -186,7 +185,6 @@ class _QuickBudgetSheetState extends ConsumerState<QuickBudgetSheet> {
                   Text(
                     '₱${CurrencyUtils.formatAmount(widget.trip.totalSpent)}',
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimary,
@@ -209,7 +207,6 @@ class _QuickBudgetSheetState extends ConsumerState<QuickBudgetSheet> {
                     label: Text(
                       '₱${CurrencyUtils.formatAmount(preset.toDouble())}',
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: AppColors.deepEarth,
@@ -239,7 +236,6 @@ class _QuickBudgetSheetState extends ConsumerState<QuickBudgetSheet> {
               FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
             ],
             style: const TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 22,
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimary,
@@ -247,14 +243,12 @@ class _QuickBudgetSheetState extends ConsumerState<QuickBudgetSheet> {
             decoration: InputDecoration(
               prefixText: '₱ ',
               prefixStyle: const TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
                 color: AppColors.primary,
               ),
               hintText: '0',
               hintStyle: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
                 color: AppColors.warmMuted.withValues(alpha: 0.5),
@@ -294,7 +288,6 @@ class _QuickBudgetSheetState extends ConsumerState<QuickBudgetSheet> {
                   child: const Text(
                     'Cancel',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textSecondary,
@@ -327,7 +320,6 @@ class _QuickBudgetSheetState extends ConsumerState<QuickBudgetSheet> {
                       : const Text(
                           'Save Budget',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
                             color: Colors.white,

@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
@@ -60,8 +61,8 @@ class AppBrandLogo extends StatelessWidget {
             Text(
               'Tara',
               style: TextStyle(
-                fontFamily: 'Playfair Display',
-                fontFamilyFallback: const ['Georgia', 'serif'],
+                fontFamily: AppTextStyles.fontHeading,
+                fontFamilyFallback: AppTextStyles.serifFallbacks,
                 fontSize: size * 0.65,
                 fontWeight: FontWeight.w700,
                 color: isDark ? Colors.white : AppColors.textPrimary,
@@ -71,8 +72,8 @@ class AppBrandLogo extends StatelessWidget {
             Text(
               subtitle ?? 'TRAVEL',
               style: TextStyle(
-                fontFamily: 'Playfair Display',
-                fontFamilyFallback: const ['Georgia', 'serif'],
+                fontFamily: AppTextStyles.fontHeading,
+                fontFamilyFallback: AppTextStyles.serifFallbacks,
                 fontSize: (size * 0.28).clamp(9.0, 13.0),
                 fontWeight: FontWeight.w400,
                 fontStyle: FontStyle.italic,

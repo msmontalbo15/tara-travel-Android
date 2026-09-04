@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -392,7 +393,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Delete Message?',
-            style: TextStyle(fontFamily: 'Playfair Display', fontWeight: FontWeight.bold)),
+            style: TextStyle(fontFamily: AppTextStyles.fontHeading, fontWeight: FontWeight.bold)),
         content: const Text('This will delete this message for everyone in the group chat.'),
         actions: [
           TextButton(
@@ -637,7 +638,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                               'Unable to load messages.\nSign in to access group chat.',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 14,
                                 color: AppColors.warmMuted.withValues(alpha: 0.8),
                               ),
@@ -855,7 +855,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           child: Text(
             text,
             style: const TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 11,
               fontWeight: FontWeight.w700,
               color: AppColors.darkAccent,
@@ -944,7 +943,7 @@ class _ChatHeader extends StatelessWidget {
                         child: Text(
                           tripTitle,
                           style: const TextStyle(
-                            fontFamily: 'Playfair Display',
+                            fontFamily: AppTextStyles.fontHeading,
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
@@ -977,7 +976,6 @@ class _ChatHeader extends StatelessWidget {
                               ? '$memberCount travelers  ·  Live Chat & Polls'
                               : 'Select a trip to start chatting',
                           style: const TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 11,
                             color: Colors.white70,
                           ),
@@ -1015,7 +1013,6 @@ class _ChatHeader extends StatelessWidget {
                     Text(
                       '$pinnedCount',
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
@@ -1096,7 +1093,6 @@ class _PinnedAnnouncementBanner extends StatelessWidget {
                         Text(
                           'PINNED ANNOUNCEMENT · ${pinned.senderName}',
                           style: const TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
                             color: AppColors.darkAccent,
@@ -1114,7 +1110,6 @@ class _PinnedAnnouncementBanner extends StatelessWidget {
                             child: Text(
                               '+${messages.length - 1} more',
                               style: const TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 9,
                                 fontWeight: FontWeight.bold,
                                 color: AppColors.primary,
@@ -1128,7 +1123,6 @@ class _PinnedAnnouncementBanner extends StatelessWidget {
                     Text(
                       pinned.text,
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: AppColors.deepEarth,
@@ -1190,7 +1184,6 @@ class _QuickActionChips extends StatelessWidget {
                     Text(
                       'Create Poll',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
@@ -1269,7 +1262,6 @@ class _QuickChip extends StatelessWidget {
             Text(
               text,
               style: const TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
                 color: AppColors.deepEarth,
@@ -1367,7 +1359,6 @@ class _InputBar extends StatelessWidget {
                 maxLines: 4,
                 keyboardType: TextInputType.multiline,
                 style: const TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 14,
                   color: AppColors.deepEarth,
                 ),
@@ -1377,7 +1368,6 @@ class _InputBar extends StatelessWidget {
                       ? 'Select a trip to chat...'
                       : 'Send message to group...',
                   hintStyle: const TextStyle(
-                    fontFamily: 'DM Sans',
                     color: AppColors.muted,
                     fontSize: 13,
                   ),
@@ -1495,7 +1485,6 @@ class _MyBubble extends StatelessWidget {
                                 Text(
                                   'Pinned',
                                   style: TextStyle(
-                                    fontFamily: 'DM Sans',
                                     fontSize: 9,
                                     fontWeight: FontWeight.w700,
                                     color: Colors.white,
@@ -1522,7 +1511,6 @@ class _MyBubble extends StatelessWidget {
                                 Text(
                                   'TRAVEL ALERT',
                                   style: TextStyle(
-                                    fontFamily: 'DM Sans',
                                     fontSize: 9,
                                     fontWeight: FontWeight.w800,
                                     color: Colors.white,
@@ -1538,7 +1526,6 @@ class _MyBubble extends StatelessWidget {
                           Text(
                             msg.text,
                             style: const TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 14,
                               color: Colors.white,
                               height: 1.35,
@@ -1572,7 +1559,6 @@ class _MyBubble extends StatelessWidget {
                             Text(
                               _formatTime(msg.createdAt),
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 10,
                                 color: Colors.white.withValues(alpha: 0.8),
                               ),
@@ -1678,7 +1664,6 @@ class _TheirBubble extends StatelessWidget {
                       child: Text(
                         msg.senderName,
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                           color: AppColors.darkAccent,
@@ -1725,7 +1710,6 @@ class _TheirBubble extends StatelessWidget {
                                 Text(
                                   'Pinned',
                                   style: TextStyle(
-                                    fontFamily: 'DM Sans',
                                     fontSize: 9,
                                     fontWeight: FontWeight.w700,
                                     color: AppColors.primary,
@@ -1753,7 +1737,6 @@ class _TheirBubble extends StatelessWidget {
                                 Text(
                                   'TRAVEL ALERT',
                                   style: TextStyle(
-                                    fontFamily: 'DM Sans',
                                     fontSize: 9,
                                     fontWeight: FontWeight.w800,
                                     color: AppColors.darkAccent,
@@ -1769,7 +1752,6 @@ class _TheirBubble extends StatelessWidget {
                           Text(
                             msg.text,
                             style: const TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 14,
                               color: AppColors.deepEarth,
                               height: 1.35,
@@ -1800,7 +1782,6 @@ class _TheirBubble extends StatelessWidget {
                         Text(
                           _formatTime(msg.createdAt),
                           style: const TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 10,
                             color: AppColors.muted,
                           ),
@@ -1901,7 +1882,7 @@ class _EmptyChat extends StatelessWidget {
                   ? 'No messages yet!'
                   : 'Select a trip to see group chat',
               style: const TextStyle(
-                fontFamily: 'Playfair Display',
+                fontFamily: AppTextStyles.fontHeading,
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
                 color: AppColors.deepEarth,
@@ -1914,7 +1895,6 @@ class _EmptyChat extends StatelessWidget {
                   : 'Join or select an active trip from the Home screen.',
               textAlign: TextAlign.center,
               style: const TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 13,
                 color: AppColors.warmMuted,
                 height: 1.4,
@@ -1925,7 +1905,6 @@ class _EmptyChat extends StatelessWidget {
               const Text(
                 'QUICK ICEBREAKERS',
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
                   color: AppColors.darkAccent,
@@ -1996,7 +1975,6 @@ class _IcebreakerChip extends StatelessWidget {
       label: Text(
         text,
         style: const TextStyle(
-          fontFamily: 'DM Sans',
           fontSize: 12,
           fontWeight: FontWeight.w600,
           color: AppColors.deepEarth,
@@ -2080,7 +2058,7 @@ class _MessageActionSheet extends StatelessWidget {
               leading: const Icon(Icons.copy_rounded, color: AppColors.deepEarth),
               title: const Text(
                 'Copy text',
-                style: TextStyle(fontFamily: 'DM Sans', fontWeight: FontWeight.w600),
+                style: TextStyle( fontWeight: FontWeight.w600),
               ),
               onTap: onCopy,
             ),
@@ -2095,7 +2073,6 @@ class _MessageActionSheet extends StatelessWidget {
                 title: Text(
                   message.isPinned ? 'Unpin message' : 'Pin message as announcement',
                   style: const TextStyle(
-                    fontFamily: 'DM Sans',
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -2110,7 +2087,6 @@ class _MessageActionSheet extends StatelessWidget {
                 title: const Text(
                   'Delete message',
                   style: TextStyle(
-                    fontFamily: 'DM Sans',
                     color: Color(0xFFEF4444),
                     fontWeight: FontWeight.w600,
                   ),
@@ -2171,7 +2147,7 @@ class _PinnedMessagesSheet extends StatelessWidget {
                 Text(
                   'Pinned Announcements (${messages.length})',
                   style: const TextStyle(
-                    fontFamily: 'Playfair Display',
+                    fontFamily: AppTextStyles.fontHeading,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: AppColors.deepEarth,
@@ -2209,7 +2185,6 @@ class _PinnedMessagesSheet extends StatelessWidget {
                             Text(
                               msg.senderName,
                               style: const TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
                                 color: AppColors.darkAccent,
@@ -2219,7 +2194,6 @@ class _PinnedMessagesSheet extends StatelessWidget {
                             Text(
                               _formatTime(msg.createdAt),
                               style: const TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 10,
                                 color: AppColors.muted,
                               ),
@@ -2238,7 +2212,6 @@ class _PinnedMessagesSheet extends StatelessWidget {
                         Text(
                           msg.text,
                           style: const TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 13,
                             color: AppColors.deepEarth,
                           ),
@@ -2296,7 +2269,7 @@ class _TripInfoSheet extends StatelessWidget {
             Text(
               tripTitle,
               style: const TextStyle(
-                fontFamily: 'Playfair Display',
+                fontFamily: AppTextStyles.fontHeading,
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: AppColors.deepEarth,
@@ -2306,7 +2279,6 @@ class _TripInfoSheet extends StatelessWidget {
             Text(
               '$memberCount travelers connected in this trip',
               style: const TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 13,
                 color: AppColors.warmMuted,
               ),
@@ -2318,7 +2290,7 @@ class _TripInfoSheet extends StatelessWidget {
             ListTile(
               leading: const Icon(Icons.people_outline_rounded, color: AppColors.primary),
               title: const Text('View All Members & Permissions',
-                  style: TextStyle(fontFamily: 'DM Sans', fontWeight: FontWeight.w600)),
+                  style: TextStyle( fontWeight: FontWeight.w600)),
               trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.muted),
               onTap: () {
                 Navigator.pop(context);
@@ -2328,7 +2300,7 @@ class _TripInfoSheet extends StatelessWidget {
             ListTile(
               leading: const Icon(Icons.map_outlined, color: AppColors.amber),
               title: const Text('Open Trip Details',
-                  style: TextStyle(fontFamily: 'DM Sans', fontWeight: FontWeight.w600)),
+                  style: TextStyle( fontWeight: FontWeight.w600)),
               trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.muted),
               onTap: () {
                 Navigator.pop(context);

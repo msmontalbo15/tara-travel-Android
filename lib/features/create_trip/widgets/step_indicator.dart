@@ -20,7 +20,6 @@ class StepIndicator extends StatelessWidget {
     return Text(
       'Step $currentStep of $totalSteps — $label',
       style: TextStyle(
-        fontFamily: 'DM Sans',
         fontSize: 12,
         color: isDark ? const Color(0xFF9C7B70) : const Color(0xFF9CA3AF),
         fontWeight: FontWeight.w500,

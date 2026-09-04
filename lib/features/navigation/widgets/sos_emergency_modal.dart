@@ -89,7 +89,6 @@ class _SosEmergencyModalState extends State<SosEmergencyModal> {
                     Text(
                       'Emergency SOS Beacon',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
                         color: Color(0xFFE24A4A),
@@ -98,7 +97,6 @@ class _SosEmergencyModalState extends State<SosEmergencyModal> {
                     Text(
                       'Broadcast live coordinates to all group members',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 12,
                         color: AppColors.textSecondary,
                       ),
@@ -114,7 +112,6 @@ class _SosEmergencyModalState extends State<SosEmergencyModal> {
           const Text(
             'QUICK SITUATION PRESETS',
             style: TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 11,
               fontWeight: FontWeight.w700,
               color: Color(0xFF8E8E93),
@@ -202,7 +199,6 @@ class _SosEmergencyModalState extends State<SosEmergencyModal> {
     return ActionChip(
       label: Text(text),
       labelStyle: const TextStyle(
-        fontFamily: 'DM Sans',
         fontSize: 11,
         fontWeight: FontWeight.w600,
         color: AppColors.textPrimary,
@@ -285,7 +281,6 @@ class ActiveSosAlertBanner extends ConsumerWidget {
                     Text(
                       '🚨 SOS ALERT FROM ${sos.memberName.toUpperCase()}',
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 12,
                         fontWeight: FontWeight.w900,
                         color: Colors.white,
@@ -295,7 +290,6 @@ class ActiveSosAlertBanner extends ConsumerWidget {
                     Text(
                       'Battery: ${sos.batteryLevel}% · ${sos.message}',
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 11,
                         color: Color(0xFFFFD0D0),
                       ),
@@ -333,7 +327,6 @@ class ActiveSosAlertBanner extends ConsumerWidget {
                     backgroundColor: Colors.white,
                     foregroundColor: const Color(0xFF8A0000),
                     textStyle: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontWeight: FontWeight.w900,
                       fontSize: 12,
                     ),

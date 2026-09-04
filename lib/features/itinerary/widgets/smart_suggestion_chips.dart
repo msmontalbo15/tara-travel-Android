@@ -67,7 +67,6 @@ class _SmartSuggestionChipsState extends State<SmartSuggestionChips> {
                     const Text(
                       'Quick Add Templates',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
@@ -78,7 +77,6 @@ class _SmartSuggestionChipsState extends State<SmartSuggestionChips> {
                     Text(
                       _isExpanded ? 'Hide' : '${_templates.length} ideas',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 11,
                         color: AppColors.warmMuted.withValues(alpha: 0.9),
                         fontWeight: FontWeight.w600,
@@ -144,7 +142,6 @@ class _SmartSuggestionChipsState extends State<SmartSuggestionChips> {
                               Text(
                                 '+ $title',
                                 style: TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                   color: type.color,

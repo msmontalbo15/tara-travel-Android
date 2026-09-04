@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
@@ -273,7 +274,6 @@ class _NavigateRouteButtonState extends State<NavigateRouteButton> {
                                 ? 'Start Route Navigation ($displayCount stop${displayCount == 1 ? '' : 's'})'
                                 : 'No stops to navigate',
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 14.5,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
@@ -289,7 +289,6 @@ class _NavigateRouteButtonState extends State<NavigateRouteButton> {
                               ? 'Next $displayCount remaining stops · Tap to launch'
                               : 'All $displayCount stops · Full day route',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 11.5,
                             color: Colors.white.withValues(alpha: 0.85),
                           ),
@@ -457,7 +456,7 @@ class _RouteOptionsSheetState extends State<_RouteOptionsSheet> {
                               ? 'Day ${widget.dayNumber} Route Navigation'
                               : 'Multi-Stop Route Navigation',
                           style: const TextStyle(
-                            fontFamily: 'Playfair Display',
+                            fontFamily: AppTextStyles.fontHeading,
                             fontWeight: FontWeight.w700,
                             fontSize: 17,
                             color: AppColors.deepEarth,
@@ -466,7 +465,6 @@ class _RouteOptionsSheetState extends State<_RouteOptionsSheet> {
                         Text(
                           '${activeStops.length} stops in sequence · Turn-by-turn',
                           style: const TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 12,
                             color: AppColors.textSecondary,
                           ),
@@ -493,7 +491,6 @@ class _RouteOptionsSheetState extends State<_RouteOptionsSheet> {
                     const Text(
                       'ROUTE SCOPE',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 10.5,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 1.2,
@@ -527,7 +524,6 @@ class _RouteOptionsSheetState extends State<_RouteOptionsSheet> {
                   const Text(
                     'TRAVEL MODE',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 10.5,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1.2,
@@ -588,7 +584,6 @@ class _RouteOptionsSheetState extends State<_RouteOptionsSheet> {
                   const Text(
                     'WAYPOINTS ORDER',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 10.5,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1.2,
@@ -657,7 +652,6 @@ class _RouteOptionsSheetState extends State<_RouteOptionsSheet> {
                     label: const Text(
                       'Copy Link',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 13.5,
                         fontWeight: FontWeight.w700,
                       ),
@@ -690,7 +684,6 @@ class _RouteOptionsSheetState extends State<_RouteOptionsSheet> {
                       label: Text(
                         _loading ? 'Opening Maps…' : 'Open in Google Maps',
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 0.2,
@@ -750,7 +743,6 @@ class _ScopeChoiceChip extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            fontFamily: 'DM Sans',
             fontSize: 13,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
             color: isSelected ? Colors.white : AppColors.textPrimary,
@@ -807,7 +799,6 @@ class _TravelModeChip extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 13,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 color: isSelected ? AppColors.darkAccent : AppColors.textPrimary,
@@ -882,7 +873,6 @@ class _TimelineNode extends StatelessWidget {
                         child: Text(
                           title,
                           style: const TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 13.5,
                             fontWeight: FontWeight.w600,
                             color: AppColors.textPrimary,
@@ -903,7 +893,6 @@ class _TimelineNode extends StatelessWidget {
                           child: Text(
                             badgeText!,
                             style: TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                               color: isLast ? AppColors.primary : AppColors.amberText,
@@ -916,7 +905,6 @@ class _TimelineNode extends StatelessWidget {
                   Text(
                     subtitle,
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 11.5,
                       color: AppColors.textSecondary,
                     ),

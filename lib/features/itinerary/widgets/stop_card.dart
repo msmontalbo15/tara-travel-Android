@@ -164,7 +164,6 @@ class StopCard extends StatelessWidget {
                               Text(
                                 'GROUP POLL WINNER · FOCUSED',
                                 style: TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 9,
                                   fontWeight: FontWeight.w800,
                                   color: Colors.white,
@@ -182,7 +181,6 @@ class StopCard extends StatelessWidget {
                             Text(
                               _formatTime(stop.startTime!),
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
                                 color: completed
@@ -195,7 +193,6 @@ class StopCard extends StatelessWidget {
                             Text(
                               '· ${stop.duration}',
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 11,
                                 color: completed
                                     ? AppColors.greenBright.withValues(alpha: 0.7)
@@ -216,7 +213,6 @@ class StopCard extends StatelessWidget {
                               child: Text(
                                 stop.arrivedAtLabel!,
                                 style: const TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,
                                   color: AppColors.greenBright,
@@ -239,7 +235,6 @@ class StopCard extends StatelessWidget {
                                 Text(
                                   stop.title,
                                   style: TextStyle(
-                                    fontFamily: 'DM Sans',
                                     fontSize: 14,
                                     fontWeight: FontWeight.w700,
                                     color: completed
@@ -263,7 +258,6 @@ class StopCard extends StatelessWidget {
                                         child: Text(
                                           stop.location!,
                                           style: const TextStyle(
-                                            fontFamily: 'DM Sans',
                                             fontSize: 11,
                                             color: AppColors.muted,
                                           ),
@@ -281,7 +275,6 @@ class StopCard extends StatelessWidget {
                                   Text(
                                     stop.notes!,
                                     style: const TextStyle(
-                                      fontFamily: 'DM Sans',
                                       fontSize: 12,
                                       color: AppColors.textSecondary,
                                     ),
@@ -330,7 +323,6 @@ class StopCard extends StatelessWidget {
                             Text(
                               'Ref: ${stop.confirmationNumber}',
                               style: const TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 11,
                                 color: AppColors.muted,
                               ),
@@ -354,7 +346,6 @@ class StopCard extends StatelessWidget {
                             child: Text(
                               type.label,
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 10,
                                 fontWeight: FontWeight.w600,
                                 color: type.color,
@@ -380,7 +371,6 @@ class StopCard extends StatelessWidget {
                                   Text(
                                     stop.transportMode!.label,
                                     style: const TextStyle(
-                                      fontFamily: 'DM Sans',
                                       fontSize: 10,
                                       fontWeight: FontWeight.w600,
                                       color: Color(0xFFD85A30),
@@ -396,7 +386,6 @@ class StopCard extends StatelessWidget {
                             Text(
                               '₱${stop.estimatedCost!.toInt()}',
                               style: const TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.deepEarth,
@@ -456,7 +445,6 @@ class StopCard extends StatelessWidget {
                                     Text(
                                       'Navigate',
                                       style: TextStyle(
-                                        fontFamily: 'DM Sans',
                                         fontSize: 12.5,
                                         fontWeight: FontWeight.w700,
                                         color: Colors.white,
@@ -540,7 +528,6 @@ class _CheckedInMemberRow extends StatelessWidget {
                     child: Text(
                       m.initials.isNotEmpty ? m.initials.substring(0, 1) : '?',
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 8.5,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
@@ -555,7 +542,6 @@ class _CheckedInMemberRow extends StatelessWidget {
           Text(
             '${members.length}/$totalMembersCount present',
             style: const TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 11,
               fontWeight: FontWeight.w700,
               color: AppColors.greenBright,

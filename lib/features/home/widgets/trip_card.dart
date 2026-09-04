@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/member_avatar_circle.dart';
@@ -199,7 +200,6 @@ class TripCard extends StatelessWidget {
                               child: const Text(
                                 'Upcoming',
                                 style: TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                   color: Colors.white,
@@ -224,7 +224,6 @@ class TripCard extends StatelessWidget {
                                     Text(
                                       'Overlaps: $overlappingTripName',
                                       style: const TextStyle(
-                                        fontFamily: 'DM Sans',
                                         fontSize: 10,
                                         fontWeight: FontWeight.w700,
                                         color: Color(0xFFB45309),
@@ -262,7 +261,7 @@ class TripCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontFamily: 'Playfair Display',
+                        fontFamily: AppTextStyles.fontHeading,
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
@@ -282,7 +281,6 @@ class TripCard extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
                                 color: Colors.white70,
@@ -296,7 +294,6 @@ class TripCard extends StatelessWidget {
                     Text(
                       dateRange,
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 12,
                         color: Colors.white.withValues(alpha: 0.4),
                       ),
@@ -377,7 +374,6 @@ class TripCard extends StatelessWidget {
                                       : 'Budget used (${(pct * 100).round()}%)')
                                   : 'No budget set',
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 12,
                                 fontWeight: isOverBudget || isWarning ? FontWeight.w700 : FontWeight.w500,
                                 color: isOverBudget
@@ -391,7 +387,6 @@ class TripCard extends StatelessWidget {
                           Text(
                             budgetText,
                             style: TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
                               color: isOverBudget ? const Color(0xFFDC2626) : AppColors.textPrimary,
@@ -401,7 +396,6 @@ class TripCard extends StatelessWidget {
                           const Text(
                             '₱0',
                             style: TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                               color: AppColors.warmMuted,
@@ -455,7 +449,6 @@ class TripCard extends StatelessWidget {
                                 ? 'Exceeded by ₱${CurrencyUtils.formatAmount((spentVal - budgetVal).abs())}'
                                 : '₱${CurrencyUtils.formatAmount((budgetVal - spentVal).clamp(0, double.infinity))} remaining',
                             style: TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
                               color: isOverBudget ? const Color(0xFFDC2626) : AppColors.warmMuted,
@@ -586,7 +579,6 @@ class TripCard extends StatelessWidget {
                             child: const Text(
                               'DRAFT',
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 9,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.warmMuted,
@@ -606,7 +598,6 @@ class TripCard extends StatelessWidget {
                               child: Text(
                                 '⚠️ Overlaps: $overlappingTripName',
                                 style: const TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 9,
                                   fontWeight: FontWeight.w700,
                                   color: Color(0xFFB45309),
@@ -621,7 +612,7 @@ class TripCard extends StatelessWidget {
                         child: Text(
                           name,
                           style: const TextStyle(
-                            fontFamily: 'Playfair Display',
+                            fontFamily: AppTextStyles.fontHeading,
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimary,
@@ -638,7 +629,6 @@ class TripCard extends StatelessWidget {
                         ? destination!
                         : 'Destination not set',
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 12,
                       color: AppColors.textSecondary,
                     ),
@@ -685,7 +675,6 @@ class TripCard extends StatelessWidget {
           Text(
             label,
             style: const TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 10,
               color: AppColors.warmMuted,
               fontWeight: FontWeight.w600,
@@ -696,7 +685,6 @@ class TripCard extends StatelessWidget {
           Text(
             value,
             style: const TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 20,
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimary,
@@ -772,7 +760,6 @@ class TripCard extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 10,
               fontWeight: FontWeight.w600,
               color: onPressed != null ? AppColors.textPrimary : AppColors.textSecondary,

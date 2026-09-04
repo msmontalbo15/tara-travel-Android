@@ -137,7 +137,6 @@ class _PhLocationPickerState extends State<PhLocationPicker> {
   Widget _label(String text) => Text(
         text,
         style: const TextStyle(
-          fontFamily: 'DM Sans',
           fontSize: 13,
           fontWeight: FontWeight.w700,
           color: AppColors.textPrimary,
@@ -158,7 +157,6 @@ class _PhLocationPickerState extends State<PhLocationPicker> {
             Text(
               text,
               style: const TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimary,
@@ -174,7 +172,6 @@ class _PhLocationPickerState extends State<PhLocationPicker> {
               child: const Text(
                 'Fixed',
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
                   color: AppColors.primary,
@@ -213,7 +210,6 @@ class _PhLocationPickerState extends State<PhLocationPicker> {
                 hint: Text(
                   hint,
                   style: TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 14,
                     color: enabled ? AppColors.warmMuted : AppColors.dividerLight,
                   ),
@@ -226,7 +222,6 @@ class _PhLocationPickerState extends State<PhLocationPicker> {
                   size: 20,
                 ),
                 style: const TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: AppColors.textPrimary,

@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/ph_location_picker.dart';
@@ -107,7 +108,6 @@ class _PreferencesStepState extends State<PreferencesStep>
                           child: const Text(
                             'Step 4 of 6',
                             style: TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                               color: AppColors.primary,
@@ -119,7 +119,7 @@ class _PreferencesStepState extends State<PreferencesStep>
                         const Text(
                           'Your home &\npreferences',
                           style: TextStyle(
-                            fontFamily: 'Playfair Display',
+                            fontFamily: AppTextStyles.fontHeading,
                             fontSize: 32,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimary,
@@ -130,7 +130,6 @@ class _PreferencesStepState extends State<PreferencesStep>
                         const Text(
                           'Tell us where you live so we can personalize your travel experience.',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 14,
                             color: AppColors.textSecondary,
                             height: 1.5,
@@ -152,7 +151,6 @@ class _PreferencesStepState extends State<PreferencesStep>
                         const Text(
                           'Preferred Currency',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimary,
@@ -176,7 +174,6 @@ class _PreferencesStepState extends State<PreferencesStep>
                               Text(
                                 'PHP – Philippine Peso',
                                 style: TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.textPrimary,
@@ -189,7 +186,6 @@ class _PreferencesStepState extends State<PreferencesStep>
                                 child: Text(
                                   'Auto',
                                   style: TextStyle(
-                                    fontFamily: 'DM Sans',
                                     fontSize: 10,
                                     fontWeight: FontWeight.w600,
                                     color: AppColors.primary,
@@ -203,7 +199,6 @@ class _PreferencesStepState extends State<PreferencesStep>
                         const Text(
                           'Currency is set to PHP for Philippine users.',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 12,
                             color: AppColors.textSecondary,
                           ),
@@ -235,7 +230,6 @@ class _PreferencesStepState extends State<PreferencesStep>
                       child: const Text(
                         'Continue',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                         ),

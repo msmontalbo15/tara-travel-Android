@@ -86,7 +86,6 @@ class _BudgetStepState extends State<BudgetStep> {
                       child: Text(
                         'New trip',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                           color: AppColors.textPrimary,
@@ -156,7 +155,6 @@ class _BudgetStepState extends State<BudgetStep> {
                     const Text(
                       'Currency',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: AppColors.deepEarth,
@@ -179,7 +177,6 @@ class _BudgetStepState extends State<BudgetStep> {
                                 const Text(
                                   'Select Currency',
                                   style: TextStyle(
-                                    fontFamily: 'DM Sans',
                                     fontSize: 18,
                                     fontWeight: FontWeight.w700,
                                   ),
@@ -228,7 +225,6 @@ class _BudgetStepState extends State<BudgetStep> {
                               child: Text(
                                 widget.trip.currency,
                                 style: const TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 14,
                                   color: Color(0xFF111827),
                                 ),
@@ -248,7 +244,6 @@ class _BudgetStepState extends State<BudgetStep> {
                     const Text(
                       'Split Strategy',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: AppColors.deepEarth,
@@ -289,7 +284,6 @@ class _BudgetStepState extends State<BudgetStep> {
                               child: Text(
                                 _getSplitPreviewText(),
                                 style: const TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.deepEarth,
@@ -310,7 +304,6 @@ class _BudgetStepState extends State<BudgetStep> {
                         const Text(
                           'Category Breakdown',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                             color: AppColors.deepEarth,
@@ -333,7 +326,6 @@ class _BudgetStepState extends State<BudgetStep> {
                                   Text(
                                     'Auto-fill ratios',
                                     style: TextStyle(
-                                      fontFamily: 'DM Sans',
                                       fontSize: 11,
                                       fontWeight: FontWeight.w700,
                                       color: AppColors.primary,
@@ -375,7 +367,6 @@ class _BudgetStepState extends State<BudgetStep> {
                             Text(
                               'Add Category',
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.primary,
@@ -409,7 +400,6 @@ class _BudgetStepState extends State<BudgetStep> {
                   child: const Text(
                     'Continue — Review & create',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                     ),
@@ -455,7 +445,6 @@ class _BudgetStepState extends State<BudgetStep> {
                     child: Text(
                       title,
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                         color: active ? AppColors.primary : AppColors.deepEarth,
@@ -470,7 +459,6 @@ class _BudgetStepState extends State<BudgetStep> {
               Text(
                 subtitle,
                 style: const TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 10,
                   color: AppColors.warmMuted,
                   height: 1.2,
@@ -543,7 +531,6 @@ class _BudgetStepState extends State<BudgetStep> {
             Text(
               'Allocated: ₱${CurrencyUtils.formatAmount(sumAllocated)}',
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
                 color: sumAllocated > totalBudget && totalBudget > 0 ? const Color(0xFFEF4444) : AppColors.deepEarth,
@@ -553,7 +540,6 @@ class _BudgetStepState extends State<BudgetStep> {
               Text(
                 '$pctAllocated% of budget',
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                   color: sumAllocated > totalBudget ? const Color(0xFFEF4444) : AppColors.warmMuted,
@@ -618,7 +604,6 @@ class _BudgetStepState extends State<BudgetStep> {
                 Text(
                   category.name,
                   style: const TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: AppColors.deepEarth,
@@ -628,7 +613,6 @@ class _BudgetStepState extends State<BudgetStep> {
                   Text(
                     '$pct% of total',
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 10,
                       color: AppColors.warmMuted,
                     ),
@@ -646,14 +630,13 @@ class _BudgetStepState extends State<BudgetStep> {
                 text: category.amount > 0 ? CurrencyUtils.formatAmount(category.amount) : '',
               )..selection = TextSelection.collapsed(offset: (category.amount > 0 ? CurrencyUtils.formatAmount(category.amount) : '').length),
               style: const TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
                 color: AppColors.deepEarth,
               ),
               decoration: InputDecoration(
                 prefixText: '₱',
-                prefixStyle: const TextStyle(fontFamily: 'DM Sans', fontSize: 12, color: AppColors.warmMuted),
+                prefixStyle: const TextStyle( fontSize: 12, color: AppColors.warmMuted),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                 filled: true,
                 fillColor: const Color(0xFFF9FAFB),
@@ -731,7 +714,6 @@ class _BudgetStepState extends State<BudgetStep> {
                     const Text(
                       'Add Category',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
                         color: AppColors.deepEarth,
@@ -759,7 +741,6 @@ class _BudgetStepState extends State<BudgetStep> {
                       const Text(
                         'CUSTOM CATEGORY',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
                           color: AppColors.warmMuted,
@@ -783,14 +764,13 @@ class _BudgetStepState extends State<BudgetStep> {
                             child: TextField(
                               controller: customCtrl,
                               style: const TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.deepEarth,
                               ),
                               decoration: const InputDecoration(
                                 hintText: 'e.g. Gear Rental, Souvenirs…',
-                                hintStyle: TextStyle(fontFamily: 'DM Sans', fontSize: 13, color: AppColors.warmMuted),
+                                hintStyle: TextStyle( fontSize: 13, color: AppColors.warmMuted),
                                 border: InputBorder.none,
                                 isDense: true,
                               ),
@@ -850,7 +830,7 @@ class _BudgetStepState extends State<BudgetStep> {
                           ),
                           child: const Text(
                             'Add Custom Category',
-                            style: TextStyle(fontFamily: 'DM Sans', fontSize: 13, fontWeight: FontWeight.w700),
+                            style: TextStyle( fontSize: 13, fontWeight: FontWeight.w700),
                           ),
                         ),
                       ),
@@ -862,7 +842,6 @@ class _BudgetStepState extends State<BudgetStep> {
                 const Text(
                   'OR QUICK PRESETS',
                   style: TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                     color: AppColors.warmMuted,
@@ -885,7 +864,7 @@ class _BudgetStepState extends State<BudgetStep> {
                     ),
                     title: Text(
                       p['name'] as String,
-                      style: const TextStyle(fontFamily: 'DM Sans', fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.deepEarth),
+                      style: const TextStyle( fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.deepEarth),
                     ),
                     trailing: const Icon(Icons.add_rounded, size: 18, color: AppColors.primary),
                     onTap: () {

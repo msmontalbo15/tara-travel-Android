@@ -66,7 +66,6 @@ class ConvoyAlertBanner extends ConsumerWidget {
                     const Text(
                       'CONVOY SEPARATION',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 10,
                         fontWeight: FontWeight.w800,
                         color: Color(0xFFA32D2D),
@@ -84,7 +83,6 @@ class ConvoyAlertBanner extends ConsumerWidget {
                       child: Text(
                         '${alert.gapKm.toStringAsFixed(1)} km gap',
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 9,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
@@ -97,7 +95,6 @@ class ConvoyAlertBanner extends ConsumerWidget {
                 Text(
                   '${alert.memberName} is lagging behind (~${alert.estimatedMinutesBehind} min delay)',
                   style: const TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: Color(0xFF631D1D),
@@ -127,7 +124,6 @@ class ConvoyAlertBanner extends ConsumerWidget {
             child: const Text(
               'Locate',
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
               ),

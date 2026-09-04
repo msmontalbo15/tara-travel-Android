@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -111,7 +112,7 @@ class _ItineraryMapState extends State<ItineraryMap> {
             Text(
               '${widget.day.stops.length} stops for Day ${widget.day.dayNumber}',
               style: const TextStyle(
-                fontFamily: 'Playfair Display',
+                fontFamily: AppTextStyles.fontHeading,
                 fontSize: 16,
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
@@ -121,7 +122,6 @@ class _ItineraryMapState extends State<ItineraryMap> {
             const Text(
               'Route map loads when location data is available.\nEdit stops to add locations.',
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 12,
                 color: Colors.white54,
               ),
@@ -195,7 +195,6 @@ class _ItineraryMapState extends State<ItineraryMap> {
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
                           color: Colors.white,
-                          fontFamily: 'DM Sans',
                         ),
                       ),
                     ),
@@ -280,7 +279,6 @@ class _RiderMarker extends StatelessWidget {
                   fontSize: 7,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
-                  fontFamily: 'DM Sans',
                 ),
               ),
             ),
@@ -323,7 +321,6 @@ class _RiderMarker extends StatelessWidget {
                   fontSize: 8,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
-                  fontFamily: 'DM Sans',
                 ),
               ),
             ),

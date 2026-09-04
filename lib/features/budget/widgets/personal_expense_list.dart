@@ -85,7 +85,6 @@ class PersonalExpenseList extends ConsumerWidget {
             const Text(
               'Delete Expense?',
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
               ),
@@ -95,7 +94,6 @@ class PersonalExpenseList extends ConsumerWidget {
         content: RichText(
           text: TextSpan(
             style: const TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 13,
               color: Color(0xFF6B7280),
             ),
@@ -117,7 +115,7 @@ class PersonalExpenseList extends ConsumerWidget {
             onPressed: () => Navigator.pop(ctx),
             child: const Text(
               'Keep',
-              style: TextStyle(fontFamily: 'DM Sans', color: Color(0xFF6B7280)),
+              style: TextStyle( color: Color(0xFF6B7280)),
             ),
           ),
           ElevatedButton.icon(
@@ -150,7 +148,7 @@ class PersonalExpenseList extends ConsumerWidget {
             icon: const Icon(Icons.delete_outline_rounded, size: 15),
             label: const Text(
               'Delete',
-              style: TextStyle(fontFamily: 'DM Sans', fontWeight: FontWeight.w700),
+              style: TextStyle( fontWeight: FontWeight.w700),
             ),
           ),
         ],
@@ -184,7 +182,6 @@ class PersonalExpenseList extends ConsumerWidget {
             const Text(
               'No Personal Expenses Yet',
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
                 color: AppColors.deepEarth,
@@ -195,7 +192,6 @@ class PersonalExpenseList extends ConsumerWidget {
               'Log your souvenirs, snacks, or solo Grab rides\nusing the form below.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 12,
                 color: Color(0xFF9CA3AF),
                 height: 1.5,
@@ -257,7 +253,6 @@ class PersonalExpenseList extends ConsumerWidget {
             Text(
               'Delete',
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFFEF4444),
@@ -297,7 +292,6 @@ class PersonalExpenseList extends ConsumerWidget {
                       Text(
                         item.description,
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: AppColors.deepEarth,
@@ -319,7 +313,6 @@ class PersonalExpenseList extends ConsumerWidget {
                             child: Text(
                               _categoryLabel(item.category),
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 9,
                                 fontWeight: FontWeight.w700,
                                 color: accent,
@@ -353,7 +346,6 @@ class PersonalExpenseList extends ConsumerWidget {
                                 Text(
                                   isCash ? 'Cash' : 'Digital',
                                   style: TextStyle(
-                                    fontFamily: 'DM Sans',
                                     fontSize: 9,
                                     fontWeight: FontWeight.w700,
                                     color: isCash
@@ -369,7 +361,6 @@ class PersonalExpenseList extends ConsumerWidget {
                             child: Text(
                               dateStr,
                               style: const TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 10,
                                 color: Color(0xFF9CA3AF),
                               ),
@@ -391,7 +382,6 @@ class PersonalExpenseList extends ConsumerWidget {
                   child: Text(
                     '₱${CurrencyUtils.formatAmount(item.amount)}',
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                       color: AppColors.deepEarth,

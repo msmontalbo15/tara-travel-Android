@@ -139,7 +139,6 @@ class _DetailsStepState extends ConsumerState<DetailsStep> {
                       child: const Text(
                         'Cancel',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 15,
                           color: AppColors.primary,
                         ),
@@ -150,7 +149,6 @@ class _DetailsStepState extends ConsumerState<DetailsStep> {
                         child: Text(
                           'New trip',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimary,
@@ -227,7 +225,6 @@ class _DetailsStepState extends ConsumerState<DetailsStep> {
                           child: Text(
                             _destError!,
                             style: const TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 12,
                               color: AppColors.red,
                             ),
@@ -240,7 +237,6 @@ class _DetailsStepState extends ConsumerState<DetailsStep> {
                       const Text(
                         'Travel dates',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: AppColors.deepEarth,
@@ -268,7 +264,6 @@ class _DetailsStepState extends ConsumerState<DetailsStep> {
                                       ? '${widget.trip.fromDate!.month}/${widget.trip.fromDate!.day}/${widget.trip.fromDate!.year} - ${widget.trip.toDate!.month}/${widget.trip.toDate!.day}/${widget.trip.toDate!.year}'
                                       : 'Select date range',
                                   style: TextStyle(
-                                    fontFamily: 'DM Sans',
                                     fontSize: 15,
                                     color: (widget.trip.fromDate != null && widget.trip.toDate != null) 
                                         ? AppColors.textPrimary 
@@ -289,7 +284,6 @@ class _DetailsStepState extends ConsumerState<DetailsStep> {
                           child: Text(
                             _dateError!,
                             style: const TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 12,
                               color: AppColors.red,
                             ),
@@ -302,7 +296,6 @@ class _DetailsStepState extends ConsumerState<DetailsStep> {
                       const Text(
                         'Trip type',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: AppColors.deepEarth,
@@ -325,7 +318,6 @@ class _DetailsStepState extends ConsumerState<DetailsStep> {
                       const Text(
                         'Travelers',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: AppColors.deepEarth,
@@ -357,7 +349,6 @@ class _DetailsStepState extends ConsumerState<DetailsStep> {
                     child: const Text(
                       'Continue — Budget setup',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                       ),
@@ -396,7 +387,6 @@ class _DetailsStepState extends ConsumerState<DetailsStep> {
                 Text(
                   'Add friends',
                   style: TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: AppColors.primary,
@@ -438,7 +428,6 @@ class _DetailsStepState extends ConsumerState<DetailsStep> {
                       child: Text(
                         traveler.initials,
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
@@ -450,7 +439,6 @@ class _DetailsStepState extends ConsumerState<DetailsStep> {
                     child: Text(
                       traveler.initials,
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
@@ -528,7 +516,6 @@ class _DetailsStepState extends ConsumerState<DetailsStep> {
                           Text(
                             'Select Friends',
                             style: TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
                               color: AppColors.textPrimary,
@@ -538,7 +525,6 @@ class _DetailsStepState extends ConsumerState<DetailsStep> {
                           Text(
                             'Only existing friends can be added to your trip',
                             style: TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 13,
                               color: AppColors.textSecondary,
                             ),
@@ -592,7 +578,6 @@ class _DetailsStepState extends ConsumerState<DetailsStep> {
                                 const Text(
                                   'No Friends Found',
                                   style: TextStyle(
-                                    fontFamily: 'DM Sans',
                                     fontSize: 16,
                                     fontWeight: FontWeight.w700,
                                     color: AppColors.textPrimary,
@@ -603,7 +588,6 @@ class _DetailsStepState extends ConsumerState<DetailsStep> {
                                   'You do not have any accepted friends yet. Add friends from the Friends menu to invite them to trips.',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
-                                    fontFamily: 'DM Sans',
                                     fontSize: 13,
                                     color: AppColors.textSecondary,
                                   ),
@@ -636,7 +620,6 @@ class _DetailsStepState extends ConsumerState<DetailsStep> {
                                         ? Text(
                                             friend.initials,
                                             style: const TextStyle(
-                                              fontFamily: 'DM Sans',
                                               fontWeight: FontWeight.w700,
                                               color: Colors.white,
                                             ),
@@ -646,7 +629,6 @@ class _DetailsStepState extends ConsumerState<DetailsStep> {
                                   title: Text(
                                     friend.name,
                                     style: const TextStyle(
-                                      fontFamily: 'DM Sans',
                                       fontSize: 15,
                                       fontWeight: FontWeight.w600,
                                       color: AppColors.textPrimary,
@@ -752,7 +734,6 @@ class _DetailsStepState extends ConsumerState<DetailsStep> {
                           child: Text(
                             'Could not load friends: $err',
                             style: const TextStyle(
-                              fontFamily: 'DM Sans',
                               color: AppColors.red,
                             ),
                           ),
@@ -782,7 +763,6 @@ class _DetailsStepState extends ConsumerState<DetailsStep> {
                     child: Text(
                       'Done (${widget.trip.travelers.length} selected)',
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                       ),

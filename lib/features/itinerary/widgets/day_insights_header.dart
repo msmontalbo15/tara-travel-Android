@@ -227,7 +227,6 @@ class _PillItem extends StatelessWidget {
           Text(
             label,
             style: const TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 11,
               fontWeight: FontWeight.w600,
               color: AppColors.deepEarth,

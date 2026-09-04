@@ -145,7 +145,6 @@ class _FriendListItemState extends ConsumerState<FriendListItem> {
                         Text(
                           widget.friend.name,
                           style: const TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimary,
@@ -175,7 +174,6 @@ class _FriendListItemState extends ConsumerState<FriendListItem> {
                             Text(
                               widget.friend.presenceStatusText,
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 12,
                                 color: widget.friend.isCurrentlyOnline ? AppColors.green : AppColors.textSecondary,
                                 fontWeight: FontWeight.w500,
@@ -259,7 +257,6 @@ class _FriendListItemState extends ConsumerState<FriendListItem> {
         title: Text(
           'Invite ${widget.friend.name}',
           style: const TextStyle(
-            fontFamily: 'DM Sans',
             fontSize: 18,
             fontWeight: FontWeight.w700,
             color: AppColors.textPrimary,
@@ -274,7 +271,6 @@ class _FriendListItemState extends ConsumerState<FriendListItem> {
               const Text(
                 'Select a trip to copy its invite code:',
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 13,
                   color: AppColors.textSecondary,
                 ),
@@ -300,7 +296,6 @@ class _FriendListItemState extends ConsumerState<FriendListItem> {
                       title: Text(
                         trip.name,
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: AppColors.textPrimary,
@@ -308,7 +303,7 @@ class _FriendListItemState extends ConsumerState<FriendListItem> {
                       ),
                       subtitle: Text(
                         'Code: ${trip.inviteCode.isNotEmpty ? trip.inviteCode : 'N/A'}',
-                        style: const TextStyle(fontFamily: 'DM Sans', fontSize: 12, color: AppColors.textSecondary),
+                        style: const TextStyle( fontSize: 12, color: AppColors.textSecondary),
                       ),
                       trailing: const Icon(Icons.send_rounded, size: 16, color: AppColors.primary),
                       onTap: () {
@@ -332,7 +327,7 @@ class _FriendListItemState extends ConsumerState<FriendListItem> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Close', style: TextStyle(fontFamily: 'DM Sans', color: AppColors.textSecondary)),
+            child: const Text('Close', style: TextStyle( color: AppColors.textSecondary)),
           ),
         ],
       ),
@@ -389,7 +384,6 @@ class _FriendListItemState extends ConsumerState<FriendListItem> {
       title: Text(
         title,
         style: TextStyle(
-          fontFamily: 'DM Sans',
           fontSize: 15,
           fontWeight: FontWeight.w600,
           color: isDestructive ? AppColors.red : AppColors.textPrimary,
@@ -398,7 +392,6 @@ class _FriendListItemState extends ConsumerState<FriendListItem> {
       subtitle: Text(
         subtitle,
         style: const TextStyle(
-          fontFamily: 'DM Sans',
           fontSize: 12,
           color: AppColors.textSecondary,
         ),
@@ -435,7 +428,6 @@ class _FriendListItemState extends ConsumerState<FriendListItem> {
                 Text(
                   widget.friend.name,
                   style: const TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
@@ -460,7 +452,6 @@ class _FriendListItemState extends ConsumerState<FriendListItem> {
       return const Text(
         'Wants to be your friend',
         style: TextStyle(
-          fontFamily: 'DM Sans',
           fontSize: 12,
           fontWeight: FontWeight.w500,
           color: AppColors.primary,
@@ -472,7 +463,6 @@ class _FriendListItemState extends ConsumerState<FriendListItem> {
       return const Text(
         'Request pending approval',
         style: TextStyle(
-          fontFamily: 'DM Sans',
           fontSize: 12,
           color: AppColors.textSecondary,
         ),
@@ -484,7 +474,6 @@ class _FriendListItemState extends ConsumerState<FriendListItem> {
         return Text(
           widget.friend.email!,
           style: const TextStyle(
-            fontFamily: 'DM Sans',
             fontSize: 12,
             color: AppColors.textSecondary,
           ),
@@ -521,7 +510,6 @@ class _FriendListItemState extends ConsumerState<FriendListItem> {
         Text(
           statusText,
           style: TextStyle(
-            fontFamily: 'DM Sans',
             fontSize: 12,
             fontWeight: isOnline ? FontWeight.w600 : FontWeight.w500,
             color: isOnline ? AppColors.green : AppColors.textSecondary,
@@ -554,7 +542,6 @@ class _FriendListItemState extends ConsumerState<FriendListItem> {
                   child: Text(
                     widget.friend.initials,
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: size * 0.38,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
@@ -642,7 +629,6 @@ class _FriendListItemState extends ConsumerState<FriendListItem> {
                   Text(
                     'Accept',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
@@ -675,7 +661,6 @@ class _FriendListItemState extends ConsumerState<FriendListItem> {
               Text(
                 'Cancel',
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: AppColors.textSecondary,
@@ -705,7 +690,6 @@ class _FriendListItemState extends ConsumerState<FriendListItem> {
                 Text(
                   'Friends',
                   style: TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                     color: AppColors.green,
@@ -728,7 +712,6 @@ class _FriendListItemState extends ConsumerState<FriendListItem> {
               child: const Text(
                 'Requested',
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: Color(0xFFB45309),
@@ -749,7 +732,6 @@ class _FriendListItemState extends ConsumerState<FriendListItem> {
               child: const Text(
                 'Accept',
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
@@ -776,7 +758,6 @@ class _FriendListItemState extends ConsumerState<FriendListItem> {
                   Text(
                     'Add',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,

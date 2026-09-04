@@ -110,7 +110,6 @@ class AppBanner extends StatelessWidget {
                   Text(
                     title!,
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 13.5,
                       fontWeight: FontWeight.w700,
                       color: fgColor,
@@ -121,7 +120,6 @@ class AppBanner extends StatelessWidget {
                 Text(
                   message,
                   style: const TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 12.5,
                     fontWeight: FontWeight.w500,
                     color: AppColors.textPrimary,
@@ -135,7 +133,6 @@ class AppBanner extends StatelessWidget {
                     child: Text(
                       actionLabel!,
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 12.5,
                         fontWeight: FontWeight.w700,
                         color: fgColor,

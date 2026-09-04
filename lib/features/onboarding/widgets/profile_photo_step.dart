@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -77,7 +78,6 @@ class _ProfilePhotoStepState extends State<ProfilePhotoStep>
             const Text(
               'Profile Photo',
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary,
@@ -122,7 +122,6 @@ class _ProfilePhotoStepState extends State<ProfilePhotoStep>
           Text(
             label,
             style: const TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 14,
               fontWeight: FontWeight.w500,
               color: AppColors.textPrimary,
@@ -160,7 +159,6 @@ class _ProfilePhotoStepState extends State<ProfilePhotoStep>
                           child: const Text(
                             'Step 3 of 6',
                             style: TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                               color: AppColors.primary,
@@ -171,7 +169,7 @@ class _ProfilePhotoStepState extends State<ProfilePhotoStep>
                         const Text(
                           'Add a profile picture',
                           style: TextStyle(
-                            fontFamily: 'Playfair Display',
+                            fontFamily: AppTextStyles.fontHeading,
                             fontSize: 32,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimary,
@@ -182,7 +180,6 @@ class _ProfilePhotoStepState extends State<ProfilePhotoStep>
                         const Text(
                           'Make it easier for your trip mates to recognize you.',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 14,
                             color: AppColors.textSecondary,
                             height: 1.5,
@@ -266,7 +263,6 @@ class _ProfilePhotoStepState extends State<ProfilePhotoStep>
                           child: Text(
                             _imagePath == null ? 'Tap to upload' : 'Looks great!',
                             style: const TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                               color: AppColors.primary,
@@ -300,7 +296,6 @@ class _ProfilePhotoStepState extends State<ProfilePhotoStep>
                           child: const Text(
                             'Continue',
                             style: TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
                             ),
@@ -313,7 +308,6 @@ class _ProfilePhotoStepState extends State<ProfilePhotoStep>
                         child: const Text(
                           'Skip for now',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                             color: AppColors.textSecondary,

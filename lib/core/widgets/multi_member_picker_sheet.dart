@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import '../models/member_model.dart';
 import '../theme/app_colors.dart';
@@ -144,7 +145,7 @@ class _MultiMemberPickerSheetState extends State<MultiMemberPickerSheet> {
                     Text(
                       widget.title,
                       style: const TextStyle(
-                        fontFamily: 'Playfair Display',
+                        fontFamily: AppTextStyles.fontHeading,
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
                         color: AppColors.deepEarth,
@@ -156,7 +157,6 @@ class _MultiMemberPickerSheetState extends State<MultiMemberPickerSheet> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 12,
                           color: AppColors.muted,
                         ),
@@ -183,7 +183,6 @@ class _MultiMemberPickerSheetState extends State<MultiMemberPickerSheet> {
                   child: Text(
                     _allSelected ? 'Clear All' : 'Select All',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: _allSelected ? AppColors.primary : AppColors.warmMuted,
@@ -220,7 +219,6 @@ class _MultiMemberPickerSheetState extends State<MultiMemberPickerSheet> {
             child: Text(
               'TRIP MEMBERS',
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.2,
@@ -237,7 +235,6 @@ class _MultiMemberPickerSheetState extends State<MultiMemberPickerSheet> {
                 child: Text(
                   'No members in this trip yet.',
                   style: TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 13,
                     color: AppColors.muted,
                   ),
@@ -302,7 +299,6 @@ class _MultiMemberPickerSheetState extends State<MultiMemberPickerSheet> {
                         ? 'Confirm (Shared)'
                         : 'Confirm (${_selected.length} selected)',
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                     ),
@@ -371,7 +367,6 @@ class _MemberPickerTile extends StatelessWidget {
                     Text(
                       title,
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 14,
                         fontWeight:
                             isSelected ? FontWeight.w700 : FontWeight.w600,
@@ -398,7 +393,6 @@ class _MemberPickerTile extends StatelessWidget {
                         child: Text(
                           subtitle,
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                             color: isSelected
@@ -411,7 +405,6 @@ class _MemberPickerTile extends StatelessWidget {
                       Text(
                         subtitle,
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 12,
                           color: isSelected
                               ? AppColors.primary.withValues(alpha: 0.8)
@@ -518,7 +511,6 @@ class MemberAvatarStack extends StatelessWidget {
                   child: Text(
                     '+$overflow',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontWeight: FontWeight.w700,
                       fontSize: size * 0.32,
                       color: Colors.white,

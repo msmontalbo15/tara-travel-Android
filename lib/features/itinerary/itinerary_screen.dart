@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -480,7 +481,7 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                                         Text(
                                           trip.name,
                                           style: const TextStyle(
-                                            fontFamily: 'Playfair Display',
+                                            fontFamily: AppTextStyles.fontHeading,
                                             fontSize: 22,
                                             fontWeight: FontWeight.w700,
                                             color: Colors.white,
@@ -491,7 +492,6 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                                         Text(
                                           trip.destination,
                                           style: const TextStyle(
-                                            fontFamily: 'DM Sans',
                                             fontSize: 13,
                                             color: Colors.white54,
                                           ),
@@ -609,7 +609,6 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                                   child: Text(
                                     'No itinerary yet.',
                                     style: TextStyle(
-                                      fontFamily: 'DM Sans',
                                       color: AppColors.muted,
                                     ),
                                   ),
@@ -757,7 +756,6 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                 Text(
                   '${day.stops.length} STOP${day.stops.length == 1 ? '' : 'S'} · DAY ${day.dayNumber}',
                   style: const TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                     color: AppColors.warmMuted,
@@ -769,7 +767,6 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                   const Text(
                     'Hold & Drag to reorder',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 10,
                       color: AppColors.muted,
                     ),

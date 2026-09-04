@@ -182,7 +182,6 @@ class _CreatePollSheetState extends State<CreatePollSheet> {
                 const Text(
                   'Create Travel Poll',
                   style: TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                     color: AppColors.deepEarth,
@@ -210,7 +209,6 @@ class _CreatePollSheetState extends State<CreatePollSheet> {
                   const Text(
                     'QUICK TRAVEL PRESETS',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: AppColors.warmMuted,
@@ -274,7 +272,6 @@ class _CreatePollSheetState extends State<CreatePollSheet> {
                   const Text(
                     'QUESTION',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: AppColors.warmMuted,
@@ -292,14 +289,12 @@ class _CreatePollSheetState extends State<CreatePollSheet> {
                     child: TextField(
                       controller: _questionCtrl,
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 14,
                         color: AppColors.deepEarth,
                       ),
                       decoration: const InputDecoration(
                         hintText: 'e.g. Where should we eat dinner tonight?',
                         hintStyle: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 14,
                           color: AppColors.muted,
                         ),
@@ -316,7 +311,6 @@ class _CreatePollSheetState extends State<CreatePollSheet> {
                       const Text(
                         'OPTIONS (2 TO 6)',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                           color: AppColors.warmMuted,
@@ -334,7 +328,6 @@ class _CreatePollSheetState extends State<CreatePollSheet> {
                               Text(
                                 'Add Option',
                                 style: TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.primary,
@@ -364,14 +357,12 @@ class _CreatePollSheetState extends State<CreatePollSheet> {
                               child: TextField(
                                 controller: ctrl,
                                 style: const TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 13,
                                   color: AppColors.deepEarth,
                                 ),
                                 decoration: InputDecoration(
                                   hintText: 'Option ${index + 1}',
                                   hintStyle: const TextStyle(
-                                    fontFamily: 'DM Sans',
                                     fontSize: 13,
                                     color: AppColors.muted,
                                   ),
@@ -414,7 +405,6 @@ class _CreatePollSheetState extends State<CreatePollSheet> {
                               Text(
                                 'Allow multiple choices',
                                 style: TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.deepEarth,
@@ -423,7 +413,6 @@ class _CreatePollSheetState extends State<CreatePollSheet> {
                               Text(
                                 'Travelers can vote for more than one option',
                                 style: TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 11,
                                   color: AppColors.muted,
                                 ),
@@ -472,7 +461,6 @@ class _CreatePollSheetState extends State<CreatePollSheet> {
                                 Text(
                                   'Post Poll to Group Chat',
                                   style: TextStyle(
-                                    fontFamily: 'DM Sans',
                                     fontSize: 14,
                                     fontWeight: FontWeight.w700,
                                     color: Colors.white,
@@ -527,7 +515,6 @@ class _PresetChip extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 12,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 color: isSelected ? AppColors.primary : AppColors.deepEarth,

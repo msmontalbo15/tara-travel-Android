@@ -280,7 +280,6 @@ class _SplitBillPanelState extends State<SplitBillPanel>
                     Text(
                       t.$3,
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         color: active ? Colors.white : AppColors.warmMuted,
@@ -317,7 +316,7 @@ class _SplitBillPanelState extends State<SplitBillPanel>
         children: [
           Row(
             children: [
-              const Text('Fixed Amounts', style: TextStyle(fontFamily: 'DM Sans', fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.deepEarth)),
+              const Text('Fixed Amounts', style: TextStyle( fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.deepEarth)),
               const Spacer(),
               AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
@@ -329,7 +328,6 @@ class _SplitBillPanelState extends State<SplitBillPanel>
                 child: Text(
                   isBalanced ? '✓ Balanced' : (diff > 0 ? '+₱${CurrencyUtils.formatAmount(diff)} over' : '−₱${CurrencyUtils.formatAmount(-diff)} short'),
                   style: TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     color: isBalanced ? AppColors.greenBright : AppColors.red,
@@ -345,7 +343,7 @@ class _SplitBillPanelState extends State<SplitBillPanel>
               children: [
                 _memberAvatar(m, size: 32),
                 const SizedBox(width: 10),
-                Expanded(child: Text(m.name, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.deepEarth))),
+                Expanded(child: Text(m.name, style: const TextStyle( fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.deepEarth))),
                 SizedBox(
                   width: 110,
                   height: 38,
@@ -353,10 +351,10 @@ class _SplitBillPanelState extends State<SplitBillPanel>
                     controller: _fixedControllers[m.id],
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     textAlign: TextAlign.right,
-                    style: const TextStyle(fontFamily: 'DM Sans', fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.deepEarth),
+                    style: const TextStyle( fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.deepEarth),
                     decoration: InputDecoration(
                       prefixText: '₱ ',
-                      prefixStyle: const TextStyle(fontFamily: 'DM Sans', fontSize: 13, color: AppColors.warmMuted),
+                      prefixStyle: const TextStyle( fontSize: 13, color: AppColors.warmMuted),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                       filled: true,
                       fillColor: AppColors.surfaceLight,
@@ -391,7 +389,7 @@ class _SplitBillPanelState extends State<SplitBillPanel>
         children: [
           Row(
             children: [
-              const Text('Percentage Split', style: TextStyle(fontFamily: 'DM Sans', fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.deepEarth)),
+              const Text('Percentage Split', style: TextStyle( fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.deepEarth)),
               const Spacer(),
               AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
@@ -403,7 +401,6 @@ class _SplitBillPanelState extends State<SplitBillPanel>
                 child: Text(
                   '${sumPct.round()}%',
                   style: TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     color: isBalanced ? AppColors.greenBright : AppColors.amberText,
@@ -425,10 +422,10 @@ class _SplitBillPanelState extends State<SplitBillPanel>
                     children: [
                       _memberAvatar(m, size: 28),
                       const SizedBox(width: 8),
-                      Expanded(child: Text(m.name, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.deepEarth))),
-                      Text('${pct.round()}%', style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, fontWeight: FontWeight.w700, color: m.color)),
+                      Expanded(child: Text(m.name, style: const TextStyle( fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.deepEarth))),
+                      Text('${pct.round()}%', style: TextStyle( fontSize: 12, fontWeight: FontWeight.w700, color: m.color)),
                       const SizedBox(width: 6),
-                      Text('₱${CurrencyUtils.formatAmount(share)}', style: const TextStyle(fontFamily: 'DM Sans', fontSize: 12, color: AppColors.warmMuted)),
+                      Text('₱${CurrencyUtils.formatAmount(share)}', style: const TextStyle( fontSize: 12, color: AppColors.warmMuted)),
                     ],
                   ),
                   SliderTheme(
@@ -471,9 +468,9 @@ class _SplitBillPanelState extends State<SplitBillPanel>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Who\'s treating?', style: TextStyle(fontFamily: 'DM Sans', fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.deepEarth)),
+          const Text('Who\'s treating?', style: TextStyle( fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.deepEarth)),
           const SizedBox(height: 4),
-          const Text('This person covers the group — others owe their equal share.', style: TextStyle(fontFamily: 'DM Sans', fontSize: 11, color: AppColors.warmMuted)),
+          const Text('This person covers the group — others owe their equal share.', style: TextStyle( fontSize: 11, color: AppColors.warmMuted)),
           const SizedBox(height: 14),
           Wrap(
             spacing: 8,
@@ -495,7 +492,7 @@ class _SplitBillPanelState extends State<SplitBillPanel>
                     children: [
                       _memberAvatar(m, size: 24),
                       const SizedBox(width: 6),
-                      Text(m.name.split(' ').first, style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, fontWeight: FontWeight.w700, color: active ? Colors.white : AppColors.deepEarth)),
+                      Text(m.name.split(' ').first, style: TextStyle( fontSize: 12, fontWeight: FontWeight.w700, color: active ? Colors.white : AppColors.deepEarth)),
                       if (active) ...[
                         const SizedBox(width: 4),
                         const Text('🎁', style: TextStyle(fontSize: 12)),
@@ -559,10 +556,10 @@ class _SplitBillPanelState extends State<SplitBillPanel>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(member.name, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.deepEarth)),
+                    Text(member.name, style: const TextStyle( fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.deepEarth)),
                     Text(
                       member.roles.isNotEmpty ? member.roles.map((r) => r.displayName).join(' · ') : 'Member',
-                      style: const TextStyle(fontFamily: 'DM Sans', fontSize: 10, color: AppColors.warmMuted),
+                      style: const TextStyle( fontSize: 10, color: AppColors.warmMuted),
                     ),
                   ],
                 ),
@@ -577,7 +574,7 @@ class _SplitBillPanelState extends State<SplitBillPanel>
                   children: [
                     Text(netIcon, style: TextStyle(fontSize: 11, color: netColor, fontWeight: FontWeight.bold)),
                     const SizedBox(width: 3),
-                    Text(netLabel, style: TextStyle(fontFamily: 'DM Sans', fontSize: 11, fontWeight: FontWeight.w700, color: netColor)),
+                    Text(netLabel, style: TextStyle( fontSize: 11, fontWeight: FontWeight.w700, color: netColor)),
                   ],
                 ),
               ),
@@ -594,12 +591,12 @@ class _SplitBillPanelState extends State<SplitBillPanel>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Paid', style: TextStyle(fontFamily: 'DM Sans', fontSize: 10, color: AppColors.warmMuted, fontWeight: FontWeight.w600)),
+                        const Text('Paid', style: TextStyle( fontSize: 10, color: AppColors.warmMuted, fontWeight: FontWeight.w600)),
                         Expanded(
                           child: Text(
                             '₱${CurrencyUtils.formatAmount(paid)}',
                             textAlign: TextAlign.right,
-                            style: TextStyle(fontFamily: 'DM Sans', fontSize: 11, fontWeight: FontWeight.w700, color: member.color),
+                            style: TextStyle( fontSize: 11, fontWeight: FontWeight.w700, color: member.color),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -619,12 +616,12 @@ class _SplitBillPanelState extends State<SplitBillPanel>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Fair Share', style: TextStyle(fontFamily: 'DM Sans', fontSize: 10, color: AppColors.warmMuted, fontWeight: FontWeight.w600)),
+                        const Text('Fair Share', style: TextStyle( fontSize: 10, color: AppColors.warmMuted, fontWeight: FontWeight.w600)),
                         Expanded(
                           child: Text(
                             '₱${CurrencyUtils.formatAmount(share)}',
                             textAlign: TextAlign.right,
-                            style: const TextStyle(fontFamily: 'DM Sans', fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.deepEarth),
+                            style: const TextStyle( fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.deepEarth),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -677,12 +674,12 @@ class _SplitBillPanelState extends State<SplitBillPanel>
           children: [
             const Text(
               'SETTLEMENT PLAN',
-              style: TextStyle(fontFamily: 'DM Sans', fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.warmMuted, letterSpacing: 1.5),
+              style: TextStyle( fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.warmMuted, letterSpacing: 1.5),
             ),
             const Spacer(),
             Text(
               settlements.isEmpty ? 'All settled!' : '₱${CurrencyUtils.formatAmount(totalOwed)} · $pendingCount pending',
-              style: const TextStyle(fontFamily: 'DM Sans', fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.primary),
+              style: const TextStyle( fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.primary),
             ),
             if (settlements.isNotEmpty) ...[
               const SizedBox(width: 8),
@@ -716,7 +713,7 @@ class _SplitBillPanelState extends State<SplitBillPanel>
                     children: [
                       Icon(Icons.share_rounded, size: 12, color: AppColors.primary),
                       SizedBox(width: 4),
-                      Text('Share', style: TextStyle(fontFamily: 'DM Sans', fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.primary)),
+                      Text('Share', style: TextStyle( fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.primary)),
                     ],
                   ),
                 ),
@@ -755,8 +752,8 @@ class _SplitBillPanelState extends State<SplitBillPanel>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Minimum Transactions', style: TextStyle(fontFamily: 'DM Sans', fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
-                            Text('${settlements.length} transfer${settlements.length == 1 ? '' : 's'} to settle everything', style: const TextStyle(fontFamily: 'DM Sans', fontSize: 11, color: Colors.white54)),
+                            const Text('Minimum Transactions', style: TextStyle( fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
+                            Text('${settlements.length} transfer${settlements.length == 1 ? '' : 's'} to settle everything', style: const TextStyle( fontSize: 11, color: Colors.white54)),
                           ],
                         ),
                       ),
@@ -765,7 +762,7 @@ class _SplitBillPanelState extends State<SplitBillPanel>
                         decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8)),
                         child: Text(
                           '₱${CurrencyUtils.formatAmount(totalOwed)}',
-                          style: const TextStyle(fontFamily: 'DM Sans', fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
+                          style: const TextStyle( fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
                         ),
                       ),
                     ],
@@ -811,7 +808,7 @@ class _SplitBillPanelState extends State<SplitBillPanel>
                   children: [
                     _memberAvatar(s.from, size: 34),
                     const SizedBox(height: 3),
-                    Text(s.from.name.split(' ').first, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.deepEarth)),
+                    Text(s.from.name.split(' ').first, style: const TextStyle( fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.deepEarth)),
                   ],
                 ),
                 const SizedBox(width: 10),
@@ -828,7 +825,6 @@ class _SplitBillPanelState extends State<SplitBillPanel>
                         child: Text(
                           '₱${CurrencyUtils.formatAmount(s.amount)}',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 13,
                             fontWeight: FontWeight.w800,
                             color: isSettled ? AppColors.greenBright : AppColors.primary,
@@ -860,7 +856,7 @@ class _SplitBillPanelState extends State<SplitBillPanel>
                   children: [
                     _memberAvatar(s.to, size: 34),
                     const SizedBox(height: 3),
-                    Text(s.to.name.split(' ').first, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.deepEarth)),
+                    Text(s.to.name.split(' ').first, style: const TextStyle( fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.deepEarth)),
                   ],
                 ),
                 const SizedBox(width: 14),
@@ -873,7 +869,7 @@ class _SplitBillPanelState extends State<SplitBillPanel>
                         margin: const EdgeInsets.only(bottom: 6),
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(color: const Color(0xFF007AE5), borderRadius: BorderRadius.circular(7)),
-                        child: const Text('💙 GCash', style: TextStyle(fontFamily: 'DM Sans', fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white)),
+                        child: const Text('💙 GCash', style: TextStyle( fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white)),
                       ),
                     GestureDetector(
                       onTap: () => setState(() {
@@ -892,7 +888,6 @@ class _SplitBillPanelState extends State<SplitBillPanel>
                         child: Text(
                           isSettled ? '✓ Paid' : 'Mark Paid',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             color: isSettled ? Colors.white : AppColors.warmMuted,
@@ -924,9 +919,9 @@ class _SplitBillPanelState extends State<SplitBillPanel>
         children: [
           Text('🎉', style: TextStyle(fontSize: 36)),
           SizedBox(height: 8),
-          Text('All Settled!', style: TextStyle(fontFamily: 'DM Sans', fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.green)),
+          Text('All Settled!', style: TextStyle( fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.green)),
           SizedBox(height: 4),
-          Text('Everyone\'s contributions are balanced.', style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, color: AppColors.greenBright), textAlign: TextAlign.center),
+          Text('Everyone\'s contributions are balanced.', style: TextStyle( fontSize: 12, color: AppColors.greenBright), textAlign: TextAlign.center),
         ],
       ),
     );
@@ -940,12 +935,12 @@ class _SplitBillPanelState extends State<SplitBillPanel>
       children: [
         Text(
           title.toUpperCase(),
-          style: const TextStyle(fontFamily: 'DM Sans', fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.warmMuted, letterSpacing: 1.5),
+          style: const TextStyle( fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.warmMuted, letterSpacing: 1.5),
         ),
         const Spacer(),
         Text(
           subtitle,
-          style: const TextStyle(fontFamily: 'DM Sans', fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.primary),
+          style: const TextStyle( fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.primary),
         ),
       ],
     );
@@ -961,7 +956,7 @@ class _SplitBillPanelState extends State<SplitBillPanel>
             const SizedBox(height: 12),
             Text(
               message,
-              style: const TextStyle(fontFamily: 'DM Sans', fontSize: 14, color: AppColors.warmMuted),
+              style: const TextStyle( fontSize: 14, color: AppColors.warmMuted),
               textAlign: TextAlign.center,
             ),
           ],

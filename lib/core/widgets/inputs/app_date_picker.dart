@@ -94,7 +94,6 @@ class AppDatePicker extends StatelessWidget {
           Text(
             label,
             style: const TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 14,
               fontWeight: FontWeight.w600,
               color: AppColors.deepEarth,
@@ -133,7 +132,6 @@ class AppDatePicker extends StatelessWidget {
                     child: Text(
                       displayVal.isNotEmpty ? displayVal : (hint ?? 'Select Date'),
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 15,
                         color: displayVal.isNotEmpty
                             ? AppColors.textPrimary
@@ -152,7 +150,6 @@ class AppDatePicker extends StatelessWidget {
               child: Text(
                 errorText!,
                 style: const TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 12,
                   color: AppColors.red,
                 ),

@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
@@ -92,7 +93,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                                       ? trip.name
                                       : 'Budget & Allowance',
                                   style: const TextStyle(
-                                    fontFamily: 'Playfair Display',
+                                    fontFamily: AppTextStyles.fontHeading,
                                     fontSize: 20,
                                     fontWeight: FontWeight.w700,
                                     color: Colors.white,
@@ -125,7 +126,6 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                                           child: Text(
                                             '${AppTripTypes.getEmoji(trip.tripType)} ${trip.destination}',
                                             style: const TextStyle(
-                                              fontFamily: 'DM Sans',
                                               fontSize: 12,
                                               fontWeight: FontWeight.w700,
                                               color: Color(0xFFF0997B),
@@ -250,7 +250,6 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
             label: Text(
               _scopeIndex == 0 ? 'Log Pocket Expense' : 'Log Group Bill',
               style: const TextStyle(
-                fontFamily: 'DM Sans',
                 fontWeight: FontWeight.w700,
                 fontSize: 13,
               ),
@@ -290,7 +289,6 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
             label,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 12,
               fontWeight: FontWeight.w700,
               color: active ? Colors.white : Colors.white.withValues(alpha: 0.6),
@@ -325,7 +323,6 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
             label,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 12,
               fontWeight: FontWeight.w600,
               color: active
@@ -507,7 +504,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
             const Text(
               'Switch Active Trip',
               style: TextStyle(
-                fontFamily: 'Playfair Display',
+                fontFamily: AppTextStyles.fontHeading,
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
                 color: AppColors.deepEarth,
@@ -517,7 +514,6 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
             const Text(
               'Select which trip budget and personal allowance to manage:',
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 12,
                 color: Color(0xFF6B7280),
               ),
@@ -548,7 +544,6 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                   title: Text(
                     t.destination,
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 14,
                       fontWeight:
                           isSelected ? FontWeight.w700 : FontWeight.w600,
@@ -560,7 +555,6 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                   subtitle: Text(
                     '${t.members.length} members · ₱${CurrencyUtils.formatAmount(t.totalBudget)} budget',
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 11,
                       color: Color(0xFF6B7280),
                     ),
@@ -597,7 +591,6 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
               child: const Text(
                 'Filter',
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 13,
                   color: AppColors.primary,
                   fontWeight: FontWeight.bold,
@@ -688,7 +681,6 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
       child: Text(
         title.toUpperCase(),
         style: const TextStyle(
-          fontFamily: 'DM Sans',
           fontSize: 10,
           fontWeight: FontWeight.w600,
           color: AppColors.warmMuted,
@@ -712,7 +704,6 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
           child: Text(
             'No approved spending yet.',
             style: TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 13,
               color: AppColors.warmMuted,
             ),
@@ -753,7 +744,6 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                         child: Text(
                           _categoryLabel(entry.key),
                           style: const TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: AppColors.deepEarth,
@@ -763,7 +753,6 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                       Text(
                         '₱${CurrencyUtils.formatAmount(entry.value)}',
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                           color: AppColors.deepEarth,
@@ -773,7 +762,6 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                       Text(
                         '${(pct * 100).round()}%',
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 11,
                           color: AppColors.warmMuted,
                         ),

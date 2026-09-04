@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -181,7 +182,7 @@ class _SetAllowanceSheetState extends ConsumerState<SetAllowanceSheet> {
                       Text(
                         'Set Personal Allowance',
                         style: TextStyle(
-                          fontFamily: 'Playfair Display',
+                          fontFamily: AppTextStyles.fontHeading,
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
                           color: AppColors.deepEarth,
@@ -190,7 +191,6 @@ class _SetAllowanceSheetState extends ConsumerState<SetAllowanceSheet> {
                       Text(
                         'Your solo pocket money for this trip',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 12,
                           color: Color(0xFF6B7280),
                         ),
@@ -206,7 +206,6 @@ class _SetAllowanceSheetState extends ConsumerState<SetAllowanceSheet> {
             const Text(
               'QUICK PRESETS',
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.5,
@@ -252,7 +251,6 @@ class _SetAllowanceSheetState extends ConsumerState<SetAllowanceSheet> {
                     child: Text(
                       '₱${CurrencyUtils.formatAmount(preset)}',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 12,
                         fontWeight:
                             isSelected ? FontWeight.w700 : FontWeight.w600,
@@ -269,7 +267,6 @@ class _SetAllowanceSheetState extends ConsumerState<SetAllowanceSheet> {
             const Text(
               'TOTAL PERSONAL ALLOWANCE',
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.5,
@@ -282,7 +279,6 @@ class _SetAllowanceSheetState extends ConsumerState<SetAllowanceSheet> {
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               style: const TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
                 color: AppColors.deepEarth,
@@ -293,7 +289,6 @@ class _SetAllowanceSheetState extends ConsumerState<SetAllowanceSheet> {
                   child: Text(
                     '₱',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
                       color: AppColors.primary,
@@ -328,7 +323,6 @@ class _SetAllowanceSheetState extends ConsumerState<SetAllowanceSheet> {
                   Text(
                     _error!,
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 12,
                       color: Color(0xFFEF4444),
                     ),
@@ -342,7 +336,6 @@ class _SetAllowanceSheetState extends ConsumerState<SetAllowanceSheet> {
             const Text(
               'INITIAL CASH ON HAND (OPTIONAL)',
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.5,
@@ -355,7 +348,6 @@ class _SetAllowanceSheetState extends ConsumerState<SetAllowanceSheet> {
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               style: const TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: AppColors.deepEarth,
@@ -366,7 +358,6 @@ class _SetAllowanceSheetState extends ConsumerState<SetAllowanceSheet> {
                   child: Text(
                     '₱',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                       color: Color(0xFF6B7280),
@@ -423,7 +414,6 @@ class _SetAllowanceSheetState extends ConsumerState<SetAllowanceSheet> {
                         const Text(
                           'Emergency Reserve',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
                             color: AppColors.deepEarth,
@@ -433,7 +423,6 @@ class _SetAllowanceSheetState extends ConsumerState<SetAllowanceSheet> {
                         Text(
                           'Locked funds excluded from daily spending',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 11,
                             color: Colors.grey.shade600,
                           ),
@@ -455,7 +444,6 @@ class _SetAllowanceSheetState extends ConsumerState<SetAllowanceSheet> {
                       isDense: true,
                       borderRadius: BorderRadius.circular(12),
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                         color: AppColors.deepEarth,
@@ -492,7 +480,6 @@ class _SetAllowanceSheetState extends ConsumerState<SetAllowanceSheet> {
                     const Text(
                       'BUDGET BREAKDOWN PREVIEW',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.5,
@@ -561,7 +548,6 @@ class _SetAllowanceSheetState extends ConsumerState<SetAllowanceSheet> {
                           Text(
                             'Save Personal Allowance',
                             style: TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
                             ),
@@ -585,7 +571,6 @@ class _SetAllowanceSheetState extends ConsumerState<SetAllowanceSheet> {
           child: Text(
             label,
             style: TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 12,
               fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
               color: const Color(0xFF6B7280),
@@ -598,7 +583,6 @@ class _SetAllowanceSheetState extends ConsumerState<SetAllowanceSheet> {
         Text(
           value,
           style: TextStyle(
-            fontFamily: 'DM Sans',
             fontSize: bold ? 14 : 12,
             fontWeight: FontWeight.w700,
             color: valueColor,

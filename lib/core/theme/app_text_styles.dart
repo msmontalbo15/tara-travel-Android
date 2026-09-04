@@ -14,11 +14,11 @@ class AppTextStyles {
   static const String fontSerifFallback = 'Georgia';
 
   // ── Headlines (Playfair Display Bold with Georgia Fallback) ──
-  static const List<String> _serifFallbacks = ['Georgia', 'serif'];
+  static const List<String> serifFallbacks = ['Georgia', 'serif'];
 
   static const TextStyle headline1 = TextStyle(
     fontFamily: fontHeading,
-    fontFamilyFallback: _serifFallbacks,
+    fontFamilyFallback: serifFallbacks,
     fontSize: 32,
     fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
@@ -28,7 +28,7 @@ class AppTextStyles {
 
   static const TextStyle headline2 = TextStyle(
     fontFamily: fontHeading,
-    fontFamilyFallback: _serifFallbacks,
+    fontFamilyFallback: serifFallbacks,
     fontSize: 26,
     fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
@@ -38,7 +38,7 @@ class AppTextStyles {
 
   static const TextStyle headline3 = TextStyle(
     fontFamily: fontHeading,
-    fontFamilyFallback: _serifFallbacks,
+    fontFamilyFallback: serifFallbacks,
     fontSize: 22,
     fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
@@ -47,7 +47,7 @@ class AppTextStyles {
 
   static const TextStyle headlineSmall = TextStyle(
     fontFamily: fontHeading,
-    fontFamilyFallback: _serifFallbacks,
+    fontFamilyFallback: serifFallbacks,
     fontSize: 18,
     fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
@@ -56,7 +56,7 @@ class AppTextStyles {
 
   static const TextStyle titleLarge = TextStyle(
     fontFamily: fontHeading,
-    fontFamilyFallback: _serifFallbacks,
+    fontFamilyFallback: serifFallbacks,
     fontSize: 20,
     fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
@@ -65,7 +65,7 @@ class AppTextStyles {
 
   static const TextStyle titleMedium = TextStyle(
     fontFamily: fontHeading,
-    fontFamilyFallback: _serifFallbacks,
+    fontFamilyFallback: serifFallbacks,
     fontSize: 16,
     fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
@@ -73,7 +73,7 @@ class AppTextStyles {
 
   static const TextStyle headlineWhite = TextStyle(
     fontFamily: fontHeading,
-    fontFamilyFallback: _serifFallbacks,
+    fontFamilyFallback: serifFallbacks,
     fontSize: 28,
     fontWeight: FontWeight.w700,
     color: Colors.white,
@@ -83,7 +83,7 @@ class AppTextStyles {
   // ── Tagline (Playfair Display Italic with Georgia Fallback) ───
   static const TextStyle tagline = TextStyle(
     fontFamily: fontHeading,
-    fontFamilyFallback: _serifFallbacks,
+    fontFamilyFallback: serifFallbacks,
     fontSize: 15,
     fontWeight: FontWeight.w400,
     fontStyle: FontStyle.italic,
@@ -93,7 +93,7 @@ class AppTextStyles {
 
   // ── Section Label ────────────────────────────────────────────
   static const TextStyle sectionLabel = TextStyle(
-    fontFamily: 'DM Sans',
+    fontFamily: fontBody,
     fontSize: 10,
     fontWeight: FontWeight.w600,
     color: AppColors.warmMuted,
@@ -102,7 +102,7 @@ class AppTextStyles {
 
   // ── Body (DM Sans) ──────────────────────────────────────────
   static const TextStyle bodyLarge = TextStyle(
-    fontFamily: 'DM Sans',
+    fontFamily: fontBody,
     fontSize: 16,
     fontWeight: FontWeight.w500,
     color: AppColors.textPrimary,
@@ -110,7 +110,7 @@ class AppTextStyles {
   );
 
   static const TextStyle bodyMedium = TextStyle(
-    fontFamily: 'DM Sans',
+    fontFamily: fontBody,
     fontSize: 14,
     fontWeight: FontWeight.w400,
     color: AppColors.textSecondary,
@@ -118,7 +118,7 @@ class AppTextStyles {
   );
 
   static const TextStyle bodySmall = TextStyle(
-    fontFamily: 'DM Sans',
+    fontFamily: fontBody,
     fontSize: 13,
     fontWeight: FontWeight.w400,
     color: AppColors.textSecondary,
@@ -126,7 +126,7 @@ class AppTextStyles {
 
   // ── Caption ──────────────────────────────────────────────────
   static const TextStyle caption = TextStyle(
-    fontFamily: 'DM Sans',
+    fontFamily: fontBody,
     fontSize: 11,
     fontWeight: FontWeight.w500,
     color: AppColors.muted,
@@ -134,14 +134,14 @@ class AppTextStyles {
 
   // ── Button ───────────────────────────────────────────────────
   static const TextStyle button = TextStyle(
-    fontFamily: 'DM Sans',
+    fontFamily: fontBody,
     fontSize: 14,
     fontWeight: FontWeight.w600,
     letterSpacing: 0.2,
   );
 
   static const TextStyle buttonSmall = TextStyle(
-    fontFamily: 'DM Sans',
+    fontFamily: fontBody,
     fontSize: 12,
     fontWeight: FontWeight.w600,
     letterSpacing: 0.2,
@@ -149,14 +149,14 @@ class AppTextStyles {
 
   // ── Badge / Chip ─────────────────────────────────────────────
   static const TextStyle badge = TextStyle(
-    fontFamily: 'DM Sans',
+    fontFamily: fontBody,
     fontSize: 11,
     fontWeight: FontWeight.w600,
   );
 
   // ── Nav Label ────────────────────────────────────────────────
   static const TextStyle navLabel = TextStyle(
-    fontFamily: 'DM Sans',
+    fontFamily: fontBody,
     fontSize: 10,
     fontWeight: FontWeight.w500,
     letterSpacing: 0.2,

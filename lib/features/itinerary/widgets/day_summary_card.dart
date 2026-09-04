@@ -90,11 +90,11 @@ class DaySummaryCard extends StatelessWidget {
                   children: [
                     Text(
                       '$completed',
-                      style: const TextStyle(fontFamily: 'DM Sans', fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white),
+                      style: const TextStyle( fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white),
                     ),
                     Text(
                       '/ $total',
-                      style: TextStyle(fontFamily: 'DM Sans', fontSize: 10, color: Colors.white.withValues(alpha: 0.6)),
+                      style: TextStyle( fontSize: 10, color: Colors.white.withValues(alpha: 0.6)),
                     ),
                   ],
                 ),
@@ -108,7 +108,7 @@ class DaySummaryCard extends StatelessWidget {
               children: [
                 Text(
                   'Day ${day.dayNumber} summary',
-                  style: TextStyle(fontFamily: 'DM Sans', fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white.withValues(alpha: 0.6), letterSpacing: 0.5),
+                  style: TextStyle( fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white.withValues(alpha: 0.6), letterSpacing: 0.5),
                 ),
                 const SizedBox(height: 6),
                 _stat('⏱', _timeRange),
@@ -132,7 +132,7 @@ class DaySummaryCard extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(fontFamily: 'DM Sans', fontSize: 12, fontWeight: FontWeight.w500, color: Colors.white),
+              style: const TextStyle( fontSize: 12, fontWeight: FontWeight.w500, color: Colors.white),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),

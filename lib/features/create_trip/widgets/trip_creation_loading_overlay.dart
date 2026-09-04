@@ -227,7 +227,6 @@ class _TripCreationLoadingOverlayState extends State<TripCreationLoadingOverlay>
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(
-            fontFamily: 'DM Sans',
             fontSize: 17,
             fontWeight: FontWeight.w700,
             color: Colors.white,
@@ -245,7 +244,6 @@ class _TripCreationLoadingOverlayState extends State<TripCreationLoadingOverlay>
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 12.5,
               color: Colors.white.withValues(alpha: 0.55),
               fontWeight: FontWeight.w400,
@@ -280,7 +278,6 @@ class _TripCreationLoadingOverlayState extends State<TripCreationLoadingOverlay>
                 _getStatusText(progressVal),
                 key: ValueKey<String>(_getStatusText(progressVal)),
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                   color: isDone
@@ -292,7 +289,6 @@ class _TripCreationLoadingOverlayState extends State<TripCreationLoadingOverlay>
             Text(
               isDone ? '100%' : '$percent%',
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: Colors.white.withValues(alpha: 0.4),
@@ -325,7 +321,6 @@ class _TripCreationLoadingOverlayState extends State<TripCreationLoadingOverlay>
         const Text(
           'Unable to Save Trip',
           style: TextStyle(
-            fontFamily: 'DM Sans',
             fontSize: 16,
             fontWeight: FontWeight.w700,
             color: Colors.white,
@@ -336,7 +331,6 @@ class _TripCreationLoadingOverlayState extends State<TripCreationLoadingOverlay>
           widget.errorMessage ?? 'Please check your connection and try again.',
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontFamily: 'DM Sans',
             fontSize: 12.5,
             color: Colors.white.withValues(alpha: 0.6),
             height: 1.3,
@@ -355,7 +349,7 @@ class _TripCreationLoadingOverlayState extends State<TripCreationLoadingOverlay>
                   ),
                   child: const Text(
                     'Dismiss',
-                    style: TextStyle(fontFamily: 'DM Sans', fontSize: 13),
+                    style: TextStyle( fontSize: 13),
                   ),
                 ),
               ),
@@ -375,7 +369,6 @@ class _TripCreationLoadingOverlayState extends State<TripCreationLoadingOverlay>
                   child: const Text(
                     'Try Again',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),

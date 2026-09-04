@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/constants/trip_types.dart';
@@ -131,7 +132,7 @@ class ConfirmStep extends StatelessWidget {
                       child: Text(
                         'Review Trip',
                         style: TextStyle(
-                          fontFamily: 'Playfair Display',
+                          fontFamily: AppTextStyles.fontHeading,
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
                           color: white,
@@ -313,7 +314,6 @@ class ConfirmStep extends StatelessWidget {
                     Text(
                       isComplete ? 'All Set to Travel!' : 'Reviewing Trip Details',
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
@@ -330,7 +330,6 @@ class ConfirmStep extends StatelessWidget {
                       child: Text(
                         '$score / 4 Ready',
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                           color: Color(0xFFF49D79),
@@ -345,7 +344,6 @@ class ConfirmStep extends StatelessWidget {
                       ? 'Destination, travel dates, transport, and budget are fully configured.'
                       : 'Review all trip details below before launching.',
                   style: const TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 12,
                     color: Color(0xFFD1BDB7),
                     height: 1.3,
@@ -422,7 +420,6 @@ class ConfirmStep extends StatelessWidget {
                               Text(
                                 option.label.toUpperCase(),
                                 style: TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
                                   color: themeColor,
@@ -443,7 +440,6 @@ class ConfirmStep extends StatelessWidget {
                           child: Text(
                             _countdownText,
                             style: const TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
                               color: Color(0xFFEF9F27),
@@ -464,7 +460,7 @@ class ConfirmStep extends StatelessWidget {
                 Text(
                   trip.tripName.isEmpty ? 'Untitled Epic Journey' : trip.tripName,
                   style: const TextStyle(
-                    fontFamily: 'Playfair Display',
+                    fontFamily: AppTextStyles.fontHeading,
                     fontSize: 24,
                     fontWeight: FontWeight.w800,
                     color: Colors.white,
@@ -482,7 +478,6 @@ class ConfirmStep extends StatelessWidget {
                       child: Text(
                         trip.destination.isEmpty ? 'Destination To Be Announced' : trip.destination,
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: Color(0xFFF0997B),
@@ -513,7 +508,6 @@ class ConfirmStep extends StatelessWidget {
                             const Text(
                               'TRAVEL DATES',
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
                                 color: Color(0xFF9C7B70),
@@ -526,7 +520,6 @@ class ConfirmStep extends StatelessWidget {
                                   ? '${_fmtShortDate(trip.fromDate)} – ${_fmtDate(trip.toDate)}'
                                   : 'Dates not set',
                               style: const TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
                                 color: Colors.white,
@@ -548,7 +541,6 @@ class ConfirmStep extends StatelessWidget {
                           const Text(
                             'DURATION',
                             style: TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                               color: Color(0xFF9C7B70),
@@ -563,7 +555,6 @@ class ConfirmStep extends StatelessWidget {
                               Text(
                                 '$_days ${_days == 1 ? 'Day' : 'Days'} · $_nights ${_nights == 1 ? 'Night' : 'Nights'}',
                                 style: const TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
                                   color: Colors.white,
@@ -618,7 +609,6 @@ class ConfirmStep extends StatelessWidget {
                   Text(
                     'TRANSPORT & ROUTE',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF9C7B70),
@@ -670,7 +660,6 @@ class ConfirmStep extends StatelessWidget {
                           Text(
                             mode.label,
                             style: const TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
@@ -686,7 +675,6 @@ class ConfirmStep extends StatelessWidget {
                             child: Text(
                               mode.category.name.toUpperCase(),
                               style: const TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 9,
                                 fontWeight: FontWeight.w700,
                                 color: Color(0xFF60A5FA),
@@ -701,7 +689,6 @@ class ConfirmStep extends StatelessWidget {
                             ? 'Est. Travel Time: ${transport.estimatedDuration}'
                             : 'Approx. ${mode.averageSpeedKmh.toInt()} km/h average pace',
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 12,
                           color: Color(0xFFEF9F27),
                           fontWeight: FontWeight.w600,
@@ -730,7 +717,6 @@ class ConfirmStep extends StatelessWidget {
                   child: Text(
                     departure != null && departure.isNotEmpty ? departure : 'Departure Point TBD',
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: Color(0xFFD1BDB7),
@@ -749,7 +735,6 @@ class ConfirmStep extends StatelessWidget {
                   child: Text(
                     trip.destination.isNotEmpty ? trip.destination : 'Destination',
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: Colors.white,
@@ -803,7 +788,6 @@ class ConfirmStep extends StatelessWidget {
                       child: Text(
                         transport.notes!,
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 12,
                           fontStyle: FontStyle.italic,
                           color: Color(0xFFD1BDB7),
@@ -855,7 +839,6 @@ class ConfirmStep extends StatelessWidget {
                   Text(
                     'BUDGET & EXPENSE SPLIT',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF9C7B70),
@@ -896,7 +879,6 @@ class ConfirmStep extends StatelessWidget {
                     const Text(
                       'TOTAL TRIP BUDGET',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         color: Color(0xFF9C7B70),
@@ -912,7 +894,6 @@ class ConfirmStep extends StatelessWidget {
                       child: Text(
                         _getSplitModeLabel(trip.splitMode),
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                           color: Color(0xFF34D399),
@@ -925,7 +906,7 @@ class ConfirmStep extends StatelessWidget {
                 Text(
                   CurrencyUtils.formatCurrency(totalBudget),
                   style: const TextStyle(
-                    fontFamily: 'Playfair Display',
+                    fontFamily: AppTextStyles.fontHeading,
                     fontSize: 28,
                     fontWeight: FontWeight.w800,
                     color: Colors.white,
@@ -946,7 +927,6 @@ class ConfirmStep extends StatelessWidget {
                           const Text(
                             'PER PERSON SHARE',
                             style: TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
                               color: Color(0xFF9C7B70),
@@ -958,7 +938,6 @@ class ConfirmStep extends StatelessWidget {
                                 ? '🎁 Host treats'
                                 : CurrencyUtils.formatCurrency(perPersonBudget),
                             style: const TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
                               color: Color(0xFFF49D79),
@@ -980,7 +959,6 @@ class ConfirmStep extends StatelessWidget {
                           const Text(
                             'DAILY ALLOWANCE',
                             style: TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
                               color: Color(0xFF9C7B70),
@@ -990,7 +968,6 @@ class ConfirmStep extends StatelessWidget {
                           Text(
                             '${CurrencyUtils.formatCurrency(dailyBudget)}/day',
                             style: const TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
@@ -1011,7 +988,6 @@ class ConfirmStep extends StatelessWidget {
             const Text(
               'CATEGORY ALLOCATIONS',
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFF9C7B70),
@@ -1063,7 +1039,6 @@ class ConfirmStep extends StatelessWidget {
                       child: Text(
                         cat.name,
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 13,
                           color: Color(0xFFD1BDB7),
                         ),
@@ -1072,7 +1047,6 @@ class ConfirmStep extends StatelessWidget {
                     Text(
                       '$pct% · ',
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 12,
                         color: Color(0xFF9C7B70),
                       ),
@@ -1080,7 +1054,6 @@ class ConfirmStep extends StatelessWidget {
                     Text(
                       CurrencyUtils.formatCurrency(cat.amount),
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
@@ -1128,7 +1101,6 @@ class ConfirmStep extends StatelessWidget {
                   Text(
                     'TRAVEL SQUAD · ${travelers.length}',
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF9C7B70),
@@ -1160,7 +1132,6 @@ class ConfirmStep extends StatelessWidget {
                     child: Text(
                       'Solo traveler. You can invite friends anytime with your unique trip code!',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 12,
                         color: Color(0xFFD1BDB7),
                       ),
@@ -1197,7 +1168,6 @@ class ConfirmStep extends StatelessWidget {
                             child: Text(
                               t.initials,
                               style: const TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
                                 color: Colors.white,
@@ -1213,7 +1183,6 @@ class ConfirmStep extends StatelessWidget {
                             Text(
                               t.name,
                               style: const TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
                                 color: Colors.white,
@@ -1225,7 +1194,6 @@ class ConfirmStep extends StatelessWidget {
                                   ? 'Host Treats'
                                   : CurrencyUtils.formatCurrency(perPersonBudget),
                               style: const TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 11,
                                 color: Color(0xFF9C7B70),
                               ),
@@ -1265,7 +1233,6 @@ class ConfirmStep extends StatelessWidget {
               Text(
                 'WHAT GETS GENERATED',
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   color: Color(0xFF9C7B70),
@@ -1321,7 +1288,6 @@ class ConfirmStep extends StatelessWidget {
               Text(
                 title,
                 style: const TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
@@ -1331,7 +1297,6 @@ class ConfirmStep extends StatelessWidget {
               Text(
                 subtitle,
                 style: const TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 11,
                   color: Color(0xFF9C7B70),
                   height: 1.3,
@@ -1389,7 +1354,6 @@ class ConfirmStep extends StatelessWidget {
                   Text(
                     'Create My Trip ✨',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.2,
@@ -1409,7 +1373,6 @@ class ConfirmStep extends StatelessWidget {
             child: const Text(
               'Save as Draft & Finish Later',
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
                 color: Color(0xFF9C7B70),
@@ -1449,7 +1412,6 @@ class ConfirmStep extends StatelessWidget {
             Text(
               label,
               style: const TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFFF49D79),
@@ -1478,7 +1440,6 @@ class ConfirmStep extends StatelessWidget {
       child: Text(
         text,
         style: TextStyle(
-          fontFamily: 'DM Sans',
           fontSize: 11,
           fontWeight: FontWeight.w600,
           color: highlight ? const Color(0xFF34D399) : const Color(0xFFD1BDB7),

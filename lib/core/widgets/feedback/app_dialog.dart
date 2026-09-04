@@ -86,7 +86,6 @@ class AppDialog {
                         ),
                         foregroundColor: AppColors.textPrimary,
                         textStyle: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                         ),
@@ -110,7 +109,6 @@ class AppDialog {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         textStyle: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                         ),
@@ -230,7 +228,6 @@ class AppDialog {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     textStyle: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                     ),

@@ -47,12 +47,12 @@ class DayBudgetBar extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 'Day budget  •  ${_fmt(spent)} spent',
-                style: const TextStyle(fontFamily: 'DM Sans', fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.deepEarth),
+                style: const TextStyle( fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.deepEarth),
               ),
               const Spacer(),
               Text(
                 over ? '${_fmt(remaining.abs())} over' : '${_fmt(remaining)} left',
-                style: TextStyle(fontFamily: 'DM Sans', fontSize: 11, fontWeight: FontWeight.w700, color: _barColor),
+                style: TextStyle( fontSize: 11, fontWeight: FontWeight.w700, color: _barColor),
               ),
             ],
           ),

@@ -46,7 +46,6 @@ class AppTextField extends StatelessWidget {
           Text(
             label,
             style: const TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 14,
               fontWeight: FontWeight.w600,
               color: AppColors.deepEarth,
@@ -63,7 +62,6 @@ class AppTextField extends StatelessWidget {
             validator: validator,
             maxLines: maxLines,
             style: const TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 15,
               color: AppColors.textPrimary,
             ),
@@ -75,7 +73,6 @@ class AppTextField extends StatelessWidget {
               ),
               errorText: errorText,
               errorStyle: const TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 12,
                 color: AppColors.red,
               ),

@@ -185,7 +185,6 @@ class _EditTripSheetState extends ConsumerState<EditTripSheet> {
                       child: const Text(
                         'Cancel',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 15,
                           color: AppColors.primary,
                           fontWeight: FontWeight.w600,
@@ -197,7 +196,6 @@ class _EditTripSheetState extends ConsumerState<EditTripSheet> {
                         child: Text(
                           'Edit trip',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimary,
@@ -254,7 +252,6 @@ class _EditTripSheetState extends ConsumerState<EditTripSheet> {
                           child: Text(
                             _destError!,
                             style: const TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 12,
                               color: AppColors.red,
                             ),
@@ -267,7 +264,6 @@ class _EditTripSheetState extends ConsumerState<EditTripSheet> {
                       const Text(
                         'Travel dates',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: AppColors.deepEarth,
@@ -297,7 +293,6 @@ class _EditTripSheetState extends ConsumerState<EditTripSheet> {
                                 child: Text(
                                   '${DateFormat('MMM d, yyyy').format(_fromDate)} – ${DateFormat('MMM d, yyyy').format(_toDate)}',
                                   style: const TextStyle(
-                                    fontFamily: 'DM Sans',
                                     fontSize: 15,
                                     fontWeight: FontWeight.w600,
                                     color: AppColors.textPrimary,
@@ -315,7 +310,6 @@ class _EditTripSheetState extends ConsumerState<EditTripSheet> {
                                 child: Text(
                                   '${_toDate.difference(_fromDate).inDays} nights',
                                   style: const TextStyle(
-                                    fontFamily: 'DM Sans',
                                     fontSize: 12,
                                     fontWeight: FontWeight.w700,
                                     color: AppColors.primary,
@@ -333,7 +327,6 @@ class _EditTripSheetState extends ConsumerState<EditTripSheet> {
                           child: Text(
                             _dateError!,
                             style: const TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 12,
                               color: AppColors.red,
                             ),
@@ -346,7 +339,6 @@ class _EditTripSheetState extends ConsumerState<EditTripSheet> {
                       const Text(
                         'Total budget',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: AppColors.deepEarth,
@@ -360,7 +352,6 @@ class _EditTripSheetState extends ConsumerState<EditTripSheet> {
                           FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
                         ],
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
                           color: AppColors.textPrimary,
@@ -369,7 +360,6 @@ class _EditTripSheetState extends ConsumerState<EditTripSheet> {
                           hintText: '0',
                           prefixText: '₱ ',
                           prefixStyle: const TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimary,
@@ -397,7 +387,6 @@ class _EditTripSheetState extends ConsumerState<EditTripSheet> {
                       const Text(
                         'Trip type',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: AppColors.deepEarth,
@@ -446,7 +435,6 @@ class _EditTripSheetState extends ConsumerState<EditTripSheet> {
                         : const Text(
                             'Save Changes',
                             style: TextStyle(
-                              fontFamily: 'DM Sans',
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
                             ),

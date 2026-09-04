@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
+import 'app_text_styles.dart';
 
 class AppTheme {
   static ThemeData light = ThemeData(
     scaffoldBackgroundColor: AppColors.background,
-    fontFamily: 'DM Sans',
+    fontFamily: AppTextStyles.fontBody,
     brightness: Brightness.light,
     primaryColor: AppColors.primary,
     colorScheme: ColorScheme.fromSeed(
@@ -21,8 +22,8 @@ class AppTheme {
       elevation: 0,
       centerTitle: true,
       titleTextStyle: TextStyle(
-        fontFamily: 'Playfair Display',
-        fontFamilyFallback: ['Georgia', 'serif'],
+        fontFamily: AppTextStyles.fontHeading,
+        fontFamilyFallback: AppTextStyles.serifFallbacks,
         fontSize: 20,
         fontWeight: FontWeight.w700,
         color: AppColors.textPrimary,
@@ -52,7 +53,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(24),
         ),
         textStyle: const TextStyle(
-          fontFamily: 'DM Sans',
+          fontFamily: AppTextStyles.fontBody,
           fontSize: 15,
           fontWeight: FontWeight.w700,
           letterSpacing: 0.2,
@@ -70,7 +71,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(24),
         ),
         textStyle: const TextStyle(
-          fontFamily: 'DM Sans',
+          fontFamily: AppTextStyles.fontBody,
           fontSize: 15,
           fontWeight: FontWeight.w600,
         ),
@@ -82,7 +83,7 @@ class AppTheme {
       style: TextButton.styleFrom(
         foregroundColor: AppColors.primary,
         textStyle: const TextStyle(
-          fontFamily: 'DM Sans',
+          fontFamily: AppTextStyles.fontBody,
           fontSize: 14,
           fontWeight: FontWeight.w600,
         ),
@@ -107,7 +108,7 @@ class AppTheme {
         borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
       ),
       hintStyle: const TextStyle(
-        fontFamily: 'DM Sans',
+        fontFamily: AppTextStyles.fontBody,
         fontSize: 14,
         color: AppColors.warmMuted,
       ),
@@ -120,12 +121,12 @@ class AppTheme {
       unselectedItemColor: AppColors.warmMuted,
       type: BottomNavigationBarType.fixed,
       selectedLabelStyle: TextStyle(
-        fontFamily: 'DM Sans',
+        fontFamily: AppTextStyles.fontBody,
         fontSize: 10,
         fontWeight: FontWeight.w600,
       ),
       unselectedLabelStyle: TextStyle(
-        fontFamily: 'DM Sans',
+        fontFamily: AppTextStyles.fontBody,
         fontSize: 10,
         fontWeight: FontWeight.w500,
       ),
@@ -140,15 +141,15 @@ class AppTheme {
         side: const BorderSide(color: AppColors.cardBorder, width: 0.8),
       ),
       titleTextStyle: const TextStyle(
-        fontFamily: 'Playfair Display',
-        fontFamilyFallback: ['Georgia', 'serif'],
+        fontFamily: AppTextStyles.fontHeading,
+        fontFamilyFallback: AppTextStyles.serifFallbacks,
         fontSize: 20,
         fontWeight: FontWeight.w700,
         color: AppColors.textPrimary,
         letterSpacing: -0.2,
       ),
       contentTextStyle: const TextStyle(
-        fontFamily: 'DM Sans',
+        fontFamily: AppTextStyles.fontBody,
         fontSize: 14,
         fontWeight: FontWeight.w400,
         color: AppColors.textSecondary,
@@ -181,7 +182,7 @@ class AppTheme {
       backgroundColor: AppColors.sand,
       selectedColor: AppColors.primary,
       labelStyle: const TextStyle(
-        fontFamily: 'DM Sans',
+        fontFamily: AppTextStyles.fontBody,
         fontSize: 11,
         fontWeight: FontWeight.w600,
       ),
@@ -200,7 +201,7 @@ class AppTheme {
         borderRadius: BorderRadius.circular(14),
       ),
       contentTextStyle: const TextStyle(
-        fontFamily: 'DM Sans',
+        fontFamily: AppTextStyles.fontBody,
         fontSize: 13.5,
         fontWeight: FontWeight.w500,
         color: Colors.white,

@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -56,9 +57,9 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Explore', style: TextStyle(fontFamily: 'Playfair Display', fontSize: 30, fontWeight: FontWeight.w700, color: Colors.white)),
+                          const Text('Explore', style: TextStyle(fontFamily: AppTextStyles.fontHeading, fontSize: 30, fontWeight: FontWeight.w700, color: Colors.white)),
                           const SizedBox(height: 2),
-                          Text('Find your next adventure', style: TextStyle(fontFamily: 'DM Sans', fontSize: 14, color: Colors.white.withValues(alpha: 0.5))),
+                          Text('Find your next adventure', style: TextStyle( fontSize: 14, color: Colors.white.withValues(alpha: 0.5))),
                         ],
                       ),
                       const AppBrandLogo(size: 38, isDark: true),
@@ -76,11 +77,11 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                     child: TextField(
                       controller: _searchCtrl,
                       onChanged: (v) => setState(() => _query = v),
-                      style: const TextStyle(fontFamily: 'DM Sans', fontSize: 14, color: Colors.white),
+                      style: const TextStyle( fontSize: 14, color: Colors.white),
                       decoration: InputDecoration(
                         prefixIcon: Icon(Icons.search_rounded, color: Colors.white.withValues(alpha: 0.4), size: 20),
                         hintText: 'Search destinations...',
-                        hintStyle: TextStyle(fontFamily: 'DM Sans', fontSize: 14, color: Colors.white.withValues(alpha: 0.25)),
+                        hintStyle: TextStyle( fontSize: 14, color: Colors.white.withValues(alpha: 0.25)),
                         border: InputBorder.none,
                         enabledBorder: InputBorder.none,
                         focusedBorder: InputBorder.none,
@@ -111,7 +112,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                   child: Center(
                     child: Text(
                       'Unable to load live destinations right now.',
-                      style: TextStyle(fontFamily: 'DM Sans', fontSize: 14, color: AppColors.warmMuted),
+                      style: TextStyle( fontSize: 14, color: AppColors.warmMuted),
                     ),
                   ),
                 ),
@@ -156,12 +157,12 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
-          child: Text('${results.length} results for "$_query"', style: const TextStyle(fontFamily: 'DM Sans', fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.warmMuted)),
+          child: Text('${results.length} results for "$_query"', style: const TextStyle( fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.warmMuted)),
         ),
         if (results.isEmpty)
           const Padding(
             padding: EdgeInsets.all(40),
-            child: Center(child: Text('No destinations found 🤔', style: TextStyle(fontFamily: 'DM Sans', fontSize: 15, color: AppColors.warmMuted))),
+            child: Center(child: Text('No destinations found 🤔', style: TextStyle( fontSize: 15, color: AppColors.warmMuted))),
           ),
         ...results.map((d) => _RecommendedCard(dest: d, onTap: () => _showDestinationDetail(context, d))),
         const SizedBox(height: 130),
@@ -175,7 +176,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(title, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+          Text(title, style: const TextStyle( fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
           if (onSeeAll != null)
             GestureDetector(
               onTap: onSeeAll,
@@ -185,7 +186,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                   color: AppColors.sand,
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Text('See all', style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary)),
+                child: const Text('See all', style: TextStyle( fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary)),
               ),
             ),
         ],
@@ -270,7 +271,7 @@ class _DestinationCard extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(8)),
-                        child: const Text('🔥 Trending', style: TextStyle(fontFamily: 'DM Sans', fontSize: 9, fontWeight: FontWeight.w700, color: Colors.white)),
+                        child: const Text('🔥 Trending', style: TextStyle( fontSize: 9, fontWeight: FontWeight.w700, color: Colors.white)),
                       ),
                     ),
                 ],
@@ -284,12 +285,12 @@ class _DestinationCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(dest.name, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                    Text(dest.name, style: const TextStyle( fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
                     Row(
                       children: [
-                        Text(dest.avgCostRange, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.primary)),
+                        Text(dest.avgCostRange, style: const TextStyle( fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.primary)),
                         const SizedBox(width: 6),
-                        Text('· ${dest.bestMode}', style: const TextStyle(fontFamily: 'DM Sans', fontSize: 10, color: AppColors.textSecondary)),
+                        Text('· ${dest.bestMode}', style: const TextStyle( fontSize: 10, color: AppColors.textSecondary)),
                       ],
                     ),
                   ],
@@ -350,20 +351,20 @@ class _RecommendedCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Text(dest.name, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                      Text(dest.name, style: const TextStyle( fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
                       const SizedBox(width: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                         decoration: BoxDecoration(color: AppColors.sand, borderRadius: BorderRadius.circular(6)),
-                        child: Text(dest.tag, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 9, fontWeight: FontWeight.w700, color: AppColors.primary)),
+                        child: Text(dest.tag, style: const TextStyle( fontSize: 9, fontWeight: FontWeight.w700, color: AppColors.primary)),
                       ),
                     ],
                   ),
                   const SizedBox(height: 4),
-                  Text(dest.distanceFromMetro, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 11, color: AppColors.textSecondary)),
+                  Text(dest.distanceFromMetro, style: const TextStyle( fontSize: 11, color: AppColors.textSecondary)),
                   if (dest.recommendedReason != null) ...[
                     const SizedBox(height: 3),
-                    Text(dest.recommendedReason!, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.primary)),
+                    Text(dest.recommendedReason!, style: const TextStyle( fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.primary)),
                   ],
                 ],
               ),
@@ -371,7 +372,7 @@ class _RecommendedCard extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(dest.avgCostRange, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                Text(dest.avgCostRange, style: const TextStyle( fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
                 const SizedBox(height: 6),
                 Container(
                   padding: const EdgeInsets.all(4),
@@ -456,8 +457,8 @@ class _DestinationDetailSheet extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(dest.name, style: const TextStyle(fontFamily: 'Playfair Display', fontSize: 28, fontWeight: FontWeight.w700, color: Colors.white)),
-                      Text(dest.country, style: TextStyle(fontFamily: 'DM Sans', fontSize: 13, color: Colors.white.withValues(alpha: 0.5))),
+                      Text(dest.name, style: const TextStyle(fontFamily: AppTextStyles.fontHeading, fontSize: 28, fontWeight: FontWeight.w700, color: Colors.white)),
+                      Text(dest.country, style: TextStyle( fontSize: 13, color: Colors.white.withValues(alpha: 0.5))),
                     ],
                   ),
                 ),
@@ -470,7 +471,7 @@ class _DestinationDetailSheet extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(dest.description, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 14, color: AppColors.textSecondary, height: 1.6)),
+                  Text(dest.description, style: const TextStyle( fontSize: 14, color: AppColors.textSecondary, height: 1.6)),
                   const SizedBox(height: 20),
                   _infoRow('📍', 'Distance', dest.distanceFromMetro),
                   _infoRow('🚗', 'Best way to get there', dest.bestMode),
@@ -483,7 +484,7 @@ class _DestinationDetailSheet extends StatelessWidget {
                         child: OutlinedButton.icon(
                           onPressed: () => Navigator.pop(context),
                           icon: const Icon(Icons.bookmark_add_outlined, size: 16),
-                          label: const Text('Save', style: TextStyle(fontFamily: 'DM Sans')),
+                          label: const Text('Save', style: TextStyle()),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: AppColors.primary,
                             side: const BorderSide(color: AppColors.primary, width: 1.5),
@@ -500,7 +501,7 @@ class _DestinationDetailSheet extends StatelessWidget {
                             Navigator.pushNamed(context, '/create-trip');
                           },
                           icon: const Icon(Icons.add_rounded, size: 16),
-                          label: const Text('Plan Trip', style: TextStyle(fontFamily: 'DM Sans', fontWeight: FontWeight.w600)),
+                          label: const Text('Plan Trip', style: TextStyle( fontWeight: FontWeight.w600)),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             foregroundColor: Colors.white,
@@ -539,8 +540,8 @@ class _DestinationDetailSheet extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 11, color: AppColors.warmMuted)),
-              Text(value, style: const TextStyle(fontFamily: 'DM Sans', fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+              Text(label, style: const TextStyle( fontSize: 11, color: AppColors.warmMuted)),
+              Text(value, style: const TextStyle( fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
             ],
           ),
         ],

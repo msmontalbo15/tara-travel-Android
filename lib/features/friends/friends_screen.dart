@@ -102,7 +102,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
               const Text(
                 'My Friend Code',
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,
@@ -113,7 +112,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                 'Share your personal QR or ID to connect with travel buddies',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 13,
                   color: AppColors.textSecondary,
                 ),
@@ -165,7 +163,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
               Text(
                 displayName,
                 style: const TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,
@@ -180,7 +177,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                     Clipboard.setData(ClipboardData(text: userId));
                     ScaffoldMessenger.of(ctx).showSnackBar(
                       const SnackBar(
-                        content: Text('Friend ID copied!', style: TextStyle(fontFamily: 'DM Sans')),
+                        content: Text('Friend ID copied!', style: TextStyle()),
                         backgroundColor: AppColors.green,
                         behavior: SnackBarBehavior.floating,
                       ),
@@ -201,7 +198,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                         Text(
                           '${userId.substring(0, 8)}…',
                           style: const TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 12,
                             color: AppColors.textSecondary,
                             letterSpacing: 0.5,
@@ -233,7 +229,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                   label: const Text(
                     'Share Profile Code',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                     ),
@@ -340,7 +335,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                 Text(
                   'Add Friend',
                   style: TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
@@ -356,7 +350,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                   const Text(
                     'Enter a friend\'s User ID, display name, or email:',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 13,
                       color: AppColors.textSecondary,
                     ),
@@ -367,13 +360,12 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                     autofocus: initialQuery == null || initialQuery.isEmpty,
                     onChanged: onInputChanged,
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 14,
                       color: AppColors.textPrimary,
                     ),
                     decoration: InputDecoration(
                       hintText: 'e.g. Maria Clara or User ID',
-                      hintStyle: const TextStyle(fontFamily: 'DM Sans', color: AppColors.muted),
+                      hintStyle: const TextStyle( color: AppColors.muted),
                       prefixIcon: const Icon(Icons.search_rounded, color: AppColors.textSecondary, size: 20),
                       suffixIcon: ctrl.text.isNotEmpty
                           ? IconButton(
@@ -451,7 +443,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                                 ? Text(
                                     resolvedUser!.initials,
                                     style: const TextStyle(
-                                      fontFamily: 'DM Sans',
                                       fontWeight: FontWeight.w700,
                                       color: Colors.white,
                                       fontSize: 14,
@@ -467,7 +458,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                                 Text(
                                   resolvedUser!.name,
                                   style: const TextStyle(
-                                    fontFamily: 'DM Sans',
                                     fontWeight: FontWeight.w700,
                                     fontSize: 14,
                                     color: AppColors.textPrimary,
@@ -477,7 +467,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                                   Text(
                                     resolvedUser!.email!,
                                     style: const TextStyle(
-                                      fontFamily: 'DM Sans',
                                       fontSize: 11,
                                       color: AppColors.textSecondary,
                                     ),
@@ -488,14 +477,12 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                           if (resolvedUser!.status == FriendStatus.accepted)
                             const Text('Friends ✓',
                                 style: TextStyle(
-                                    fontFamily: 'DM Sans',
                                     fontSize: 12,
                                     fontWeight: FontWeight.w700,
                                     color: AppColors.green))
                           else if (resolvedUser!.status == FriendStatus.pending)
                             const Text('Pending',
                                 style: TextStyle(
-                                    fontFamily: 'DM Sans',
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
                                     color: AppColors.amber)),
@@ -507,7 +494,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                       padding: const EdgeInsets.symmetric(vertical: 4),
                       child: Text(
                         lookupError!,
-                        style: const TextStyle(fontFamily: 'DM Sans', fontSize: 12, color: AppColors.muted),
+                        style: const TextStyle( fontSize: 12, color: AppColors.muted),
                       ),
                     ),
                 ],
@@ -520,7 +507,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                   Navigator.pop(ctx);
                 },
                 child: const Text('Cancel',
-                    style: TextStyle(fontFamily: 'DM Sans', color: AppColors.textSecondary)),
+                    style: TextStyle( color: AppColors.textSecondary)),
               ),
               if (isSending)
                 const SizedBox(
@@ -568,7 +555,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                   child: const Text('Send Request',
-                      style: TextStyle(fontFamily: 'DM Sans', fontWeight: FontWeight.w600)),
+                      style: TextStyle( fontWeight: FontWeight.w600)),
                 ),
             ],
           );
@@ -605,7 +592,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                       child: Text(
                         'Friends',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 17,
                           fontWeight: FontWeight.w700,
                           color: AppColors.textPrimary,
@@ -667,12 +653,10 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                 labelColor: AppColors.primary,
                 unselectedLabelColor: AppColors.textSecondary,
                 labelStyle: const TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                 ),
                 unselectedLabelStyle: const TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
                 ),
@@ -761,7 +745,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                     const Text(
                       'No Friends Yet',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
@@ -772,7 +755,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                       'Connect with friends to plan trips together, share itineraries, and split travel expenses effortlessly.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 13,
                         color: AppColors.textSecondary,
                         height: 1.4,
@@ -786,7 +768,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                           onPressed: () => _tabController.animateTo(2),
                           icon: const Icon(Icons.person_search_rounded, size: 16),
                           label: const Text('Find Friends',
-                              style: TextStyle(fontFamily: 'DM Sans', fontWeight: FontWeight.w600)),
+                              style: TextStyle( fontWeight: FontWeight.w600)),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             foregroundColor: Colors.white,
@@ -800,7 +782,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                           onPressed: _showMyQrCodeModal,
                           icon: const Icon(Icons.qr_code_rounded, size: 16),
                           label: const Text('My QR',
-                              style: TextStyle(fontFamily: 'DM Sans', fontWeight: FontWeight.w600)),
+                              style: TextStyle( fontWeight: FontWeight.w600)),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: AppColors.deepEarth,
                             side: const BorderSide(color: AppColors.cardBorder),
@@ -863,7 +845,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                         child: Text(
                           'All (${friends.length})',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
                             color: !_showOnlineOnly ? Colors.white : AppColors.textSecondary,
@@ -899,7 +880,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                             Text(
                               'Online ($onlineCount)',
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
                                 color: _showOnlineOnly ? Colors.white : AppColors.green,
@@ -916,7 +896,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                     Text(
                       onlineCount > 0 ? '$onlineCount active' : 'All offline',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: onlineCount > 0 ? AppColors.green : AppColors.muted,
@@ -932,10 +911,10 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                 TextField(
                   controller: _localFilterCtrl,
                   onChanged: (val) => setState(() => _localFilterQuery = val.trim()),
-                  style: const TextStyle(fontFamily: 'DM Sans', fontSize: 13),
+                  style: const TextStyle( fontSize: 13),
                   decoration: InputDecoration(
                     hintText: 'Filter your friends...',
-                    hintStyle: const TextStyle(fontFamily: 'DM Sans', color: AppColors.muted, fontSize: 13),
+                    hintStyle: const TextStyle( color: AppColors.muted, fontSize: 13),
                     prefixIcon: const Icon(Icons.search_rounded, size: 18, color: AppColors.textSecondary),
                     suffixIcon: _localFilterQuery.isNotEmpty
                         ? IconButton(
@@ -978,14 +957,14 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                           _showOnlineOnly
                               ? 'No friends currently online.'
                               : 'No friends match your filter.',
-                          style: const TextStyle(fontFamily: 'DM Sans', fontSize: 14, color: AppColors.textSecondary),
+                          style: const TextStyle( fontSize: 14, color: AppColors.textSecondary),
                         ),
                         if (_showOnlineOnly) ...[
                           const SizedBox(height: 8),
                           TextButton(
                             onPressed: () => setState(() => _showOnlineOnly = false),
                             child: const Text('Show all friends',
-                                style: TextStyle(fontFamily: 'DM Sans', color: AppColors.primary)),
+                                style: TextStyle( color: AppColors.primary)),
                           ),
                         ],
                       ],
@@ -1000,7 +979,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
         loading: () => const FriendsListSkeleton(count: 5),
         error: (e, _) => Center(
           child: Text('Error loading friends: $e',
-              style: const TextStyle(fontFamily: 'DM Sans', color: AppColors.red)),
+              style: const TextStyle( color: AppColors.red)),
         ),
       ),
     );
@@ -1026,7 +1005,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
               const Text(
                 'Incoming Requests',
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,
@@ -1045,7 +1023,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                   child: Text(
                     '${list.length}',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                       color: list.isNotEmpty ? AppColors.primary : AppColors.textSecondary,
@@ -1079,7 +1056,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                         Text(
                           'No incoming requests',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                             color: AppColors.textPrimary,
@@ -1089,7 +1065,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                         Text(
                           'When someone adds you, their request will appear here.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(fontFamily: 'DM Sans', fontSize: 12, color: AppColors.textSecondary),
+                          style: TextStyle( fontSize: 12, color: AppColors.textSecondary),
                         ),
                       ],
                     ),
@@ -1108,7 +1084,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
             },
             loading: () => const FriendsListSkeleton(count: 2),
             error: (e, _) => Text('Error: $e',
-                style: const TextStyle(fontFamily: 'DM Sans', color: AppColors.red)),
+                style: const TextStyle( color: AppColors.red)),
           ),
 
           const SizedBox(height: 16),
@@ -1123,7 +1099,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
               const Text(
                 'Sent Requests',
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,
@@ -1134,7 +1109,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                 data: (list) => Text(
                   '${list.length} pending',
                   style: const TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 12,
                     color: AppColors.textSecondary,
                   ),
@@ -1160,7 +1134,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                     child: Text(
                       'No pending sent requests',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 13,
                         color: AppColors.textSecondary,
                       ),
@@ -1180,7 +1153,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
             },
             loading: () => const FriendsListSkeleton(count: 2),
             error: (e, _) => Text('Error: $e',
-                style: const TextStyle(fontFamily: 'DM Sans', color: AppColors.red)),
+                style: const TextStyle( color: AppColors.red)),
           ),
         ],
       ),
@@ -1260,7 +1233,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                     Text(
                       'Find Your Travel Buddies',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
@@ -1274,7 +1246,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                   '• Tap "Add by ID" to paste a friend\'s unique user code\n'
                   '• Share your personal QR code so others can add you instantly',
                   style: TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 13,
                     color: AppColors.textSecondary,
                     height: 1.5,
@@ -1288,7 +1259,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                     onPressed: _showMyQrCodeModal,
                     icon: const Icon(Icons.share_rounded, size: 16),
                     label: const Text('Share My Profile Link',
-                        style: TextStyle(fontFamily: 'DM Sans', fontWeight: FontWeight.w600)),
+                        style: TextStyle( fontWeight: FontWeight.w600)),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.primary,
                       side: const BorderSide(color: AppColors.primary, width: 1.2),
@@ -1320,7 +1291,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                   Text(
                     'No travelers found.',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
@@ -1329,7 +1299,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                   SizedBox(height: 4),
                   Text(
                     'Try searching with a different name or email.',
-                    style: TextStyle(fontFamily: 'DM Sans', fontSize: 13, color: AppColors.textSecondary),
+                    style: TextStyle( fontSize: 13, color: AppColors.textSecondary),
                   ),
                 ],
               ),
@@ -1345,7 +1315,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
               child: Text(
                 'Found ${users.length} ${users.length == 1 ? 'user' : 'users'}',
                 style: const TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textSecondary,
@@ -1364,7 +1333,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
       loading: () => const FriendsListSkeleton(count: 4),
       error: (e, _) => Center(
         child: Text('Error: $e',
-            style: const TextStyle(fontFamily: 'DM Sans', color: AppColors.red)),
+            style: const TextStyle( color: AppColors.red)),
       ),
     );
   }
@@ -1433,7 +1402,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                   Text(
                     label,
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimary,
@@ -1442,7 +1410,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                   Text(
                     subtitle,
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 10,
                       color: AppColors.textSecondary,
                     ),

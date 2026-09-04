@@ -1035,6 +1035,20 @@ Client Tier               Storage Tier                Transport Tier
 
 ---
 
+## 24. 🔤 TYPOGRAPHY ARCHITECTURE & BRAND FONT TOKENS (IMP-088)
+
+- **Centralized Font Token Contract**:
+  - `AppTextStyles.fontHeading`: `'Playfair Display'` — Serif display font for brand logos, screen headlines, section titles, and modal headers.
+  - `AppTextStyles.fontBody`: `'DM Sans'` — Primary geometric sans-serif for body copy, buttons, labels, inputs, chips, and UI controls.
+  - `AppTextStyles.fontSerifFallback`: `'Georgia'` — Canonical high-legibility platform serif fallback.
+  - `AppTextStyles.serifFallbacks`: `const ['Georgia', 'serif']` — Public constant list for all serif display fallbacks.
+- **Strict Anti-Hardcoding Invariant**:
+  - **Zero Hardcoded Font Family Strings**: Never write `fontFamily: 'DM Sans'`, `fontFamily: 'Playfair Display'`, or `['Georgia', 'serif']` anywhere in feature screens or widgets.
+  - All text styles must resolve through semantic tokens in [`AppTextStyles`](file:///d:/Spencer/Downloads/tara_travel/lib/core/theme/app_text_styles.dart) (e.g., `AppTextStyles.headline1`, `AppTextStyles.titleMedium`, `AppTextStyles.bodyMedium`, `AppTextStyles.button`) or reference `AppTextStyles.fontHeading`, `AppTextStyles.fontBody`, and `AppTextStyles.serifFallbacks`.
+  - Default parameters in shared widgets (e.g. `MemberAvatarCircle`) must default to `AppTextStyles.fontBody`.
+
+---
+
 *This document is the single source of architectural truth for Tara Travel. Update this file whenever database schemas, RPC functions, core repositories, or system flows are modified.*
 
 

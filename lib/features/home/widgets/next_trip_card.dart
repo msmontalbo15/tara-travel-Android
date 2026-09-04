@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -161,7 +162,6 @@ class _NextTripCardState extends State<NextTripCard>
                             child: const Text(
                               'NEXT TRIP',
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
                                 color: Colors.white,
@@ -182,7 +182,6 @@ class _NextTripCardState extends State<NextTripCard>
                             child: Text(
                               dateLabel,
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 11,
                                 fontWeight: FontWeight.w500,
                                 color: Colors.white.withValues(alpha: 0.55),
@@ -215,7 +214,7 @@ class _NextTripCardState extends State<NextTripCard>
                                   return Text(
                                     daysAway > 0 ? '$daysAway' : '0',
                                     style: TextStyle(
-                                      fontFamily: 'Playfair Display',
+                                      fontFamily: AppTextStyles.fontHeading,
                                       fontSize: 52,
                                       fontWeight: FontWeight.w700,
                                       color: Colors.white,
@@ -242,7 +241,6 @@ class _NextTripCardState extends State<NextTripCard>
                                     Text(
                                       'days away',
                                       style: TextStyle(
-                                        fontFamily: 'DM Sans',
                                         fontSize: 15,
                                         fontWeight: FontWeight.w600,
                                         color: Colors.white
@@ -254,7 +252,6 @@ class _NextTripCardState extends State<NextTripCard>
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
-                                        fontFamily: 'DM Sans',
                                         fontSize: 12,
                                         color: Colors.white
                                             .withValues(alpha: 0.35),
@@ -292,7 +289,6 @@ class _NextTripCardState extends State<NextTripCard>
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
-                                    fontFamily: 'DM Sans',
                                     fontSize: 14,
                                     fontWeight: FontWeight.w500,
                                     color:
@@ -323,7 +319,6 @@ class _NextTripCardState extends State<NextTripCard>
                                       Text(
                                         '${widget.trip.members.length}',
                                         style: TextStyle(
-                                          fontFamily: 'DM Sans',
                                           fontSize: 11,
                                           fontWeight: FontWeight.w600,
                                           color: Colors.white
@@ -345,7 +340,7 @@ class _NextTripCardState extends State<NextTripCard>
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                              fontFamily: 'Playfair Display',
+                              fontFamily: AppTextStyles.fontHeading,
                               fontSize: 20,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
@@ -371,7 +366,7 @@ class _NextTripCardState extends State<NextTripCard>
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
-                                  fontFamily: 'Playfair Display',
+                                  fontFamily: AppTextStyles.fontHeading,
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
                                   color: Colors.white,
@@ -383,7 +378,6 @@ class _NextTripCardState extends State<NextTripCard>
                             Text(
                               '${daysAway > 0 ? daysAway : 0}d away',
                               style: TextStyle(
-                                fontFamily: 'DM Sans',
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
                                 color: themeColor.withValues(alpha: 0.90),

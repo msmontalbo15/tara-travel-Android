@@ -52,7 +52,6 @@ class DayStrip extends StatelessWidget {
                     Text(
                       'Day',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 13.5,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
@@ -98,7 +97,6 @@ class DayStrip extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 13.5,
                       fontWeight: active ? FontWeight.w700 : FontWeight.w600,
                       color: active ? Colors.white : Colors.white.withValues(alpha: 0.8),
@@ -117,7 +115,6 @@ class DayStrip extends StatelessWidget {
                         Text(
                           '${dayWeather.tempMax.round()}°',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 11.5,
                             fontWeight: FontWeight.w600,
                             color: active ? Colors.white.withValues(alpha: 0.95) : Colors.white.withValues(alpha: 0.6),

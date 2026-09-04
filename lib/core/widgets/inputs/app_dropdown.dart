@@ -31,7 +31,6 @@ class AppDropdown<T> extends StatelessWidget {
           Text(
             label,
             style: const TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 14,
               fontWeight: FontWeight.w600,
               color: AppColors.deepEarth,
@@ -43,7 +42,6 @@ class AppDropdown<T> extends StatelessWidget {
             items: items,
             onChanged: onChanged,
             style: const TextStyle(
-              fontFamily: 'DM Sans',
               fontSize: 15,
               color: AppColors.textPrimary,
             ),

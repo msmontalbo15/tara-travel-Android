@@ -1,3 +1,4 @@
+import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import '../../../core/models/packing_model.dart';
 import '../../../core/theme/app_colors.dart';
@@ -115,7 +116,7 @@ class _SaveTemplateModalState extends State<SaveTemplateModal> {
                   child: Text(
                     'Save as Template',
                     style: TextStyle(
-                      fontFamily: 'Playfair Display',
+                      fontFamily: AppTextStyles.fontHeading,
                       fontSize: 19,
                       fontWeight: FontWeight.w700,
                       color: AppColors.deepEarth,
@@ -143,7 +144,6 @@ class _SaveTemplateModalState extends State<SaveTemplateModal> {
                     child: Text(
                       'Saves ${widget.totalItems} items from this trip.',
                       style: const TextStyle(
-                        fontFamily: 'DM Sans',
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: AppColors.deepEarth,
@@ -159,7 +159,6 @@ class _SaveTemplateModalState extends State<SaveTemplateModal> {
             const Text(
               'Template Name',
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
                 color: AppColors.warmMuted,
@@ -171,7 +170,6 @@ class _SaveTemplateModalState extends State<SaveTemplateModal> {
               controller: _nameCtrl,
               autofocus: true,
               style: const TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: AppColors.deepEarth,
@@ -199,7 +197,6 @@ class _SaveTemplateModalState extends State<SaveTemplateModal> {
             const Text(
               'Choose Icon',
               style: TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
                 color: AppColors.warmMuted,
@@ -247,7 +244,6 @@ class _SaveTemplateModalState extends State<SaveTemplateModal> {
                   child: const Text(
                     'Cancel',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
                       fontWeight: FontWeight.w600,
                       color: AppColors.muted,
                     ),
@@ -279,7 +275,6 @@ class _SaveTemplateModalState extends State<SaveTemplateModal> {
                       : const Text(
                           'Save Template',
                           style: TextStyle(
-                            fontFamily: 'DM Sans',
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
                           ),
@@ -398,7 +393,7 @@ class _LoadTemplateSheetState extends State<LoadTemplateSheet>
                       Text(
                         'Packing Templates',
                         style: TextStyle(
-                          fontFamily: 'Playfair Display',
+                          fontFamily: AppTextStyles.fontHeading,
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
                           color: AppColors.deepEarth,
@@ -407,7 +402,6 @@ class _LoadTemplateSheetState extends State<LoadTemplateSheet>
                       Text(
                         'Load ready-made or saved checklists into your trip',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 12,
                           color: AppColors.muted,
                         ),
@@ -444,7 +438,6 @@ class _LoadTemplateSheetState extends State<LoadTemplateSheet>
                 labelColor: AppColors.deepEarth,
                 unselectedLabelColor: AppColors.muted,
                 labelStyle: const TextStyle(
-                  fontFamily: 'DM Sans',
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                 ),
@@ -490,7 +483,6 @@ class _LoadTemplateSheetState extends State<LoadTemplateSheet>
                   : 'No saved templates yet.\nTap "Save Template" to save your trip list!',
               textAlign: TextAlign.center,
               style: const TextStyle(
-                fontFamily: 'DM Sans',
                 fontSize: 13,
                 color: AppColors.muted,
               ),
@@ -548,7 +540,6 @@ class _LoadTemplateSheetState extends State<LoadTemplateSheet>
                 title: Text(
                   tpl.name,
                   style: const TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: AppColors.deepEarth,
@@ -557,7 +548,6 @@ class _LoadTemplateSheetState extends State<LoadTemplateSheet>
                 subtitle: Text(
                   '${tpl.totalItemCount} items • ${tpl.itemsByCategory.length} categories',
                   style: const TextStyle(
-                    fontFamily: 'DM Sans',
                     fontSize: 12,
                     color: AppColors.muted,
                   ),
@@ -583,7 +573,6 @@ class _LoadTemplateSheetState extends State<LoadTemplateSheet>
                   child: Text(
                     tpl.description,
                     style: const TextStyle(
-                      fontFamily: 'DM Sans',
                       fontSize: 12,
                       color: AppColors.warmMuted,
                     ),
@@ -602,7 +591,6 @@ class _LoadTemplateSheetState extends State<LoadTemplateSheet>
                       const Text(
                         'CHECKLIST PREVIEW',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 1.2,
@@ -619,7 +607,6 @@ class _LoadTemplateSheetState extends State<LoadTemplateSheet>
                               Text(
                                 '• ${_formatCatName(entry.key)}: ',
                                 style: const TextStyle(
-                                  fontFamily: 'DM Sans',
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
                                   color: AppColors.deepEarth,
@@ -631,7 +618,6 @@ class _LoadTemplateSheetState extends State<LoadTemplateSheet>
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
-                                    fontFamily: 'DM Sans',
                                     fontSize: 12,
                                     color: AppColors.muted,
                                   ),
