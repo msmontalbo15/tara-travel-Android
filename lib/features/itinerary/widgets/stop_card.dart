@@ -4,6 +4,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/models/itinerary_model.dart';
 import '../../../core/models/member_model.dart';
 import '../../../core/widgets/multi_member_picker_sheet.dart';
+import '../../../core/widgets/member_avatar_circle.dart';
 import 'navigate_route_button.dart';
 
 /// Ultra-simplified Itinerary Stop Card (IDEA-007).
@@ -366,25 +367,13 @@ class StopCard extends StatelessWidget {
                                 size: 20,
                               )
                             else
-                              Container(
-                                width: 22,
-                                height: 22,
-                                decoration: BoxDecoration(
-                                  color: _assignedMembers.first.color,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    _assignedMembers.first.initials.isNotEmpty
-                                        ? _assignedMembers.first.initials.substring(0, 1)
-                                        : 'M',
-                                    style: const TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
+                              MemberAvatarCircle(
+                                photoUrl: _assignedMembers.first.profilePhotoUrl,
+                                initials: _assignedMembers.first.initials.isNotEmpty
+                                    ? _assignedMembers.first.initials.substring(0, 1)
+                                    : 'M',
+                                color: _assignedMembers.first.color,
+                                size: 22,
                               ),
                           ],
                           const Spacer(),

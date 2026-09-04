@@ -476,6 +476,7 @@ Client Tier               Storage Tier                Transport Tier
 ### 8. `ProfileRepository` (`lib/core/repositories/profile_repository.dart`)
 - `Future<Map<String, dynamic>?> getRemoteProfile(String userId)` — Direct Supabase read with 3-Layer decryption.
 - `Future<void> saveRemoteProfile(String userId, Map<String, dynamic> data)` — Direct Supabase upsert with 3-Layer encryption.
+- `Future<String?> uploadAvatar(String userId, String localFilePath)` — Uploads image to Supabase Storage bucket `avatars` (`{userId}/profile.{ext}`) with cache-busting timestamp and returns public URL.
 
 ### 9. `PersonalAllowanceRepository` (`lib/core/repositories/personal_allowance_repository.dart`)
 - `Future<PersonalAllowanceModel?> getPersonalAllowance(String tripId, String userId)` — Reads user-isolated allowance configuration and personal expenses from `trip_personal_allowances` and `personal_expenses`.

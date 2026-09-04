@@ -1682,6 +1682,49 @@
 - **Verification**:
   - `flutter analyze lib/features/home/` executed with 0 errors and 0 warnings (18.9s).
 
+---
+
+### `IMP-082` · Supabase Storage Avatar Pipeline & Multi-Screen Photo Rendering Unification
+- **Date**: September 04, 2026
+- **Scope & Objectives**:
+  1. **Supabase Storage Upload Integration**:
+     - Added `uploadAvatar(userId, localFilePath)` to `ProfileRepository` targeting Supabase Storage bucket `avatars` with path `{userId}/profile.{ext}` and cache-busting timestamp `?t={ms}`.
+     - Updated `ProfileProvider.updatePhoto(pathOrUrl)` to asynchronously upload local picked files directly to Supabase Storage before persisting the resulting public HTTP URL into `public.users.avatar_url`.
+     - Preserved direct assignment for OAuth/Google avatars (`http*`).
+  2. **Shared Reusable Component (`MemberAvatarCircle`)**:
+     - Created `lib/core/widgets/member_avatar_circle.dart` offering seamless hybrid resolution:
+       - `CachedNetworkImage` with placeholder/error fallbacks for HTTP URLs (`avatar_url` from Supabase / Google).
+       - `Image.file` for local un-synced file previews.
+       - Initials fallback circle with deterministic member background color.
+  3. **Multi-Screen Avatar Fixes**:
+     - **Profile Screen**: Replaced `Image.file`-only rendering with `_buildProfileAvatar(profile)` supporting remote Supabase HTTP URLs (`CachedNetworkImage`), and ensured `_pickAndSavePhoto` awaits `updatePhoto`.
+     - **Members Screen**: Replaced initials-only `Container` with `MemberAvatarCircle` utilizing `member.profilePhotoUrl`.
+     - **Trip Detail Screen**: Replaced overlapping avatar cluster initials containers with `MemberAvatarCircle` per companion.
+     - **Trip Cards & Home Screen**: Added `photoUrl` to `TravelerInfo`, passed `member.profilePhotoUrl` from `HomeScreen`, and rendered `MemberAvatarCircle` in `TripCard`.
+     - **Multi-Member Picker Sheet**: Updated `MemberAvatarStack` and the list tile leading avatar to use `MemberAvatarCircle`.
+     - **Navigation & Radar**: Added `photoUrl` to `NavMember` model & `copyWith`, passed `profile.profilePhotoUrl` / `member.profilePhotoUrl` in `NavigationProvider`, and updated `MemberAvatar` and `MapMemberPin` to render `MemberAvatarCircle`.
+     - **Itinerary Sheets & Cards**: Updated `StopDetailSheet`, `StopCard`, and `ArrivalPill` avatar stacks to render `MemberAvatarCircle`.
+- **Target Files**:
+  - `lib/core/repositories/profile_repository.dart` [MODIFIED]
+  - `lib/core/providers/profile_provider.dart` [MODIFIED]
+  - `lib/core/widgets/member_avatar_circle.dart` [NEW]
+  - `lib/features/profile/profile_screen.dart` [MODIFIED]
+  - `lib/features/members/members_screen.dart` [MODIFIED]
+  - `lib/features/trip_detail/trip_detail_screen.dart` [MODIFIED]
+  - `lib/features/home/widgets/trip_card.dart` [MODIFIED]
+  - `lib/features/home/home_screen.dart` [MODIFIED]
+  - `lib/core/widgets/multi_member_picker_sheet.dart` [MODIFIED]
+  - `lib/features/navigation/models/navigation_models.dart` [MODIFIED]
+  - `lib/features/navigation/providers/navigation_provider.dart` [MODIFIED]
+  - `lib/features/navigation/widgets/shared/member_avatar.dart` [MODIFIED]
+  - `lib/features/itinerary/widgets/stop_detail_sheet.dart` [MODIFIED]
+  - `lib/features/itinerary/widgets/stop_card.dart` [MODIFIED]
+  - `lib/features/itinerary/widgets/arrival_pill.dart` [MODIFIED]
+  - `docs/MEMORY.md` [MODIFIED]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+- **Verification**:
+  - `flutter analyze lib/` executed: **No issues found! (0 errors, 0 warnings)**.
+
 
 
 
