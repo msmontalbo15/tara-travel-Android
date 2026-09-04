@@ -214,7 +214,7 @@ class _NextTripCardState extends State<NextTripCard>
                                   return Text(
                                     daysAway > 0 ? '$daysAway' : '0',
                                     style: TextStyle(
-                                      fontFamily: AppTextStyles.fontHeading,
+                                      fontFamily: AppTextStyles.fontBody,
                                       fontSize: 52,
                                       fontWeight: FontWeight.w700,
                                       color: Colors.white,

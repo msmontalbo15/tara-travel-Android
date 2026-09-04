@@ -387,7 +387,7 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
               Text(
                 '$percent%',
                 style: TextStyle(
-                  fontFamily: AppTextStyles.fontHeading,
+                  fontFamily: AppTextStyles.fontBody,
                   fontSize: 34,
                   fontWeight: FontWeight.w700,
                   color: allPacked ? AppColors.greenBright : Colors.white,

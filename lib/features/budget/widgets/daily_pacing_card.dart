@@ -163,7 +163,7 @@ class DailyPacingCard extends StatelessWidget {
                   child: Text(
                     '₱${CurrencyUtils.formatAmount(max(0.0, dailySafe - todaySpent))}',
                     style: TextStyle(
-                      fontFamily: AppTextStyles.fontHeading,
+                      fontFamily: AppTextStyles.fontBody,
                       fontSize: 28,
                       fontWeight: FontWeight.w700,
                       color: isOver ? const Color(0xFFEF4444) : AppColors.deepEarth,

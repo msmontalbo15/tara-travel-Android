@@ -116,14 +116,11 @@ class TripsScreen extends ConsumerWidget {
               ),
               child: allTripsAsync.when(
                 data: (trips) {
-                  // Split into drafts, upcoming, and past trips
-                  final drafts = trips.where((t) => t.isDraft && !t.isArchived).toList();
-                  final upcoming = trips
-                      .where((t) => !t.isDraft && !t.isArchived && !t.toDate.isBefore(now))
-                      .toList();
-                  final past = trips
-                      .where((t) => !t.isDraft && (t.isArchived || t.toDate.isBefore(now)))
-                      .toList();
+                  // Split by TripStatus — single source of truth via trip.status
+                  final drafts   = trips.where((t) => t.status == TripStatus.draft).toList();
+                  final ongoing  = trips.where((t) => t.status == TripStatus.ongoing).toList();
+                  final upcoming = trips.where((t) => t.status == TripStatus.planning).toList();
+                  final past     = trips.where((t) => t.status == TripStatus.completed).toList();
 
                   if (trips.isEmpty) {
                     return Center(
@@ -267,6 +264,19 @@ class TripsScreen extends ConsumerWidget {
                         if (drafts.isNotEmpty) ...[
                           _sectionHeader('DRAFTS'),
                           ...drafts.map((t) => _TripListCard(
+                                trip: t,
+                                onTap: () {
+                                   ref
+                                       .read(selectedTripIdProvider.notifier)
+                                       .select(t.id);
+                                   Navigator.pushNamed(context, '/trip-detail');
+                                 },
+                              )),
+                          const SizedBox(height: 8),
+                        ],
+                        if (ongoing.isNotEmpty) ...[
+                          _sectionHeader('ONGOING'),
+                          ...ongoing.map((t) => _TripListCard(
                                 trip: t,
                                 onTap: () {
                                    ref

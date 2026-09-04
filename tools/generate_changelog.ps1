@@ -4,8 +4,8 @@
 
 param([string]$RepoRoot = (Split-Path -Parent $PSScriptRoot))
 
-$MemFile = Join-Path $RepoRoot "IMPLEMENTATION_MEMORY.md"
-$OutFile = Join-Path $RepoRoot "CHANGELOG.md"
+$MemFile = if (Test-Path (Join-Path $RepoRoot "docs/IMPLEMENTATION_MEMORY.md")) { Join-Path $RepoRoot "docs/IMPLEMENTATION_MEMORY.md" } else { Join-Path $RepoRoot "IMPLEMENTATION_MEMORY.md" }
+$OutFile = if (Test-Path (Join-Path $RepoRoot "docs/CHANGELOG.md")) { Join-Path $RepoRoot "docs/CHANGELOG.md" } else { Join-Path $RepoRoot "CHANGELOG.md" }
 
 # 1. Parse the index table
 $indexEntries = [System.Collections.Generic.List[hashtable]]::new()

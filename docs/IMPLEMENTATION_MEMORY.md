@@ -1943,4 +1943,92 @@
 - **Verification**:
   - `flutter analyze`: **No issues found! (0 errors, 0 warnings)**.
 
+---
+
+### `IMP-084` — 2026-09-04: Comprehensive Budget & Expenses Module Revision
+- **Description**: Fully revised the shared data layer, transactional CRUD, and client-side derived aggregation architecture across Budget and Expenses screens to align with ground-truth schema rules and the requested UI/UX design specifications.
+- **Architectural Rationale**:
+  1. **Shared Data Layer (`ExpenseModel`)**:
+     - Standardized categories (`food`, `hotel`, `transport`, `activities`, `custom`) and statuses (`pending`, `approved`, `rejected`).
+     - Added helper getters (`isApproved`, `isPending`, `isRejected`, `categoryColor`, `categoryIcon`, `categoryEmoji`, `categoryLabel`).
+     - Maintained strict ground-truth schema compliance: only Supabase `expenses` columns (`id`, `trip_id`, `description`, `amount`, `category`, `paid_by_user_id`, `status`, `receipt_url`, `rejection_note`).
+  2. **Receipt OCR & Attachment Engine (`ReceiptOcrService`)**:
+     - Built cross-platform receipt image upload to Supabase Storage (`avatars` public bucket fallback) with cache-busting.
+     - Implemented heuristic OCR extraction parsing peso currency tokens, totals, dates, and category keywords to pre-populate expense amounts and descriptions.
+  3. **Transactional Expenses CRUD Flow (`AddExpenseForm` & `ExpenseLog`)**:
+     - Updated `AddExpenseForm` with Camera and Gallery capture options, instant OCR detection prompts, split-member multi-select with per-person calculations, and dual-scope logging (Personal Pocket vs Group Fund).
+     - Enhanced `ExpenseLog` with status filter chips (`All`, `Pending`, `Approved`, `Rejected`), interactive receipt modal viewer (`CachedNetworkImage`), and role-aware approval/rejection workflows (approving an expense commits it to the budget; rejecting supports optional rejection notes). Added pending count debt nudges.
+  4. **Derived-State Budget Screen & Pacing (`BudgetScreen`, `BudgetOverviewCard`, `CategoryBudgetChart`)**:
+     - Restyled hero card following the reference design: Deep Earth `#2C1A14` container, Playfair Display typography, large total budget readout, emerald green remaining badge, slim horizontal progress bar, and percentage usage indicators.
+     - Implemented template pill navigation bar: `[Overview, Expenses, + Add, Debts]` with instant switcher tabs.
+     - Revamped `CategoryBudgetChart` to render category dots, emojis, amounts, percentages, and segmented spent vs remaining indicators.
+     - Context-switching trip selector carousel to switch between trips dynamically with pure client-side recomputation.
+     - Preserved `SplitBillPanel` greedy creditor→debtor min-cash-flow matching graph with GCash QR / account copy and SharePlus integration.
+- **Target Files**:
+  - `lib/core/models/expense_model.dart` [MODIFIED]
+  - `lib/core/services/receipt_ocr_service.dart` [NEW]
+  - `lib/features/budget/widgets/add_expense_form.dart` [MODIFIED]
+  - `lib/features/budget/widgets/category_budget_chart.dart` [MODIFIED]
+  - `lib/features/budget/widgets/expense_log.dart` [MODIFIED]
+  - `lib/features/budget/widgets/budget_overview_card.dart` [MODIFIED]
+  - `lib/features/budget/budget_screen.dart` [MODIFIED]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+- **Verification**:
+  - `dart analyze lib`: **No issues found! (0 errors, 0 warnings)**.
+
+---
+
+### `IMP-085` — 2026-09-04: Refined Budget (Personal + Trip Summary) vs Trip Expenses (Group Layout)
+- **Description**: Realigned layout separation per user specification: "Budget" is dedicated to the traveler's personal budget & allowance with integrated trip expenses summary, while "Trip Expenses" preserves the exact previous classic group layout (ring chart, overview, transactional CRUD log, split bill panel).
+- **Architectural Implementation**:
+  1. **Trip Expenses Scope (`TripBudgetHeroCard`, `Overview`, `Expenses Log`, `Split Bill`)**:
+     - Retained the exact previous hero card: Trip Name, Subtitle, Ring Chart with "% spent", large total budget, remaining amount, and "₱X spent by Y members".
+     - Preserved the sub-tabs: `Overview` (Category breakdown & Member contributions), `Expenses` (Transactional CRUD log with approval workflow and receipt inspection), and `Split` (Greedy settlement plan & balances).
+  2. **Budget Scope (`PersonalTripBudgetHeroCard`, `DailyPacingCard`, `CashVsDigitalCard`, `CategoryBudgetChart`, `PersonalExpenseList`)**:
+     - Tailored hero card matching the clean template design with Deep Earth container, Playfair Display typography, prominent budget amount, Emerald remaining balance, slim spent bar, and an integrated **Trip Expenses Summary** pill row (Solo Spent, Group Liability share, and Trip Total).
+     - Renders daily burn pacing, cash vs digital balances, itemized category breakdown, and personal pocket expense log.
+- **Target Files**:
+  - `lib/features/budget/widgets/trip_budget_hero_card.dart` [NEW]
+  - `lib/features/budget/widgets/personal_trip_budget_hero_card.dart` [NEW]
+  - `lib/features/budget/budget_screen.dart` [MODIFIED]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+- **Verification**:
+  - `dart analyze lib`: **No issues found! (0 errors, 0 warnings)**.
+
+---
+
+### `IMP-089` — 2026-09-04: Numeric Typography & Readout Standardization to DM Sans
+- **Description**: Standardized all numbers, percentages, countdowns, and financial readouts across the app to strictly use `AppTextStyles.fontBody` (`DM Sans`).
+- **Architectural Implementation**:
+  1. **Theme Tokens (`AppTextStyles`)**:
+     - Added dedicated statistical/numeric tokens: `statNumberLarge` (34px bold), `statNumberMedium` (24px bold), `statNumberSmall` (18px bold) bound strictly to `AppTextStyles.fontBody`.
+  2. **Countdown & Stat Cards**:
+     - [NextTripCard](file:///d:/Spencer/Downloads/tara_travel/lib/features/home/widgets/next_trip_card.dart): Switched big days countdown number from `fontHeading` (`Playfair Display`) to `fontBody` (`DM Sans`).
+     - [PackingScreen](file:///d:/Spencer/Downloads/tara_travel/lib/features/packing/packing_screen.dart): Switched packing completion percentage (`$percent%`) from `fontHeading` to `fontBody`.
+     - [StopDetailSheet](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/stop_detail_sheet.dart): Switched estimated time of arrival readout (`formattedEta`) from `fontHeading` to `fontBody`.
+  3. **Financial & Budget Modules**:
+     - [PersonalTripBudgetHeroCard](file:///d:/Spencer/Downloads/tara_travel/lib/features/budget/widgets/personal_trip_budget_hero_card.dart): Switched big total budget and remaining numbers to `fontBody`.
+     - [BudgetOverviewCard](file:///d:/Spencer/Downloads/tara_travel/lib/features/budget/widgets/budget_overview_card.dart): Switched total budget and remaining numbers to `fontBody`.
+     - [TripBudgetHeroCard](file:///d:/Spencer/Downloads/tara_travel/lib/features/budget/widgets/trip_budget_hero_card.dart): Switched total budget amount readout to `fontBody`.
+     - [DailyPacingCard](file:///d:/Spencer/Downloads/tara_travel/lib/features/budget/widgets/daily_pacing_card.dart): Switched daily safe allowance readout to `fontBody`.
+     - [PersonalAllowanceCard](file:///d:/Spencer/Downloads/tara_travel/lib/features/budget/widgets/personal_allowance_card.dart): Switched total allowance figure to `fontBody`.
+     - [ChatEmbedCards](file:///d:/Spencer/Downloads/tara_travel/lib/features/chat/widgets/chat_embed_cards.dart): Switched formatted expense amounts in chat card and detail sheet to `fontBody`.
+- **Target Files**:
+  - `lib/core/theme/app_text_styles.dart` [MODIFIED]
+  - `lib/features/home/widgets/next_trip_card.dart` [MODIFIED]
+  - `lib/features/budget/widgets/personal_trip_budget_hero_card.dart` [MODIFIED]
+  - `lib/features/budget/widgets/budget_overview_card.dart` [MODIFIED]
+  - `lib/features/budget/widgets/trip_budget_hero_card.dart` [MODIFIED]
+  - `lib/features/budget/widgets/daily_pacing_card.dart` [MODIFIED]
+  - `lib/features/budget/widgets/personal_allowance_card.dart` [MODIFIED]
+  - `lib/features/chat/widgets/chat_embed_cards.dart` [MODIFIED]
+  - `lib/features/itinerary/widgets/stop_detail_sheet.dart` [MODIFIED]
+  - `lib/features/packing/packing_screen.dart` [MODIFIED]
+  - `docs/MEMORY.md` [MODIFIED]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+- **Verification**:
+  - Code review and verification completed. All numeric readouts confirmed on `AppTextStyles.fontBody` (`DM Sans`).
+
+
+
 

@@ -1,7 +1,7 @@
 # Tara Travel — Version Changelog
 
 > Auto-generated from IMPLEMENTATION_MEMORY.md + git log
-> Last updated: **2026-09-01 22:55 PHT**
+> Last updated: **2026-09-04 22:45 PHT**
 
 ---
 
@@ -1574,15 +1574,6 @@
   - **NavigateRouteButton & Route Modal**:
     - Increased main multi-stop navigation button height from 52 to `58` with size 24 icon and 14.5 bold typography.
     - Expanded tune options button hit area to a minimum `44x44` touch target.
-    - Scaled "Open in Google Maps" and "Copy Link" buttons in the route preview sheet to height `54` with larger icons and bold labels.
-    - Enlarged Scope Choice Chips and Travel Mode chips with generous padding (`14x10`) and tactile haptics.
-  - **ItineraryBottomDock Floating Bar**:
-    - Increased dock height, border radius (`26`), and inner button padding (`vertical: 13`) across `Live Nav`, `Day Map`, and `Stop` actions for effortless thumb tapping.
-  - **DayStrip Tabs & ArrivalPill**:
-    - Increased DayStrip height from 72 to `78`, tab padding to `18x10`, and font size to `13.5` bold with `HapticFeedback.selectionClick()`.
-    - Enlarged ArrivalPill check-in action button to `14x10` with size 20 icon and 11 bold text.
-- **Verification**:
-  - `flutter analyze lib/features/itinerary/` executed clean.
 
 </details>
 
@@ -1623,7 +1614,7 @@
 
 ---
 
-### IMP-070 - Driver-Ready Slide to Confirm Arrival, Per-Member Arrival Timestamps & Full Supabase Persistence [commit:ce24954](https://github.com/msmontalbo15/tara-travel-Android/commit/ce24954)
+### IMP-070 - Driver-Ready Slide to Confirm Arrival, Per-Member Arrival Timestamps & Full Supabase Persistence [commit:9821ae6](https://github.com/msmontalbo15/tara-travel-Android/commit/9821ae6)
 
 **Component**: UI & Itinerary / Driver-Ready Slide-to-Arrive Bottom Dock
 
@@ -1711,11 +1702,80 @@
 
 ---
 
+## 2026-09-02
+
+### IMP-075 - Itinerary Stop Detail Sheet: Real-Time ETA, Travel Time & Real Distance Engine
+
+**Component**: UI & Itinerary / Stop Detail Sheet Live GPS ETA & Stop Sharing
+
+**Summary**: Implemented real-time Estimated Time of Arrival (Live GPS ETA & inter-stop Haversine routing fallback) and 1-tap Stop Details Sharing (`share_plus`) inside `StopDetailSheet`, with 6-pillar information hierarchy and `previousStop` contextual routing handoff.
+
+<details>
+<summary>Full implementation detail</summary>
+
+- **Date**: September 2, 2026
+- **Scope & Objectives**:
+  1. **Real-Time Estimated Time of Arrival (Live GPS ETA, Real Distance & Travel Time)**:
+     - Implemented `_fetchLiveGpsForEta()` in `StopDetailSheet` using `Geolocator.getCurrentPosition(medium accuracy, 3s timeout)`.
+     - Integrated `TransitConflictHelper.analyze` to dynamically compute geodesic distance and transit duration based on stop transport mode speed (`averageSpeedKmh`).
+     - Added enhanced ETA card featuring:
+       - Top row: Arrival clock (`"8:45 AM"`) with green `LIVE GPS` badge indicator.
+       - Metrics grid: Dedicated **Real Distance** badge (`"3.2 km"` / `"850 meters"`) and **Estimated Travel Time** badge (`"18 mins"` / `"1h 15m"`).
+       - Context label indicating calculation origin (live GPS position vs. predecessor stop).
+     - Built completed stop state with green completion badge and scheduled fallback when coordinates are absent.
+  2. **1-Tap Stop Details Sharing with Real Geodata**:
+     - Added top header share icon button (`Icons.share_outlined`) invoking `_shareStopDetails()`.
+     - Formatted structured plaintext payload including stop category, timings, location, real distance from user/previous stop, estimated travel time, Google Maps direct place URL, cost, booking ref, and notes via `SharePlus.instance.share`.
+  3. **Contextual Inter-Stop Routing Integration**:
+     - Extended `StopDetailSheet` and `ItineraryScreen._showStopDetail` with `previousStop` parameter across both timeline and list view modes.
+- **Modified Files**:
+  - `lib/features/itinerary/widgets/stop_detail_sheet.dart` [MODIFIED]
+  - `lib/features/itinerary/itinerary_screen.dart` [MODIFIED]
+
+</details>
+
+---
+
+### IMP-074 - 2026-09-02 · UI & Home / Quick-Action Red Notification Dot Indicator (IDEA-010)
+
+**Component**: UI & Home / Quick-Action Red Notification Dot Indicator
+
+**Summary**: Implemented IDEA-010: Contextual Red Notification Dot Indicator (`🔴`) on TripCard quick action buttons for new or modified content inside (Itinerary, Packing, Members, Expenses, Chat) using Keystore-backed `ModuleViewTrackerService`, self-action exemption, and reactive Riverpod stream diffing.
+
+<details>
+<summary>Full implementation detail</summary>
+
+- **Problem**:
+  - The 5 quick action buttons on the home trip card (`Itinerary`, `Packing`, `Members`, `Expenses`, `Chat`) were static and did not provide visual change awareness when co-travelers added new stops, updated packing items, joined the trip, logged expenses, or sent unread messages.
+- **Solution**:
+  - Implemented **IDEA-010**: Lightweight, contextual **Red Notification Dot Indicator (`🔴`)** anchored to the top-right of each action button container.
+  - Built `ModuleViewTrackerService` utilizing Android Keystore / iOS Keychain `FlutterSecureStorage` with in-memory sync cache for $O(1)$ timestamp diffing.
+  - Implemented `tripQuickActionChangesProvider` which subscribes to real-time streams and queries `created_at` / `updated_at` timestamps against local `last_viewed:{module}:{tripId}` records.
+  - Built **Self-Action Exemption**: modifications authored by the current logged-in user (`user_id == currentUserId` or `paid_by_user_id == currentUserId`) are filtered out so users do not see notifications for their own edits.
+  - Integrated auto-dismissal on quick action tap and on-screen entry across all 5 destination screens (`ItineraryScreen`, `PackingScreen`, `MembersScreen`, `BudgetScreen`, `ChatScreen`).
+- **Modified / Created Files**:
+  - `lib/core/services/module_view_tracker_service.dart` [NEW]
+  - `lib/features/home/models/trip_card_badge_data.dart` [NEW]
+  - `lib/core/providers/trip_action_changes_provider.dart` [NEW]
+  - `lib/features/home/widgets/trip_card.dart`
+  - `lib/features/home/home_screen.dart`
+  - `lib/features/itinerary/itinerary_screen.dart`
+  - `lib/features/packing/packing_screen.dart`
+  - `lib/features/members/members_screen.dart`
+  - `lib/features/budget/budget_screen.dart`
+  - `lib/features/chat/chat_screen.dart`
+- **Verification**:
+  - `dart analyze` and `flutter analyze` completed cleanly with zero warnings or errors.
+
+</details>
+
+---
+
 ## 2026-09-03
 
-### IMP-077 - UI / Brand-Aligned Back Button Standardization
+### IMP-077 - UI / Brand-Aligned Back Button Standardization [commit:3e429ee](https://github.com/msmontalbo15/tara-travel-Android/commit/3e429ee)
 
-**Component**: Core UI / Brand Design System
+**Component**: UI / Brand-Aligned Back Button Standardization
 
 **Summary**: Standardized and upgraded `AppBackButton` with Tara Travel brand tokens (12px radius, frosted glass, light, brand, and ghost variants) and replaced one-off back buttons across all screens (Packing, Friends, Navigation, Live Navigation, Chat, Notifications, Activity Log, Create Trip, and MapPinPicker).
 
@@ -1723,7 +1783,26 @@
 <summary>Full implementation detail</summary>
 
 - **Date**: September 3, 2026
-- **Target Files**:
+- **Scope & Objectives**:
+  1. **Upgraded Core `AppBackButton`**:
+     - Standardized on Tara Travel brand guidelines: `BorderRadius.circular(12)` conforming to the exact 12px button radius rule.
+     - Added `AppBackButtonVariant` enum:
+       - `glass`: Frosted backdrop filter (`sigma: 8`), 12% white opacity fill, 18% white border, white icon for dark/hero gradients.
+       - `light`: Crisp white fill with 1px `AppColors.cardBorder` and ambient shadow for light pages (Friends, Notifications).
+       - `brand`: Soft Sand (`#FAECE7`) fill with light coral border and primary coral icon (`#D85A30`).
+       - `ghost`: Transparent fill with subtle coral border.
+     - Integrated `Semantics(button: true, label: 'Back')`, `Material` ripple feedback with `InkWell`, and configurable `size` and `iconSize`.
+  2. **Comprehensive Screen Adoption**:
+     - `PackingScreen`: Replaced custom frosted container with `AppBackButton(variant: AppBackButtonVariant.glass)`.
+     - `FriendsScreen`: Replaced ad-hoc white container with `AppBackButton(variant: AppBackButtonVariant.light)`.
+     - `LiveNavigationScreen`: Replaced custom container with dynamic dark/light `AppBackButton`.
+     - `NavigationScreen`: Replaced black circle container with `AppBackButton(variant: AppBackButtonVariant.glass, color: Colors.black45)`.
+     - `ChatScreen`: Added `AppBackButton` to header when navigated to via route so travelers can return to previous screen.
+     - `NotificationsScreen`: Integrated brand `AppBackButton(variant: AppBackButtonVariant.light)` as leading AppBar widget.
+     - `ActivityLogScreen`: Integrated brand `AppBackButton(variant: AppBackButtonVariant.glass)` as leading AppBar widget.
+     - `CreateTripFlow` (`TransportStep`, `BudgetStep`, `ConfirmStep`): Standardized back chevrons on `AppBackButton`.
+     - `MapPinPickerModal`: Replaced generic `IconButton` with `AppBackButton(variant: AppBackButtonVariant.light)`.
+- **Modified Files**:
   - `lib/core/widgets/buttons/app_back_button.dart` [MODIFIED]
   - `lib/features/trip_detail/trip_detail_screen.dart` [MODIFIED]
   - `lib/features/packing/packing_screen.dart` [MODIFIED]
@@ -1737,88 +1816,8 @@
   - `lib/features/create_trip/steps/budget_step.dart` [MODIFIED]
   - `lib/features/create_trip/steps/confirm_step.dart` [MODIFIED]
   - `lib/core/widgets/inputs/map_pin_picker_modal.dart` [MODIFIED]
-- **Scope & Objectives**:
-  - Upgraded `AppBackButton` to adhere strictly to the 12px button radius rule, native touch ripple with `InkWell`, and semantic back button labeling.
-  - Provided 4 brand variants: `glass` (frosted blur for dark headers), `light` (white with card border for light headers), `brand` (sand with coral accent), and `ghost`.
-  - Replaced ad-hoc and inconsistent back buttons across all app screens with `AppBackButton`.
 - **Verification**:
-</details>
-
----
-
-## 2026-09-03
-
-### IMP-078 - Personal Allowance & Dual-Scope Trip Budget Tracker
-
-**Component**: Budget & Personal Allowance
-
-**Summary**: Added dedicated personal allowance tracking, daily safe-to-spend velocity pacing, cash-on-hand vs digital payments balance, private solo expenses, and dual-scope budget dashboard without polluting group split debts.
-
-<details>
-<summary>Full implementation detail</summary>
-
-- **Date**: September 3, 2026
-- **Target Files**:
-  - `supabase/migrations/023_personal_allowance_and_expenses.sql` [NEW]
-  - `lib/core/models/personal_allowance_model.dart` [NEW]
-  - `lib/core/repositories/personal_allowance_repository.dart` [NEW]
-  - `lib/core/providers/personal_allowance_provider.dart` [NEW]
-  - `lib/core/providers/repository_providers.dart` [MODIFIED]
-  - `lib/features/budget/widgets/set_allowance_sheet.dart` [NEW]
-  - `lib/features/budget/widgets/personal_allowance_card.dart` [NEW]
-  - `lib/features/budget/widgets/daily_pacing_card.dart` [NEW]
-  - `lib/features/budget/widgets/cash_vs_digital_card.dart` [NEW]
-  - `lib/features/budget/widgets/personal_expense_list.dart` [NEW]
-  - `lib/features/budget/widgets/add_expense_form.dart` [MODIFIED]
-  - `lib/features/budget/budget_screen.dart` [MODIFIED]
-  - `lib/features/create_trip/models/new_trip_model.dart` [MODIFIED]
-  - `lib/features/create_trip/steps/budget_step.dart` [MODIFIED]
-  - `lib/features/create_trip/create_trip_flow.dart` [MODIFIED]
-  - `test/core/personal_allowance_test.dart` [NEW]
-- **Scope & Objectives**:
-  - Cloud-synced personal budget tracking via Supabase `trip_personal_allowances` and `personal_expenses` tables with strict RLS isolation (`auth.uid() = user_id`).
-  - Added dynamic daily burn-rate pacing engine: `Safe-to-Spend Today = remainingOperational / daysRemaining`.
-  - Added physical Cash on Hand vs E-Wallet tracking with instant ATM cash-in modal.
-  - Upgraded `BudgetScreen` with dual-scope switcher (`Group Fund` vs `My Allowance`).
-  - Added personal allowance setup during Create Trip (`BudgetStep`) and via `SetAllowanceSheet` modal with quick presets (`₱3,000` to `₱25,000`).
-- **Verification**:
-  - `flutter analyze` completed with 0 errors across all modified modules and tests.
-
-</details>
-
----
-
-## 2026-09-03
-
-### IMP-079 - Budget & Personal Allowance UX Polish
-
-**Component**: Budget & Personal Allowance UI/UX
-
-**Summary**: Enhanced UX across the trip budget tracker and personal allowance suite, featuring a floating quick-add bottom sheet, multi-segment progress gauge, live allowance preview breakdown, contextual daily burn-rate tips, swipe-to-delete personal receipts, and one-tap incremental amount chips.
-
-<details>
-<summary>Full implementation detail</summary>
-
-- **Date**: September 3, 2026
-- **Target Files**:
-  - `lib/features/budget/widgets/daily_pacing_card.dart` [MODIFIED]
-  - `lib/features/budget/widgets/personal_allowance_card.dart` [MODIFIED]
-  - `lib/features/budget/widgets/cash_vs_digital_card.dart` [MODIFIED]
-  - `lib/features/budget/widgets/set_allowance_sheet.dart` [MODIFIED]
-  - `lib/features/budget/widgets/personal_expense_list.dart` [MODIFIED]
-  - `lib/features/budget/widgets/add_expense_form.dart` [MODIFIED]
-  - `lib/features/budget/budget_screen.dart` [MODIFIED]
-- **Scope & Objectives**:
-  - Proportional multi-segment stacked bar in `PersonalAllowanceCard` with custom color-coded legend.
-  - Floating action button on `BudgetScreen` opening a quick-add modal bottom sheet without scrolling.
-  - Live budget breakdown preview in `SetAllowanceSheet` displaying emergency reserve vs spendable balance in real-time.
-  - Contextual smart tips with days-remaining countdown in `DailyPacingCard`.
-  - Proportional cash vs digital spending ratio bar and enriched ATM cash-in modal.
-  - Swipe-to-delete with confirmation dialog in `PersonalExpenseList`.
-  - Incremental amount chips (`+₱50`, `+₱100`, `+₱200`, `+₱500`, `+₱1,000`) in `AddExpenseForm`.
-  - Reordered tabs to make `👤 My Allowance` the primary first tab and `Personal Pocket` the default scope.
-- **Verification**:
-  - `flutter analyze` passed with 0 errors and 0 warnings.
+  - `flutter analyze` completed cleanly with 0 errors and 0 warnings.
 
 </details>
 
@@ -1826,271 +1825,283 @@
 
 ## 2026-09-04
 
-### IMP-080 - Trip Title Display & Universal Content Overflow Prevention
+### IMP-088 - Typography & Brand Identity Font Tokens Standardization & Clean Code Refactor
 
-**Component**: Budget Screen & Cards
+**Component**: Typography & Brand Identity Standardization
 
-**Summary**: Displayed custom trip title prominently in the Budget screen header and hero cards, and eliminated all potential horizontal and vertical content overflows across all budget widgets with responsive wrappers and graceful scaling.
+**Summary**: Formalized system branding font tokens in `AppTextStyles` (`fontHeading`, `fontBody`, `fontSerifFallback`), wired Georgia serif fallback for display headlines, splash "Tara TRAVEL" branding, and Home greeting name, aligned `AppTheme` light theme definitions, and synchronized `MEMORY.md`.
 
 <details>
 <summary>Full implementation detail</summary>
 
-- **Date**: September 4, 2026
-- **Target Files**:
-  - `lib/features/budget/budget_screen.dart` [MODIFIED]
-  - `lib/features/budget/widgets/budget_overview_card.dart` [MODIFIED]
-  - `lib/features/budget/widgets/personal_allowance_card.dart` [MODIFIED]
-  - `lib/features/budget/widgets/daily_pacing_card.dart` [MODIFIED]
-  - `lib/features/budget/widgets/cash_vs_digital_card.dart` [MODIFIED]
-  - `lib/features/budget/widgets/set_allowance_sheet.dart` [MODIFIED]
-  - `lib/features/budget/widgets/personal_expense_list.dart` [MODIFIED]
-  - `lib/features/budget/widgets/member_contribution_card.dart` [MODIFIED]
-  - `lib/features/budget/widgets/expense_log.dart` [MODIFIED]
+- **Date**: September 04, 2026
 - **Scope & Objectives**:
-  - Trip title (`trip.name`) prominently displayed in the top header and inside hero budget cards.
-  - Protected header switcher pill and titles with single-line ellipsis and flexible layouts.
-  - Replaced rigid 5-column preset buttons in `SetAllowanceSheet` with responsive `Wrap`.
-  - Added `FittedBox` scaling and `Flexible` text wrappers to currency amounts and dates across `CashVsDigitalCard`, `PersonalExpenseList`, `ExpenseLog`, and `DailyPacingCard`.
-    - Displayed per-member arrival times in the companion roster (`✓ Arrived 3:45 PM`).
-    - Added responsive `[ Undo ]` buttons on both the bottom dock and per-member items.
-    - Integrated floating 6-second post-arrival confirmation banner on the main itinerary screen with an instant `[ Undo ]` action button.
-- **Verification**:
-  - `dart analyze lib/` completed with 0 errors and 0 warnings.
-
-</details>
-
----
-
-### IMP-069 - Retirement of Stop Votes & Legacy Status Lifecycle
-
-**Component**: Database & Itinerary / Stop Votes & Status Retirement
-
-**Summary**: Dropped public.stop_votes table and status column on itinerary_stops (Migration 021). Removed StopStatus enum, voting models/repositories/providers, and status action bars.
-
-<details>
-<summary>Full implementation detail</summary>
-
-- **Date**: September 1, 2026
-- **Files Modified / Created**:
-  - [supabase/migrations/021_drop_stop_votes_and_stop_status.sql](file:///d:/Spencer/Downloads/tara_travel/supabase/migrations/021_drop_stop_votes_and_stop_status.sql) **[NEW]**
-  - [supabase/migrations/000_master_schema.sql](file:///d:/Spencer/Downloads/tara_travel/supabase/migrations/000_master_schema.sql) **[MODIFIED]**
-  - [lib/core/models/itinerary_model.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/models/itinerary_model.dart) **[MODIFIED]**
-  - [lib/core/repositories/itinerary_repository.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/repositories/itinerary_repository.dart) **[MODIFIED]**
-  - [lib/core/providers/itinerary_provider.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/providers/itinerary_provider.dart) **[MODIFIED]**
-  - [lib/core/providers/realtime_provider.dart](file:///d:/Spencer/Downloads/tara_travel/lib/core/providers/realtime_provider.dart) **[MODIFIED]**
-  - [lib/features/itinerary/widgets/stop_detail_sheet.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/stop_detail_sheet.dart) **[MODIFIED]**
-  - [lib/features/itinerary/widgets/stop_card.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/stop_card.dart) **[MODIFIED]**
-  - [lib/features/itinerary/itinerary_screen.dart](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/itinerary_screen.dart) **[MODIFIED]**
-- **Scope & Objectives**:
-  - **Database & Schema Deprecation**:
-    - Created migration `021_drop_stop_votes_and_stop_status.sql` permanently dropping `public.stop_votes` table (cascade) and dropping `status` column from `public.itinerary_stops`.
-    - Synchronized `000_master_schema.sql` by dropping `stop_votes` table, policies, indexes, and realtime publication.
-  - **Domain Model Streamlining**:
-    - Dropped `StopStatus` enum and `StopStatusX` extension.
-    - Removed `status` and `votes` (and `voteScore`) fields from `ItineraryStop`.
-    - Streamlined `isCompleted` getter to check `visitedAt != null || checkedInMemberIds.isNotEmpty`.
-    - Streamlined `completedStops` on `ItineraryDay` to count `stops.where((s) => s.isCompleted).length`.
-  - **Repository & State Layer Cleanup**:
-    - Removed `updateStopStatus()`, `voteOnStop()`, `removeVote()`, `_fromDbStatus()`, and `_toDbStatus()` from `ItineraryRepository`.
-    - Removed `updateStopStatus()`, `voteOnStop()` from `ItineraryNotifier`.
-    - Removed `stopVotesRealtimeProvider` from `realtime_provider.dart`.
-  - **UI Simplification**:
-    - Removed `Group Vote` thumbs up/down voting row and vote score pill from `StopDetailSheet`.
-    - Removed bottom status bar (`Approve` and `Mark Done` buttons) from `StopDetailSheet`.
-    - Removed status badge renderer and references in `StopCard`.
-- **Verification**:
-  - `dart analyze lib/` completed with 0 errors and 0 warnings.
-  - Verification confirmed zero remaining references to `StopStatus` or `stop_votes` across the entire project.
-
-</details>
-
----
-
-## 2026-09-03
-
-### IMP-077 - UI / Brand-Aligned Back Button Standardization
-
-**Component**: Core UI / Brand Design System
-
-**Summary**: Standardized and upgraded `AppBackButton` with Tara Travel brand tokens (12px radius, frosted glass, light, brand, and ghost variants) and replaced one-off back buttons across all screens (Packing, Friends, Navigation, Live Navigation, Chat, Notifications, Activity Log, Create Trip, and MapPinPicker).
-
-<details>
-<summary>Full implementation detail</summary>
-
-- **Date**: September 3, 2026
+  1. **Brand Font Tokens & Semantic Typographic Scale in `AppTextStyles`** (`lib/core/theme/app_text_styles.dart`):
+     - Standardized constants: `fontHeading` (`'Playfair Display'`), `fontBody` (`'DM Sans'`), and `fontSerifFallback` (`'Georgia'`).
+     - Added semantic typography tokens: `titleLarge` (20px, bold), `titleMedium` (16px, bold), `headlineSmall` (18px, bold).
+     - Wired `fontFamilyFallback: const ['Georgia', 'serif']` into all primary serif display styles (`headline1`, `headline2`, `headline3`, `headlineSmall`, `titleLarge`, `titleMedium`, `headlineWhite`, `tagline`).
+  2. **App Theme Alignment** (`lib/core/theme/app_theme.dart`):
+     - Set `fontFamilyFallback: ['Georgia', 'serif']` on `AppBarTheme.titleTextStyle` and `DialogTheme.titleTextStyle`.
+  3. **Brand Display & Greeting Name Fallbacks**:
+     - Added `fontFamilyFallback: ['Georgia', 'serif']` to `SplashScreen` brand wordmark ('Tara' and 'TRAVEL').
+     - Added `fontFamilyFallback: const ['Georgia', 'serif']` to `AppBrandLogo` wordmark texts.
+     - Added `fontFamilyFallback: ['Georgia', 'serif']` to `HomeScreen` personalized greeting name display.
+  4. **Anti-Hardcoding Clean Code Refactor**:
+     - Replaced scattered ad-hoc `TextStyle(fontFamily: ...)` instances across:
+       - `lib/core/widgets/feedback/app_dialog.dart` (confirmation & alert dialog title and body tokens)
+       - `lib/shared/widgets/trip_type_carousel.dart` (carousel card label, subtitle, and category badge)
+       - `lib/features/trip_detail/trip_detail_screen.dart` (hero header title, dialogs, and collapsed bar title)
+       - `lib/features/trips/trips_screen.dart` (header title and empty state headline)
+       - `lib/features/trips/widgets/join_trip_modal.dart` (sheet header and description)
+       - `lib/features/notifications/notifications_screen.dart` (app bar title)
+       - `lib/features/navigation/live_navigation_screen.dart` (navigation destination title)
+  5. **Architectural Memory Sync**:
+     - Updated `docs/MEMORY.md`, `docs/SOFTWARE_DESIGN_PATTERNS.md`, `.agents/rules/brand-identity.md`, and `docs/IMPLEMENTATION_MEMORY.md`.
 - **Target Files**:
-  - `lib/core/widgets/buttons/app_back_button.dart` [MODIFIED]
+  - `lib/core/theme/app_text_styles.dart` [MODIFIED]
+  - `lib/core/theme/app_theme.dart` [MODIFIED]
+  - `lib/core/widgets/feedback/app_dialog.dart` [MODIFIED]
+  - `lib/shared/widgets/trip_type_carousel.dart` [MODIFIED]
   - `lib/features/trip_detail/trip_detail_screen.dart` [MODIFIED]
-  - `lib/features/packing/packing_screen.dart` [MODIFIED]
-  - `lib/features/friends/friends_screen.dart` [MODIFIED]
-  - `lib/features/navigation/live_navigation_screen.dart` [MODIFIED]
-  - `lib/features/navigation/navigation_screen.dart` [MODIFIED]
-  - `lib/features/chat/chat_screen.dart` [MODIFIED]
+  - `lib/features/trips/trips_screen.dart` [MODIFIED]
+  - `lib/features/trips/widgets/join_trip_modal.dart` [MODIFIED]
   - `lib/features/notifications/notifications_screen.dart` [MODIFIED]
-  - `lib/features/activity/activity_log_screen.dart` [MODIFIED]
-  - `lib/features/create_trip/steps/transport_step.dart` [MODIFIED]
-  - `lib/features/create_trip/steps/budget_step.dart` [MODIFIED]
-  - `lib/features/create_trip/steps/confirm_step.dart` [MODIFIED]
-  - `lib/core/widgets/inputs/map_pin_picker_modal.dart` [MODIFIED]
-- **Scope & Objectives**:
-  - Upgraded `AppBackButton` to adhere strictly to the 12px button radius rule, native touch ripple with `InkWell`, and semantic back button labeling.
-  - Provided 4 brand variants: `glass` (frosted blur for dark headers), `light` (white with card border for light headers), `brand` (sand with coral accent), and `ghost`.
-  - Replaced ad-hoc and inconsistent back buttons across all app screens with `AppBackButton`.
+  - `lib/features/navigation/live_navigation_screen.dart` [MODIFIED]
+  - `lib/features/splash/splash_screen.dart` [MODIFIED]
+  - `lib/features/home/home_screen.dart` [MODIFIED]
+  - `lib/core/widgets/app_brand_logo.dart` [MODIFIED]
+  - `docs/MEMORY.md` [MODIFIED]
+  - `docs/SOFTWARE_DESIGN_PATTERNS.md` [MODIFIED]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
 - **Verification**:
-</details>
+  - `flutter analyze`: **No issues found! (0 errors, 0 warnings)**.
 
----
 
-## 2026-09-03
-
-### IMP-078 - Personal Allowance & Dual-Scope Trip Budget Tracker
-
-**Component**: Budget & Personal Allowance
-
-**Summary**: Added dedicated personal allowance tracking, daily safe-to-spend velocity pacing, cash-on-hand vs digital payments balance, private solo expenses, and dual-scope budget dashboard without polluting group split debts.
-
-<details>
-<summary>Full implementation detail</summary>
-
-- **Date**: September 3, 2026
+### `IMP-084` — 2026-09-04: Comprehensive Budget & Expenses Module Revision
+- **Description**: Fully revised the shared data layer, transactional CRUD, and client-side derived aggregation architecture across Budget and Expenses screens to align with ground-truth schema rules and the requested UI/UX design specifications.
+- **Architectural Rationale**:
+  1. **Shared Data Layer (`ExpenseModel`)**:
+     - Standardized categories (`food`, `hotel`, `transport`, `activities`, `custom`) and statuses (`pending`, `approved`, `rejected`).
+     - Added helper getters (`isApproved`, `isPending`, `isRejected`, `categoryColor`, `categoryIcon`, `categoryEmoji`, `categoryLabel`).
+     - Maintained strict ground-truth schema compliance: only Supabase `expenses` columns (`id`, `trip_id`, `description`, `amount`, `category`, `paid_by_user_id`, `status`, `receipt_url`, `rejection_note`).
+  2. **Receipt OCR & Attachment Engine (`ReceiptOcrService`)**:
+     - Built cross-platform receipt image upload to Supabase Storage (`avatars` public bucket fallback) with cache-busting.
+     - Implemented heuristic OCR extraction parsing peso currency tokens, totals, dates, and category keywords to pre-populate expense amounts and descriptions.
+  3. **Transactional Expenses CRUD Flow (`AddExpenseForm` & `ExpenseLog`)**:
+     - Updated `AddExpenseForm` with Camera and Gallery capture options, instant OCR detection prompts, split-member multi-select with per-person calculations, and dual-scope logging (Personal Pocket vs Group Fund).
+     - Enhanced `ExpenseLog` with status filter chips (`All`, `Pending`, `Approved`, `Rejected`), interactive receipt modal viewer (`CachedNetworkImage`), and role-aware approval/rejection workflows (approving an expense commits it to the budget; rejecting supports optional rejection notes). Added pending count debt nudges.
+  4. **Derived-State Budget Screen & Pacing (`BudgetScreen`, `BudgetOverviewCard`, `CategoryBudgetChart`)**:
+     - Restyled hero card following the reference design: Deep Earth `#2C1A14` container, Playfair Display typography, large total budget readout, emerald green remaining badge, slim horizontal progress bar, and percentage usage indicators.
+     - Implemented template pill navigation bar: `[Overview, Expenses, + Add, Debts]` with instant switcher tabs.
+     - Revamped `CategoryBudgetChart` to render category dots, emojis, amounts, percentages, and segmented spent vs remaining indicators.
+     - Context-switching trip selector carousel to switch between trips dynamically with pure client-side recomputation.
+     - Preserved `SplitBillPanel` greedy creditor→debtor min-cash-flow matching graph with GCash QR / account copy and SharePlus integration.
 - **Target Files**:
-  - `supabase/migrations/023_personal_allowance_and_expenses.sql` [NEW]
-  - `lib/core/models/personal_allowance_model.dart` [NEW]
-  - `lib/core/repositories/personal_allowance_repository.dart` [NEW]
-  - `lib/core/providers/personal_allowance_provider.dart` [NEW]
-  - `lib/core/providers/repository_providers.dart` [MODIFIED]
-  - `lib/features/budget/widgets/set_allowance_sheet.dart` [NEW]
-  - `lib/features/budget/widgets/personal_allowance_card.dart` [NEW]
-  - `lib/features/budget/widgets/daily_pacing_card.dart` [NEW]
-  - `lib/features/budget/widgets/cash_vs_digital_card.dart` [NEW]
-  - `lib/features/budget/widgets/personal_expense_list.dart` [NEW]
+  - `lib/core/models/expense_model.dart` [MODIFIED]
+  - `lib/core/services/receipt_ocr_service.dart` [NEW]
   - `lib/features/budget/widgets/add_expense_form.dart` [MODIFIED]
-  - `lib/features/budget/budget_screen.dart` [MODIFIED]
-  - `lib/features/create_trip/models/new_trip_model.dart` [MODIFIED]
-  - `lib/features/create_trip/steps/budget_step.dart` [MODIFIED]
-  - `lib/features/create_trip/create_trip_flow.dart` [MODIFIED]
-  - `test/core/personal_allowance_test.dart` [NEW]
-- **Scope & Objectives**:
-  - Cloud-synced personal budget tracking via Supabase `trip_personal_allowances` and `personal_expenses` tables with strict RLS isolation (`auth.uid() = user_id`).
-  - Added dynamic daily burn-rate pacing engine: `Safe-to-Spend Today = remainingOperational / daysRemaining`.
-  - Added physical Cash on Hand vs E-Wallet tracking with instant ATM cash-in modal.
-  - Upgraded `BudgetScreen` with dual-scope switcher (`Group Fund` vs `My Allowance`).
-  - Added personal allowance setup during Create Trip (`BudgetStep`) and via `SetAllowanceSheet` modal with quick presets (`₱3,000` to `₱25,000`).
-- **Verification**:
-  - `flutter analyze` completed with 0 errors across all modified modules and tests.
-
-</details>
-
----
-
-## 2026-09-03
-
-### IMP-079 - Budget & Personal Allowance UX Polish
-
-**Component**: Budget & Personal Allowance UI/UX
-
-**Summary**: Enhanced UX across the trip budget tracker and personal allowance suite, featuring a floating quick-add bottom sheet, multi-segment progress gauge, live allowance preview breakdown, contextual daily burn-rate tips, swipe-to-delete personal receipts, and one-tap incremental amount chips.
-
-<details>
-<summary>Full implementation detail</summary>
-
-- **Date**: September 3, 2026
-- **Target Files**:
-  - `lib/features/budget/widgets/daily_pacing_card.dart` [MODIFIED]
-  - `lib/features/budget/widgets/personal_allowance_card.dart` [MODIFIED]
-  - `lib/features/budget/widgets/cash_vs_digital_card.dart` [MODIFIED]
-  - `lib/features/budget/widgets/set_allowance_sheet.dart` [MODIFIED]
-  - `lib/features/budget/widgets/personal_expense_list.dart` [MODIFIED]
-  - `lib/features/budget/widgets/add_expense_form.dart` [MODIFIED]
-  - `lib/features/budget/budget_screen.dart` [MODIFIED]
-- **Scope & Objectives**:
-  - Proportional multi-segment stacked bar in `PersonalAllowanceCard` with custom color-coded legend.
-  - Floating action button on `BudgetScreen` opening a quick-add modal bottom sheet without scrolling.
-  - Live budget breakdown preview in `SetAllowanceSheet` displaying emergency reserve vs spendable balance in real-time.
-  - Contextual smart tips with days-remaining countdown in `DailyPacingCard`.
-  - Proportional cash vs digital spending ratio bar and enriched ATM cash-in modal.
-  - Swipe-to-delete with confirmation dialog in `PersonalExpenseList`.
-  - Incremental amount chips (`+₱50`, `+₱100`, `+₱200`, `+₱500`, `+₱1,000`) in `AddExpenseForm`.
-  - Reordered tabs to make `👤 My Allowance` the primary first tab and `Personal Pocket` the default scope.
-- **Verification**:
-  - `flutter analyze` passed with 0 errors and 0 warnings.
-
-</details>
-
----
-
-## 2026-09-04
-
-### IMP-080 - Trip Title Display & Universal Content Overflow Prevention
-
-**Component**: Budget Screen & Cards
-
-**Summary**: Displayed custom trip title prominently in the Budget screen header and hero cards, and eliminated all potential horizontal and vertical content overflows across all budget widgets with responsive wrappers and graceful scaling.
-
-<details>
-<summary>Full implementation detail</summary>
-
-- **Date**: September 4, 2026
-- **Target Files**:
-  - `lib/features/budget/budget_screen.dart` [MODIFIED]
-  - `lib/features/budget/widgets/budget_overview_card.dart` [MODIFIED]
-  - `lib/features/budget/widgets/personal_allowance_card.dart` [MODIFIED]
-  - `lib/features/budget/widgets/daily_pacing_card.dart` [MODIFIED]
-  - `lib/features/budget/widgets/cash_vs_digital_card.dart` [MODIFIED]
-  - `lib/features/budget/widgets/set_allowance_sheet.dart` [MODIFIED]
-  - `lib/features/budget/widgets/personal_expense_list.dart` [MODIFIED]
-  - `lib/features/budget/widgets/member_contribution_card.dart` [MODIFIED]
+  - `lib/features/budget/widgets/category_budget_chart.dart` [MODIFIED]
   - `lib/features/budget/widgets/expense_log.dart` [MODIFIED]
-- **Scope & Objectives**:
-  - Trip title (`trip.name`) prominently displayed in the top header and inside hero budget cards.
-  - Protected header switcher pill and titles with single-line ellipsis and flexible layouts.
-  - Replaced rigid 5-column preset buttons in `SetAllowanceSheet` with responsive `Wrap`.
-  - Added `FittedBox` scaling and `Flexible` text wrappers to currency amounts and dates across `CashVsDigitalCard`, `PersonalExpenseList`, `ExpenseLog`, and `DailyPacingCard`.
+  - `lib/features/budget/widgets/budget_overview_card.dart` [MODIFIED]
+  - `lib/features/budget/budget_screen.dart` [MODIFIED]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
 - **Verification**:
-  - `flutter analyze` passed with 0 errors and 0 warnings.
+  - `dart analyze lib`: **No issues found! (0 errors, 0 warnings)**.
+
+
+### `IMP-085` — 2026-09-04: Refined Budget (Personal + Trip Summary) vs Trip Expenses (Group Layout)
+- **Description**: Realigned layout separation per user specification: "Budget" is dedicated to the traveler's personal budget & allowance with integrated trip expenses summary, while "Trip Expenses" preserves the exact previous classic group layout (ring chart, overview, transactional CRUD log, split bill panel).
+- **Architectural Implementation**:
+  1. **Trip Expenses Scope (`TripBudgetHeroCard`, `Overview`, `Expenses Log`, `Split Bill`)**:
+     - Retained the exact previous hero card: Trip Name, Subtitle, Ring Chart with "% spent", large total budget, remaining amount, and "₱X spent by Y members".
+     - Preserved the sub-tabs: `Overview` (Category breakdown & Member contributions), `Expenses` (Transactional CRUD log with approval workflow and receipt inspection), and `Split` (Greedy settlement plan & balances).
+  2. **Budget Scope (`PersonalTripBudgetHeroCard`, `DailyPacingCard`, `CashVsDigitalCard`, `CategoryBudgetChart`, `PersonalExpenseList`)**:
+     - Tailored hero card matching the clean template design with Deep Earth container, Playfair Display typography, prominent budget amount, Emerald remaining balance, slim spent bar, and an integrated **Trip Expenses Summary** pill row (Solo Spent, Group Liability share, and Trip Total).
+     - Renders daily burn pacing, cash vs digital balances, itemized category breakdown, and personal pocket expense log.
+- **Target Files**:
+  - `lib/features/budget/widgets/trip_budget_hero_card.dart` [NEW]
+  - `lib/features/budget/widgets/personal_trip_budget_hero_card.dart` [NEW]
+  - `lib/features/budget/budget_screen.dart` [MODIFIED]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+- **Verification**:
+  - `dart analyze lib`: **No issues found! (0 errors, 0 warnings)**.
 
 </details>
 
 ---
 
-## 2026-09-04
+### IMP-085 - Polls / Winner Card & Detail Sheet
 
-### IMP-081 - Chat Module UI/UX Overhaul, Keyboard Inset Fix & Group Decision Polish
+**Component**: Polls / Winner Card & Detail Sheet
 
-**Component**: Live Chat & Decision Polls
-
-**Summary**: Full UI and UX overhaul of the group chat module, fixing software keyboard double padding, adding consecutive message bubble grouping, clipboard copying, smart scroll-to-bottom FAB, quick travel alert badge styling, and organizer poll closure confirmations.
+**Summary**: Replaced flat `_WinnerActions` resolve section with premium gradient `_WinnerCard` (green gradient, trophy badge, vote %, voter chips) that opens `_WinnerDetailSheet` bottom sheet with ranked results breakdown, animated progress bars, voter lists, and quick-action resolution buttons.
 
 <details>
 <summary>Full implementation detail</summary>
 
-- **Date**: September 4, 2026
+- **Date**: September 04, 2026
+- **Scope & Objectives**:
+  1. **Premium Winner Card (`_WinnerCard`)**:
+     - Replaced the flat `_WinnerActions` resolve section with a visually striking, gradient-filled card (deep green → bright green).
+     - Trophy badge pill, large percentage display (28px bold), winner text, vote count, category label, and voter name chips.
+     - Decorative circles with `Clip.hardEdge` for premium glassmorphism effect.
+     - Haptic feedback on tap, with "Tap for results & actions" hint text.
+  2. **Winner Detail Bottom Sheet (`_WinnerDetailSheet`)**:
+     - `DraggableScrollableSheet` (70% initial → 92% max) showing full poll results.
+     - Header: centered trophy icon with gradient background, winner text in Playfair Display, total vote count.
+     - Original question context card with category emoji and creator attribution.
+     - Ranked results breakdown: numbered rank circles, option text, percentage, animated `TweenAnimationBuilder` progress bars, voter name lists.
+     - Winner option highlighted with green background, green border, green rank circle, and 🏆 emoji.
+     - Quick Actions section: "Add to Itinerary" (coral) and "Add to Expenses" (amber) buttons with colored shadow, auto-dismissing sheet before executing callback.
+  3. **Voter Chips (`_VoterChips`)**:
+     - Reusable `Wrap`-based voter name chip row showing up to 4 names with "+N more" overflow pill.
+  4. **Detail Action Button (`_DetailActionButton`)**:
+     - Upgraded from 10px to 14px vertical padding, 14px border radius, colored drop shadow for depth.
 - **Target Files**:
-  - `lib/features/chat/chat_screen.dart` [MODIFIED]
   - `lib/features/chat/widgets/poll_card.dart` [MODIFIED]
   - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
-- **Scope & Objectives**:
-  - Synchronized `_InputBar` padding with `MediaQuery.viewInsetsOf(context)` and `paddingOf(context)` to eliminate keyboard gap.
-  - Added consecutive message detection logic: groups messages from the same sender within 2 minutes with tighter vertical spacing (3px) and rounded bubble corners.
-  - Added long-press context sheet: 1-tap emoji reactions, clipboard copy with toast confirmation, pin/unpin toggles, and deletion confirmation dialog.
-  - Highlighted `ChatMessageType.quickTravel` messages with custom coral/amber borders, `TRAVEL ALERT` status pill, and highlighted card background.
-  - Added `_ScrollToBottomButton` that animates into view when scrolled > 240px from bottom.
-  - Prevented duplicate resolution and added confirmation dialog before finalizing/closing polls.
+  - `docs/CHANGELOG.md` [MODIFIED]
 - **Verification**:
-  - `flutter analyze lib/features/chat/` passed with 0 errors and 0 warnings.
+  - `flutter analyze lib/features/chat/widgets/poll_card.dart` executed: **No issues found! (0 errors, 0 warnings)**.
+
+</details>
 
 ---
- 
-### IMP-082 - Supabase Storage Avatar Pipeline & Multi-Screen Photo Rendering Unification
 
-**Component**: Profile & Avatars / Supabase Storage
+### IMP-084 - Polls & Votes / Bidirectional Vote Undo & Optimistic State Sync
 
-**Summary**: Full unification of user profile photos and companion avatars across the app. Uploads profile photos to Supabase Storage bucket `avatars` with cache-busting URLs, integrates `MemberAvatarCircle` shared component, and updates 8+ screens to render actual remote avatars.
+**Component**: Polls & Votes / Bidirectional Vote Undo
+
+**Summary**: Full vote undo engine: optimistic in-memory toggle and rollback in `PollsNotifier`, `getPollsAndVotesRaw` synchronous hydration, and clean tap-to-toggle unvoting on poll options without UI clutter.
 
 <details>
 <summary>Full implementation detail</summary>
 
-- **Date**: September 4, 2026
+- **Date**: September 04, 2026
+- **Scope & Objectives**:
+  1. **Synchronous Raw State Hydration**:
+     - Added `getPollsAndVotesRaw(tripId)` to `ChatRepository` returning both polls and votes for immediate local cache seeding on provider build.
+  2. **Optimistic Local Updates with Rollback**:
+     - Updated `castVote` in `PollsNotifier` to optimistically append a synthetic vote into `_rawVotes` and rebuild state instantly before remote write. Reverts if Supabase rejects the write.
+     - Updated `removeVote` in `PollsNotifier` to optimistically remove the user's vote from `_rawVotes` and rebuild state immediately with fallback restore on failure.
+     - Enhanced `toggleVote` to pass `currentUserId` and properly unvote when tapping an already voted option.
+     - Added `undoAllVotes({required TripPoll poll, required String currentUserId})` to retract all votes for a poll with a single tap.
+  3. **Seamless Toggle-to-Undo UX in PollCard**:
+     - Retained intuitive tap-to-toggle unvoting on the option bars without extra clutter or separate buttons.
+     - Kept PollCard header minimal and clean (`by Creator · N votes`).
+- **Target Files**:
+  - `lib/core/repositories/chat_repository.dart` [MODIFIED]
+  - `lib/core/providers/poll_provider.dart` [MODIFIED]
+  - `lib/features/chat/widgets/poll_card.dart` [MODIFIED]
+  - `lib/features/chat/chat_screen.dart` [MODIFIED]
+  - `docs/MEMORY.md` [MODIFIED]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+  - `docs/CHANGELOG.md` [MODIFIED]
+- **Verification**:
+  - `flutter analyze lib/features/chat/ lib/core/providers/poll_provider.dart lib/core/repositories/chat_repository.dart` executed: **No issues found! (0 errors, 0 warnings)**.
+
+</details>
+
+---
+
+### IMP-083 - Interactive Trip Chat, Collaborative Polls & Contextual Activity Hub (IDEA-004) [commit:721da0a](https://github.com/msmontalbo15/tara-travel-Android/commit/721da0a)
+
+**Component**: Chat, Polls & Activity Hub (IDEA-004)
+
+**Summary**: Full rich travel chat hub: migration 025 (metadata & reactions jsonb), interactive rich embeds (Itinerary stops, Expense requests, Packing alerts, GPS location pin drops, Media photos, Tara Bot briefings), crowdsourced poll suggestions, emoji reactions bar with haptic toggle, and offline outbox queue.
+
+<details>
+<summary>Full implementation detail</summary>
+
+- **Date**: September 04, 2026
+- **Scope & Objectives**:
+  1. **Supabase Migration 025 (`025_trip_chat_rich_embeds_and_reactions.sql`)**:
+     - Added `metadata jsonb default '{}'::jsonb` and `reactions jsonb default '{}'::jsonb` columns to `public.trip_messages`.
+     - Created RLS update policy allowing trip members to update `reactions` on messages without overriding message content.
+     - Added RLS update policy on `public.trip_polls` allowing trip members to append crowdsourced options while poll is open.
+  2. **Data & Repository Layer Expansion**:
+     - In `lib/core/repositories/chat_repository.dart`:
+       - Expanded `ChatMessageType` enum with `itinerarySnippet`, `expenseRequest`, `packingAlert`, `locationDrop`, `media`, and `taraBot`.
+       - Added `metadata` and `reactions` parsing/serialization to `ChatMessage`.
+       - Implemented `addPollOption(pollId, optionText, createdByName)` to append user options to active polls.
+       - Implemented `toggleReaction(messageId, emoji, userId)` with atomic JSONB aggregation.
+       - Implemented `uploadChatMedia(tripId, localFilePath)` targeting Supabase Storage bucket `avatars`.
+     - In `lib/core/models/trip_poll_model.dart`:
+       - Added `options` to `TripPoll.copyWith`.
+  3. **Riverpod State Management**:
+     - In `lib/core/providers/chat_provider.dart`:
+       - Added `sendRichCard(...)` supporting structured metadata payloads for all new message types.
+       - Added `sendMediaMessage(...)` with automatic storage upload and optimistic local bubble rendering.
+       - Added `toggleReaction(...)` with instantaneous local optimistic toggle before remote Supabase write.
+     - In `lib/core/providers/poll_provider.dart`:
+       - Added `addOption(pollId, optionText, createdByName)` to `PollsNotifier`.
+  4. **UI Components & Rich Embed Cards**:
+     - Created `lib/features/chat/widgets/chat_embed_cards.dart`:
+       - `ItineraryStopEmbed`: Visual stop card showing day number, title, category icon, notes, and direct Google Maps / in-app directions button.
+       - `ExpenseRequestEmbed`: Financial card detailing expense description, category, amount in Philippine Pesos (₱), and one-tap "View in Budget" CTA.
+       - `PackingAlertEmbed`: Urgent packing checklist ping with interactive "🙋‍♂️ I'll Bring This!" claim button that assigns the item to the user and notifies chat.
+       - `LocationDropEmbed`: GPS coordinate pin card with "🗺️ Open in Google Maps" launch handler.
+       - `MediaAttachmentEmbed`: Cached network photo preview with zoom-ready aesthetic container and rounded corners.
+       - `TaraBotBriefingEmbed`: AI daily morning recap summary detailing scheduled stops, estimated costs, and travel tips.
+       - `ReactionPillsRow`: Responsive wrap of active emoji reactions with active user state highlighting and tap-to-toggle haptics.
+     - Created `lib/features/chat/widgets/chat_attachment_picker_sheet.dart`:
+       - Clean modal bottom sheet replacing legacy action list: Itinerary Stops picker, Expenses picker, Unassigned Packing Items picker, Photo gallery picker, Live GPS Pin drop, and Tara Bot Daily Briefing generator.
+     - Updated `lib/features/chat/widgets/poll_card.dart`:
+       - Integrated crowdsourced option submission via `_showAddOptionDialog` ("Suggest an Option / Spot").
+     - Updated `lib/features/chat/chat_screen.dart`:
+       - Integrated rich embed cards and `ReactionPillsRow` into both `_MyBubble` and `_TheirBubble`.
+       - Connected `_MessageActionSheet` quick reaction bar (❤️, 👍, 🏖️, 🚗, 🍽️, ⏰) to `chatNotifier.toggleReaction`.
+       - Wired `_handleClaimPackingItem` using `PackingRepository.assignItem`.
+- **Target Files**:
+  - `supabase/migrations/025_trip_chat_rich_embeds_and_reactions.sql` [NEW]
+  - `lib/core/repositories/chat_repository.dart` [MODIFIED]
+  - `lib/core/models/trip_poll_model.dart` [MODIFIED]
+  - `lib/core/providers/chat_provider.dart` [MODIFIED]
+  - `lib/core/providers/poll_provider.dart` [MODIFIED]
+  - `lib/features/chat/widgets/chat_embed_cards.dart` [NEW]
+  - `lib/features/chat/widgets/chat_attachment_picker_sheet.dart` [NEW]
+  - `lib/features/chat/widgets/poll_card.dart` [MODIFIED]
+  - `lib/features/chat/chat_screen.dart` [MODIFIED]
+  - `docs/DEV_IDEA.md` [MODIFIED]
+  - `docs/MEMORY.md` [MODIFIED]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+  - `docs/CHANGELOG.md` [MODIFIED]
+- **Verification**:
+  - `flutter analyze lib/features/chat/` executed: **No issues found! (0 errors, 0 warnings)**.
+  - `flutter analyze lib/core/` executed: **No issues found! (0 errors, 0 warnings)**.
+
+</details>
+
+---
+
+### IMP-082 - Supabase Storage Avatar Pipeline & Multi-Screen Photo Rendering Unification
+
+**Component**: Profile & Avatars / Storage Pipeline
+
+**Summary**: Full unification of user profile photos and companion avatars across 8+ screens via Supabase Storage bucket `avatars` and `MemberAvatarCircle`.
+
+<details>
+<summary>Full implementation detail</summary>
+
+- **Date**: September 04, 2026
+- **Scope & Objectives**:
+  1. **Supabase Storage Upload Integration**:
+     - Added `uploadAvatar(userId, localFilePath)` to `ProfileRepository` targeting Supabase Storage bucket `avatars` with path `{userId}/profile.{ext}` and cache-busting timestamp `?t={ms}`.
+     - Updated `ProfileProvider.updatePhoto(pathOrUrl)` to asynchronously upload local picked files directly to Supabase Storage before persisting the resulting public HTTP URL into `public.users.avatar_url`.
+     - Preserved direct assignment for OAuth/Google avatars (`http*`).
+  2. **Shared Reusable Component (`MemberAvatarCircle`)**:
+     - Created `lib/core/widgets/member_avatar_circle.dart` offering seamless hybrid resolution:
+       - `CachedNetworkImage` with placeholder/error fallbacks for HTTP URLs (`avatar_url` from Supabase / Google).
+       - `Image.file` for local un-synced file previews.
+       - Initials fallback circle with deterministic member background color.
+  3. **Multi-Screen Avatar Fixes**:
+     - **Profile Screen**: Replaced `Image.file`-only rendering with `_buildProfileAvatar(profile)` supporting remote Supabase HTTP URLs (`CachedNetworkImage`), and ensured `_pickAndSavePhoto` awaits `updatePhoto`.
+     - **Members Screen**: Replaced initials-only `Container` with `MemberAvatarCircle` utilizing `member.profilePhotoUrl`.
+     - **Trip Detail Screen**: Replaced overlapping avatar cluster initials containers with `MemberAvatarCircle` per companion.
+     - **Trip Cards & Home Screen**: Added `photoUrl` to `TravelerInfo`, passed `member.profilePhotoUrl` from `HomeScreen`, and rendered `MemberAvatarCircle` in `TripCard`.
+     - **Multi-Member Picker Sheet**: Updated `MemberAvatarStack` and the list tile leading avatar to use `MemberAvatarCircle`.
+     - **Navigation & Radar**: Added `photoUrl` to `NavMember` model & `copyWith`, passed `profile.profilePhotoUrl` / `member.profilePhotoUrl` in `NavigationProvider`, and updated `MemberAvatar` and `MapMemberPin` to render `MemberAvatarCircle`.
+     - **Itinerary Sheets & Cards**: Updated `StopDetailSheet`, `StopCard`, and `ArrivalPill` avatar stacks to render `MemberAvatarCircle`.
 - **Target Files**:
   - `lib/core/repositories/profile_repository.dart` [MODIFIED]
   - `lib/core/providers/profile_provider.dart` [MODIFIED]
@@ -2109,186 +2120,138 @@
   - `lib/features/itinerary/widgets/arrival_pill.dart` [MODIFIED]
   - `docs/MEMORY.md` [MODIFIED]
   - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
-- **Scope & Objectives**:
-  - Implemented `uploadAvatar(userId, localFilePath)` in `ProfileRepository` targeting Supabase Storage bucket `avatars`.
-  - Updated `ProfileProvider.updatePhoto()` to upload picked images to Supabase Storage and persist the public HTTP URL.
-  - Created reusable `MemberAvatarCircle` that handles HTTP (`CachedNetworkImage`), local files, and fallback initials.
-  - Replaced initials-only avatar placeholders across Profile, Members, Trip Detail, Trip Card, Navigation, Multi-Member Picker, and Itinerary stops.
 - **Verification**:
-  - `flutter analyze lib/` passed with 0 errors and 0 warnings.
+  - `flutter analyze lib/` executed: **No issues found! (0 errors, 0 warnings)**.
 
 </details>
 
 ---
 
-### IMP-083 - Interactive Trip Chat, Collaborative Polls & Contextual Activity Hub (IDEA-004)
+### IMP-080 - Home Quick Actions Grid — Compact Card Refinement & Sizing Alignment
 
-**Component**: Chat, Polls & Activity Hub
+**Component**: UI & Home / Quick Actions Grid
 
-**Summary**: Full rich travel chat hub featuring Migration 025 (metadata and reactions JSONB), interactive rich embeds (Itinerary stops, Expense requests, Packing alerts, GPS location pin drops, Media photos, Tara Bot briefings), crowdsourced poll suggestions, emoji reactions bar with haptic toggle, and offline outbox queue.
+**Summary**: Refined Quick Actions Grid layout, card dimensions, and aesthetics: calibrated `childAspectRatio` from 1.34 to 1.52, compact padding, 30x30 icon containers, crisp typography, and responsive `_PulsingGuide` border alignment.
 
 <details>
 <summary>Full implementation detail</summary>
 
-- **Date**: September 4, 2026
-- **Target Files**:
-  - `supabase/migrations/025_trip_chat_rich_embeds_and_reactions.sql` [NEW]
-  - `lib/core/repositories/chat_repository.dart` [MODIFIED]
-  - `lib/core/models/trip_poll_model.dart` [MODIFIED]
-  - `lib/core/providers/chat_provider.dart` [MODIFIED]
-  - `lib/core/providers/poll_provider.dart` [MODIFIED]
-  - `lib/features/chat/widgets/chat_embed_cards.dart` [NEW]
-  - `lib/features/chat/widgets/chat_attachment_picker_sheet.dart` [NEW]
-  - `lib/features/chat/widgets/poll_card.dart` [MODIFIED]
-  - `lib/features/chat/chat_screen.dart` [MODIFIED]
-  - `docs/DEV_IDEA.md` [MODIFIED]
-  - `docs/MEMORY.md` [MODIFIED]
-  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
-  - `docs/CHANGELOG.md` [MODIFIED]
+- **Date**: September 04, 2026
 - **Scope & Objectives**:
-  - Migration 025 added `metadata` and `reactions` JSONB to `public.trip_messages`, with RLS update policies for reactions and poll options.
-  - Implemented `ChatMessageType` enum extensions: `itinerarySnippet`, `expenseRequest`, `packingAlert`, `locationDrop`, `media`, and `taraBot`.
-  - Added crowdsourced poll option suggestions via `addPollOption` and dynamic poll option chips in `PollCard`.
-  - Built comprehensive interactive embed cards with direct CTAs (Navigate on map, View in budget, Claim packing item, Open GPS pin).
-  - Wired message reactions row and contextual reaction picker with optimistic Riverpod state updates.
+  1. **Aspect Ratio & Card Proportion**:
+     - Adjusted `GridView.count` `childAspectRatio` from `1.34` to `1.52`, eliminating awkward vertical bloat and giving tiles a balanced, sleek, modern travel card feel.
+  2. **Internal Dimensions & Visual Balance**:
+     - Tuned container padding to `EdgeInsets.symmetric(horizontal: 14, vertical: 11)`.
+     - Scaled icon square badge to `30x30` with `BorderRadius.circular(9)` and `16px` icon size.
+     - Adjusted card radius to `BorderRadius.circular(18)` for an organic fit alongside other card components.
+     - Calibrated typography: `13.5px` bold for primary action labels, and `11px` medium with `1px` top offset for sublabels.
+  3. **Pulsing First-Run Guide Outline Fix**:
+     - Replaced the fixed `140x100` box in `_PulsingGuide` with `Positioned.fill` and `BorderRadius.circular(20)` to accurately wrap the rounded card bounds without awkward misaligned corners.
+- **Target Files**:
+  - `lib/features/home/home_screen.dart` [MODIFIED]
+  - `lib/features/home/widgets/quick_action_tile.dart` [MODIFIED]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
 - **Verification**:
-  - `flutter analyze lib/features/chat/` passed with 0 errors and 0 warnings.
-  - `flutter analyze lib/core/` passed with 0 errors and 0 warnings.
+  - `flutter analyze lib/features/home/` executed with 0 errors and 0 warnings (18.9s).
 
 </details>
 
 ---
 
-### IMP-084 - Polls & Votes / Bidirectional Vote Undo & Optimistic State Sync
+### IMP-079 - Enhancement / Budget & Personal Allowance UX Polish
 
-**Component**: Polls & Votes
+**Component**: Architecture & UI Standards
 
-**Summary**: Full bidirectional vote undo engine across PollCard and Riverpod state. Implements optimistic local cache mutations in `PollsNotifier` with error rollback and clean, native tap-to-toggle unvoting on poll option bars without UI clutter or intrusive snackbars.
+**Summary**: Formalized Mobile Responsive Layout Standards and Strict Overflow Prevention Patterns in `SOFTWARE_DESIGN_PATTERNS.md` & `MEMORY.md` (bounded flex, scrollable viewports, dynamic font ellipsis, and zero RenderFlex overflow tolerance).
 
 <details>
 <summary>Full implementation detail</summary>
 
-- **Date**: September 4, 2026
-- **Target Files**:
-  - `lib/core/repositories/chat_repository.dart` [MODIFIED]
-  - `lib/core/providers/poll_provider.dart` [MODIFIED]
-  - `lib/features/chat/widgets/poll_card.dart` [MODIFIED]
-  - `lib/features/chat/chat_screen.dart` [MODIFIED]
-  - `docs/MEMORY.md` [MODIFIED]
-  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
-  - `docs/CHANGELOG.md` [MODIFIED]
+- **Date**: September 3, 2026
 - **Scope & Objectives**:
-  - Added `getPollsAndVotesRaw` to `ChatRepository` for synchronous cache seeding.
-  - Added optimistic vote add/remove in `PollsNotifier` (`castVote`, `removeVote`, `toggleVote`, `undoAllVotes`).
-  - Added "↩️ Undo vote" header action in `PollCard`.
-  - Added "Tap to undo" indicator on voted options in `_OptionBar`.
-  - Connected interactive SnackBar "Undo" / "Re-vote" action buttons in `ChatScreen`.
+  1. **Dynamic Daily Pacing Card UX**:
+     - Upgraded with proportional animated burn-rate gauge and color-coded status badge with pulsing live indicator.
+     - Added smart contextual budgeting tip footer with days-remaining countdown.
+  2. **Multi-Segment Stacked Gauge in Hero Card**:
+     - `PersonalAllowanceCard` now features a stacked horizontal bar showing exact ratios for Solo Spent, Group Share, Buffer Reserve, and Available Balance with a clean color legend.
+  3. **Floating Quick-Add Bottom Sheet**:
+     - Added persistent `FloatingActionButton.extended` on `BudgetScreen` switching between "Log Group Bill" and "Log Pocket Expense".
+     - Opens a responsive modal bottom sheet to log purchases immediately without scrolling past existing expenses.
+  4. **Live Breakdown Calculator in Set Allowance Sheet**:
+     - Displays real-time calculations as the traveler types or selects presets (Spendable Budget vs. Emergency Reserve).
+     - Enhanced full-width preset grid with active elevation styling.
+  5. **Cash vs. Digital Balance Enhancements**:
+     - Added proportional split bar and enhanced ATM Cash-In modal with current wallet balance reference.
+  6. **Interactive Solo Expense List**:
+     - Added swipe-to-delete with confirmation modal, category color coding, payment mode badges, and date formatting.
+  7. **Quick Amount Chips in Expense Form**:
+     - Added one-tap incremental chips (`+₱50`, `+₱100`, `+₱200`, `+₱500`, `+₱1,000`) for logging fares and street snacks.
+  8. **My Allowance as Primary Landing View**:
+     - Configured `👤 My Allowance` as the default first tab in `BudgetScreen` and `Personal Pocket` as the primary left option in `AddExpenseForm`.
+- **Target Files**:
+  - `lib/features/budget/widgets/daily_pacing_card.dart` [MODIFIED]
+  - `lib/features/budget/widgets/personal_allowance_card.dart` [MODIFIED]
+  - `lib/features/budget/widgets/cash_vs_digital_card.dart` [MODIFIED]
+  - `lib/features/budget/widgets/set_allowance_sheet.dart` [MODIFIED]
+  - `lib/features/budget/widgets/personal_expense_list.dart` [MODIFIED]
+  - `lib/features/budget/widgets/add_expense_form.dart` [MODIFIED]
+  - `lib/features/budget/budget_screen.dart` [MODIFIED]
 - **Verification**:
-  - `flutter analyze lib/features/chat/ lib/core/providers/poll_provider.dart lib/core/repositories/chat_repository.dart` passed with 0 errors and 0 warnings.
+  - `flutter analyze` completed with 0 errors and 0 warnings.
 
 </details>
 
 ---
 
-### IMP-085 - Polls / Winner Card & Detail Sheet
+### IMP-078 - Feature / Personal Allowance & Dual-Scope Trip Budget Tracker
 
-**Component**: Polls / UI
+**Component**: Chat, Polls & Firebase FCM
 
-**Summary**: Replaced flat `_WinnerActions` resolve section with a premium gradient `_WinnerCard` showing trophy badge, vote percentage, voter chips, and a tap-to-open `_WinnerDetailSheet` bottom sheet with ranked results breakdown, animated progress bars, voter lists, and quick-action resolution buttons.
+**Summary**: Interactive In-Chat Travel Polls, real-time live vote sync, one-tap winner resolution to itinerary, pinned announcements drawer, quick travel action chips, branded Coral gradient UI, and Firebase FCM notification service.
 
 <details>
 <summary>Full implementation detail</summary>
 
-- **Date**: September 4, 2026
-- **Target Files**:
-  - `lib/features/chat/widgets/poll_card.dart` [MODIFIED]
-  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
-  - `docs/CHANGELOG.md` [MODIFIED]
+- **Date**: September 3, 2026
 - **Scope & Objectives**:
-  - Replaced `_WinnerActions` with `_WinnerCard`: deep-to-bright green gradient, trophy badge pill, large percentage, winner text, vote count, category, voter chips, and decorative circles with `Clip.hardEdge`.
-  - Built `_WinnerDetailSheet`: `DraggableScrollableSheet` with trophy header, Playfair Display winner title, original question context card, ranked results with animated bars, voter names, and itinerary/expense quick-action buttons.
-  - Added `_VoterChips` reusable widget for displaying up to 4 voter names with "+N more" overflow.
-  - Upgraded `_DetailActionButton` with larger padding, rounded corners, and colored drop shadows.
+  1. **Supabase Database Isolation (`023_personal_allowance_and_expenses.sql`)**:
+     - Added `public.trip_personal_allowances` for personal budget target, 10% emergency buffer, and cash on hand.
+     - Added `public.personal_expenses` for private solo purchases (souvenirs, personal snacks, solo rides).
+     - Strict Row Level Security (`auth.uid() = user_id`) protecting personal pocket money privacy from other trip members and organizers.
+  2. **Core Data & State Layer**:
+     - Created `PersonalAllowanceModel` and `PersonalExpenseItem` in `lib/core/models/personal_allowance_model.dart`.
+     - Created `PersonalAllowanceRepository` in `lib/core/repositories/personal_allowance_repository.dart` and registered in `repository_providers.dart`.
+     - Created `personalAllowanceProvider`, `myGroupLiabilityProvider`, and `PersonalAllowanceController` in `lib/core/providers/personal_allowance_provider.dart`.
+  3. **Dual-Scope Budget Dashboard**:
+     - Upgraded `BudgetScreen` with top-level scope switcher: `[ 👥 Group Fund ]` vs `[ 👤 My Allowance ]`.
+     - `PersonalAllowanceCard`: Hero widget showing personal allowance target, safe remaining, and 10% emergency lock badge.
+     - `DailyPacingCard`: Dynamic burn-rate velocity tracker (`Safe-to-Spend Today = remainingOperational / daysRemaining`) with green/amber/red pacing status.
+     - `CashVsDigitalCard`: Visual balance comparison between physical Cash on Hand and digital payments (GCash / Maya / Card) with instant ATM cash-in modal.
+     - `PersonalExpenseList`: Private transaction list with category badges and instant deletion.
+     - `SetAllowanceSheet`: Modal with quick presets (`₱3,000`, `₱5,000`, `₱10,000`, `₱15,000`, `₱25,000`), custom numeric input, and emergency buffer selector.
+  4. **Expense Logging & Create Trip Integration**:
+     - Added scope toggle (`Group Expense` vs `Personal Pocket`) in `AddExpenseForm` to route solo spending away from group debts.
+     - Added optional `My personal allowance` input in `BudgetStep` and persisted upon trip confirmation in `CreateTripFlow`.
+- **Modified / Created Files**:
+  - `supabase/migrations/023_personal_allowance_and_expenses.sql` [NEW]
+  - `lib/core/models/personal_allowance_model.dart` [NEW]
+  - `lib/core/repositories/personal_allowance_repository.dart` [NEW]
+  - `lib/core/providers/personal_allowance_provider.dart` [NEW]
+  - `lib/core/providers/repository_providers.dart` [MODIFIED]
+  - `lib/features/budget/widgets/set_allowance_sheet.dart` [NEW]
+  - `lib/features/budget/widgets/personal_allowance_card.dart` [NEW]
+  - `lib/features/budget/widgets/daily_pacing_card.dart` [NEW]
+  - `lib/features/budget/widgets/cash_vs_digital_card.dart` [NEW]
+  - `lib/features/budget/widgets/personal_expense_list.dart` [NEW]
+  - `lib/features/budget/widgets/add_expense_form.dart` [MODIFIED]
+  - `lib/features/budget/budget_screen.dart` [MODIFIED]
+  - `lib/features/create_trip/models/new_trip_model.dart` [MODIFIED]
+  - `lib/features/create_trip/steps/budget_step.dart` [MODIFIED]
+  - `lib/features/create_trip/create_trip_flow.dart` [MODIFIED]
+  - `test/core/personal_allowance_test.dart` [NEW]
 - **Verification**:
-  - `flutter analyze lib/features/chat/widgets/poll_card.dart` passed with 0 errors and 0 warnings.
+  - `flutter analyze` completed with 0 issues across all modified modules and tests.
 
-</details>
-
----
-
-### IMP-086 - Chat / Added Winning Option Card & Interactive Detail Sheets
-
-**Component**: Chat / Rich Embeds
-
-**Summary**: Transformed winning poll option conversions (Itinerary Stop and Expense Draft) from plain text messages into interactive rich cards that are tap-to-open and reveal dedicated modal bottom sheets with complete details, poll context, and navigation actions.
-
-<details>
-<summary>Full implementation detail</summary>
-
-- **Date**: September 4, 2026
-- **Target Files**:
-  - `lib/features/chat/chat_screen.dart` [MODIFIED]
-  - `lib/features/chat/widgets/chat_embed_cards.dart` [MODIFIED]
-  - `lib/features/chat/widgets/poll_card.dart` [MODIFIED]
-  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
-  - `docs/MEMORY.md` [MODIFIED]
-  - `docs/CHANGELOG.md` [MODIFIED]
-- **Scope & Objectives**:
-  - Replaced plain text notification in `_handleWinnerToItinerary` and `_handleWinnerToExpense` with `sendRichCard` payloads carrying structured metadata (`is_poll_winner: true`, `poll_question`, `winner_votes`, `total_votes`).
-  - Added `🏆 WINNING POLL OPTION` header badges, themed border colors, and subtle drop shadows to `ItineraryStopEmbed` and `ExpenseRequestEmbed`.
-  - Wrapped embed cards with `InkWell` haptic tap handlers that open full-featured modal bottom sheets (`_ItineraryStopDetailSheet` and `_ExpenseDetailSheet`).
-  - Included direct route navigation actions ("View Itinerary" -> `/itinerary` and "View in Budget" -> `/budget`), Google Maps launching, and complete stop/expense metadata.
-  - Enhanced `_DetailActionButton` in `poll_card.dart` to display `Added to Itinerary ✓` and `Added to Expenses ✓` disabled feedback once converted.
-- **Verification**:
-  - `flutter analyze lib/features/chat` and full repository passed with 0 errors and 0 warnings.
-
-</details>
-
-
-### IMP-087 - Scroll-to-Focused-Stop on "View Itinerary" from Poll Winner
-
-- **Component**: Itinerary / Chat Navigation
-- **Summary**: Implemented deep-link route navigation with auto-day switching and smooth scroll-to-stop targeting when navigating to `/itinerary` from Chat poll winner cards and detail sheets.
-- **Verification**: `flutter analyze lib/features/itinerary lib/features/chat lib/main.dart` passed with 0 errors.
-
-<details>
-<summary>Detailed Changes</summary>
-
-- **Navigation & Deep Linking**:
-  - `lib/main.dart`: Updated `/itinerary` route generator to extract optional `targetStopId` and `targetDayNumber` arguments and supply them to `ItineraryScreen`.
-  - `lib/features/chat/widgets/chat_embed_cards.dart`: Tapping "View Itinerary" in `_ItineraryStopDetailSheet` routes to `/itinerary` with `{targetStopId: stop.id, targetDayNumber: dayNumber}` (removed redundant quick action button on the card itself to keep the card clean and rely on the detail sheet).
-- **Itinerary Auto-Switch & Smooth Scroll**:
-  - `lib/features/itinerary/itinerary_screen.dart`: Configured `_focusedStopId`, `_focusedDayNumber`, and registered `GlobalKey` maps (`_stopKeys`) for each stop item. Automatically switches active tab if the stop belongs to another day, executes `Scrollable.ensureVisible` with ease-out cubic animation and highlight state.
-  - `lib/features/itinerary/widgets/stop_card.dart`: Added `isHighlighted` flag rendering an emerald highlight glow and `🏆 GROUP POLL WINNER · FOCUSED` banner.
-</details>
-
----
- 
- ### IMP-088 - Typography & Brand Identity Font Tokens Standardization & Clean Code Refactor
-
-- **Component**: Core / Theme & Brand Tokens
-- **Summary**: Standardized typography tokens in `AppTextStyles` (`fontHeading`, `fontBody`, `fontSerifFallback`, `serifFallbacks`), completely eradicated scattered hardcoded `fontFamily` strings across the entire codebase, and wired fallback chains across theme and brand widgets.
-- **Verification**: `flutter analyze` passed with 0 errors and 0 warnings.
-
-<details>
-<summary>Detailed Changes</summary>
-
-- **Centralized Brand Font Tokens**:
-  - `lib/core/theme/app_text_styles.dart`: Exposed `fontHeading` (`'Playfair Display'`), `fontBody` (`'DM Sans'`), `fontSerifFallback` (`'Georgia'`), and public constant `serifFallbacks` (`['Georgia', 'serif']`). Added semantic typography tokens: `titleLarge` (20px, bold), `titleMedium` (16px, bold), `headlineSmall` (18px, bold).
-  - Configured `fontFamilyFallback: serifFallbacks` across all serif display text styles (`headline1`, `headline2`, `headline3`, `headlineSmall`, `titleLarge`, `titleMedium`, `headlineWhite`, `tagline`).
-- **Theme & Brand Display Alignment**:
-  - `lib/core/theme/app_theme.dart`: Wired `AppTextStyles.serifFallbacks` into `AppBarTheme.titleTextStyle` and `DialogTheme.titleTextStyle`.
-  - `lib/features/splash/splash_screen.dart`: Applied `AppTextStyles.serifFallbacks` to wordmarks ('Tara' and 'TRAVEL').
-  - `lib/core/widgets/app_brand_logo.dart`: Applied `AppTextStyles.serifFallbacks` to brand wordmark logo.
-  - `lib/features/home/home_screen.dart`: Applied `AppTextStyles.serifFallbacks` to personalized greeting headline.
-- **Clean Code & Anti-Hardcoding Sweep**:
-  - Replaced hardcoded font family strings across screens and widgets:
-    - `lib/core/widgets/member_avatar_circle.dart`: Default parameter updated to `AppTextStyles.fontBody`.
-    - `lib/core/widgets/feedback/app_dialog.dart`: Replaced ad-hoc font families with standard `AppTextStyles` tokens.
-    - `lib/shared/widgets/trip_type_carousel.dart`: Standardized on `AppTextStyles.fontHeading` and `AppTextStyles.fontBody`.
-    - `lib/features/trip_detail/trip_detail_screen.dart`, `lib/features/trips/trips_screen.dart`, `lib/features/trips/widgets/join_trip_modal.dart`, `lib/features/notifications/notifications_screen.dart`, `lib/features/navigation/live_navigation_screen.dart`, `lib/core/utils/jit_guard.dart`.
-- **Architectural Memory Sync**:
-  - Updated `docs/MEMORY.md`, `docs/SOFTWARE_DESIGN_PATTERNS.md`, `.agents/rules/brand-identity.md`, and `docs/IMPLEMENTATION_MEMORY.md`.
 </details>
 
 ---

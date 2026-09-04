@@ -744,7 +744,7 @@ class ExpenseRequestEmbed extends StatelessWidget {
                       ? '₱0.00 · Draft (set cost in Budget)'
                       : formattedAmount,
                   style: TextStyle(
-                    fontFamily: AppTextStyles.fontHeading,
+                    fontFamily: AppTextStyles.fontBody,
                     fontSize: amount == 0.0 && isPollWinner ? 14 : 18,
                     fontWeight: FontWeight.bold,
                     color: AppColors.primary,
@@ -993,7 +993,7 @@ class _ExpenseDetailSheet extends StatelessWidget {
                 Text(
                   formattedAmount,
                   style: const TextStyle(
-                    fontFamily: AppTextStyles.fontHeading,
+                    fontFamily: AppTextStyles.fontBody,
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: AppColors.primary,

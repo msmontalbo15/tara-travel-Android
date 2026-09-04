@@ -3,6 +3,26 @@ import '../constants/trip_types.dart';
 import 'member_model.dart';
 import 'expense_model.dart';
 
+enum TripStatus {
+  draft,
+  planning,
+  ongoing,
+  completed;
+
+  String get label {
+    switch (this) {
+      case TripStatus.draft:
+        return 'Draft';
+      case TripStatus.planning:
+        return 'Planning';
+      case TripStatus.ongoing:
+        return 'Ongoing';
+      case TripStatus.completed:
+        return 'Completed';
+    }
+  }
+}
+
 class TripModel {
   final String id;
   final String name;
@@ -66,6 +86,29 @@ class TripModel {
       .fold(0, (sum, e) => sum + e.amount);
 
   double get remainingBudget => totalBudget - totalSpent;
+
+  /// Returns the current dynamic status of the trip
+  TripStatus get status {
+    if (isDraft) return TripStatus.draft;
+    if (isArchived) return TripStatus.completed;
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final tripStart = DateTime(fromDate.year, fromDate.month, fromDate.day);
+    final tripEnd = DateTime(toDate.year, toDate.month, toDate.day, 23, 59, 59);
+
+    if (tripEnd.isBefore(today)) {
+      return TripStatus.completed;
+    }
+    if (today.isBefore(tripStart)) {
+      return TripStatus.planning;
+    }
+    return TripStatus.ongoing;
+  }
+
+  bool get isPlanning => status == TripStatus.planning;
+  bool get isOngoing => status == TripStatus.ongoing;
+  bool get isCompleted => status == TripStatus.completed;
 
   /// Returns true if essential trip details (destination, budget, or valid dates) are missing/unspecified
   bool get isIncomplete =>

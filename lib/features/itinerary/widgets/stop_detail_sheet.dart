@@ -894,7 +894,7 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                       Text(
                         formattedEta,
                         style: const TextStyle(
-                          fontFamily: AppTextStyles.fontHeading,
+                          fontFamily: AppTextStyles.fontBody,
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
                           color: AppColors.deepEarth,

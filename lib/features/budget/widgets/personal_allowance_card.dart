@@ -161,7 +161,7 @@ class PersonalAllowanceCard extends StatelessWidget {
                 child: Text(
                   '₱${CurrencyUtils.formatAmount(total)}',
                   style: const TextStyle(
-                    fontFamily: AppTextStyles.fontHeading,
+                    fontFamily: AppTextStyles.fontBody,
                     fontSize: 32,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,

@@ -10,8 +10,8 @@ import '../../core/providers/repository_providers.dart';
 import '../../core/providers/trip_provider.dart';
 import '../../core/providers/selected_trip_provider.dart';
 import '../../core/providers/personal_allowance_provider.dart';
-import 'widgets/budget_overview_card.dart';
-import 'widgets/personal_allowance_card.dart';
+import 'widgets/trip_budget_hero_card.dart';
+import 'widgets/personal_trip_budget_hero_card.dart';
 import 'widgets/daily_pacing_card.dart';
 import 'widgets/cash_vs_digital_card.dart';
 import 'widgets/personal_expense_list.dart';
@@ -36,8 +36,9 @@ class BudgetScreen extends ConsumerStatefulWidget {
 }
 
 class _BudgetScreenState extends ConsumerState<BudgetScreen> {
-  int _scopeIndex = 0; // 0: Group Fund, 1: My Allowance
-  int _activeTabIndex = 0; // 0: Overview, 1: Expenses, 2: Split
+  // 0: Personal Budget (with trip summary), 1: Trip Expenses (group fund & CRUD)
+  int _scopeIndex = 0; 
+  int _activeTripSubTabIndex = 0; // 0: Overview, 1: Expenses, 2: Split
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +54,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
           ModuleViewTrackerService.instance.markViewed('expenses', trip.id);
         });
 
-        // Subscribe to live realtime expenses updates
+        // Live realtime expense updates
         ref.watch(expenseRealtimeProvider(trip.id));
 
         final allowanceAsync = ref.watch(personalAllowanceProvider(trip.id));
@@ -61,11 +62,22 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
         final allowance = allowanceAsync.value;
         final allTrips = ref.watch(allTripsProvider).value ?? const [];
 
+        // Derived calculations (purely client-side from approved expenses)
+        final approvedExpenses = trip.expenses.where((e) => e.status == ExpenseStatus.approved).toList();
+        final derivedTripSpent = approvedExpenses.fold<double>(0.0, (acc, e) => acc + e.amount);
+        final derivedTripRemaining = (trip.totalBudget - derivedTripSpent).clamp(0.0, double.infinity);
+        final isTripOverBudget = trip.totalBudget > 0 && derivedTripSpent > trip.totalBudget;
+
+        final categoryTotals = <String, double>{};
+        for (final e in approvedExpenses) {
+          categoryTotals.update(e.category.name, (v) => v + e.amount, ifAbsent: () => e.amount);
+        }
+
         return Scaffold(
           backgroundColor: AppColors.surfaceLight,
           body: Column(
             children: [
-              // Dark Header + Hero Section
+              // ── Header & Hero Section ──────────────────────────────
               Container(
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
@@ -74,7 +86,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                     end: Alignment.bottomCenter,
                   ),
                 ),
-                padding: EdgeInsets.fromLTRB(24, widget.showHeader ? 60 : 8, 24, 0),
+                padding: EdgeInsets.fromLTRB(20, widget.showHeader ? 52 : 12, 20, 16),
                 child: Column(
                   children: [
                     if (widget.showHeader) ...[
@@ -89,9 +101,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  trip.name.isNotEmpty
-                                      ? trip.name
-                                      : 'Budget & Allowance',
+                                  trip.name.isNotEmpty ? trip.name : 'Budget & Expenses',
                                   style: const TextStyle(
                                     fontFamily: AppTextStyles.fontHeading,
                                     fontSize: 20,
@@ -102,16 +112,14 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 const SizedBox(height: 3),
-                                // Active trip badge with switcher dropdown
+                                // Active trip switcher chip (Pure UI state)
                                 InkWell(
                                   onTap: allTrips.length > 1
-                                      ? () => _showTripSwitcherSheet(
-                                          context, allTrips, trip.id)
+                                      ? () => _showTripSwitcherSheet(context, allTrips, trip.id)
                                       : null,
                                   borderRadius: BorderRadius.circular(16),
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 8, vertical: 3),
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                     decoration: BoxDecoration(
                                       color: Colors.white.withValues(alpha: 0.12),
                                       borderRadius: BorderRadius.circular(16),
@@ -153,9 +161,8 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                       ),
                       const SizedBox(height: 14),
 
-                      // ── Scope Switcher: Group Fund vs My Allowance ───────
+                      // ── Scope Switcher: Budget (Personal + Summary) vs Trip Expenses (Classic Group Fund) ──
                       Container(
-                        margin: const EdgeInsets.only(bottom: 14),
                         padding: const EdgeInsets.all(3),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.1),
@@ -166,75 +173,86 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                         ),
                         child: Row(
                           children: [
-                            _buildScopeBtn(0, '👤 My Allowance'),
-                            _buildScopeBtn(1, '👥 Group Fund'),
+                            _buildScopeBtn(0, '👤 Budget (Personal & Summary)'),
+                            _buildScopeBtn(1, '👥 Trip Expenses (Group)'),
                           ],
                         ),
                       ),
+                      const SizedBox(height: 14),
+                    ],
 
-                      if (_scopeIndex == 0) ...[
-                        PersonalAllowanceCard(
-                          tripId: trip.id,
-                          allowance: allowance,
-                          myGroupLiability: myGroupLiability,
-                          tripDestination: trip.destination,
-                          tripName: trip.name,
-                        ),
-                        const SizedBox(height: 16),
-                      ] else ...[
-                        BudgetOverviewCard(
-                          totalBudget: trip.totalBudget,
-                          totalSpent: trip.totalSpent,
-                          memberCount: trip.members.length,
-                          tripSubtitle:
-                              '${trip.destination} · ${AppTripTypes.getEmoji(trip.tripType)} ${AppTripTypes.getLabel(trip.tripType)}',
-                          tripName: trip.name,
-                        ),
-                        if (trip.totalBudget > 0 &&
-                            (trip.totalSpent / trip.totalBudget) >= 0.9)
-                          AlertBanner(
-                            message:
-                                '⚠️ Budget is ${(trip.totalSpent / trip.totalBudget * 100).toStringAsFixed(0)}% used.',
+                    // ── Hero Card based on active Scope ──────────────────
+                    if (_scopeIndex == 0) ...[
+                      // Budget is more on personal with trip summary expenses
+                      PersonalTripBudgetHeroCard(
+                        tripId: trip.id,
+                        allowance: allowance,
+                        myGroupLiability: myGroupLiability,
+                        tripTotalBudget: trip.totalBudget,
+                        tripTotalSpent: derivedTripSpent,
+                        tripDestination: trip.destination,
+                        tripName: trip.name,
+                      ),
+                    ] else ...[
+                      // Trip Expenses: classic overview card with the exact ring chart & trip spending
+                      TripBudgetHeroCard(
+                        totalBudget: trip.totalBudget,
+                        totalSpent: derivedTripSpent,
+                        memberCount: trip.members.length,
+                        tripSubtitle: '${trip.destination} · ${AppTripTypes.getEmoji(trip.tripType)} ${AppTripTypes.getLabel(trip.tripType)}',
+                        tripName: trip.name,
+                      ),
+                      if (isTripOverBudget)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 10),
+                          child: AlertBanner(
+                            message: '⚠️ Over budget by ₱${CurrencyUtils.formatAmount(derivedTripSpent - trip.totalBudget)}!',
                           ),
-                        const SizedBox(height: 12),
-                        // Sub-tabs for Group Fund
-                        Container(
-                          padding: const EdgeInsets.all(3),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.07),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.06),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              _buildTabBtn(0, 'Overview'),
-                              _buildTabBtn(1, 'Expenses'),
-                              _buildTabBtn(2, 'Split'),
-                            ],
+                        )
+                      else if (trip.totalBudget > 0 && (derivedTripSpent / trip.totalBudget) >= 0.85)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 10),
+                          child: AlertBanner(
+                            message: '⚠️ Budget is ${(derivedTripSpent / trip.totalBudget * 100).toStringAsFixed(0)}% used.',
                           ),
                         ),
-                        const SizedBox(height: 15),
-                      ],
+                      const SizedBox(height: 12),
+
+                      // Sub-tabs for Trip Expenses (Overview, Expenses, Split)
+                      Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.07),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.06),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            _buildTripTabBtn(0, 'Overview'),
+                            _buildTripTabBtn(1, 'Expenses'),
+                            _buildTripTabBtn(2, 'Split'),
+                          ],
+                        ),
+                      ),
                     ],
                   ],
                 ),
               ),
 
-              // Body Section
+              // ── Body Section ─────────────────────────────────────────
               Expanded(
                 child: SingleChildScrollView(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                   physics: const BouncingScrollPhysics(),
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 250),
                     child: KeyedSubtree(
-                      key: ValueKey<int>(_scopeIndex),
+                      key: ValueKey<String>('${_scopeIndex}_$_activeTripSubTabIndex'),
                       child: _scopeIndex == 0
-                          ? _buildMyAllowanceTab(trip, allowance, myGroupLiability)
-                          : _buildActiveTab(trip),
+                          ? _buildPersonalBudgetScope(trip, allowance, myGroupLiability, categoryTotals, derivedTripSpent)
+                          : _buildTripExpensesScope(trip, categoryTotals, derivedTripSpent, derivedTripRemaining),
                     ),
                   ),
                 ),
@@ -260,7 +278,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
       loading: () => const BudgetScreenSkeleton(),
       error: (e, _) => Scaffold(
         backgroundColor: AppColors.deepEarth,
-        body: Center(child: Text('Error: $e')),
+        body: Center(child: Text('Error: $e', style: const TextStyle(color: Colors.white))),
       ),
     );
   }
@@ -281,7 +299,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                       color: AppColors.primary.withValues(alpha: 0.4),
                       blurRadius: 6,
                       offset: const Offset(0, 2),
-                    )
+                    ),
                   ]
                 : null,
           ),
@@ -289,9 +307,9 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
             label,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 11.5,
               fontWeight: FontWeight.w700,
-              color: active ? Colors.white : Colors.white.withValues(alpha: 0.6),
+              color: active ? Colors.white : Colors.white.withValues(alpha: 0.65),
             ),
           ),
         ),
@@ -299,11 +317,11 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
     );
   }
 
-  Widget _buildTabBtn(int index, String label) {
-    final active = _activeTabIndex == index;
+  Widget _buildTripTabBtn(int index, String label) {
+    final active = _activeTripSubTabIndex == index;
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() => _activeTabIndex = index),
+        onTap: () => setState(() => _activeTripSubTabIndex = index),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
@@ -315,7 +333,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                       color: Colors.black.withValues(alpha: 0.15),
                       blurRadius: 6,
                       offset: const Offset(0, 2),
-                    )
+                    ),
                   ]
                 : null,
           ),
@@ -324,10 +342,8 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: active
-                  ? AppColors.deepEarth
-                  : Colors.white.withValues(alpha: 0.5),
+              fontWeight: FontWeight.w700,
+              color: active ? AppColors.deepEarth : Colors.white.withValues(alpha: 0.6),
             ),
           ),
         ),
@@ -335,46 +351,201 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
     );
   }
 
-  Widget _buildActiveTab(TripModel trip) {
-    switch (_activeTabIndex) {
+  // ── 1. Budget Scope: More on personal with trip summary expenses ──
+  Widget _buildPersonalBudgetScope(
+    TripModel trip,
+    PersonalAllowanceModel? allowance,
+    double myGroupLiability,
+    Map<String, double> categoryTotals,
+    double totalTripSpent,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (allowance != null && allowance.totalAllowance > 0) ...[
+          DailyPacingCard(
+            trip: trip,
+            allowance: allowance,
+            myGroupLiability: myGroupLiability,
+          ),
+          const SizedBox(height: 16),
+          CashVsDigitalCard(tripId: trip.id, allowance: allowance),
+          const SizedBox(height: 20),
+        ],
+
+        // Trip Summary Expenses Breakdown (Category Breakdown)
+        _sectionTitle('TRIP EXPENSES BREAKDOWN'),
+        CategoryBudgetChart(
+          categoryTotals: categoryTotals,
+          totalBudget: trip.totalBudget,
+          totalSpent: totalTripSpent,
+        ),
+        const SizedBox(height: 20),
+
+        // Personal Expense List
+        if (allowance != null && allowance.expenses.isNotEmpty) ...[
+          _sectionTitle('PERSONAL POCKET LOG (${allowance.expenses.length})'),
+          const SizedBox(height: 6),
+          PersonalExpenseList(tripId: trip.id, expenses: allowance.expenses),
+          const SizedBox(height: 20),
+        ],
+
+        const SizedBox(height: 120),
+      ],
+    );
+  }
+
+  // ── 2. Trip Expenses Scope: The trip itself (Overview, Expenses Log, Split Bill) ──
+  Widget _buildTripExpensesScope(
+    TripModel trip,
+    Map<String, double> categoryTotals,
+    double totalSpent,
+    double totalRemaining,
+  ) {
+    switch (_activeTripSubTabIndex) {
       case 0:
-        return _buildOverviewTab(trip);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _sectionTitle('CATEGORY BREAKDOWN'),
+            CategoryBudgetChart(
+              categoryTotals: categoryTotals,
+              totalBudget: trip.totalBudget,
+              totalSpent: totalSpent,
+            ),
+            const SizedBox(height: 18),
+            _sectionTitle('MEMBER CONTRIBUTIONS'),
+            MemberContributionCard(members: trip.members, expenses: trip.expenses),
+            const SizedBox(height: 120),
+          ],
+        );
       case 1:
-        return _buildExpensesTab(trip);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _sectionTitle('EXPENSES LOG (${trip.expenses.length})'),
+                TextButton.icon(
+                  onPressed: () => _showQuickAddExpenseSheet(trip),
+                  icon: const Icon(Icons.add_rounded, size: 14, color: AppColors.primary),
+                  label: const Text(
+                    'New',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            ExpenseLog(
+              expenses: trip.expenses,
+              members: trip.members,
+              canApprove: true,
+              onStatusUpdate: (expense, status, {rejectionNote}) async {
+                await _handleStatusUpdate(trip, expense, status, note: rejectionNote);
+              },
+              onDelete: (expense) async {
+                await _handleDeleteExpense(trip, expense.id);
+              },
+            ),
+            const SizedBox(height: 120),
+          ],
+        );
       case 2:
-        return _buildSplitTab(trip);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _sectionTitle('SETTLEMENT GRAPH & BALANCES'),
+            SplitBillPanel(
+              members: trip.members,
+              expenses: trip.expenses,
+            ),
+            const SizedBox(height: 120),
+          ],
+        );
       default:
         return const SizedBox.shrink();
     }
   }
 
-  Widget _buildOverviewTab(TripModel trip) {
-    final categoryTotals = <String, double>{};
-    for (final e in trip.expenses) {
-      if (e.status != ExpenseStatus.approved) continue;
-      categoryTotals.update(e.category.name, (v) => v + e.amount,
-          ifAbsent: () => e.amount);
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _sectionTitle('Category Breakdown'),
-        CategoryBudgetChart(
-          categoryTotals: categoryTotals,
-          totalBudget: trip.totalBudget,
-          totalSpent: trip.totalSpent,
+  Widget _sectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8, top: 8),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          color: AppColors.warmMuted,
+          letterSpacing: 1.5,
         ),
-        const SizedBox(height: 18),
-        _sectionTitle('Distribution'),
-        _buildDistributionCard(categoryTotals, trip.totalSpent),
-        const SizedBox(height: 18),
-        _sectionTitle('Member Contributions'),
-        MemberContributionCard(members: trip.members, expenses: trip.expenses),
-        const SizedBox(height: 130),
-      ],
+      ),
     );
   }
+
+  Future<void> _handleStatusUpdate(
+    TripModel trip,
+    ExpenseModel expense,
+    ExpenseStatus status, {
+    String? note,
+  }) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref.read(expenseRepositoryProvider).updateStatus(
+            expense.id,
+            status,
+            note: note,
+          );
+      ref.invalidate(selectedTripProvider);
+      ref.invalidate(allTripsProvider);
+      ref.invalidate(activeTripProvider);
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            status == ExpenseStatus.approved
+                ? 'Expense approved and added to budget!'
+                : 'Expense rejected.',
+          ),
+          backgroundColor: status == ExpenseStatus.approved ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+        ),
+      );
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Failed to update status: $e'),
+          backgroundColor: const Color(0xFFEF4444),
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleDeleteExpense(TripModel trip, String expenseId) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref.read(expenseRepositoryProvider).deleteExpense(expenseId);
+      ref.invalidate(selectedTripProvider);
+      ref.invalidate(allTripsProvider);
+      ref.invalidate(activeTripProvider);
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Expense deleted'),
+          backgroundColor: AppColors.deepEarth,
+        ),
+      );
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Failed to delete expense: $e'),
+          backgroundColor: const Color(0xFFEF4444),
+        ),
+      );
+    }
+  }
+
   Future<void> _handlePersonalExpense(TripModel trip, String desc, double amt,
       ExpenseCategory cat, PaymentMode mode, DateTime dt) async {
     final messenger = ScaffoldMessenger.of(context);
@@ -456,6 +627,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                 ),
                 AddExpenseForm(
                   members: trip.members,
+                  tripId: trip.id,
                   initialIsPersonal: _scopeIndex == 0,
                   onPersonalExpenseAdded: (desc, amt, cat, mode, dt) async {
                     Navigator.pop(ctx);
@@ -524,14 +696,10 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
               return Container(
                 margin: const EdgeInsets.only(bottom: 8),
                 decoration: BoxDecoration(
-                  color: isSelected
-                      ? AppColors.sand
-                      : const Color(0xFFF9FAFB),
+                  color: isSelected ? AppColors.sand : const Color(0xFFF9FAFB),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isSelected
-                        ? AppColors.primary
-                        : const Color(0xFFE5E7EB),
+                    color: isSelected ? AppColors.primary : const Color(0xFFE5E7EB),
                     width: isSelected ? 1.5 : 1,
                   ),
                 ),
@@ -545,11 +713,8 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                     t.destination,
                     style: TextStyle(
                       fontSize: 14,
-                      fontWeight:
-                          isSelected ? FontWeight.w700 : FontWeight.w600,
-                      color: isSelected
-                          ? AppColors.primary
-                          : AppColors.deepEarth,
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                      color: isSelected ? AppColors.primary : AppColors.deepEarth,
                     ),
                   ),
                   subtitle: Text(
@@ -560,8 +725,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                     ),
                   ),
                   trailing: isSelected
-                      ? const Icon(Icons.check_circle_rounded,
-                          color: AppColors.primary, size: 20)
+                      ? const Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 20)
                       : null,
                   onTap: () {
                     ref.read(selectedTripIdProvider.notifier).select(t.id);
@@ -576,276 +740,5 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
         ),
       ),
     );
-  }
-
-  Widget _buildExpensesTab(TripModel trip) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _sectionTitle('Expense History (${trip.expenses.length})'),
-            TextButton(
-              onPressed: () {},
-              child: const Text(
-                'Filter',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ),
-        ExpenseLog(expenses: trip.expenses, members: trip.members),
-        const SizedBox(height: 24),
-        _sectionTitle('Log New Expense'),
-        AddExpenseForm(
-          members: trip.members,
-          onPersonalExpenseAdded: (desc, amt, cat, mode, dt) =>
-              _handlePersonalExpense(trip, desc, amt, cat, mode, dt),
-          onExpenseAdded: (expense) => _handleGroupExpense(trip, expense),
-        ),
-        const SizedBox(height: 130),
-      ],
-    );
-  }
-
-  Widget _buildMyAllowanceTab(
-    TripModel trip,
-    PersonalAllowanceModel? allowance,
-    double myGroupLiability,
-  ) {
-    if (allowance == null || allowance.totalAllowance <= 0) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          PersonalAllowanceCard(
-            tripId: trip.id,
-            allowance: allowance,
-            myGroupLiability: myGroupLiability,
-            tripDestination: trip.destination,
-            tripName: trip.name,
-          ),
-          const SizedBox(height: 130),
-        ],
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        DailyPacingCard(
-          trip: trip,
-          allowance: allowance,
-          myGroupLiability: myGroupLiability,
-        ),
-        const SizedBox(height: 16),
-        CashVsDigitalCard(tripId: trip.id, allowance: allowance),
-        const SizedBox(height: 20),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _sectionTitle('Personal Expenses (${allowance.expenses.length})'),
-          ],
-        ),
-        const SizedBox(height: 8),
-        PersonalExpenseList(tripId: trip.id, expenses: allowance.expenses),
-        const SizedBox(height: 24),
-        _sectionTitle('Log Personal Expense'),
-        const SizedBox(height: 8),
-        AddExpenseForm(
-          members: trip.members,
-          initialIsPersonal: true,
-          onPersonalExpenseAdded: (desc, amt, cat, mode, dt) =>
-              _handlePersonalExpense(trip, desc, amt, cat, mode, dt),
-          onExpenseAdded: (expense) => _handleGroupExpense(trip, expense),
-        ),
-        const SizedBox(height: 130),
-      ],
-    );
-  }
-
-  Widget _buildSplitTab(TripModel trip) {
-    return SplitBillPanel(
-      members: trip.members,
-      expenses: trip.expenses,
-    );
-  }
-
-  Widget _sectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10, top: 12),
-      child: Text(
-        title.toUpperCase(),
-        style: const TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
-          color: AppColors.warmMuted,
-          letterSpacing: 1.5,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDistributionCard(
-      Map<String, double> categoryTotals, double totalSpent) {
-    if (totalSpent <= 0) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: const Center(
-          child: Text(
-            'No approved spending yet.',
-            style: TextStyle(
-              fontSize: 13,
-              color: AppColors.warmMuted,
-            ),
-          ),
-        ),
-      );
-    }
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          )
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ...categoryTotals.entries.map((entry) {
-            final pct = entry.value / totalSpent;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(_categoryEmoji(entry.key),
-                          style: const TextStyle(fontSize: 14)),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          _categoryLabel(entry.key),
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.deepEarth,
-                          ),
-                        ),
-                      ),
-                      Text(
-                        '₱${CurrencyUtils.formatAmount(entry.value)}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.deepEarth,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        '${(pct * 100).round()}%',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: AppColors.warmMuted,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  TweenAnimationBuilder<double>(
-                    tween: Tween(begin: 0, end: pct.clamp(0.0, 1.0)),
-                    duration: const Duration(milliseconds: 700),
-                    curve: Curves.easeOutCubic,
-                    builder: (_, v, __) => LayoutBuilder(
-                      builder: (_, constraints) => Stack(
-                        children: [
-                          Container(
-                            height: 5,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFE5E5EA),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
-                          Container(
-                            height: 5,
-                            width: constraints.maxWidth * v,
-                            decoration: BoxDecoration(
-                              color: _categoryColor(entry.key),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }),
-        ],
-      ),
-    );
-  }
-
-  String _categoryEmoji(String cat) {
-    switch (cat) {
-      case 'hotel':
-        return '🏨';
-      case 'food':
-        return '🍽️';
-      case 'transport':
-        return '🚐';
-      case 'activities':
-        return '🏝️';
-      default:
-        return '📦';
-    }
-  }
-
-  String _categoryLabel(String cat) {
-    switch (cat) {
-      case 'hotel':
-        return 'Accommodation';
-      case 'food':
-        return 'Food';
-      case 'transport':
-        return 'Transport';
-      case 'activities':
-        return 'Activities';
-      default:
-        return 'Other';
-    }
-  }
-
-  Color _categoryColor(String cat) {
-    switch (cat) {
-      case 'hotel':
-        return AppColors.catAccommodation;
-      case 'food':
-        return AppColors.catFood;
-      case 'transport':
-        return AppColors.catTransport;
-      case 'activities':
-        return AppColors.catActivities;
-      default:
-        return AppColors.warmMuted;
-    }
   }
 }

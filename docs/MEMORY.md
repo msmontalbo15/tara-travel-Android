@@ -1042,10 +1042,29 @@ Client Tier               Storage Tier                Transport Tier
   - `AppTextStyles.fontBody`: `'DM Sans'` — Primary geometric sans-serif for body copy, buttons, labels, inputs, chips, and UI controls.
   - `AppTextStyles.fontSerifFallback`: `'Georgia'` — Canonical high-legibility platform serif fallback.
   - `AppTextStyles.serifFallbacks`: `const ['Georgia', 'serif']` — Public constant list for all serif display fallbacks.
-- **Strict Anti-Hardcoding Invariant**:
+- **Strict Anti-Hardcoding & Numeric Invariant**:
+  - **All Numbers & Statistics Must Be DM Sans**: All numeric readouts, countdowns, budget amounts, allowances, percentages, and metrics strictly resolve to [`AppTextStyles.fontBody`](file:///d:/Spencer/Downloads/tara_travel/lib/core/theme/app_text_styles.dart) (`'DM Sans'`) or semantic tokens like `AppTextStyles.statNumberLarge`, `statNumberMedium`, and `statNumberSmall`. Display serif (`fontHeading`) is reserved solely for non-numeric titles, brand marks, and section headers.
   - **Zero Hardcoded Font Family Strings**: Never write `fontFamily: 'DM Sans'`, `fontFamily: 'Playfair Display'`, or `['Georgia', 'serif']` anywhere in feature screens or widgets.
-  - All text styles must resolve through semantic tokens in [`AppTextStyles`](file:///d:/Spencer/Downloads/tara_travel/lib/core/theme/app_text_styles.dart) (e.g., `AppTextStyles.headline1`, `AppTextStyles.titleMedium`, `AppTextStyles.bodyMedium`, `AppTextStyles.button`) or reference `AppTextStyles.fontHeading`, `AppTextStyles.fontBody`, and `AppTextStyles.serifFallbacks`.
+  - All text styles must resolve through semantic tokens in [`AppTextStyles`](file:///d:/Spencer/Downloads/tara_travel/lib/core/theme/app_text_styles.dart) or reference `AppTextStyles.fontHeading`, `AppTextStyles.fontBody`, and `AppTextStyles.serifFallbacks`.
   - Default parameters in shared widgets (e.g. `MemberAvatarCircle`) must default to `AppTextStyles.fontBody`.
+
+---
+
+## 25. 💰 BUDGET & EXPENSES ARCHITECTURE (IMP-084, IMP-085)
+
+- **Shared Entity**: `ExpenseModel`
+  - Columns: `id`, `trip_id`, `description`, `amount`, `category`, `paid_by_user_id`, `status` (`pending`, `approved`, `rejected`), `receipt_url`, `rejection_note`.
+  - Invariant: Never insert or query forbidden columns `split_meta` or `rejected_by`.
+- **Trip Expenses (Group Focus & Classic Layout)**:
+  - Preserves the established group layout:
+    - **Hero Card (`TripBudgetHeroCard`)**: Trip Name, Subtitle, Ring Chart with "% spent", total budget, remaining amount, and "₱X spent by Y members".
+    - **Sub-tabs**: `Overview` (Category breakdown & Member contributions), `Expenses` (Transactional CRUD log with approval workflow and receipt inspection), and `Split` (Greedy settlement plan & balances).
+  - Transactional CRUD: `AddExpenseForm` with Camera / Gallery receipt upload via `ReceiptOcrService`, heuristic OCR price extraction, split-member multi-select with per-person calculations, and `ExpenseLog` with status filters (`All`, `Pending`, `Approved`, `Rejected`).
+- **Budget (Personal Focus + Trip Summary)**:
+  - Tailored specifically to the traveler's personal target and overall trip expense footprint:
+    - **Hero Card (`PersonalTripBudgetHeroCard`)**: Modeled after the clean template design with Deep Earth `#2C1A14` container, Playfair Display typography, personal budget readout, emerald green remaining badge, slim horizontal progress bar, and an integrated **Trip Expenses Summary** pill row (Solo Spent, Group Liability share, and Trip Total).
+    - **Content**: `DailyPacingCard` (daily burn rate & velocity tips), `CashVsDigitalCard` (cash-in & digital split), `CategoryBudgetChart` (trip category breakdown summary), and `PersonalExpenseList` (pocket expense history).
+  - Trip context switcher carousel: pure UI state allowing seamless trip flipping without state mutation or persistence overhead.
 
 ---
 

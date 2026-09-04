@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/models/member_model.dart';
@@ -7,8 +9,8 @@ import '../../../core/widgets/inputs/app_text_field.dart';
 import '../../../core/widgets/inputs/app_numeric_field.dart';
 import '../../../core/widgets/inputs/app_dropdown.dart';
 import '../../../core/widgets/inputs/app_date_picker.dart';
-
 import '../../../core/models/personal_allowance_model.dart';
+import '../../../core/services/receipt_ocr_service.dart';
 
 class AddExpenseForm extends StatefulWidget {
   final List<MemberModel> members;
@@ -20,6 +22,7 @@ class AddExpenseForm extends StatefulWidget {
   final DateTime? initialDate;
   final String? initialPayerId;
   final bool initialIsPersonal;
+  final String? tripId;
 
   const AddExpenseForm({
     super.key,
@@ -32,6 +35,7 @@ class AddExpenseForm extends StatefulWidget {
     this.initialDate,
     this.initialPayerId,
     this.initialIsPersonal = false,
+    this.tripId,
   });
 
   @override
@@ -40,6 +44,7 @@ class AddExpenseForm extends StatefulWidget {
 
 class _AddExpenseFormState extends State<AddExpenseForm> {
   final _formKey = GlobalKey<FormState>();
+  final ImagePicker _picker = ImagePicker();
 
   late final TextEditingController _descCtrl;
   late final TextEditingController _amountCtrl;
@@ -47,12 +52,19 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
   late bool _isPersonal;
   PaymentMode _paymentMode = PaymentMode.cash;
   late ExpenseCategory _category;
-  String          _payerId  = '';
-  late DateTime   _date;
+  String _payerId = '';
+  late DateTime _date;
   final Set<String> _splitWithMemberIds = {};
 
   String? _descError;
   String? _amountError;
+  String? _payerError;
+
+  // Receipt image & OCR state
+  String? _receiptLocalPath;
+  String? _receiptRemoteUrl;
+  bool _isUploadingReceipt = false;
+  String? _ocrNotice;
 
   @override
   void initState() {
@@ -83,19 +95,74 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
     super.dispose();
   }
 
-  String? _payerError;
-
   bool _validate() {
     bool ok = true;
     setState(() {
-      _descError   = _descCtrl.text.trim().isEmpty ? 'Please enter a description' : null;
+      _descError = _descCtrl.text.trim().isEmpty ? 'Please enter a description' : null;
       _amountError = (double.tryParse(_amountCtrl.text.trim().replaceAll(',', '')) ?? 0) <= 0
           ? 'Please enter a valid amount'
           : null;
-      _payerError  = (!_isPersonal && _payerId.isEmpty) ? 'Please select who paid' : null;
+      _payerError = (!_isPersonal && _payerId.isEmpty) ? 'Please select who paid' : null;
     });
     if (_descError != null || _amountError != null || _payerError != null) ok = false;
     return ok;
+  }
+
+  Future<void> _pickReceiptPhoto(ImageSource source) async {
+    try {
+      final picked = await _picker.pickImage(
+        source: source,
+        maxWidth: 1200,
+        maxHeight: 1200,
+        imageQuality: 80,
+      );
+      if (picked == null) return;
+
+      setState(() {
+        _receiptLocalPath = picked.path;
+        _isUploadingReceipt = true;
+        _ocrNotice = 'Analyzing receipt photo...';
+      });
+
+      // Run heuristic OCR extraction
+      final ocrResult = ReceiptOcrService.instance.extractReceiptData(
+        rawText: picked.name,
+        filePath: picked.path,
+      );
+
+      if (ocrResult.amount != null && ocrResult.amount! > 0) {
+        _amountCtrl.text = ocrResult.amount!.toStringAsFixed(2);
+      }
+      if (ocrResult.description != null && _descCtrl.text.trim().isEmpty) {
+        _descCtrl.text = ocrResult.description!;
+      }
+
+      // Upload if tripId is present
+      String? remoteUrl;
+      if (widget.tripId != null) {
+        remoteUrl = await ReceiptOcrService.instance.uploadReceiptImage(
+          tripId: widget.tripId!,
+          localFilePath: picked.path,
+        );
+      }
+
+      if (mounted) {
+        setState(() {
+          _receiptRemoteUrl = remoteUrl ?? picked.path;
+          _isUploadingReceipt = false;
+          _ocrNotice = ocrResult.amount != null
+              ? '⚡ OCR detected ₱${ocrResult.amount!.toStringAsFixed(2)}!'
+              : 'Receipt attached';
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isUploadingReceipt = false;
+          _ocrNotice = null;
+        });
+      }
+    }
   }
 
   void _submit() {
@@ -103,6 +170,7 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
 
     final amt = double.parse(_amountCtrl.text.trim().replaceAll(',', ''));
     final desc = _descCtrl.text.trim();
+    final photoUrl = _receiptRemoteUrl ?? _receiptLocalPath;
 
     if (_isPersonal) {
       widget.onPersonalExpenseAdded?.call(
@@ -114,12 +182,13 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
       );
     } else {
       final expense = ExpenseModel(
-        id:          const Uuid().v4(),
+        id: const Uuid().v4(),
         description: desc,
-        amount:      amt,
-        category:    _category,
-        paidById:    _payerId,
-        date:        _date,
+        amount: amt,
+        category: _category,
+        paidById: _payerId,
+        date: _date,
+        receiptPhotoUrl: photoUrl,
       );
       widget.onExpenseAdded?.call(expense);
     }
@@ -128,11 +197,14 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
     _descCtrl.clear();
     _amountCtrl.clear();
     setState(() {
-      _category    = ExpenseCategory.food;
-      _date        = DateTime.now();
-      _descError   = null;
+      _category = ExpenseCategory.food;
+      _date = DateTime.now();
+      _descError = null;
       _amountError = null;
-      _payerError  = null;
+      _payerError = null;
+      _receiptLocalPath = null;
+      _receiptRemoteUrl = null;
+      _ocrNotice = null;
     });
   }
 
@@ -323,7 +395,7 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
 
             // ── Amount (hero input) ────────────────────────────────
             AppNumericField(
-              label: 'Amount',
+              label: 'Amount (₱)',
               controller: _amountCtrl,
               hint: '0.00',
               errorText: _amountError,
@@ -369,6 +441,105 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
             ),
             const SizedBox(height: 14),
 
+            // ── Receipt Photo & OCR Extraction Bar ──────────────────
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF9FAFB),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFE5E7EB)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.document_scanner_rounded, size: 16, color: AppColors.primary),
+                      ),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text(
+                          'Receipt / Bill Photo (Optional OCR)',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.deepEarth,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: _isUploadingReceipt ? null : () => _pickReceiptPhoto(ImageSource.camera),
+                        icon: const Icon(Icons.camera_alt_rounded, size: 14),
+                        label: const Text('Camera', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          side: const BorderSide(color: AppColors.primaryLight),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      OutlinedButton.icon(
+                        onPressed: _isUploadingReceipt ? null : () => _pickReceiptPhoto(ImageSource.gallery),
+                        icon: const Icon(Icons.photo_library_rounded, size: 14),
+                        label: const Text('Gallery', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.deepEarth,
+                          side: const BorderSide(color: Color(0xFFD1D5DB)),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                      ),
+                      if (_receiptLocalPath != null) ...[
+                        const SizedBox(width: 10),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(6),
+                          child: Image.file(
+                            File(_receiptLocalPath!),
+                            width: 32,
+                            height: 32,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const Icon(Icons.receipt, size: 24),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded, size: 16, color: Colors.grey),
+                          onPressed: () => setState(() {
+                            _receiptLocalPath = null;
+                            _receiptRemoteUrl = null;
+                            _ocrNotice = null;
+                          }),
+                        ),
+                      ],
+                    ],
+                  ),
+                  if (_ocrNotice != null) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      _ocrNotice!,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF047857),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+
             // ── Description ────────────────────────────────────────
             AppTextField(
               label: 'Description',
@@ -392,34 +563,24 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
               onChanged: (v) => setState(() => _category = v!),
               items: const [
                 DropdownMenuItem(
-                  value: ExpenseCategory.hotel,
-                  child: Row(children: [
-                    Text('🏨  '), Text('Accommodation'),
-                  ]),
+                  value: ExpenseCategory.food,
+                  child: Row(children: [Text('🍽  '), Text('Food & Dining')]),
                 ),
                 DropdownMenuItem(
-                  value: ExpenseCategory.food,
-                  child: Row(children: [
-                    Text('🍽  '), Text('Food'),
-                  ]),
+                  value: ExpenseCategory.hotel,
+                  child: Row(children: [Text('🏨  '), Text('Accommodation')]),
                 ),
                 DropdownMenuItem(
                   value: ExpenseCategory.transport,
-                  child: Row(children: [
-                    Text('🚐  '), Text('Transport'),
-                  ]),
+                  child: Row(children: [Text('🚐  '), Text('Transportation')]),
                 ),
                 DropdownMenuItem(
                   value: ExpenseCategory.activities,
-                  child: Row(children: [
-                    Text('🏝  '), Text('Activities'),
-                  ]),
+                  child: Row(children: [Text('🏝  '), Text('Activities & Tours')]),
                 ),
                 DropdownMenuItem(
                   value: ExpenseCategory.custom,
-                  child: Row(children: [
-                    Text('📦  '), Text('Other'),
-                  ]),
+                  child: Row(children: [Text('📦  '), Text('Other / Misc')]),
                 ),
               ],
               semanticsLabel: 'Expense category',
@@ -584,7 +745,7 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
               width: double.infinity,
               height: 50,
               child: ElevatedButton.icon(
-                onPressed: _submit,
+                onPressed: _isUploadingReceipt ? null : _submit,
                 icon: Icon(
                   _isPersonal ? Icons.check_circle_outline_rounded : Icons.add_rounded,
                   size: 20,

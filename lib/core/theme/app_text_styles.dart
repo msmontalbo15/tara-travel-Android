@@ -161,4 +161,24 @@ class AppTextStyles {
     fontWeight: FontWeight.w500,
     letterSpacing: 0.2,
   );
+
+  // ── Numbers / Numeric Stats (Strictly DM Sans) ──────────────
+  static const TextStyle statNumberLarge = TextStyle(
+    fontFamily: fontBody,
+    fontSize: 34,
+    fontWeight: FontWeight.w700,
+    letterSpacing: -0.5,
+  );
+
+  static const TextStyle statNumberMedium = TextStyle(
+    fontFamily: fontBody,
+    fontSize: 24,
+    fontWeight: FontWeight.w700,
+  );
+
+  static const TextStyle statNumberSmall = TextStyle(
+    fontFamily: fontBody,
+    fontSize: 18,
+    fontWeight: FontWeight.w700,
+  );
 }
