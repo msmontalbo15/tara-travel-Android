@@ -2163,7 +2163,7 @@
 
 **Component**: Polls & Votes
 
-**Summary**: Full bidirectional vote undo engine across PollCard and Riverpod state. Implements optimistic local cache mutations in `PollsNotifier` with error rollback, adds an explicit "↩️ Undo vote" button to PollCard header, displays a "Tap to undo" pill on selected options, and provides an interactive SnackBar with a 1-tap "Undo" action upon voting.
+**Summary**: Full bidirectional vote undo engine across PollCard and Riverpod state. Implements optimistic local cache mutations in `PollsNotifier` with error rollback and clean, native tap-to-toggle unvoting on poll option bars without UI clutter or intrusive snackbars.
 
 <details>
 <summary>Full implementation detail</summary>

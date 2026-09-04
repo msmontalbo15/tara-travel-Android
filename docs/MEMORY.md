@@ -248,8 +248,8 @@ public.trip_poll_votes (
   created_at timestamptz not null default now(),
   constraint unique_user_poll_option unique (poll_id, user_id, option_id)
 );
--- Invariant: Votes are fully undoable via PollCard 'Undo vote' header button,
--- OptionBar 'Tap to undo', or interactive SnackBar 'Undo' action with optimistic rollback.
+-- Invariant: Votes are toggle-undoable by tapping the voted option again,
+-- supported by PollsNotifier optimistic local mutation and automatic rollback.
 
 -- 14. ACTIVITY LOG
 public.activity_log (

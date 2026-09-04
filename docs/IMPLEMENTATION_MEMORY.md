@@ -66,7 +66,7 @@
 | **`IMP-080`** | 2026-09-04 | UI & Home / Quick Actions Grid | Refined Quick Actions Grid layout, card dimensions, and aesthetics: calibrated `childAspectRatio` from 1.34 to 1.52, compact padding, 30x30 icon containers, crisp typography, and responsive `_PulsingGuide` border alignment. |
 | **`IMP-082`** | 2026-09-04 | Profile & Avatars / Storage Pipeline | Full unification of user profile photos and companion avatars across 8+ screens via Supabase Storage bucket `avatars` and `MemberAvatarCircle`. |
 | **`IMP-083`** | 2026-09-04 | Chat, Polls & Activity Hub (IDEA-004) | Full rich travel chat hub: migration 025 (metadata & reactions jsonb), interactive rich embeds (Itinerary stops, Expense requests, Packing alerts, GPS location pin drops, Media photos, Tara Bot briefings), crowdsourced poll suggestions, emoji reactions bar with haptic toggle, and offline outbox queue. |
-| **`IMP-084`** | 2026-09-04 | Polls & Votes / Bidirectional Vote Undo | Full vote undo engine: optimistic in-memory toggle and rollback in `PollsNotifier`, `getPollsAndVotesRaw` synchronous hydration, PollCard explicit "↩️ Undo vote" header button, "Tap to undo" option badge, and interactive SnackBar Undo/Re-vote action feedback. |
+| **`IMP-084`** | 2026-09-04 | Polls & Votes / Bidirectional Vote Undo | Full vote undo engine: optimistic in-memory toggle and rollback in `PollsNotifier`, `getPollsAndVotesRaw` synchronous hydration, and clean tap-to-toggle unvoting on poll options without UI clutter. |
 
 ---
 
@@ -1800,13 +1800,9 @@
      - Updated `removeVote` in `PollsNotifier` to optimistically remove the user's vote from `_rawVotes` and rebuild state immediately with fallback restore on failure.
      - Enhanced `toggleVote` to pass `currentUserId` and properly unvote when tapping an already voted option.
      - Added `undoAllVotes({required TripPoll poll, required String currentUserId})` to retract all votes for a poll with a single tap.
-  3. **UI Affordances & Undo Actions in PollCard**:
-     - Added `onUndoVote` callback parameter to `PollCard`.
-     - In the poll header row (`by Creator · N votes`), added an explicit **"↩️ Undo vote"** button when `userVotedIds.isNotEmpty` and `!poll.isClosed`.
-     - In `_OptionBar`, added a subtle **"Tap to undo"** badge for options currently voted by the user, making bidirectional vote retracting instantly discoverable.
-  4. **Interactive SnackBar Feedback in ChatScreen**:
-     - When voting on an option, display a SnackBar with an interactive **"Undo"** action (`SnackBarAction`) allowing 1-tap revocation within 4 seconds.
-     - When unvoting an option, display a SnackBar with a **"Re-vote"** action for quick correction.
+  3. **Seamless Toggle-to-Undo UX in PollCard**:
+     - Retained intuitive tap-to-toggle unvoting on the option bars without extra clutter or separate buttons.
+     - Kept PollCard header minimal and clean (`by Creator · N votes`).
 - **Target Files**:
   - `lib/core/repositories/chat_repository.dart` [MODIFIED]
   - `lib/core/providers/poll_provider.dart` [MODIFIED]

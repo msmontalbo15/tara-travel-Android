@@ -16,7 +16,6 @@ class PollCard extends StatelessWidget {
   final String currentUserId;
   final bool isOrganizer;
   final ValueChanged<String> onVote;
-  final VoidCallback? onUndoVote;
   final VoidCallback? onClose;
   final VoidCallback? onAddToItinerary;
   final VoidCallback? onAddToExpenses;
@@ -28,7 +27,6 @@ class PollCard extends StatelessWidget {
     required this.currentUserId,
     this.isOrganizer = false,
     required this.onVote,
-    this.onUndoVote,
     this.onClose,
     this.onAddToItinerary,
     this.onAddToExpenses,
@@ -118,63 +116,16 @@ class PollCard extends StatelessWidget {
             ),
           ),
 
-          // ── Creator + vote count + Undo Vote button ────────────────
+          // ── Creator + vote count ───────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'by ${poll.creatorName}  ·  $totalVotes ${totalVotes == 1 ? 'vote' : 'votes'}',
-                    style: TextStyle(
-                      fontFamily: 'DM Sans',
-                      fontSize: 11,
-                      color: AppColors.warmMuted.withValues(alpha: 0.8),
-                    ),
-                  ),
-                ),
-                if (!poll.isClosed && userVotedIds.isNotEmpty)
-                  InkWell(
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      if (onUndoVote != null) {
-                        onUndoVote!();
-                      } else {
-                        for (final optId in userVotedIds) {
-                          onVote(optId);
-                        }
-                      }
-                    },
-                    borderRadius: BorderRadius.circular(8),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: AppColors.sand,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.35),
-                          width: 1,
-                        ),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.undo_rounded, size: 12, color: AppColors.primary),
-                          SizedBox(width: 4),
-                          Text(
-                            'Undo vote',
-                            style: TextStyle(
-                              fontFamily: 'DM Sans',
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-              ],
+            child: Text(
+              'by ${poll.creatorName}  ·  $totalVotes ${totalVotes == 1 ? 'vote' : 'votes'}',
+              style: TextStyle(
+                fontFamily: 'DM Sans',
+                fontSize: 11,
+                color: AppColors.warmMuted.withValues(alpha: 0.8),
+              ),
             ),
           ),
 
@@ -498,26 +449,6 @@ class _OptionBar extends StatelessWidget {
                     ),
                   ),
                 ),
-                // Tap to undo badge for voted options
-                if (isVotedByMe && !isClosed) ...[
-                  const SizedBox(width: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: const Text(
-                      'Tap to undo',
-                      style: TextStyle(
-                        fontFamily: 'DM Sans',
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ),
-                ],
                 // Winner badge
                 if (isWinner)
                   Container(

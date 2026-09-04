@@ -663,81 +663,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                               hideSurname: profile.hideSurname)
                                           : 'Anonymous';
 
-                                      final wasVoted = poll.options.any(
-                                          (o) => o.id == optionId && o.isVotedBy(currentUserId));
-                                      final optionText = poll.options
-                                              .where((o) => o.id == optionId)
-                                              .firstOrNull
-                                              ?.text ??
-                                          'Option';
-
                                       ref.read(pollsProvider.notifier).toggleVote(
                                             poll: poll,
                                             optionId: optionId,
                                             currentUserId: currentUserId,
                                             voterName: voterName,
                                           );
-
-                                      if (mounted) {
-                                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                                        if (!wasVoted) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(
-                                              content: Text('Voted for "$optionText"'),
-                                              backgroundColor: AppColors.deepEarth,
-                                              duration: const Duration(seconds: 4),
-                                              action: SnackBarAction(
-                                                label: 'Undo',
-                                                textColor: AppColors.amber,
-                                                onPressed: () {
-                                                  ref.read(pollsProvider.notifier).toggleVote(
-                                                        poll: poll,
-                                                        optionId: optionId,
-                                                        currentUserId: currentUserId,
-                                                        voterName: voterName,
-                                                      );
-                                                },
-                                              ),
-                                            ),
-                                          );
-                                        } else {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(
-                                              content: Text('Vote removed for "$optionText"'),
-                                              backgroundColor: AppColors.deepEarth,
-                                              duration: const Duration(seconds: 2),
-                                              action: SnackBarAction(
-                                                label: 'Re-vote',
-                                                textColor: AppColors.amber,
-                                                onPressed: () {
-                                                  ref.read(pollsProvider.notifier).toggleVote(
-                                                        poll: poll,
-                                                        optionId: optionId,
-                                                        currentUserId: currentUserId,
-                                                        voterName: voterName,
-                                                      );
-                                                },
-                                              ),
-                                            ),
-                                          );
-                                        }
-                                      }
-                                    },
-                                    onUndoVote: () {
-                                      ref.read(pollsProvider.notifier).undoAllVotes(
-                                            poll: poll,
-                                            currentUserId: currentUserId,
-                                          );
-                                      if (mounted) {
-                                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
-                                            content: Text('All votes undone for this poll'),
-                                            backgroundColor: AppColors.deepEarth,
-                                            duration: Duration(seconds: 2),
-                                          ),
-                                        );
-                                      }
                                     },
                                     onAddOption: (optionText) {
                                       ref.read(pollsProvider.notifier).addOption(
