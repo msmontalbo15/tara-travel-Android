@@ -58,6 +58,7 @@
 | **`IMP-071`** | 2026-09-01 | UI & Navigation / Floating Dock Live Nav Migration | Relocated Live Nav trigger to ItineraryBottomDock, decluttered NextTripCard/TripCard action bars, and optimized TurnCard with external Google Maps navigation handoff. |
 | **`IMP-072`** | 2026-09-01 | UI & Home / Trip Card Date Abbreviation & Budget Clean-up | Abbreviated date ranges on home trip cards, replaced middle stat box with non-clickable ITINERARY (visited/total), and converted budget tracker to an informational progress bar without Manage >. |
 | **`IMP-073`** | 2026-09-01 | UI & Itinerary / Driver-Ready Touch Targets & Enriched Buttons | Scaled up all itinerary interactive CTA buttons (StopCard Navigate button, StopDetailSheet Navigate Maps / Expense / Edit / Slide to Arrive / Member toggle, NavigateRouteButton, DayStrip tabs, and ItineraryBottomDock) for effortless driver and one-handed thumb tapping on the road. |
+| **`IMP-091`** | 2026-09-05 | Architecture & UI / Universal Responsive Layout Engine (Plan 19) | Dynamic screen-size adaptation (iPhone SE to large foldables), global textScaler clamp (0.85-1.20), centralized AppResponsive tokens/extensions, zero hardcoded MediaQuery arithmetic across 37+ files. |
 | **`IMP-074`** | 2026-09-02 | UI & Home / Quick-Action Red Notification Dot Indicator | Implemented IDEA-010: Contextual Red Notification Dot Indicator (`🔴`) on TripCard quick action buttons for new or modified content inside (Itinerary, Packing, Members, Expenses, Chat) using Keystore-backed `ModuleViewTrackerService`, self-action exemption, and reactive Riverpod stream diffing. |
 | **`IMP-075`** | 2026-09-02 | UI & Itinerary / Stop Detail Sheet Live GPS ETA & Stop Sharing | Implemented real-time Estimated Time of Arrival (Live GPS ETA & inter-stop Haversine routing fallback) and 1-tap Stop Details Sharing (`share_plus`) inside `StopDetailSheet`, with 6-pillar information hierarchy and `previousStop` contextual routing handoff. |
 | **`IMP-077`** | 2026-09-03 | UI / Brand-Aligned Back Button Standardization | Standardized and upgraded `AppBackButton` with Tara Travel brand tokens (12px radius, frosted glass, light, brand, and ghost variants) and replaced one-off back buttons across all screens (Packing, Friends, Navigation, Live Navigation, Chat, Notifications, Activity Log, Create Trip, and MapPinPicker). |
@@ -69,6 +70,7 @@
 | **`IMP-084`** | 2026-09-04 | Polls & Votes / Bidirectional Vote Undo | Full vote undo engine: optimistic in-memory toggle and rollback in `PollsNotifier`, `getPollsAndVotesRaw` synchronous hydration, and clean tap-to-toggle unvoting on poll options without UI clutter. |
 | **`IMP-085`** | 2026-09-04 | Polls / Winner Card & Detail Sheet | Replaced flat `_WinnerActions` resolve section with premium gradient `_WinnerCard` (green gradient, trophy badge, vote %, voter chips) that opens `_WinnerDetailSheet` bottom sheet with ranked results breakdown, animated progress bars, voter lists, and quick-action resolution buttons. |
 | **`IMP-088`** | 2026-09-04 | Typography & Brand Identity Standardization | Formalized system branding font tokens in `AppTextStyles` (`fontHeading`, `fontBody`, `fontSerifFallback`), wired Georgia serif fallback for display headlines, splash "Tara TRAVEL" branding, and Home greeting name, aligned `AppTheme` light theme definitions, and synchronized `MEMORY.md`. |
+| **`IMP-093`** | 2026-09-05 | UI / Home Trip Card Avatar Removal | Removed the overlapping member avatar section (`MemberAvatarCircle` stack row) from `TripCard` on the Home screen, eliminating redundant `travelers` mapping and dead code. |
 
 ---
 
@@ -2059,6 +2061,113 @@
   - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
 - **Verification**:
   - `dart analyze lib`: **No issues found! (0 errors, 0 warnings)**.
+
+---
+
+### `IMP-091` — 2026-09-05: Universal Responsive Layout Engine & Zero-Overflow Architecture (Plan 19)
+- **Description**: Dynamically adapted all screens, modal bottom sheets, and dialogs across Tara Travel to any mobile phone dimension (from compact ~4.7″ devices like iPhone SE / 320–360dp Androids to tall flagships, foldables, and tablets) and accessibility text scaling, eliminating hardcoded viewport arithmetic and UI overflow errors.
+- **Architectural Implementation**:
+  1. **Global Text Scaler Bounds (`AppResponsive.clampedTextScaleBuilder`)**:
+     - Clamped `MediaQuery.textScaler` between `0.85` and `1.20` at the root `MaterialApp.builder` in `lib/main.dart` to prevent extreme font sizes from breaking fixed-height chips, pills, and action docks.
+  2. **Centralized Responsive Tokens & Context Extensions (`lib/core/theme/app_responsive.dart`)**:
+     - Standard logical breakpoints: `compactWidth = 360`, `standardWidth = 414`, `tabletWidth = 600`.
+     - Syntactic sugar getters on `BuildContext`: `context.responsiveHPad`, `context.isCompactPhone`, `context.topInset`, `context.bottomInset`, `context.keyboardHeight`.
+     - Inset-aware sheet bounds: `context.sheetMaxHeight(fraction)` prevents sheet headers from colliding with notch/status bars.
+     - Keyboard & gesture safe insets: `context.safeBottomPadding(base)` and `context.keyboardBottomPadding(base)`.
+  3. **Hardcoded MediaQuery Arithmetic Eradication**:
+     - Audited and refactored hardcoded viewport multipliers and raw padding calculations across 20+ files:
+       - `lib/features/itinerary/widgets/stop_detail_sheet.dart`
+       - `lib/features/itinerary/widgets/itinerary_map_sheet.dart`
+       - `lib/features/itinerary/widgets/navigate_route_button.dart`
+       - `lib/features/itinerary/itinerary_screen.dart`
+       - `lib/features/packing/widgets/packing_template_modals.dart`
+       - `lib/features/packing/widgets/ai_packing_dialog.dart`
+       - `lib/features/packing/packing_screen.dart`
+       - `lib/features/profile/profile_screen.dart`
+       - `lib/features/chat/widgets/create_poll_sheet.dart`
+       - `lib/features/chat/widgets/chat_attachment_picker_sheet.dart`
+       - `lib/features/chat/chat_screen.dart`
+       - `lib/features/home/widgets/quick_budget_sheet.dart`
+       - `lib/features/home/home_screen.dart`
+       - `lib/features/navigation/navigation_screen.dart`
+       - `lib/features/navigation/live_navigation_screen.dart`
+       - `lib/features/navigation/widgets/nav_panels.dart`
+       - `lib/features/navigation/widgets/group_tracker_tab.dart`
+       - `lib/features/navigation/widgets/privacy_control_sheet.dart`
+       - `lib/features/navigation/widgets/sos_emergency_modal.dart`
+       - `lib/features/navigation/widgets/proximity_alert_tab.dart`
+       - `lib/features/navigation/widgets/navigate_to_member_sheet.dart`
+       - `lib/features/navigation/widgets/arrived_tab.dart`
+       - `lib/features/explore/explore_screen.dart`
+       - `lib/features/friends/friends_screen.dart`
+       - `lib/features/friends/widgets/friend_list_item.dart`
+       - `lib/features/members/members_screen.dart`
+       - `lib/features/notifications/notifications_screen.dart`
+       - `lib/features/trips/widgets/join_trip_modal.dart`
+       - `lib/features/trip_detail/trip_detail_screen.dart`
+       - `lib/features/create_trip/steps/transport_step.dart`
+       - `lib/features/create_trip/steps/budget_step.dart`
+       - `lib/features/budget/budget_screen.dart`
+       - `lib/features/budget/widgets/set_allowance_sheet.dart`
+       - `lib/core/widgets/inputs/map_pin_picker_modal.dart`
+       - `lib/core/widgets/multi_member_picker_sheet.dart`
+       - `lib/core/widgets/share/share_trip_modal.dart`
+       - `lib/features/activity/activity_log_screen.dart`
+- **Target Files**:
+  - `lib/core/theme/app_responsive.dart` [NEW]
+  - `lib/main.dart` [MODIFIED]
+  - 37 UI feature and widget files [MODIFIED]
+  - `docs/UPCOMING_PLANS.md` [MODIFIED]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+- **Verification**:
+  - `flutter analyze --no-pub`: **No issues found! (0 errors, 0 warnings)**.
+
+---
+
+### `IMP-092` — 2026-09-05: Tri-Modal Land Transport Finalization (Private, Commute, Rental) & Air/Sea Elimination (Plan 6)
+- **Description**: Formally finalized Tara Travel's transport specification and roadmap in `docs/UPCOMING_PLANS.md` and `docs/MEMORY.md` into a strictly land-first **Tri-Modal Transport Architecture** (`private`, `commute`, `rental`), while establishing a permanent architectural negative constraint against air (`plane`, flights, airport hubs) and sea (`ferry`, shipping lines, boat piers) modes.
+- **Architectural Specification**:
+  1. **Ground-Truth Negative Invariant ("No Sea or Plane")**:
+     - Complete elimination of air and maritime travel concepts from Tara Travel's land-focused Philippines itinerary engine.
+     - Deprecated and scheduled removal of airport presets (NAIA, Clark, MCIA) and seaport presets (Batangas Port, North Harbor, Cebu Pier 1) in favor of major land bus/transit hubs (PITX, Cubao Bus Port, Buendia Terminal, Dau Terminal, Baguio Grand Terminal).
+     - Removed flight number (`_flightCtrl`), pier name (`_pierCtrl`), and airline metadata tracking.
+  2. **Three Finalized Land Modes**:
+     - **`private` (Personal Vehicle / Convoy)**: Own vehicle (car, SUV, motorcycle, bicycle) managed via User Profile "My Garage / My Vehicles", with real-time DOE fuel price monitoring via Supabase Edge Function (`fetch-fuel-prices`), automated $\text{Distance} / \text{km/L}$ fuel calculation, and group gas/toll splitting.
+     - **`commute` (Public Transit)**: Public land transit (buses, jeepneys/e-jeeps, tricycles, UV Express) with land transit departure hubs and per-pax fare estimation ($\text{Fare} \times \text{Pax Count}$).
+     - **`rental` (Hired / Chartered Vehicle)**: Tourist van hire (HiAce, Urvan) or car rental with daily contract rates ($\text{Rate} \times \text{Days}$), driver inclusion/allowance toggles, and fuel policy toggles (included vs group gas split).
+  3. **Data Model & Schema Alignment**:
+     - `trips.transport_mode` constrained to `'private' | 'commute' | 'rental'`.
+     - `trips.transport_meta` defined with structured JSONB contracts per mode.
+- **Target Files**:
+  - `docs/UPCOMING_PLANS.md` [MODIFIED]
+  - `docs/MEMORY.md` [MODIFIED]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+- **Verification**:
+  - Text pattern scans confirmed zero active references to flights, ferries, or piers across the updated roadmap.
+
+---
+
+### `IMP-093` — 2026-09-05: Home Screen Trip Card Member Avatar Section Removal
+- **Description**: Removed the member avatar stack section from the trip cards (`TripCard`) on the Home screen to declutter the card hierarchy and remove redundant avatar rendering in favor of the dedicated `PEOPLE` stat box and quick-action `Members` modal hub.
+- **Architectural Specification**:
+  1. **UI Clean-up & Decluttering**:
+     - Removed the overlapping member avatars row (`MemberAvatarCircle` stack) located between the budget progress section and the quick action button bar in `TripCard._buildUpcoming`.
+     - Standardized vertical spacing with a single `SizedBox(height: 14)` separating the budget bar from the action buttons.
+  2. **Dead Code & Allocation Elimination**:
+     - Removed `final List<TravelerInfo>? travelers;` from `TripCard` and its constructors (`upcoming`, `draft`).
+     - Removed unused `MemberAvatarCircle` import from `trip_card.dart`.
+     - Dropped local helper classes `TravelerInfo` and `TravelerData`.
+     - Removed redundant `trip.members.map((member) => TravelerInfo(...))` object creation on every `_HomeTripCardItem` widget rebuild in `home_screen.dart`.
+- **Target Files**:
+  - `lib/features/home/widgets/trip_card.dart` [MODIFIED]
+  - `lib/features/home/home_screen.dart` [MODIFIED]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+  - `docs/CHANGELOG.md` [MODIFIED]
+- **Verification**:
+  - `flutter analyze --no-pub`: **No issues found! (0 errors, 0 warnings)**.
+
+
+
 
 
 

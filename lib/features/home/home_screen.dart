@@ -1209,15 +1209,6 @@ class _HomeTripCardItem extends ConsumerWidget {
       actionChanges: actionChanges,
       overlappingTripName: overlappingTripName,
       onMore: () => TripActionSheet.show(context, ref, trip),
-      travelers: trip.members
-          .map(
-            (member) => TravelerInfo(
-              member.initials,
-              member.color.toARGB32(),
-              photoUrl: member.profilePhotoUrl,
-            ),
-          )
-          .toList(),
       onTap: () {
         ref.read(selectedTripIdProvider.notifier).select(trip.id);
         Navigator.pushNamed(context, '/trip-detail');

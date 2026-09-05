@@ -1536,6 +1536,28 @@ Using the application's existing HTTP/Dio middleware (`lib/core/middleware/gatew
 7. [ ] **Operational Playbook**: Add `docs/REMOTE_UPDATES_GUIDE.md` documenting Shorebird release/patch commands and Supabase version control workflows.
 
 > **Status**: Proposed
+ 
+---
+
+## ✅ IDEA-019: Universal Responsive Layout Engine & Zero-Overflow Architecture [COMPLETED]
+
+### 1. Context & Pain Points
+Diverse mobile screen viewports (compact ~4.7″ devices like iPhone SE / 320–360dp Androids to tall flagships and foldables) previously caused layout overflows when users set accessibility text scale settings high or toggled soft keyboards. Raw `MediaQuery.of(context).size.height * fraction` calculations and fixed padding formulas caused element clipping and header overlap with notches.
+
+### 2. Core Proposal
+Introduce a centralized responsive layout system (`AppResponsive`) that clamps text scaling globally and provides safe, inset-aware responsive tokens and `BuildContext` helpers to eliminate hardcoded viewport multipliers and raw arithmetic.
+
+### 3. Key Architecture & Deliverables
+1. **`AppResponsive.clampedTextScaleBuilder`**: Clamps `MediaQuery.textScaler` between `0.85` and `1.20` in `MaterialApp.builder` in `lib/main.dart`.
+2. **Context Extension Helpers (`ResponsiveContext`)**:
+   - `context.isCompactPhone`, `context.responsiveHPad` (16dp compact, 20dp standard, 24dp wide).
+   - `context.topInset`, `context.bottomInset`, `context.keyboardHeight`.
+   - `context.sheetMaxHeight(fraction)`: safe modal ceiling minus system insets.
+   - `context.safeBottomPadding(base)` and `context.keyboardBottomPadding(base)`.
+3. **Refactored Surfaces**: Over 37 feature screens and modal bottom sheets migrated away from hardcoded arithmetic to use responsive context helpers.
+
+> **Status**: Completed (`IMP-091`, Plan 19)
+
 
 
 

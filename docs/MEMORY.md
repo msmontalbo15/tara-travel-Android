@@ -544,7 +544,7 @@ Client Tier               Storage Tier                Transport Tier
 
 ### 1. Create Trip Flow (`lib/features/create_trip/`)
 - **Step 1 (Basics)**: Trip Name, Destination search, Date range selection (`fromDate` to `toDate`).
-- **Step 2 (Transport & Logistics)**: Transport mode selection (`plane`, `car`, `ferry`, `bus`) + `transport_meta` JSON serialization.
+- **Step 2 (Transport & Logistics)**: Tri-modal land transport selection (`private`, `commute`, `rental`; strictly no sea or plane) + `transport_meta` JSON serialization.
 - **Step 3 (Budget & Splitting)**: Total budget allocation, currency selection, split method (`equal` vs `fixed`).
 - **Step 4 (Cover & Customization)**: Palette selection (`cover_color`), emoji badge (`cover_emoji`), departure point GPS lookup.
 - **Completion**: Generates 6-character alphanumeric `invite_code`, writes to Supabase, assigns organizer role, navigates to `/trip-detail`.
@@ -1091,6 +1091,18 @@ Client Tier               Storage Tier                Transport Tier
 ## 27. 📱 UI ARCHITECTURE & COMPONENT REGISTRY
 - Comprehensive UI component hierarchy, screen routing map, design tokens, sheets, and modal structure are maintained in [docs/UI_STRUCTURE.md](file:///d:/Spencer/Downloads/tara_travel/docs/UI_STRUCTURE.md).
 - Any screen or subcomponent restructuring must update `docs/UI_STRUCTURE.md` alongside code changes.
+
+## 28. 📐 UNIVERSAL RESPONSIVE LAYOUT ENGINE (PLAN 19 / IMP-091)
+- **Centralized Tokens & Breakpoints (`lib/core/theme/app_responsive.dart`)**:
+  - Breakpoints: `compactWidth = 360` (small phones/fold covers), `standardWidth = 414` (standard flagship), `tabletWidth = 600`.
+  - Dynamic `responsiveHPad`: 16dp on compact (<360dp), 20dp on standard, 24dp on wide/tablets.
+  - Safe inset-aware bounds: `sheetMaxHeight([fraction = 0.85])` computes safe sheet ceiling subtracting system top/bottom insets to avoid notch clipping.
+  - Inset helpers on `BuildContext`: `context.topInset`, `context.bottomInset`, `context.keyboardHeight`, `context.safeBottomPadding(base)`, `context.keyboardBottomPadding(base)`.
+- **Global Text Scaler Bounds**:
+  - `AppResponsive.clampedTextScaleBuilder` registered on `MaterialApp.builder` in `lib/main.dart`.
+  - Clamps `MediaQuery.textScaler` between `0.85` and `1.20` to prevent extreme accessibility enlargement from overflowing fixed-height chips, pills, badges, and action docks.
+- **Zero Hardcoded Dimension Multipliers**:
+  - Eradicated raw `MediaQuery.of(context).size.height * fraction` and hardcoded `+ MediaQuery.of(context).padding.bottom` arithmetic across all 37+ modal sheets, dialogs, and screen lists.
 
 ---
 

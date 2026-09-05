@@ -1,7 +1,6 @@
 import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/member_avatar_circle.dart';
 import '../../../core/constants/trip_types.dart';
 import '../../../core/utils/currency_utils.dart';
 import '../models/trip_card_badge_data.dart';
@@ -21,7 +20,6 @@ class TripCard extends StatelessWidget {
   final int? people;
   final int? visitedStops;
   final int? totalStops;
-  final List<TravelerInfo>? travelers;
   final VoidCallback? onTap;
   // New metadata
   final String? tripId;
@@ -53,7 +51,6 @@ class TripCard extends StatelessWidget {
     this.people,
     this.visitedStops,
     this.totalStops,
-    this.travelers,
     this.onTap,
     this.onMore,
     this.tripId,
@@ -89,7 +86,6 @@ class TripCard extends StatelessWidget {
         people = null,
         visitedStops = null,
         totalStops = null,
-        travelers = null,
         tripId = null,
         coverColor = null,
         tripType = null,
@@ -462,32 +458,6 @@ class TripCard extends StatelessWidget {
               ),
               const SizedBox(height: 14),
 
-              // Avatars row
-              if (travelers != null && travelers!.isNotEmpty)
-                Row(
-                  children: [
-                    SizedBox(
-                      height: 30,
-                      width: (travelers!.length * 20.0) + 10,
-                      child: Stack(
-                        children: travelers!.asMap().entries.map((e) {
-                          return Positioned(
-                            left: e.key * 18.0,
-                            child: MemberAvatarCircle(
-                              photoUrl: e.value.photoUrl,
-                              initials: e.value.initials,
-                              color: Color(e.value.color),
-                              size: 30,
-                              border: Border.all(color: Colors.white, width: 2.5),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  ],
-                ),
-              const SizedBox(height: 14),
-
               // Action button bar — full width, evenly spaced
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -770,18 +740,4 @@ class TripCard extends StatelessWidget {
       ),
     );
   }
-}
-
-class TravelerInfo {
-  final String initials;
-  final int color;
-  final String? photoUrl;
-  const TravelerInfo(this.initials, this.color, {this.photoUrl});
-}
-
-// Convenience constructor helpers
-class TravelerData {
-  static const primary = TravelerInfo('T1', 0xFFD85A30);
-  static const secondary = TravelerInfo('T2', 0xFF8B5CF6);
-  static const tertiary = TravelerInfo('T3', 0xFF0D9488);
 }

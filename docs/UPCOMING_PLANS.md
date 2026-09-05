@@ -18,7 +18,7 @@ This document serves as our compiled repository master plan, organized hierarchi
 | # | Plan / Feature | Status | Key Focus |
 |---|---|---|---|
 | **5** | [Google Maps & Pin Location Integration](#plan-5-google-maps-link-resolver-pin-location-applicable) | 🟡 **Approved / Ready to Implement** | Paste GMap link, auto-fill itinerary, pin-drop flying, zero-cost resolution |
-| **6** | [Personal Vehicle Garage, km/L Consumption & Live Fuel Cost Estimator](#plan-6-personal-vehicle-fuel-consumption-kml-fuel-cost-estimator) | 🟡 **Drafted / Queued** | User garage, clean setup, live PH fuel prices via Edge Function, km/L estimator & split |
+| **6** | [Tri-Modal Land Transport (Private, Commute, Rental) & Vehicle Garage Fuel Estimator](#plan-6-tri-modal-land-transport-private-commute-rental--vehicle-garage-fuel-estimator) | 🟡 **Drafted / Queued** | Finalized 3 land modes (Private, Commute, Rental; strictly no sea/plane), user garage, live fuel prices & rental splitting |
 | **7** | [Travel Circles (Squads & Barkada Presets) for Multi-Member Trip Creation](#plan-7-travel-circles-squads-barkada-presets-for-multi-member-trip-creation) | 🟡 **Drafted / Queued** | Friend circles/squad presets, 1-tap batch addition, smart co-traveler suggestions & deduplication |
 | **8** | [Real-Time Live Weather Forecast & Severe Condition Alerts Engine](#plan-8-real-time-live-weather-forecast-severe-condition-alerts-engine) | 🟡 **In Progress / Core Complete** | Open-Meteo API integration, offline caching, itinerary day-strip weather & severe storm alerts |
 | **9** | [Dual-Lens Budget & Expense Hub (Personal Pocket Tracker + Group Trip Summary)](#plan-9-dual-lens-budget-expense-hub-personal-pocket-tracker-group-trip-summary) | 🟡 **Drafted / Queued** | Private personal expenses, "My True Trip Cost", cash/GCash tracking & daily burn pace meter |
@@ -225,52 +225,177 @@ Make Google Maps directly applicable as a way to get places, pin locations on th
 
 ---
 
-## Plan 6: Personal Vehicle Fuel Consumption (km/L) & Fuel Cost Estimator
+## Plan 6: Tri-Modal Land Transport (Private, Commute, Rental) & Vehicle Garage Fuel Estimator
 
 ### Goal
-Decouple personal vehicle configuration (vehicle type, license plate, and km/L fuel consumption) from the initial trip creation wizard. Instead, manage vehicles within the **User Profile / Settings ("My Garage / My Vehicles")** or select them on-demand inside the trip detail, keeping trip setup fast, lightweight, and friction-free while enabling accurate route fuel estimation and expense splitting.
+Establish a finalized, strictly land-based **Tri-Modal Transport Architecture** for Tara Travel, categorizing all trips into three distinct modes: **`private` (Personal Vehicle / Convoy)**, **`commute` (Public Transit)**, and **`rental` (Hired / Chartered Vehicle)**. Permanently eliminate all air (`plane`, flights, airport hubs) and sea (`ferry`, shipping lines, boat piers) transport from models, creation wizards, and preset databases. Decouple vehicle configuration into the **User Profile / Settings ("My Garage / My Vehicles")**, while providing tailored travel intelligence: real-time Philippine fuel prices (DOE weekly monitoring) & km/L consumption for private vehicles, land transit terminal hubs (PITX, Cubao, Buendia) & per-pax fare calculators for commute, and daily contract rates with driver fee and fuel policy toggles for rental vans.
+
+### Ground-Truth Schema & Invariants
+- **`trips` Table**: Persists high-level `transport_mode` (`'private' | 'commute' | 'rental'`) and mode-specific payload `transport_meta` (JSONB).
+- **Strict Prohibition ("No Sea or Plane")**: Tara Travel is anchored on land journeys across Philippine highways and scenic routes. Never query, store, or display air or maritime fields (`flight_number`, `pier`, `airline`, `airport_code`, `ferry_line`).
+
+---
 
 ### Core Capabilities
-1. **Remove Vehicle Selection & Specs from Initial Trip Setup**:
-   - Keep the trip setup wizard minimal and fast: users only select the high-level mode (e.g. Car / Motorcycle / Van / Commute) without being bogged down by vehicle plate, model, or km/L inputs during creation.
-2. **User Profile "My Vehicles / Garage"**:
-   - Add a dedicated vehicle management section in the user profile/settings:
-     - Vehicle nickname/model (e.g. *Vios 1.5G*, *NMAX 155*).
-     - Vehicle type (Sedan, SUV, Van, Motorcycle).
-     - License Plate / Conduction Sticker (optional, useful for coding reminders).
-     - Fuel Efficiency rating in **km/L** (e.g. `14.2 km/L`).
-     - Preferred Fuel Type (Gasoline / Diesel / Electric).
-   - Allows saving multiple vehicles and setting a primary/default vehicle.
-3. **Trip-Level Vehicle Assignment & Quick-Select**:
-   - In Trip Detail -> Transport / Convoy tab, the driver or trip owner can link one of their saved vehicles or manually enter an ad-hoc vehicle.
-   - If a saved vehicle is selected, it automatically populates the km/L and fuel specs for that trip.
-4. **Real-Time PH Gas & Diesel Fuel Prices via Edge Function**:
-   - Create a dedicated Supabase Edge Function (`fetch-fuel-prices`):
-     - Fetches or aggregates current Philippine fuel price advisories (DOE / Department of Energy weekly price monitoring data across Metro Manila, Luzon, Visayas, and Mindanao for Gasoline, Diesel, and Premium).
-     - Caches daily or weekly pump prices in Supabase database / edge cache with a 24-hour TTL to eliminate external latency.
-   - App automatically retrieves the latest regional average fuel price (with an option for users to override with their exact local gas station receipt price).
-5. **Automatic Route Fuel & Cost Calculation**:
-   - Uses total route distance (from Day Map / routing engine), the assigned vehicle's km/L, and real-time fuel price:
-     $$\text{Liters Needed} = \frac{\text{Total Distance (km)}}{\text{Fuel Efficiency (km/L)}}$$
-     $$\text{Estimated Fuel Cost} = \text{Liters Needed} \times \text{Live Fuel Price per Liter (PHP)}$$
-6. **Group Gas Split & Expense Integration**:
-   - When `split_gas` is enabled:
-     - Automatically generates an itemized fuel proposal in the Expenses tab.
-     - Splits gas fairly among designated passengers/members:
-       $$\text{Cost Per Passenger} = \frac{\text{Estimated Fuel Cost}}{\text{Passenger Count}}$$
+
+#### 1. Tri-Modal Land Transport Classification (Strictly No Sea or Plane)
+- **Eliminate Air & Maritime Transport**:
+  - Remove all flight tracking, PNR/booking reference inputs, airline labels, shipping lines, pier names, and airport codes.
+  - Drop airport presets (NAIA, Clark, MCIA) and seaport presets (Batangas Port, North Harbor, Cebu Pier 1).
+  - Streamline `TransportCategory` to land-only.
+- **The Three Land Transport Types**:
+  1. **`private`**: Own vehicle (Car, SUV, AUV, Motorcycle, Bicycle) driven by trip participants or traveling in convoy.
+  2. **`commute`**: Public land transportation (Provincial/City Bus, Jeepney / E-Jeep, Tricycle, UV Express / FX).
+  3. **`rental`**: Chartered or leased private vehicle (Van Hire e.g. HiAce/Urvan, Car Rental, Tourist Coaster).
+
+---
+
+#### 2. Mode A: Private Vehicle (`private`) & User Garage
+- **Zero Friction Creation Flow**:
+  - Trip setup requires only selecting "Private Vehicle" without entering license plates, vehicle models, or fuel efficiency specs upfront.
+- **User Profile "My Garage / My Vehicles"**:
+  - Dedicated vehicle manager in user profile/settings:
+    - **Nickname / Model**: (e.g. *Toyota Vios 1.5G*, *Yamaha NMAX 155*, *Mitsubishi Montero*).
+    - **Vehicle Type**: `sedan`, `suv`, `auv`, `van`, `motorcycle`, `bicycle`.
+    - **License Plate / Conduction Sticker**: (optional, for coding notifications).
+    - **Fuel Efficiency**: Rated in **km/L** (e.g. `14.2 km/L`).
+    - **Fuel Type**: `gasoline`, `diesel`, `electric`.
+  - Supports multiple vehicles and a designated primary default.
+- **Trip-Level Assignment & Convoy Radar**:
+  - Link a saved garage vehicle to the trip in 1 tap (or specify ad-hoc specs).
+- **Real-Time DOE Fuel Prices via Edge Function (`fetch-fuel-prices`)**:
+  - Deno Edge Function aggregates weekly Philippine Department of Energy (DOE) fuel advisories across Metro Manila, Luzon, Visayas, and Mindanao (Gasoline, Diesel). Caches prices with 24-hour TTL.
+  - Users can optionally override with their exact gas station pump receipt price.
+- **Automatic Route Fuel Calculation**:
+  - Uses Day Map route distance (km), assigned vehicle's km/L, and live regional fuel price:
+    $$\text{Liters Needed} = \frac{\text{Total Route Distance (km)}}{\text{Vehicle Efficiency (km/L)}}$$
+    $$\text{Estimated Fuel Cost} = \text{Liters Needed} \times \text{Live Fuel Price per Liter (PHP)}$$
+- **Gas & Toll Expense Splitting**:
+  - When `split_gas` is enabled:
+    - Auto-generates an itemized fuel proposal in the Expenses tab.
+    - Divides fuel + tollway costs fairly among designated passengers:
+      $$\text{Cost Per Passenger} = \frac{\text{Estimated Fuel Cost} + \text{Estimated Tolls}}{\text{Passenger Count}}$$
+
+---
+
+#### 3. Mode B: Public Commute (`commute`) & Land Transit Hubs
+- **Tailored for Public Transit Travelers**:
+  - Eliminates fuel, km/L, and vehicle maintenance overhead.
+- **Philippine Land Transit Departure Hubs (Preset Library)**:
+  - Replaces all airport/port presets with major land bus and commute hubs:
+    - **PITX**: Parañaque Integrated Terminal Exchange (South/Bicol/Cavite/Batangas routes).
+    - **Cubao Bus Port / Araneta Terminal**: Central bus hub (North/Central Luzon & Bicol routes).
+    - **Buendia / Gil Puyat Terminal**: Pasay bus stations (Laguna, Batangas, Quezon).
+    - **Dau Central Bus Terminal**: Mabalacat, Pampanga (North Luzon hub).
+    - **Baguio Grand Terminal**: Gov. Pack Road (Cordillera routes).
+    - **Cebu South / North Bus Terminals**: Central Visayas regional land hubs.
+- **Per-Pax Fare Estimation**:
+  - Direct input for ticket/fare cost per person (e.g., ₱450.00 bus fare per head).
+  - Automatically calculates total group transit commitment:
+    $$\text{Total Transit Cost} = \text{Fare Per Pax} \times \text{Traveler Count}$$
+- **Transit Guidance**:
+  - Route / liner operator name (e.g., *Victory Liner Deluxe*, *Genesis Transit*, *UV Express Megamall-Clark*), route code, and drop-off waypoint.
+
+---
+
+#### 4. Mode C: Vehicle Rental (`rental`) & Chartered Van Sharing
+- **Tailored for Barkada Van Hire & Leased Vehicles**:
+  - Designed specifically for rented tourist vans (HiAce Grandia, NV350 Urvan), self-drive cars, or chartered coasters.
+- **Comprehensive Rental Pricing Model**:
+  - **Rental Rate Structure**:
+    - Daily rental rate (e.g., ₱3,500/day) $\times$ trip duration (days), or flat lump-sum charter fee.
+  - **Driver Fee & Allowance Toggle**:
+    - Option to declare driver inclusion:
+      - *Driver Provided with Rental* vs *Self-Drive*.
+      - Add driver daily allowance / meals (e.g., ₱500/day driver per diem).
+  - **Fuel Policy Toggle**:
+    - **Option 1: Fuel Included**: Rental company covers fuel (no additional gas calculation).
+    - **Option 2: Fuel Excluded (Group Splits Gas)**: Integrates with the fuel estimator using standard van fuel consumption (e.g., `9.5 km/L` for Toyota HiAce).
+  - **Toll Policy Toggle**: *Tolls Included in Package* vs *Group Splits RFID / Tollways*.
+- **Automatic Budget & Shared Expense Insertion**:
+  - Automatically posts the total van rental commitment into the group expense pool:
+    $$\text{Total Rental Commitment} = (\text{Daily Rate} \times \text{Days}) + (\text{Driver Allowance} \times \text{Days}) + \text{Fuel/Tolls (if excluded)}$$
+    $$\text{Individual Share} = \frac{\text{Total Rental Commitment}}{\text{Total Members}}$$
+
+---
+
+### Database Schema & `transport_meta` JSONB Structure
+
+```sql
+-- trips table columns remain:
+-- transport_mode text check (transport_mode in ('private', 'commute', 'rental')),
+-- transport_meta jsonb
+
+-- 1. Private Mode transport_meta JSON:
+{
+  "mode": "private",
+  "vehicle_id": "uuid-optional",
+  "vehicle_name": "Toyota Vios 1.5G",
+  "vehicle_type": "sedan",
+  "fuel_type": "gasoline",
+  "kml": 14.5,
+  "split_gas": true,
+  "split_tolls": true,
+  "estimated_toll_cost": 480.00
+}
+
+-- 2. Commute Mode transport_meta JSON:
+{
+  "mode": "commute",
+  "commute_type": "bus", -- 'bus', 'jeepney', 'tricycle', 'uv_express'
+  "transit_hub_name": "PITX Terminal 1",
+  "route_name": "Victory Liner Express to Baguio",
+  "fare_per_pax": 520.00,
+  "boarding_time": "05:00 AM",
+  "drop_off_point": "Baguio Grand Terminal"
+}
+
+-- 3. Rental Mode transport_meta JSON:
+{
+  "mode": "rental",
+  "rental_type": "van_hire", -- 'van_hire', 'car_rental', 'coaster'
+  "vehicle_model": "Toyota HiAce Grandia 2023",
+  "daily_rate": 3500.00,
+  "rental_days": 3,
+  "has_driver": true,
+  "driver_fee_per_day": 500.00,
+  "fuel_included": false,
+  "tolls_included": false,
+  "total_rental_cost": 12000.00
+}
+```
+
+---
+
+### UI Flow & Refactored `TransportStep` Component
+
+1. **3-Way Hero Mode Selector**:
+   - Clean, elevated cards displaying:
+     - 🚗 **Private Vehicle** (*"Own car, motorcycle, or squad convoy"*)
+     - 🚌 **Public Commute** (*"Bus, jeepney, tricycle, or UV Express"*)
+     - 🚐 **Vehicle Rental** (*"Van hire, rented car, or chartered coaster"*)
+2. **Contextual Adaptive Sub-Forms**:
+   - Selecting **Private**: Shows Garage quick-select dropdown/chips, departure point, and `split_gas` toggle.
+   - Selecting **Commute**: Shows land transit hub chips (PITX, Cubao, etc.), departure point, and fare per pax input.
+   - Selecting **Rental**: Shows daily rental rate, rental days counter, driver fee toggle, and fuel inclusion switch.
+3. **Responsive Safe Insets**:
+   - Adheres to `AppResponsive`: wraps in `SingleChildScrollView(physics: BouncingScrollPhysics())`, uses `context.safeBottomPadding(base: 16)` and clamped text scales.
+
+---
 
 ### Impacted Files & Architecture
-- `supabase/functions/fetch-fuel-prices/index.ts` *(NEW - Deno Edge Function)*
-- `lib/core/services/fuel_price_service.dart` *(NEW - Riverpod service fetching live fuel prices)*
-- `lib/core/models/fuel_price_model.dart` *(NEW - Gasoline / Diesel / Kerosene rates)*
-- `lib/core/models/user_vehicle_model.dart` *(NEW)*
-- `lib/core/models/transport_detail.dart` *(MODIFY - reference vehicleId or inline fuel specs)*
-- `lib/features/create_trip/steps/transport_step.dart` *(MODIFY - remove vehicle specs/clutter from setup flow)*
-- `lib/features/profile/widgets/user_vehicles_sheet.dart` *(NEW)*
-- `lib/features/profile/profile_screen.dart` *(MODIFY - add "My Vehicles" entry point)*
-- `lib/features/trip_detail/widgets/transport_summary_card.dart` *(MODIFY - vehicle picker, live fuel prices & calculator)*
+- `lib/core/models/itinerary_model.dart` *(MODIFY — streamline `TransportMode` & `TransportCategory` to land modes, deprecate plane/ferry)*
+- `lib/core/models/user_vehicle_model.dart` *(NEW — garage vehicle domain model)*
+- `lib/core/models/fuel_price_model.dart` *(NEW — Philippine DOE fuel price model)*
+- `lib/core/services/fuel_price_service.dart` *(NEW — Edge Function client with local cache)*
+- `supabase/functions/fetch-fuel-prices/index.ts` *(NEW — Deno Edge Function fetching DOE data)*
+- `lib/features/create_trip/steps/transport_step.dart` *(REFACTOR — eliminate airport/pier presets & flight/pier inputs; implement 3-mode card selector)*
+- `lib/features/profile/profile_screen.dart` *(MODIFY — add "My Vehicles / Garage" entry tile)*
+- `lib/features/profile/widgets/user_vehicles_sheet.dart` *(NEW — vehicle CRUD bottom sheet)*
+- `lib/features/trip_detail/widgets/transport_summary_card.dart` *(MODIFY — adapt rendering for Private, Commute, or Rental)*
 - `test/models/user_vehicle_model_test.dart` *(NEW)*
 - `test/services/fuel_price_service_test.dart` *(NEW)*
+- `test/features/create_trip/transport_step_test.dart` *(NEW)*
 
 ---
 
@@ -619,10 +744,10 @@ Upgrade the Day Map from drawing simple linear/straight-line connections between
 2. **"Find Best Way" Intelligent Reordering (Optional TSP / Route Reorder)**:
    - Provide an "Optimize Day Route" action that computes the shortest travel distance/time among all day stops.
    - Prevents zigzagging across town by suggesting an optimized visit sequence.
-   - Respects user-pinned fixed-time commitments (e.g., booked flights, reservations) while reordering flexible stops in between.
+   - Respects user-pinned fixed-time commitments (e.g., hotel check-ins, tour reservations) while reordering flexible stops in between.
 3. **Travel Duration & Distance Estimates**:
    - Display distance (km) and estimated travel duration between stops along route segments.
-   - Dynamic transport mode toggle (Driving, Walking, Transit/Ferry) per leg where applicable.
+   - Dynamic transport mode toggle (Driving, Walking, Transit) per leg where applicable.
 4. **Offline Caching & Fallback**:
    - Cache route polylines locally so previously loaded day routes render instantly offline.
    - Gracefully fallback to straight-line dashed connector if no network is available and no route is cached.
@@ -709,7 +834,7 @@ Embed Google's **Gemini AI** directly into Tara Travel to deliver an intelligent
    - **Primary (Zero Secrets Leakage)**: Calls Supabase Edge Function `tara-copilot`, proxying requests to Google Gemini 1.5 Flash / Gemini 2.0 with server-side API keys and rate limiting.
    - **Fallback / Power User**: Supports optional user-provided Gemini API Key stored in `flutter_secure_storage` via `google_generative_ai` package when offline or on custom developer deployments.
 5. **Local Philippine Travel Prompt Engineering & Grounding**:
-   - Tailored system prompt primed with Philippine geography, transport options (trike, jeepney, ferry, tollways), local holiday timings, and peso budget norms.
+   - Tailored system prompt primed with Philippine geography, transport options (trike, jeepney, bus, van rental, tollways), local holiday timings, and peso budget norms.
 
 ### Impacted Files & Architecture
 - `pubspec.yaml` *(MODIFY — add `google_generative_ai: ^0.4.6`)*
