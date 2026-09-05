@@ -2260,6 +2260,20 @@
 - **Verification**:
   - `flutter analyze --no-pub`: **No issues found! (0 errors, 0 warnings)**.
 
+---
+
+### `IMP-097` · Firebase Core App Bootstrap Integration
+- **Date**: September 5, 2026
+- **Scope & Objectives**:
+  1. **Firebase Core Initialization**:
+     - Embedded `Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform)` in `lib/main.dart` directly following `WidgetsFlutterBinding.ensureInitialized()`.
+     - Wrapped in structured error boundary to guarantee non-blocking cold starts across all execution targets.
+- **Target Files**:
+  - `lib/main.dart` [MODIFIED]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+- **Verification**:
+  - `flutter analyze --no-pub`: **No issues found! (0 errors, 0 warnings)**.
+
 
 
 
