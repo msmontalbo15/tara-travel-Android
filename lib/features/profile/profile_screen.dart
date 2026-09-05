@@ -19,6 +19,10 @@ import '../../core/auth/services/mpin_service.dart';
 import '../../core/widgets/npc_privacy_policy_sheet.dart';
 import '../../core/widgets/feedback/app_feedback.dart';
 import '../../core/widgets/feedback/app_dialog.dart';
+import '../../core/services/app_version_service.dart';
+import '../../core/widgets/versioning/soft_update_sheet.dart';
+import '../../core/widgets/versioning/force_update_screen.dart';
+import '../../core/widgets/versioning/maintenance_mode_screen.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -45,6 +49,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   int _mpinDaysRemaining = 0;
   bool _isMpinLoading = false;
 
+  // App Version & Updates
+  bool _isCheckingUpdate = false;
+
   @override
   void initState() {
     super.initState();
@@ -69,6 +76,57 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         _hasMpin = hasMpin;
         _mpinDaysRemaining = daysLeft;
       });
+    }
+  }
+
+  Future<void> _handleCheckUpdate(BuildContext context) async {
+    if (_isCheckingUpdate) return;
+    setState(() => _isCheckingUpdate = true);
+
+    try {
+      final service = ref.read(appVersionServiceProvider);
+      final result = await service.checkVersionStatus();
+
+      if (!mounted) return;
+      setState(() => _isCheckingUpdate = false);
+
+      if (!context.mounted) return;
+
+      if (result.isMaintenance) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => MaintenanceModeScreen(checkResult: result),
+          ),
+        );
+      } else if (result.isForceUpdate) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ForceUpdateScreen(checkResult: result),
+          ),
+        );
+      } else if (result.isSoftUpdate) {
+        AppFeedback.showSuccess(
+          context,
+          'New update available (v${result.remoteConfig?.latestVersion})! Tap Update to install.',
+          title: 'Update Ready 🚀',
+        );
+        SoftUpdateSheet.show(context, result);
+      } else {
+        AppFeedback.showSuccess(
+          context,
+          'You\'re on the latest version of Tara Travel (v${result.currentVersion}) ✨',
+          title: 'Up to Date',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isCheckingUpdate = false);
+        if (context.mounted) {
+          AppFeedback.showError(context, 'Unable to check updates right now. Please try again.');
+        }
+      }
     }
   }
 
@@ -264,6 +322,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(profileProvider);
+    final versionAsync = ref.watch(appVersionCheckProvider);
+    final hasUpdate = versionAsync.value?.hasUpdate ?? false;
+    final latestVersion = versionAsync.value?.remoteConfig?.latestVersion;
 
     return Scaffold(
       backgroundColor: AppColors.deepEarth,
@@ -1069,6 +1130,89 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   ),
                                 ),
                                 const Icon(Icons.chevron_right_rounded, color: AppColors.warmMuted, size: 20),
+                              ],
+                            ),
+                          ),
+                        ),
+                        _divider(),
+                        // App Version & Updates Row
+                        GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () => _handleCheckUpdate(context),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: hasUpdate ? AppColors.sand : AppColors.surfaceLight,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(
+                                    hasUpdate ? Icons.rocket_launch_rounded : Icons.system_update_rounded,
+                                    color: hasUpdate ? AppColors.primary : AppColors.warmMuted,
+                                    size: 20,
+                                  ),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          const Text(
+                                            'App Version & Updates',
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                              color: AppColors.textPrimary,
+                                            ),
+                                          ),
+                                          if (hasUpdate) ...[
+                                            const SizedBox(width: 8),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: AppColors.primary,
+                                                borderRadius: BorderRadius.circular(6),
+                                              ),
+                                              child: const Text(
+                                                'UPDATE',
+                                                style: TextStyle(
+                                                  fontSize: 9,
+                                                  fontWeight: FontWeight.w800,
+                                                  color: Colors.white,
+                                                  letterSpacing: 0.5,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        hasUpdate
+                                            ? 'v${latestVersion ?? 'New'} available • Tap to update'
+                                            : 'v${AppVersionService.currentAppVersionString} • Tap to check for updates',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: hasUpdate ? AppColors.primary : AppColors.textSecondary,
+                                          fontWeight: hasUpdate ? FontWeight.w600 : FontWeight.w400,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (_isCheckingUpdate)
+                                  const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                                  )
+                                else
+                                  const Icon(Icons.chevron_right_rounded, color: AppColors.warmMuted, size: 20),
                               ],
                             ),
                           ),

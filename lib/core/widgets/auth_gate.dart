@@ -24,6 +24,10 @@ import '../auth/presentation/auth_notifier.dart';
 import '../middleware/audit_logger.dart';
 import '../providers/profile_provider.dart';
 import '../services/user_presence_service.dart';
+import '../services/app_version_service.dart';
+import 'versioning/force_update_screen.dart';
+import 'versioning/maintenance_mode_screen.dart';
+import 'versioning/soft_update_sheet.dart';
 
 class _RouteTrackingObserver extends NavigatorObserver {
   String? currentRoute;
@@ -57,6 +61,8 @@ class AuthGate extends ConsumerStatefulWidget {
 class _AuthGateState extends ConsumerState<AuthGate> {
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   final _RouteTrackingObserver _routeObserver = _RouteTrackingObserver();
+  VersionCheckResult? _blockingVersionResult;
+  bool _hasPromptedSoftUpdate = false;
 
   @override
   void initState() {
@@ -66,11 +72,30 @@ class _AuthGateState extends ConsumerState<AuthGate> {
     // MVI notifier does not need to expose as state transitions.
     Supabase.instance.client.auth.onAuthStateChange.listen(_onSupabaseAuthEvent);
 
-    // ── Auto-Login: Skip login if session exists ────────────────────────────
+    // ── Auto-Login & Version Gate ───────────────────────────────────────────
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
 
-      // Check in-memory Supabase user first (hydrated from main() before runApp)
+      // 1. Evaluate Remote Version & Maintenance State (Plan 17)
+      try {
+        final versionResult = await ref.read(appVersionCheckProvider.future);
+        if (mounted) {
+          if (versionResult.isForceUpdate || versionResult.isMaintenance) {
+            setState(() {
+              _blockingVersionResult = versionResult;
+            });
+            return; // Hard lock; halt further auto-login routing
+          } else if (versionResult.isSoftUpdate && !_hasPromptedSoftUpdate) {
+            _hasPromptedSoftUpdate = true;
+            final navContext = _navigatorKey.currentContext;
+            if (navContext != null && navContext.mounted) {
+              SoftUpdateSheet.show(navContext, versionResult);
+            }
+          }
+        }
+      } catch (_) {}
+
+      // 2. Check in-memory Supabase user first (hydrated from main() before runApp)
       final inMemoryUser = Supabase.instance.client.auth.currentUser;
       if (inMemoryUser != null) {
         UserPresenceService.instance.start(inMemoryUser.id);
@@ -78,7 +103,7 @@ class _AuthGateState extends ConsumerState<AuthGate> {
         return;
       }
 
-      // Fallback: check if a stored session token exists (cold-start restore)
+      // 3. Fallback: check if a stored session token exists (cold-start restore)
       final hasStored = await SecureSessionRepository.instance.hasStoredSession();
       if (hasStored) {
         await ref.read(authNotifierProvider.notifier).restoreSession();
@@ -166,7 +191,20 @@ class _AuthGateState extends ConsumerState<AuthGate> {
         onGenerateRoute:          materialApp.onGenerateRoute,
         onUnknownRoute:           materialApp.onUnknownRoute,
         navigatorObservers:       [...existingObservers, _routeObserver],
-        builder:                  materialApp.builder,
+        builder: (context, child) {
+          Widget current = child ?? const SizedBox.shrink();
+          if (_blockingVersionResult != null) {
+            if (_blockingVersionResult!.isMaintenance) {
+              current = MaintenanceModeScreen(checkResult: _blockingVersionResult!);
+            } else if (_blockingVersionResult!.isForceUpdate) {
+              current = ForceUpdateScreen(checkResult: _blockingVersionResult!);
+            }
+          }
+          if (materialApp.builder != null) {
+            return materialApp.builder!(context, current);
+          }
+          return current;
+        },
         title:                    materialApp.title,
         onGenerateTitle:          materialApp.onGenerateTitle,
         color:                    materialApp.color,

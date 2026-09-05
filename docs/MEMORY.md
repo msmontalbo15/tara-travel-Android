@@ -323,6 +323,22 @@ public.personal_expenses (
   date timestamptz not null default now(),
   created_at timestamptz not null default now()
 );
+
+-- 20. APP VERSIONS & REMOTE CONFIG (Migration 026)
+public.app_versions (
+  id uuid primary key default gen_random_uuid(),
+  platform text not null default 'android' check (platform in ('android', 'ios', 'web')),
+  min_supported_version text not null,
+  latest_version text not null,
+  force_update_url text,
+  maintenance_mode boolean not null default false,
+  maintenance_title text default 'Under Scheduled Maintenance',
+  maintenance_message text default 'We are currently performing routine system upgrades to improve Tara Travel. Please check back shortly.',
+  estimated_back_online timestamptz,
+  release_notes text default 'General performance improvements and bug fixes.',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
 ```
 
 ---
@@ -1104,9 +1120,25 @@ Client Tier               Storage Tier                Transport Tier
 - **Zero Hardcoded Dimension Multipliers**:
   - Eradicated raw `MediaQuery.of(context).size.height * fraction` and hardcoded `+ MediaQuery.of(context).padding.bottom` arithmetic across all 37+ modal sheets, dialogs, and screen lists.
 
+## 29. 🚀 APP VERSIONING, REMOTE CONFIG & CI/CD OTA AUTOMATION (PLAN 17 / IMP-093)
+- **Authoritative Remote Schema (`public.app_versions`)**:
+  - Columns: `id`, `platform`, `min_supported_version`, `latest_version`, `force_update_url`, `maintenance_mode`, `maintenance_title`, `maintenance_message`, `estimated_back_online`, `release_notes`, `created_at`, `updated_at`.
+  - Public read RLS (`anon_select_app_versions`) allows unauthenticated and authenticated clients to verify compatibility.
+  - Mutations strictly restricted to `service_role` (CI/CD pipeline only).
+- **Three-Tier User UX Modals**:
+  - **Tier 1: Mandatory Force-Update (`ForceUpdateScreen`)**: Non-dismissible full-screen gate when current version < `min_supported_version`. Disables app access, renders changelog, and features in-app streaming download & install via `ApkDownloadInstaller`.
+  - **Tier 2: Soft Update Recommendation (`SoftUpdateSheet`)**: Dismissible bottom sheet when current version < `latest_version` but supported. Highlights new features with "Update Now" and "Later" options.
+  - **Tier 3: Maintenance Mode (`MaintenanceModeScreen`)**: Non-dismissible full-screen gate when `maintenance_mode == true`. Displays estimated back-online timer and status verification retry action.
+- **Settings "Check for Updates"**:
+  - Embedded in `ProfileScreen` Account Settings. Shows live version pill (`UPDATE`), triggers immediate Supabase remote check, and notifies user via `AppFeedback` toast or update modal.
+- **Direct OTA Distribution & CI/CD Pipeline (`.github/workflows/auto_release.yml`)**:
+  - Triggered on push to `live` or `release/**` and `workflow_dispatch`.
+  - Enforces static analysis gate (`flutter analyze --fatal-warnings`), compiles release APK & Android App Bundle (.aab), uploads release APK to Supabase Storage bucket `app-releases`, and inserts new version record into `public.app_versions` via Supabase REST API curl.
+
 ---
 
 *This document is the single source of architectural truth for Tara Travel. Update this file whenever database schemas, RPC functions, core repositories, or system flows are modified.*
+
 
 
 

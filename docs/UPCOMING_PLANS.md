@@ -848,7 +848,15 @@ Embed Google's **Gemini AI** directly into Tara Travel to deliver an intelligent
 
 ---
 
-## Plan 17: Supabase & Middleware App Versioning & OTA Updates
+## Plan 17: Supabase & Middleware App Versioning & OTA Updates [COMPLETED — IMP-094]
+
+### Status: ✅ COMPLETED (2026-09-05 · Milestone IMP-094)
+- **Database Schema**: `public.app_versions` migration `026_app_versions_and_remote_config.sql` deployed with public SELECT RLS and `app-releases` storage bucket.
+- **Client Gatekeeper**: `SemanticVersion` parser/comparator and `AppVersionService` registered in Riverpod.
+- **Three-Tier UX Modals**: `ForceUpdateScreen` (Tier 1), `SoftUpdateSheet` (Tier 2), and `MaintenanceModeScreen` (Tier 3) wired into `AuthGate` bootstrap and `MaterialApp.builder`.
+- **Settings "Check for Updates"**: Added to Account Settings in `ProfileScreen` with live version display, visual `UPDATE` notification pill, manual check action, and `AppFeedback` toast notifications.
+- **Direct OTA Distribution & CI/CD**: Production GitHub Actions workflow `.github/workflows/auto_release.yml` for automated compilation of release APK and Android App Bundle (.aab), Supabase Storage upload, and Supabase database version bump.
+- **Automated Tests**: Unit test suite in `test/core/services/app_version_service_test.dart`.
 
 ### Goal
 Implement a rock-solid app versioning, compatibility, and maintenance gatekeeper powered by **Supabase Remote Config**, Shorebird OTA Code Push, and the **Tara Middleware Gateway (Plan 17)**. Prevents stale mobile clients from encountering schema mismatch crashes or corrupted RLS writes after database migrations, while enabling instant Dart code fixes without Play Store delays, remote maintenance mode, and automated release pipelines.
@@ -870,14 +878,16 @@ Implement a rock-solid app versioning, compatibility, and maintenance gatekeeper
 
 ### Impacted Files & Architecture
 - `.github/workflows/auto_release.yml` *(NEW — automated build, Supabase Storage upload, and version DB bump)*
-- `pubspec.yaml` *(MODIFY — add `package_info_plus: ^8.0.0`, `open_filex: ^4.5.0`, `shorebird_code_push`)*
-- `android/app/src/main/AndroidManifest.xml` *(MODIFY — add `REQUEST_INSTALL_PACKAGES` and `FileProvider`)*
+- `android/app/src/main/AndroidManifest.xml` *(MODIFY — added `REQUEST_INSTALL_PACKAGES`)*
 - `lib/core/services/app_version_service.dart` *(NEW — semantic version comparator, Supabase config fetcher, and update status provider)*
 - `lib/core/services/apk_download_installer.dart` *(NEW — downloads APK from Supabase Storage with progress and launches installer)*
 - `lib/core/widgets/versioning/force_update_screen.dart` *(NEW)*
 - `lib/core/widgets/versioning/soft_update_sheet.dart` *(NEW)*
-- `lib/main.dart` *(MODIFY — insert version verification check during bootstrap)*
+- `lib/core/widgets/versioning/maintenance_mode_screen.dart` *(NEW)*
+- `lib/core/widgets/auth_gate.dart` *(MODIFY — version verification check during bootstrap)*
+- `lib/features/profile/profile_screen.dart` *(MODIFY — added Settings Check for Updates tile & notification pill)*
 - `test/core/services/app_version_service_test.dart` *(NEW)*
+
 
 ---
 
