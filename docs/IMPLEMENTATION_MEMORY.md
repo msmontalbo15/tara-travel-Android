@@ -2212,6 +2212,30 @@
 - **Verification**:
   - `flutter analyze --no-pub`: **No issues found! (0 errors, 0 warnings)**.
 
+---
+
+### `IMP-095` · CI/CD Test Pipeline Stabilization & Unified Test Runner Architecture
+- **Date**: September 5, 2026
+- **Scope & Objectives**:
+  1. **Root Cause Resolution for CI LCOV Coverage Gate**:
+     - Resolved failure in `.github/workflows/auto_release.yml` at the `🧪 Unit Tests with LCOV Coverage Gate` step caused by passing multiple positional file arguments directly to `flutter test --coverage` alongside unhandled asset bundle compilation.
+  2. **Unified Test Runner Suite (`test/all_tests.dart`)**:
+     - Built unified test runner entrypoint `test/all_tests.dart` aggregating all project unit test suites (`auth_notifier_test`, `personal_allowance_test`, `app_version_service_test`, `core_model_mapping_test`, `google_maps_parser_service_test`).
+     - Enables deterministic, atomic test execution under a single process with clean coverage mapping.
+  3. **Workflow Command Optimization**:
+     - Updated `.github/workflows/auto_release.yml` quality-gate to execute `flutter test --coverage --no-test-assets test/all_tests.dart`, completely eliminating asset compilation latency and flag parsing errors.
+  4. **Widget Smoke Test Hardening**:
+     - Refactored `test/widget_test.dart` into a self-contained baseline smoke test, preventing accidental crashes when whole-suite directory scans run without Supabase/ProviderScope scaffolding.
+- **Target Files**:
+  - `test/all_tests.dart` [NEW]
+  - `test/widget_test.dart` [MODIFIED]
+  - `.github/workflows/auto_release.yml` [MODIFIED]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+  - `docs/CHANGELOG.md` [MODIFIED]
+- **Verification**:
+  - `flutter analyze --no-pub`: **No issues found! (0 errors, 0 warnings)**.
+
+
 
 
 

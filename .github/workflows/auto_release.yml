@@ -80,7 +80,7 @@ jobs:
 
       - name: 🧪 Unit Tests with LCOV Coverage Gate
         run: |
-          flutter test --coverage test/core_model_mapping_test.dart test/core/services/app_version_service_test.dart
+          flutter test --coverage --no-test-assets test/all_tests.dart
           if [ -f "coverage/lcov.info" ]; then
             echo "✅ Unit test execution completed with coverage."
           fi
