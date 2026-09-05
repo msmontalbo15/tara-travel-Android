@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_responsive.dart';
 import '../../core/models/trip_poll_model.dart';
 import '../../core/models/itinerary_model.dart';
 import '../../core/models/expense_model.dart';
@@ -2117,7 +2118,7 @@ class _PinnedMessagesSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.7,
+        maxHeight: context.sheetMaxHeight(0.7),
       ),
       decoration: const BoxDecoration(
         color: Colors.white,

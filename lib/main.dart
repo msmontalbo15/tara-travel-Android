@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/app_responsive.dart';
 import 'features/splash/splash_screen.dart';
 import 'features/onboarding/onboarding_screen.dart';
 import 'features/home/home_screen.dart';
@@ -88,6 +89,7 @@ class TaraApp extends StatelessWidget {
         title: 'Tara Travel',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
+        builder: AppResponsive.clampedTextScaleBuilder,
         initialRoute: '/',
         routes: {
           '/':             (context) => SplashScreen(

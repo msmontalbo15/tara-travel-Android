@@ -2,6 +2,7 @@ import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import '../models/member_model.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_responsive.dart';
 import 'member_avatar_circle.dart';
 
 /// A multi-select bottom sheet for picking one or more [MemberModel]s.
@@ -244,7 +245,7 @@ class _MultiMemberPickerSheetState extends State<MultiMemberPickerSheet> {
           else
             ConstrainedBox(
               constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.38,
+                maxHeight: context.sheetMaxHeight(0.38),
               ),
               child: ListView.separated(
                 shrinkWrap: true,

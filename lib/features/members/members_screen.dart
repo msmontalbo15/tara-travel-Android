@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_responsive.dart';
 import '../../core/providers/trip_provider.dart';
 import '../../core/providers/selected_trip_provider.dart';
 import '../../core/providers/realtime_provider.dart';
@@ -119,7 +120,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                     borderRadius: BorderRadius.only(topLeft: Radius.circular(32), topRight: Radius.circular(32)),
                   ),
                   child: ListView(
-                    padding: EdgeInsets.fromLTRB(20, 20, 20, 40 + MediaQuery.of(context).padding.bottom + 80),
+                    padding: EdgeInsets.fromLTRB(20, 20, 20, context.safeBottomPadding(120)),
                     children: [
                       _buildInviteCard(context, trip),
                       const SizedBox(height: 20),

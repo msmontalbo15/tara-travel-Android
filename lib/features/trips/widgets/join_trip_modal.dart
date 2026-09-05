@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/theme/app_responsive.dart';
 import '../../../core/providers/repository_providers.dart';
 import '../../../core/providers/trip_provider.dart';
 
@@ -104,11 +105,10 @@ class _JoinTripSheetState extends ConsumerState<_JoinTripSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final keyboardSpace = MediaQuery.of(context).viewInsets.bottom;
     return SafeArea(
       top: false,
       child: Container(
-        padding: EdgeInsets.fromLTRB(24, 24, 24, 24 + keyboardSpace),
+        padding: EdgeInsets.fromLTRB(24, 24, 24, context.keyboardBottomPadding(24)),
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.only(

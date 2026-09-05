@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/models/itinerary_model.dart';
 import '../../../core/models/member_model.dart';
+import '../../../core/services/google_maps_parser_service.dart';
 import '../../../core/widgets/inputs/app_text_field.dart';
 import '../../../core/widgets/inputs/app_numeric_field.dart';
 import '../../../core/widgets/inputs/location_picker.dart';
@@ -186,17 +187,24 @@ class _AddStopFormState extends State<AddStopForm> {
           ),
           const SizedBox(height: 10),
 
-          // Location with integrated Map Pin Picker & PH search
+          // Location with integrated Map Pin Picker, PH search & Google Maps link resolver
           LocationPicker(
             onLocationSelected: (loc) {
               setState(() {
                 _selectedLocation = loc;
-                if (loc != null && _titleCtrl.text.trim().isEmpty) {
+                if (loc != null) {
                   final titleGuess =
                       loc.mainText ?? loc.displayName.split(',').first.trim();
-                  if (titleGuess.isNotEmpty) {
+                  if (_titleCtrl.text.trim().isEmpty && titleGuess.isNotEmpty) {
                     _titleCtrl.text = titleGuess;
                     _titleError = null;
+                  }
+                  // Auto-infer StopType if not customized
+                  final inferredType = GoogleMapsParserService.instance.inferStopType(
+                    '${loc.displayName} ${loc.mainText ?? ''}',
+                  );
+                  if (inferredType != StopType.activity && _selectedType == StopType.activity) {
+                    _selectedType = inferredType;
                   }
                 }
               });

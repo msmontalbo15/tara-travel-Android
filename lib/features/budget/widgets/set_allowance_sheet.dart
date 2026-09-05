@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_responsive.dart';
 import '../../../core/utils/currency_utils.dart';
 import '../../../core/widgets/feedback/app_feedback.dart';
 import '../../../core/providers/personal_allowance_provider.dart';
@@ -133,13 +134,12 @@ class _SetAllowanceSheetState extends ConsumerState<SetAllowanceSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final allowanceVal = _parsedAllowance;
     final bufferAmount = allowanceVal * _bufferPercent;
     final operationalBudget = allowanceVal - bufferAmount;
 
     return Container(
-      padding: EdgeInsets.fromLTRB(24, 16, 24, 24 + bottomInset),
+      padding: EdgeInsets.fromLTRB(24, 16, 24, context.keyboardBottomPadding(24)),
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),

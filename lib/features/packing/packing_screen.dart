@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_responsive.dart';
 import '../../core/providers/packing_provider.dart';
 import '../../core/providers/realtime_provider.dart';
 import '../../core/providers/trip_provider.dart';
@@ -675,7 +676,7 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
   ) {
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
-      padding: EdgeInsets.fromLTRB(20, 20, 20, 30 + MediaQuery.of(context).padding.bottom),
+      padding: EdgeInsets.fromLTRB(20, 20, 20, context.safeBottomPadding(30)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1255,7 +1256,7 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
               left: 20,
               right: 20,
               top: 20,
-              bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              bottom: context.keyboardBottomPadding(24),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -1760,7 +1761,7 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
                 left: 20,
                 right: 20,
                 top: 20,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+                bottom: context.keyboardBottomPadding(24),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -1989,7 +1990,7 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
             left: 20,
             right: 20,
             top: 20,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+            bottom: ctx.keyboardBottomPadding(24),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,

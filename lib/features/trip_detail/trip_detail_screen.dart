@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/theme/app_responsive.dart';
 import '../../core/providers/selected_trip_provider.dart';
 import '../../core/providers/trip_provider.dart';
 import '../../core/providers/repository_providers.dart';
@@ -486,7 +487,7 @@ class _CollapsibleHeroHeader extends ConsumerWidget {
       ],
       flexibleSpace: LayoutBuilder(
         builder: (BuildContext ctx, BoxConstraints constraints) {
-          final topPad = MediaQuery.of(ctx).padding.top;
+          final topPad = ctx.topInset;
           final currentHeight = constraints.biggest.height;
           final minHeight = kToolbarHeight + topPad;
           final delta = 270.0 - minHeight;

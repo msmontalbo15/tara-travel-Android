@@ -6,6 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_responsive.dart';
 import '../../../core/models/trip_model.dart';
 import '../../../core/models/itinerary_model.dart';
 import '../../../core/models/expense_model.dart';
@@ -70,7 +71,7 @@ class ChatAttachmentPickerSheet extends ConsumerWidget {
       isScrollControlled: true,
       builder: (ctx) => Container(
         constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(ctx).size.height * 0.7,
+          maxHeight: ctx.sheetMaxHeight(0.7),
         ),
         decoration: const BoxDecoration(
           color: Colors.white,
@@ -168,7 +169,7 @@ class ChatAttachmentPickerSheet extends ConsumerWidget {
       isScrollControlled: true,
       builder: (ctx) => Container(
         constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(ctx).size.height * 0.7,
+          maxHeight: ctx.sheetMaxHeight(0.7),
         ),
         decoration: const BoxDecoration(
           color: Colors.white,
@@ -270,7 +271,7 @@ class ChatAttachmentPickerSheet extends ConsumerWidget {
       isScrollControlled: true,
       builder: (ctx) => Container(
         constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(ctx).size.height * 0.7,
+          maxHeight: ctx.sheetMaxHeight(0.7),
         ),
         decoration: const BoxDecoration(
           color: Colors.white,

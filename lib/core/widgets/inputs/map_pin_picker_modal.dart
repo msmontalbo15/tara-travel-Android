@@ -4,9 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../constants/map_tile_config.dart';
 import '../../services/philippine_geocoding_service.dart';
+import '../../services/google_maps_parser_service.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_responsive.dart';
 import '../buttons/app_back_button.dart';
 import 'location_picker.dart';
 
@@ -159,7 +162,8 @@ class _MapPinPickerModalState extends State<MapPinPickerModal> {
   }
 
   Future<void> _searchPlace(String query) async {
-    if (query.trim().isEmpty) {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) {
       setState(() {
         _searchSuggestions = [];
         _showSuggestions = false;
@@ -167,11 +171,36 @@ class _MapPinPickerModalState extends State<MapPinPickerModal> {
       return;
     }
 
+    // Fast check: Is this a Google Maps URL or raw coordinates?
+    if (GoogleMapsParserService.instance.isGoogleMapsOrCoordinates(trimmed)) {
+      setState(() => _isSearching = true);
+      try {
+        final gmapResult = await GoogleMapsParserService.instance.parse(trimmed);
+        if (gmapResult != null && mounted) {
+          final target = LatLng(gmapResult.latitude, gmapResult.longitude);
+          _searchFocusNode.unfocus();
+          setState(() {
+            _searchSuggestions = [];
+            _showSuggestions = false;
+            _isSearching = false;
+            _placeName = gmapResult.title;
+            _fullAddress = gmapResult.fullAddress;
+            _searchCtrl.text = gmapResult.title;
+            _currentCenter = target;
+          });
+          _mapController.move(target, 16);
+          return;
+        }
+      } catch (e) {
+        debugPrint('[MapPinPickerModal] GMap parse error: $e');
+      }
+    }
+
     setState(() => _isSearching = true);
 
     try {
       final results = await PhilippineGeocodingService.instance.search(
-        query,
+        trimmed,
         limit: 5,
       );
 
@@ -209,7 +238,7 @@ class _MapPinPickerModalState extends State<MapPinPickerModal> {
     final displayTitle = _fullAddress.isNotEmpty ? '$_placeName, $_fullAddress' : _placeName;
 
     return Container(
-      height: MediaQuery.of(context).size.height * 0.9,
+      height: context.sheetMaxHeight(0.9),
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -464,6 +493,25 @@ class _MapPinPickerModalState extends State<MapPinPickerModal> {
                               ),
                           ],
                         ),
+                      ),
+                      IconButton(
+                        tooltip: 'View in Google Maps',
+                        icon: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF0997B).withValues(alpha: 0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.map_rounded, color: AppColors.primary, size: 20),
+                        ),
+                        onPressed: () async {
+                          final url = Uri.parse(
+                            'https://www.google.com/maps/search/?api=1&query=${_currentCenter.latitude},${_currentCenter.longitude}',
+                          );
+                          if (await canLaunchUrl(url)) {
+                            await launchUrl(url, mode: LaunchMode.externalApplication);
+                          }
+                        },
                       ),
                     ],
                   ),

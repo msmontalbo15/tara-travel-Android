@@ -13,6 +13,7 @@ import '../../core/providers/itinerary_provider.dart';
 import '../../core/providers/trip_action_changes_provider.dart';
 import '../../core/services/module_view_tracker_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_responsive.dart';
 import '../../core/widgets/app_brand_logo.dart';
 import '../../core/widgets/navigation/floating_nav_bar.dart';
 import '../../core/widgets/shimmer_loading.dart';
@@ -277,8 +278,7 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
       packedPct = '0';
     }
 
-    final topInset = MediaQuery.of(context).padding.top;
-    final topPadding = topInset > 0 ? topInset : 0.0;
+    final topPadding = context.topInset;
 
     return Scaffold(
       backgroundColor: AppColors.deepEarth,

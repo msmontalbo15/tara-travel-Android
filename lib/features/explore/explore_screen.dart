@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_responsive.dart';
 import '../../core/widgets/app_brand_logo.dart';
 import '../../core/providers/explore_provider.dart';
 
@@ -398,7 +399,7 @@ class _DestinationDetailSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: MediaQuery.of(context).size.height * 0.75,
+      height: context.sheetMaxHeight(0.75),
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.only(topLeft: Radius.circular(28), topRight: Radius.circular(28)),
@@ -467,7 +468,7 @@ class _DestinationDetailSheet extends StatelessWidget {
           ),
           Expanded(
             child: SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(context).padding.bottom + 24),
+              padding: EdgeInsets.fromLTRB(24, 24, 24, context.safeBottomPadding(24)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

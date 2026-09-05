@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_responsive.dart';
 import '../../../core/widgets/feedback/app_feedback.dart';
 import '../models/navigation_models.dart';
 import '../providers/navigation_provider.dart';
@@ -45,7 +46,7 @@ class NavigateToMemberSheet extends ConsumerWidget {
         20,
         12,
         20,
-        24 + MediaQuery.of(context).padding.bottom,
+        context.safeBottomPadding(24),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,

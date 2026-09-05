@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_responsive.dart';
 import '../models/navigation_models.dart';
 import '../providers/navigation_provider.dart';
 
@@ -31,7 +32,7 @@ class PrivacyControlSheet extends ConsumerWidget {
         20,
         12,
         20,
-        24 + MediaQuery.of(context).padding.bottom,
+        context.safeBottomPadding(24),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -204,7 +205,7 @@ class PrivacyControlSheet extends ConsumerWidget {
           20,
           16,
           20,
-          24 + MediaQuery.of(ctx).padding.bottom,
+          ctx.safeBottomPadding(24),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,

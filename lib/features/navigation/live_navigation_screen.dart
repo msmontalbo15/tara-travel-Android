@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/theme/app_responsive.dart';
 import '../../core/widgets/buttons/app_back_button.dart';
 import 'models/navigation_models.dart';
 import 'providers/navigation_provider.dart';
@@ -146,7 +147,7 @@ class _NavHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final topPad = MediaQuery.of(context).padding.top;
+    final topPad = context.topInset;
 
     return Container(
       padding: EdgeInsets.fromLTRB(0, topPad, 0, 0),

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_responsive.dart';
 import '../../models/trip_model.dart';
 import '../../models/expense_model.dart';
 import '../../providers/itinerary_provider.dart';
@@ -377,7 +378,7 @@ class _ShareTripModalState extends ConsumerState<ShareTripModal> {
 
               // Action row
               Padding(
-                padding: EdgeInsets.fromLTRB(16, 14, 16, MediaQuery.of(context).padding.bottom + 16),
+                padding: EdgeInsets.fromLTRB(16, 14, 16, context.safeBottomPadding(16)),
                 child: Row(
                   children: [
                     // Copy

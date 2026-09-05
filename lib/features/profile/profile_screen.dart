@@ -9,6 +9,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_responsive.dart';
 import '../../core/providers/profile_provider.dart';
 import '../../core/providers/repository_providers.dart';
 import '../../core/widgets/ph_location_picker.dart';
@@ -1212,7 +1213,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       builder: (ctx) => SafeArea(
         top: false,
         child: Container(
-          padding: EdgeInsets.fromLTRB(24, 16, 24, 24 + MediaQuery.of(ctx).padding.bottom),
+          padding: EdgeInsets.fromLTRB(24, 16, 24, ctx.safeBottomPadding(24)),
           decoration: const BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
@@ -1949,7 +1950,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
                 const SizedBox(height: 20),
                 SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.48,
+                  height: context.sheetMaxHeight(0.48),
                   child: SingleChildScrollView(
                     child: PhLocationPicker(
                       initialRegion: selRegion,

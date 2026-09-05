@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:dio/dio.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 import '../../services/philippine_geocoding_service.dart';
+import '../../services/google_maps_parser_service.dart';
 import '../../theme/app_colors.dart';
 import 'map_pin_picker_modal.dart';
 
@@ -158,7 +160,9 @@ class _LocationPickerState extends State<LocationPicker> {
       return;
     }
 
-    if (_searchCtrl.text.isEmpty) {
+    final trimmed = _searchCtrl.text.trim();
+
+    if (trimmed.isEmpty) {
       _selectedLocation = null;
       widget.onLocationSelected(null);
       setState(() {
@@ -168,19 +172,59 @@ class _LocationPickerState extends State<LocationPicker> {
       return;
     }
 
+    // Direct Google Maps URL or raw coordinates paste detection
+    if (GoogleMapsParserService.instance.isGoogleMapsOrCoordinates(trimmed)) {
+      _resolveGoogleMapsInput(trimmed);
+      return;
+    }
+
     if (widget.openMapOnTap) return;
 
     // Provide custom typed text fallback when in typing mode
     widget.onLocationSelected(LocationResult(
-      displayName: _searchCtrl.text.trim(),
+      displayName: trimmed,
       lat: _selectedLocation?.lat ?? 0.0,
       lon: _selectedLocation?.lon ?? 0.0,
     ));
 
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 400), () {
-      _searchLocation(_searchCtrl.text);
+      _searchLocation(trimmed);
     });
+  }
+
+  Future<void> _resolveGoogleMapsInput(String input) async {
+    setState(() {
+      _isLoading = true;
+      _showDropdown = false;
+    });
+
+    try {
+      final res = await GoogleMapsParserService.instance.parse(input);
+      if (res != null && mounted) {
+        final locResult = LocationResult(
+          displayName: '${res.title}, ${res.fullAddress}',
+          mainText: res.title,
+          secondaryText: res.fullAddress,
+          lat: res.latitude,
+          lon: res.longitude,
+        );
+        _selectLocation(locResult);
+      }
+    } catch (e) {
+      debugPrint('[LocationPicker] GMap parse error: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _pasteFromClipboard() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final text = data?.text?.trim();
+    if (text != null && text.isNotEmpty) {
+      _searchCtrl.text = text;
+      _onSearchChanged();
+    }
   }
 
   Future<void> _searchLocation(String query) async {
@@ -341,6 +385,13 @@ class _LocationPickerState extends State<LocationPicker> {
                           _selectedLocation = null;
                           widget.onLocationSelected(null);
                         },
+                      ),
+                    if (_searchCtrl.text.isEmpty)
+                      IconButton(
+                        tooltip: 'Paste address or link',
+                        icon: const Icon(Icons.paste_rounded,
+                            size: 18, color: AppColors.muted),
+                        onPressed: _pasteFromClipboard,
                       ),
                     if (widget.enableMapPin)
                       IconButton(

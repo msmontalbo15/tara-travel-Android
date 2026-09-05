@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_responsive.dart';
 import '../models/navigation_models.dart';
 import '../providers/navigation_provider.dart';
 
@@ -12,7 +13,7 @@ class ArrivedTab extends ConsumerWidget {
     final nav = ref.watch(navigationProvider);
 
     return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(14, 4, 14, 32 + MediaQuery.of(context).padding.bottom),
+      padding: EdgeInsets.fromLTRB(14, 4, 14, context.safeBottomPadding(32)),
       child: Column(
         children: [
           // ── Check-in notification ─────────────────────────

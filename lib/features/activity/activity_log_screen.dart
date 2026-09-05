@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_responsive.dart';
 import '../../core/providers/activity_provider.dart';
 import '../../core/models/activity_model.dart';
 import '../../core/widgets/shimmer_loading.dart';
@@ -62,7 +63,7 @@ class _ActivityList extends ConsumerWidget {
           );
         }
         return ListView.builder(
-          padding: EdgeInsets.fromLTRB(20, 20, 20, 40 + MediaQuery.of(context).padding.bottom),
+          padding: EdgeInsets.fromLTRB(20, 20, 20, context.safeBottomPadding(40)),
           itemCount: items.length,
           itemBuilder: (_, i) =>
               _ActivityRow(item: items[i], isLast: i == items.length - 1),

@@ -41,3 +41,13 @@ Enforces factual ground truth across all Flutter and Supabase development in Tar
   2. **Append to `docs/IMPLEMENTATION_MEMORY.md`**: Add a chronological entry with Milestone ID (`IMP-XXX`), modified files, architectural rationale, and verification checks.
   3. **Update `docs/CHANGELOG.md`** (or sync via `tools/generate_changelog.ps1`): Ensure changelog entries reflect changes.
 
+## 6. 🧩 Component Reuse & Optimization Best Practices
+
+- **Zero Hardcoding & Centralized Constants**: Never hardcode configuration parameters, dimensions, durations, magic strings, API routes, or style definitions. Centralize them in dedicated theme tokens, app constants, or type-safe configs.
+- **Maximum Reusability First**: Audit and seamlessly reuse existing core UI components, common widgets, domain models, utility helpers, and service capabilities before declaring new ones. Avoid duplicate widget or logic implementations.
+- **Performance & State Optimization**:
+  - Keep Riverpod providers granular and targeted (`select`, family, or auto-dispose where appropriate) to avoid excessive widget rebuilds.
+  - Employ `const` constructors wherever possible in Flutter widget trees.
+  - Choose optimal algorithms ($O(1)$ lookups, memoization, efficient caching) for all data transformation pipelines.
+  - Abstract repetitive UI blocks into modular, stateless sub-components or shared widgets in `core/` or `widgets/`.
+

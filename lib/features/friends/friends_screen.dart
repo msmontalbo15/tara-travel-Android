@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_responsive.dart';
 import '../../core/models/friend_model.dart';
 import '../../core/providers/friend_provider.dart';
 import '../../core/widgets/inputs/app_text_field.dart';
@@ -79,7 +80,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
       builder: (ctx) => SafeArea(
         top: false,
         child: Container(
-          padding: EdgeInsets.fromLTRB(24, 16, 24, 24 + MediaQuery.of(ctx).padding.bottom),
+          padding: EdgeInsets.fromLTRB(24, 16, 24, ctx.safeBottomPadding(24)),
           decoration: const BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
@@ -814,7 +815,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
 
           return ListView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: EdgeInsets.fromLTRB(20, 4, 20, 24 + MediaQuery.of(context).padding.bottom),
+            padding: EdgeInsets.fromLTRB(20, 4, 20, context.safeBottomPadding(24)),
             children: [
               // Online Summary Banner with Interactive Filter Chips
               Container(
@@ -995,7 +996,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
       onRefresh: () async => _refreshAll(),
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: EdgeInsets.fromLTRB(20, 8, 20, 24 + MediaQuery.of(context).padding.bottom),
+        padding: EdgeInsets.fromLTRB(20, 8, 20, context.safeBottomPadding(24)),
         children: [
           // Section 1: Incoming Requests
           Row(
@@ -1163,7 +1164,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
   // ── TAB 3: FIND FRIENDS ─────────────────────────────────────────────────────
   Widget _buildFindFriendsTab() {
     return ListView(
-      padding: EdgeInsets.fromLTRB(20, 8, 20, 24 + MediaQuery.of(context).padding.bottom),
+      padding: EdgeInsets.fromLTRB(20, 8, 20, context.safeBottomPadding(24)),
       children: [
         // Quick Action Tiles
         Row(

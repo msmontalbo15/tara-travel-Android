@@ -1,6 +1,7 @@
 import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_responsive.dart';
 
 class AiPackingDialog extends StatefulWidget {
   final String destination;
@@ -94,7 +95,7 @@ class _AiPackingDialogState extends State<AiPackingDialog> {
         20,
         12,
         20,
-        MediaQuery.of(context).viewInsets.bottom + 24,
+        context.keyboardBottomPadding(24),
       ),
       child: SafeArea(
         top: false,

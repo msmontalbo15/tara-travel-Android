@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 import '../../../core/constants/map_tile_config.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_responsive.dart';
 import '../models/navigation_models.dart';
 import '../providers/navigation_provider.dart';
 import 'convoy_alert_banner.dart';
@@ -20,7 +21,7 @@ class GroupTrackerTab extends ConsumerWidget {
     final nav = ref.watch(navigationProvider);
 
     return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(16, 0, 16, 32 + MediaQuery.of(context).padding.bottom),
+      padding: EdgeInsets.fromLTRB(16, 0, 16, context.safeBottomPadding(32)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

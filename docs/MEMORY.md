@@ -1087,6 +1087,11 @@ Client Tier               Storage Tier                Transport Tier
 - **Live Day Counter & Badge in NextTripCard**:
   - When a trip is `ongoing`, `NextTripCard` displays an `ONGOING TRIP` pill badge with emerald pulse dot and switches countdown to a live day-of-trip counter (`Day X of Y days` / `Day of trip`).
 
+
+## 27. 📱 UI ARCHITECTURE & COMPONENT REGISTRY
+- Comprehensive UI component hierarchy, screen routing map, design tokens, sheets, and modal structure are maintained in [docs/UI_STRUCTURE.md](file:///d:/Spencer/Downloads/tara_travel/docs/UI_STRUCTURE.md).
+- Any screen or subcomponent restructuring must update `docs/UI_STRUCTURE.md` alongside code changes.
+
 ---
 
 *This document is the single source of architectural truth for Tara Travel. Update this file whenever database schemas, RPC functions, core repositories, or system flows are modified.*

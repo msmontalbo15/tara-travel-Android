@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_responsive.dart';
 import '../../../core/widgets/inputs/app_numeric_field.dart';
 import '../../../core/utils/currency_utils.dart';
 import '../../../core/widgets/buttons/app_back_button.dart';
@@ -701,7 +702,7 @@ class _BudgetStepState extends State<BudgetStep> {
               left: 20,
               right: 20,
               top: 20,
-              bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+              bottom: context.keyboardBottomPadding(20),
             ),
             child: SingleChildScrollView(
               child: Column(

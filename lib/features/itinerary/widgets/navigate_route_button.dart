@@ -5,6 +5,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/models/itinerary_model.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_responsive.dart';
 import '../../../core/widgets/feedback/app_feedback.dart';
 
 /// Builds and opens a turn-by-turn navigation route from the user's
@@ -409,7 +410,7 @@ class _RouteOptionsSheetState extends State<_RouteOptionsSheet> {
 
     return Container(
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.85,
+        maxHeight: context.sheetMaxHeight(0.85),
       ),
       decoration: const BoxDecoration(
         color: AppColors.surfaceLight,

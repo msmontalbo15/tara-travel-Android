@@ -17,6 +17,7 @@ import '../../core/providers/trip_weather_provider.dart';
 import '../../core/services/location_tracking_service.dart';
 import '../../core/services/module_view_tracker_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_responsive.dart';
 import '../../core/widgets/buttons/app_back_button.dart';
 import '../../core/widgets/feedback/app_dialog.dart';
 import '../../core/widgets/feedback/app_feedback.dart';
@@ -195,7 +196,7 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
       backgroundColor: Colors.transparent,
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(
-          bottom: MediaQuery.of(ctx).viewInsets.bottom,
+          bottom: ctx.keyboardHeight,
         ),
         child: SingleChildScrollView(
           child: Container(
@@ -228,7 +229,7 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
       backgroundColor: Colors.transparent,
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(
-          bottom: MediaQuery.of(ctx).viewInsets.bottom,
+          bottom: ctx.keyboardHeight,
         ),
         child: SingleChildScrollView(
           child: Container(
@@ -280,7 +281,7 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
       backgroundColor: Colors.transparent,
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(
-          bottom: MediaQuery.of(ctx).viewInsets.bottom,
+          bottom: ctx.keyboardHeight,
         ),
         child: SingleChildScrollView(
           child: Container(

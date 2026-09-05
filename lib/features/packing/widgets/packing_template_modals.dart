@@ -2,6 +2,7 @@ import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import '../../../core/models/packing_model.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_responsive.dart';
 import '../../../core/widgets/feedback/app_feedback.dart';
 
 // ── Save Template Dialog / Modal ─────────────────────────────────────────────
@@ -349,7 +350,7 @@ class _LoadTemplateSheetState extends State<LoadTemplateSheet>
     final custom = widget.templates.where((t) => !t.isPrebuilt).toList();
 
     return Container(
-      height: MediaQuery.of(context).size.height * 0.78,
+      height: context.sheetMaxHeight(0.78),
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),

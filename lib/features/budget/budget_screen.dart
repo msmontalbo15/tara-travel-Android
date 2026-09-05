@@ -2,6 +2,7 @@ import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_responsive.dart';
 import '../../core/models/trip_model.dart';
 import '../../core/models/expense_model.dart';
 import '../../core/models/personal_allowance_model.dart';
@@ -603,7 +604,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        padding: EdgeInsets.only(bottom: ctx.keyboardHeight),
         child: Container(
           decoration: const BoxDecoration(
             color: Colors.white,

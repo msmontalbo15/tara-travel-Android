@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_responsive.dart';
 import '../models/navigation_models.dart';
 import '../providers/navigation_provider.dart';
 import 'shared/mock_map_painter.dart';
@@ -123,7 +124,7 @@ class ProximityAlertTab extends ConsumerWidget {
               ),
             ),
             child: SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(18, 16, 18, MediaQuery.of(context).padding.bottom + 24),
+              padding: EdgeInsets.fromLTRB(18, 16, 18, context.safeBottomPadding(24)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

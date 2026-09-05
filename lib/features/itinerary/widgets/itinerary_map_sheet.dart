@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/itinerary_model.dart';
 import '../../../core/providers/group_tracking_provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_responsive.dart';
 import 'itinerary_map.dart';
 import 'navigate_route_button.dart';
 
@@ -38,7 +39,7 @@ class ItineraryMapSheet extends ConsumerWidget {
     final riders = ridersAsync.value;
 
     return Container(
-      height: MediaQuery.of(context).size.height * 0.82,
+      height: context.sheetMaxHeight(0.82),
       decoration: const BoxDecoration(
         color: AppColors.deepEarth,
         borderRadius: BorderRadius.only(

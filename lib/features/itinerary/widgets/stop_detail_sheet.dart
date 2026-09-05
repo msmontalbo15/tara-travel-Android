@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../../core/models/itinerary_model.dart';
 import '../../../core/models/member_model.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_responsive.dart';
 import '../../../core/widgets/multi_member_picker_sheet.dart';
 import '../../../core/widgets/member_avatar_circle.dart';
 import '../utils/transit_conflict_helper.dart';
@@ -295,7 +296,7 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
 
     return Container(
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.88,
+        maxHeight: context.sheetMaxHeight(0.88),
       ),
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -657,8 +658,8 @@ class _StopDetailSheetState extends State<StopDetailSheet> {
                 20,
                 12,
                 20,
-                MediaQuery.of(context).padding.bottom > 0
-                    ? MediaQuery.of(context).padding.bottom + 8
+                context.bottomInset > 0
+                    ? context.safeBottomPadding(8)
                     : 16,
               ),
               decoration: BoxDecoration(

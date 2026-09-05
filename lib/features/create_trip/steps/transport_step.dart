@@ -2,6 +2,7 @@ import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_responsive.dart';
 import '../../../core/models/itinerary_model.dart';
 import '../../../core/widgets/inputs/location_picker.dart';
 import '../../../core/utils/currency_utils.dart';
@@ -442,7 +443,7 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
                 borderRadius: BorderRadius.only(topLeft: Radius.circular(32), topRight: Radius.circular(32)),
               ),
               child: SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(20, 20, 20, 24 + MediaQuery.of(context).padding.bottom),
+                padding: EdgeInsets.fromLTRB(20, 20, 20, context.safeBottomPadding(24)),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

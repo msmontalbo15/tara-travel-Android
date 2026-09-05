@@ -7,6 +7,7 @@ import '../../../core/providers/repository_providers.dart';
 import '../../../core/providers/selected_trip_provider.dart';
 import '../../../core/providers/trip_provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_responsive.dart';
 import '../../../core/utils/currency_utils.dart';
 import '../../../core/widgets/feedback/app_feedback.dart';
 
@@ -90,7 +91,6 @@ class _QuickBudgetSheetState extends ConsumerState<QuickBudgetSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final themeColor = widget.trip.coverColor;
 
     return Container(
@@ -98,7 +98,7 @@ class _QuickBudgetSheetState extends ConsumerState<QuickBudgetSheet> {
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      padding: EdgeInsets.fromLTRB(24, 16, 24, 24 + bottomInset),
+      padding: EdgeInsets.fromLTRB(24, 16, 24, context.keyboardBottomPadding(24)),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,

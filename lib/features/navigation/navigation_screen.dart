@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_responsive.dart';
 import '../../core/widgets/buttons/app_back_button.dart';
 import 'models/navigation_models.dart';
 import 'providers/navigation_provider.dart';
@@ -114,7 +115,7 @@ class _NavigationScreenState extends ConsumerState<NavigationScreen> {
 
     if (state.isGroupViewOn) {
       return SizedBox(
-        height: MediaQuery.of(context).size.height * 0.9,
+        height: context.sheetMaxHeight(0.9),
         child: GroupTrackerPanel(
           state: state,
           onBack: () => ref.read(navigationProvider.notifier).toggleGroupView(),
