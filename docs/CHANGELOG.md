@@ -11,7 +11,8 @@
 
 **Component**: Core / UI Scaffold
 
-**Summary**: Project genesis, directory architecture, Material 3 theme & Brand Design tokens.
+**Summary**: Project genesis, directory architecture, Material 3 theme & Brand
+Design tokens.
 
 <details>
 <summary>Full implementation detail</summary>
