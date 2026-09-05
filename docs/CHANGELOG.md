@@ -1,7 +1,7 @@
 # Tara Travel - Version Changelog
 
 > Auto-generated from IMPLEMENTATION_MEMORY.md + git log
-> Last updated: **2026-09-05 17:36 PHT**
+> Last updated: **2026-09-05 18:18 PHT**
 
 ---
 
@@ -2086,6 +2086,50 @@
   - `lib/features/home/widgets/trip_card.dart` [MODIFIED]
   - `lib/features/home/home_screen.dart` [MODIFIED]
   - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+  - `docs/CHANGELOG.md` [MODIFIED]
+- **Verification**:
+  - `flutter analyze --no-pub`: **No issues found! (0 errors, 0 warnings)**.
+
+
+### `IMP-094` — 2026-09-05: Supabase App Versioning, Direct OTA Updates, Settings Check & CI/CD Pipeline (Plan 17)
+- **Description**: Implemented the complete app versioning, compatibility, and maintenance gatekeeper architecture powered by Supabase Remote Config (`public.app_versions`), in-app OTA APK streaming installer, 3-tier user update modals, Settings update checker tile with notification pill, and fully automated GitHub Actions CI/CD release workflow (`.github/workflows/auto_release.yml`).
+- **Architectural Specification**:
+  1. **Database Schema & Storage Configuration (Migration 026)**:
+     - `public.app_versions`: Stores authoritative release configuration (`platform`, `min_supported_version`, `latest_version`, `force_update_url`, `maintenance_mode`, `maintenance_title`, `maintenance_message`, `estimated_back_online`, `release_notes`).
+     - Public read RLS (`anon_select_app_versions`) with write privileges restricted exclusively to `service_role`.
+     - Storage bucket `app-releases` configured with public read access and service_role write policy.
+  2. **Core Versioning & OTA Services**:
+     - `SemanticVersion`: Robust major.minor.patch+build comparator supporting standard semantic strings and leading `v`-prefixes.
+     - `AppVersionService`: Evaluates 4 distinct compatibility states (`upToDate`, `softUpdate`, `forceUpdate`, `maintenance`). Exposed via `appVersionServiceProvider` and `appVersionCheckProvider`.
+     - `ApkDownloadInstaller`: Streaming Dio download with progress callbacks `(received, total)` saved to cache directory and launched via system intent / external application mode.
+  3. **Three-Tier User UX Modals & Bootstrap Lifecycle Guard**:
+     - **Tier 1: Mandatory Force-Update (`ForceUpdateScreen`)**: Non-dismissible full-screen gate for versions strictly below `min_supported_version`. Shows version details, changelog, and direct download progress bar.
+     - **Tier 2: Soft Update Recommendation (`SoftUpdateSheet`)**: Dismissible bottom sheet highlighting new features with "Update Now" and "Later" actions.
+     - **Tier 3: Maintenance Mode (`MaintenanceModeScreen`)**: Non-dismissible status view with countdown timer and manual retry button.
+     - Integrated into `AuthGate.initState()` post-frame callback and `MaterialApp.builder` to prevent unauthorized usage or database corruption during migrations without breaking the navigator stack.
+  4. **Settings "Check for Updates" Tile (`ProfileScreen`)**:
+     - Embedded in Account Settings: displays current installed version, visual `UPDATE` notification pill when an update is pending, interactive check trigger, and floating `AppFeedback` toast notifications.
+  5. **Android Permission**:
+     - Registered `<uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />` in `AndroidManifest.xml`.
+  6. **Automated GitHub Actions CI/CD Workflow (`.github/workflows/auto_release.yml`)**:
+     - Enforces quality gate (`flutter analyze --fatal-warnings`), compiles release APK and Android App Bundle (.aab), uploads release APK to Supabase Storage bucket `app-releases`, inserts new release metadata into `public.app_versions` via REST API curl, and dispatches to Firebase App Distribution testers.
+  7. **Automated Unit Tests**:
+     - Pure unit test suite in `test/core/services/app_version_service_test.dart` verifying parsing, comparison hierarchy, build number handling, and version gate determination.
+- **Target Files**:
+  - `supabase/migrations/026_app_versions_and_remote_config.sql` [NEW]
+  - `android/app/src/main/AndroidManifest.xml` [MODIFIED]
+  - `lib/core/services/app_version_service.dart` [NEW]
+  - `lib/core/services/apk_download_installer.dart` [NEW]
+  - `lib/core/widgets/versioning/force_update_screen.dart` [NEW]
+  - `lib/core/widgets/versioning/maintenance_mode_screen.dart` [NEW]
+  - `lib/core/widgets/versioning/soft_update_sheet.dart` [NEW]
+  - `lib/core/widgets/auth_gate.dart` [MODIFIED]
+  - `lib/features/profile/profile_screen.dart` [MODIFIED]
+  - `.github/workflows/auto_release.yml` [NEW]
+  - `test/core/services/app_version_service_test.dart` [NEW]
+  - `docs/MEMORY.md` [MODIFIED]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+  - `docs/UPCOMING_PLANS.md` [MODIFIED]
   - `docs/CHANGELOG.md` [MODIFIED]
 - **Verification**:
   - `flutter analyze --no-pub`: **No issues found! (0 errors, 0 warnings)**.
