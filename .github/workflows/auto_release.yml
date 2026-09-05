@@ -139,10 +139,10 @@ jobs:
           fi
 
       - name: 🔨 Compile Release APK (Universal Fat Binary)
-        run: flutter build apk --release
+        run: flutter build apk --release --no-tree-shake-icons
 
       - name: 🔨 Compile Production Android App Bundle (.aab with R8 Obfuscation)
-        run: flutter build appbundle --release
+        run: flutter build appbundle --release --no-tree-shake-icons
 
       - name: 📤 Stash Build Artifacts
         uses: actions/upload-artifact@v4

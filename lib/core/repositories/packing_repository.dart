@@ -2,16 +2,30 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/packing_model.dart';
 
+class _DefaultCategoryDef {
+  final String id;
+  final String name;
+  final IconData icon;
+  final Color color;
+
+  const _DefaultCategoryDef({
+    required this.id,
+    required this.name,
+    required this.icon,
+    required this.color,
+  });
+}
+
 /// Default packing categories seeded for trips on first load.
-const List<Map<String, dynamic>> _kDefaultCategories = [
-  {'id': 'essentials', 'name': 'Essentials',    'icon': 0xe42d, 'color': 0xFFD85A30},
-  {'id': 'clothing',   'name': 'Clothing',       'icon': 0xe90d, 'color': 0xFF8B5CF6},
-  {'id': 'toiletries', 'name': 'Toiletries',     'icon': 0xe070, 'color': 0xFF0D9488},
-  {'id': 'gadgets',    'name': 'Gadgets',        'icon': 0xe1b1, 'color': 0xFF3B82F6},
-  {'id': 'documents',  'name': 'Documents',      'icon': 0xe873, 'color': 0xFFEF9F27},
-  {'id': 'medicines',  'name': 'Medicines',      'icon': 0xe3f0, 'color': 0xFFEF4444},
-  {'id': 'food',       'name': 'Food & Snacks',  'icon': 0xe532, 'color': 0xFF10B981},
-  {'id': 'others',     'name': 'Others',         'icon': 0xe5d3, 'color': 0xFF6B7280},
+const List<_DefaultCategoryDef> _kDefaultCategories = [
+  _DefaultCategoryDef(id: 'essentials', name: 'Essentials',    icon: Icons.backpack_outlined,     color: Color(0xFFD85A30)),
+  _DefaultCategoryDef(id: 'clothing',   name: 'Clothing',      icon: Icons.checkroom_outlined,    color: Color(0xFF8B5CF6)),
+  _DefaultCategoryDef(id: 'toiletries', name: 'Toiletries',    icon: Icons.clean_hands_outlined,  color: Color(0xFF0D9488)),
+  _DefaultCategoryDef(id: 'gadgets',    name: 'Gadgets',       icon: Icons.devices_outlined,      color: Color(0xFF3B82F6)),
+  _DefaultCategoryDef(id: 'documents',  name: 'Documents',     icon: Icons.description_outlined,  color: Color(0xFFEF9F27)),
+  _DefaultCategoryDef(id: 'medicines',  name: 'Medicines',     icon: Icons.medication_outlined,   color: Color(0xFFEF4444)),
+  _DefaultCategoryDef(id: 'food',       name: 'Food & Snacks', icon: Icons.restaurant_outlined,   color: Color(0xFF10B981)),
+  _DefaultCategoryDef(id: 'others',     name: 'Others',        icon: Icons.more_horiz_outlined,   color: Color(0xFF6B7280)),
 ];
 
 const Map<String, List<String>> _kDefaultItems = {
@@ -370,19 +384,18 @@ class PackingRepository {
       final item = PackingItem.fromMap(row);
       grouped.putIfAbsent(catId, () => []).add(item);
 
-      if (!_kDefaultCategories.any((c) => c['id'] == catId)) {
+      if (!_kDefaultCategories.any((c) => c.id == catId)) {
         customCategoryIds.add(catId);
       }
     }
 
     final categories = _kDefaultCategories.map((catDef) {
-      final catId = catDef['id'] as String;
       return PackingCategory(
-        id: catId,
-        name: catDef['name'] as String,
-        icon: IconData(catDef['icon'] as int, fontFamily: 'MaterialIcons'),
-        color: Color(catDef['color'] as int),
-        items: grouped[catId] ?? [],
+        id: catDef.id,
+        name: catDef.name,
+        icon: catDef.icon,
+        color: catDef.color,
+        items: grouped[catDef.id] ?? [],
         isExpanded: false,
       );
     }).toList();
@@ -405,20 +418,19 @@ class PackingRepository {
 
   List<PackingCategory> _defaultCategories(String tripId) {
     return _kDefaultCategories.map((catDef) {
-      final catId = catDef['id'] as String;
-      final defaultItemNames = _kDefaultItems[catId] ?? [];
+      final defaultItemNames = _kDefaultItems[catDef.id] ?? [];
       final items = defaultItemNames
           .map((name) => PackingItem(
-                id: '${catId}_${name.hashCode}',
+                id: '${catDef.id}_${name.hashCode}',
                 name: name,
               ))
           .toList();
 
       return PackingCategory(
-        id: catId,
-        name: catDef['name'] as String,
-        icon: IconData(catDef['icon'] as int, fontFamily: 'MaterialIcons'),
-        color: Color(catDef['color'] as int),
+        id: catDef.id,
+        name: catDef.name,
+        icon: catDef.icon,
+        color: catDef.color,
         items: items,
         isExpanded: false,
       );

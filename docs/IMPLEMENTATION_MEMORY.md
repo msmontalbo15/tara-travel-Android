@@ -2231,6 +2231,31 @@
   - `test/widget_test.dart` [MODIFIED]
   - `.github/workflows/auto_release.yml` [MODIFIED]
   - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+- **Verification**:
+  - `flutter analyze --no-pub`: **No issues found! (0 errors, 0 warnings)**.
+
+---
+
+### `IMP-096` · Release Build Tree-Shaking Stabilization & Firebase Integration Setup
+- **Date**: September 5, 2026
+- **Scope & Objectives**:
+  1. **Release Icon Tree-Shaking Resolution**:
+     - Resolved `Target aot_android_asset_bundle failed: Error: Avoid non-constant invocations of IconData or try to build again with --no-tree-shake-icons` during `flutter build apk --release`.
+     - Root cause: `_kDefaultCategories` in `lib/core/repositories/packing_repository.dart` instantiated `IconData(catDef['icon'] as int, fontFamily: 'MaterialIcons')` at runtime, preventing the Flutter compiler from statically resolving icons to tree shake.
+     - Refactored `_kDefaultCategories` to use typed `_DefaultCategoryDef` structs storing constant `IconData` references directly (`Icons.backpack_outlined`, `Icons.checkroom_outlined`, etc.).
+  2. **CI/CD Build Command Guard**:
+     - Added `--no-tree-shake-icons` flag to `flutter build apk --release` and `flutter build appbundle --release` in `.github/workflows/auto_release.yml` as a fail-safe against external package icon font stripping.
+  3. **Firebase Core Dependency Integration**:
+     - Installed `firebase_core: ^4.14.0` in `pubspec.yaml` following `flutterfire configure --project=tara-travel-30b8e` app registration, resolving compilation errors for `lib/firebase_options.dart`.
+- **Target Files**:
+  - `lib/core/repositories/packing_repository.dart` [MODIFIED]
+  - `.github/workflows/auto_release.yml` [MODIFIED]
+  - `pubspec.yaml` [MODIFIED]
+  - `pubspec.lock` [MODIFIED]
+  - `lib/firebase_options.dart` [NEW]
+  - `firebase.json` [NEW]
+  - `android/app/google-services.json` [MODIFIED]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
   - `docs/CHANGELOG.md` [MODIFIED]
 - **Verification**:
   - `flutter analyze --no-pub`: **No issues found! (0 errors, 0 warnings)**.
