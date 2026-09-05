@@ -1,13 +1,16 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/itinerary_model.dart';
+import '../../../core/providers/connectivity_provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/feedback/app_feedback.dart';
 import 'itinerary_map_sheet.dart';
 
 /// Floating bottom action dock providing travelers with 1-tap route navigation / map overview
 /// and primary "Add Stop" button.
-class ItineraryBottomDock extends StatelessWidget {
+class ItineraryBottomDock extends ConsumerWidget {
   final ItineraryDay? currentDay;
   final String tripId;
   final bool canManage;
@@ -22,9 +25,11 @@ class ItineraryBottomDock extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final hasStops = currentDay != null && currentDay!.stops.isNotEmpty;
+    final isOnlineAsync = ref.watch(isOnlineProvider);
+    final isOnline = isOnlineAsync.value ?? true;
 
     return Positioned(
       left: 12,
@@ -100,9 +105,9 @@ class ItineraryBottomDock extends StatelessWidget {
                               'Live Nav',
                               style: TextStyle(
                                 fontSize: 14,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w800,
                                 color: Colors.white,
-                                letterSpacing: 0.3,
+                                letterSpacing: 0.2,
                               ),
                             ),
                           ],
@@ -114,7 +119,7 @@ class ItineraryBottomDock extends StatelessWidget {
 
                 const SizedBox(width: 8),
 
-                // ── 2. Day Map & Route Overview ────────────────────────────
+                // ── 2. Day Map Action ─────────────────────────────────────
                 Expanded(
                   flex: 4,
                   child: Material(
@@ -137,10 +142,10 @@ class ItineraryBottomDock extends StatelessWidget {
                           vertical: 13,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.12),
+                          color: Colors.white.withValues(alpha: 0.10),
                           borderRadius: BorderRadius.circular(18),
                           border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.15),
+                            color: Colors.white.withValues(alpha: 0.16),
                             width: 1,
                           ),
                         ),
@@ -176,6 +181,14 @@ class ItineraryBottomDock extends StatelessWidget {
                     child: InkWell(
                       onTap: () {
                         HapticFeedback.mediumImpact();
+                        if (!isOnline) {
+                          AppFeedback.showInfo(
+                            context,
+                            'You are in offline read-only mode. Adding stops requires an internet connection.',
+                            title: 'Offline Mode ⚡',
+                          );
+                          return;
+                        }
                         onAddStop();
                       },
                       borderRadius: BorderRadius.circular(18),
@@ -185,28 +198,32 @@ class ItineraryBottomDock extends StatelessWidget {
                           vertical: 13,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.14),
+                          color: isOnline
+                              ? Colors.white.withValues(alpha: 0.14)
+                              : Colors.white.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(18),
                           border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.24),
+                            color: isOnline
+                                ? Colors.white.withValues(alpha: 0.24)
+                                : Colors.white.withValues(alpha: 0.10),
                             width: 1,
                           ),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              Icons.add_rounded,
-                              color: Colors.white,
-                              size: 20,
+                              isOnline ? Icons.add_rounded : Icons.lock_outline_rounded,
+                              color: isOnline ? Colors.white : Colors.white54,
+                              size: 18,
                             ),
-                            SizedBox(width: 5),
+                            const SizedBox(width: 4),
                             Text(
                               'Stop',
                               style: TextStyle(
                                 fontSize: 13.5,
                                 fontWeight: FontWeight.w700,
-                                color: Colors.white,
+                                color: isOnline ? Colors.white : Colors.white54,
                               ),
                             ),
                           ],

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -22,6 +23,7 @@ import '../../core/widgets/shimmer_loading.dart';
 import '../../core/widgets/feedback/app_feedback.dart';
 import '../../core/widgets/feedback/app_dialog.dart';
 import '../../core/widgets/member_avatar_circle.dart';
+import '../../core/widgets/offline_read_only_banner.dart';
 import 'widgets/edit_trip_sheet.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -208,6 +210,10 @@ class _TripDashboardState extends ConsumerState<_TripDashboard> {
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
+                    // Offline Read-Only Indicator
+                    const OfflineReadOnlyBanner(),
+                    const SizedBox(height: 8),
+
                     // A. Draft Publish Banner (if draft)
                     if (trip.isDraft) ...[
                       _DraftPublishCard(
@@ -335,6 +341,45 @@ class _CollapsibleHeroHeader extends ConsumerWidget {
     required this.isActive,
   });
 
+  Future<void> _confirmLeaveTrip(BuildContext context, WidgetRef ref) async {
+    final confirm = await AppDialog.showDestructive(
+      context,
+      title: 'Leave Trip',
+      message:
+          'Are you sure you want to leave "${trip.name}"? You will need a new invite code to rejoin.',
+      confirmLabel: 'Leave Trip',
+      icon: Icons.exit_to_app_rounded,
+    );
+
+    if (confirm == true && context.mounted) {
+      try {
+        final repo = ref.read(tripRepositoryProvider);
+        await repo.leaveTrip(trip.id);
+        ref.read(selectedTripIdProvider.notifier).clear();
+        ref.invalidate(allTripsProvider);
+        ref.invalidate(activeTripProvider);
+        ref.invalidate(selectedTripProvider);
+
+        if (context.mounted) {
+          Navigator.of(context).pop();
+          AppFeedback.showInfo(
+            context,
+            'You left "${trip.name}".',
+            title: 'Trip Exited',
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          AppFeedback.showError(
+            context,
+            e.toString().replaceAll('Exception: ', ''),
+            title: 'Failed to Leave Trip',
+          );
+        }
+      }
+    }
+  }
+
   Future<void> _confirmDeleteTrip(BuildContext context, WidgetRef ref) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -413,6 +458,9 @@ class _CollapsibleHeroHeader extends ConsumerWidget {
         trip.destinationDetails?['cover_image'] ??
         trip.destinationDetails?['image_url'];
 
+    final currentUserId = ref.watch(authRepositoryProvider).currentUser?.id;
+    final isOwner = trip.ownerId == currentUserId;
+
     final statusDotColor = trip.isDraft
         ? AppColors.amberText
         : isActive
@@ -441,6 +489,7 @@ class _CollapsibleHeroHeader extends ConsumerWidget {
             if (value == 'edit') EditTripSheet.show(context, trip);
             if (value == 'archive') _toggleArchiveTrip(context, ref);
             if (value == 'delete') _confirmDeleteTrip(context, ref);
+            if (value == 'leave') _confirmLeaveTrip(context, ref);
           },
           itemBuilder: (_) => [
             const PopupMenuItem(
@@ -449,7 +498,7 @@ class _CollapsibleHeroHeader extends ConsumerWidget {
                 children: [
                   Icon(Icons.edit_outlined, size: 18, color: Colors.white70),
                   SizedBox(width: 12),
-                  Text('Edit Trip', style: TextStyle( color: Colors.white)),
+                  Text('Edit Trip', style: TextStyle(color: Colors.white)),
                 ],
               ),
             ),
@@ -465,23 +514,34 @@ class _CollapsibleHeroHeader extends ConsumerWidget {
                   const SizedBox(width: 12),
                   Text(
                     trip.isArchived ? 'Unarchive Trip' : 'Archive Trip',
-                    style: const TextStyle( color: Colors.white),
+                    style: const TextStyle(color: Colors.white),
                   ),
                 ],
               ),
             ),
             const PopupMenuDivider(),
-            const PopupMenuItem(
-              value: 'delete',
-              child: Row(
-                children: [
-                  Icon(Icons.delete_outline_rounded, size: 18, color: Colors.redAccent),
-                  SizedBox(width: 12),
-                  Text('Delete Trip',
-                      style: TextStyle( color: Colors.redAccent)),
-                ],
+            if (isOwner)
+              const PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    Icon(Icons.delete_outline_rounded, size: 18, color: Colors.redAccent),
+                    SizedBox(width: 12),
+                    Text('Delete Trip', style: TextStyle(color: Colors.redAccent)),
+                  ],
+                ),
+              )
+            else
+              const PopupMenuItem(
+                value: 'leave',
+                child: Row(
+                  children: [
+                    Icon(Icons.exit_to_app_rounded, size: 18, color: Color(0xFFE67E22)),
+                    SizedBox(width: 12),
+                    Text('Leave Trip', style: TextStyle(color: Color(0xFFE67E22))),
+                  ],
+                ),
               ),
-            ),
           ],
         ),
       ],
@@ -1651,6 +1711,27 @@ class _InviteCard extends ConsumerStatefulWidget {
 
 class _InviteCardState extends ConsumerState<_InviteCard> {
   bool _copied = false;
+  bool _isRevealed = false;
+  Timer? _autoHideTimer;
+
+  @override
+  void dispose() {
+    _autoHideTimer?.cancel();
+    super.dispose();
+  }
+
+  void _toggleReveal() {
+    setState(() {
+      _isRevealed = !_isRevealed;
+    });
+
+    _autoHideTimer?.cancel();
+    if (_isRevealed) {
+      _autoHideTimer = Timer(const Duration(seconds: 12), () {
+        if (mounted) setState(() => _isRevealed = false);
+      });
+    }
+  }
 
   void _copy() {
     Clipboard.setData(ClipboardData(text: widget.trip.inviteCode));
@@ -1676,6 +1757,9 @@ class _InviteCardState extends ConsumerState<_InviteCard> {
 
   @override
   Widget build(BuildContext context) {
+    final code = widget.trip.inviteCode;
+    final displayCode = _isRevealed ? code : '•' * (code.isNotEmpty ? code.length : 6);
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(22),
       child: Container(
@@ -1712,28 +1796,49 @@ class _InviteCardState extends ConsumerState<_InviteCard> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'INVITE CODE',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white.withValues(alpha: 0.40),
-                            letterSpacing: 1.8,
-                          ),
+                        Row(
+                          children: [
+                            Text(
+                              'INVITE CODE',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white.withValues(alpha: 0.40),
+                                letterSpacing: 1.8,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: _toggleReveal,
+                              child: Icon(
+                                _isRevealed
+                                    ? Icons.visibility_rounded
+                                    : Icons.visibility_off_rounded,
+                                size: 14,
+                                color: Colors.white.withValues(alpha: 0.5),
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 8),
-                        Text(
-                          widget.trip.inviteCode,
-                          style: const TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                            letterSpacing: 5,
+                        GestureDetector(
+                          onTap: _toggleReveal,
+                          child: Text(
+                            displayCode,
+                            style: TextStyle(
+                              fontFamily: 'monospace',
+                              fontSize: 26,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                              letterSpacing: _isRevealed ? 4.5 : 5.5,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'Share with your squad to join this trip',
+                          _isRevealed
+                              ? 'Tap code or eye to mask · Auto-masks in 12s'
+                              : 'Tap code to reveal · Share with squad to join',
                           style: TextStyle(
                             fontSize: 11,
                             color: Colors.white.withValues(alpha: 0.35),
@@ -1744,6 +1849,13 @@ class _InviteCardState extends ConsumerState<_InviteCard> {
                   ),
                   Column(
                     children: [
+                      _InviteIconBtn(
+                        icon: _isRevealed
+                            ? Icons.visibility_off_rounded
+                            : Icons.visibility_rounded,
+                        onTap: _toggleReveal,
+                      ),
+                      const SizedBox(height: 8),
                       _InviteIconBtn(
                         icon: Icons.share_rounded,
                         onTap: _share,

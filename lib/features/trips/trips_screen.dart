@@ -452,6 +452,45 @@ class _TripListCardState extends ConsumerState<_TripListCard>
     }
   }
 
+  Future<void> _handleLeave() async {
+    _close();
+    final confirm = await AppDialog.showDestructive(
+      context,
+      title: 'Leave Trip',
+      message:
+          'Are you sure you want to leave "${widget.trip.name}"? You will need an invite code to rejoin.',
+      confirmLabel: 'Leave Trip',
+      icon: Icons.exit_to_app_rounded,
+    );
+
+    if (confirm == true && mounted) {
+      try {
+        final repo = ref.read(tripRepositoryProvider);
+        await repo.leaveTrip(widget.trip.id);
+        ref.read(selectedTripIdProvider.notifier).clear();
+        ref.invalidate(allTripsProvider);
+        ref.invalidate(activeTripProvider);
+        ref.invalidate(selectedTripProvider);
+
+        if (mounted) {
+          AppFeedback.showInfo(
+            context,
+            'You left "${widget.trip.name}".',
+            title: 'Trip Exited',
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          AppFeedback.showError(
+            context,
+            e.toString().replaceAll('Exception: ', ''),
+            title: 'Failed to Leave Trip',
+          );
+        }
+      }
+    }
+  }
+
   Future<void> _handleDelete() async {
     _close();
     final confirm = await AppDialog.showDestructive(
@@ -483,6 +522,9 @@ class _TripListCardState extends ConsumerState<_TripListCard>
 
   @override
   Widget build(BuildContext context) {
+    final currentUserId = ref.watch(authRepositoryProvider).currentUser?.id;
+    final isOwner = widget.trip.ownerId == currentUserId;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       child: Stack(
@@ -518,13 +560,21 @@ class _TripListCardState extends ConsumerState<_TripListCard>
                       onTap: _handleArchive,
                     ),
 
-                    // Delete Action
-                    _SwipeActionBtn(
-                      icon: Icons.delete_outline_rounded,
-                      label: 'Delete',
-                      color: const Color(0xFFEB4D4B),
-                      onTap: _handleDelete,
-                    ),
+                    // Delete (Owner) or Leave (Member) Action
+                    if (isOwner)
+                      _SwipeActionBtn(
+                        icon: Icons.delete_outline_rounded,
+                        label: 'Delete',
+                        color: const Color(0xFFEB4D4B),
+                        onTap: _handleDelete,
+                      )
+                    else
+                      _SwipeActionBtn(
+                        icon: Icons.exit_to_app_rounded,
+                        label: 'Leave',
+                        color: const Color(0xFFE67E22),
+                        onTap: _handleLeave,
+                      ),
                   ],
                 ),
               ),

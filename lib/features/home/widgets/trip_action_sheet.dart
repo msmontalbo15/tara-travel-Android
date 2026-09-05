@@ -1,6 +1,7 @@
 import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../../core/models/trip_model.dart';
 import '../../../core/providers/repository_providers.dart';
 import '../../../core/providers/selected_trip_provider.dart';
@@ -74,6 +75,45 @@ class TripActionSheet extends StatelessWidget {
     }
   }
 
+  Future<void> _handleLeave(BuildContext context) async {
+    Navigator.pop(context);
+    final confirm = await AppDialog.showDestructive(
+      context,
+      title: 'Leave Trip',
+      message:
+          'Are you sure you want to leave "${trip.name}"? You will need an invite code to rejoin.',
+      confirmLabel: 'Leave Trip',
+      icon: Icons.exit_to_app_rounded,
+    );
+
+    if (confirm == true && context.mounted) {
+      try {
+        final repo = ref.read(tripRepositoryProvider);
+        await repo.leaveTrip(trip.id);
+        ref.read(selectedTripIdProvider.notifier).clear();
+        ref.invalidate(allTripsProvider);
+        ref.invalidate(activeTripProvider);
+        ref.invalidate(selectedTripProvider);
+
+        if (context.mounted) {
+          AppFeedback.showInfo(
+            context,
+            'You left "${trip.name}".',
+            title: 'Trip Exited',
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          AppFeedback.showError(
+            context,
+            e.toString().replaceAll('Exception: ', ''),
+            title: 'Failed to Leave Trip',
+          );
+        }
+      }
+    }
+  }
+
   Future<void> _handleDelete(BuildContext context) async {
     Navigator.pop(context);
     AppDialog.showDestructive(
@@ -104,131 +144,152 @@ class TripActionSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final emoji = trip.coverEmoji;
     final isArchived = trip.isArchived;
+    final currentUserId = ref.watch(authRepositoryProvider).currentUser?.id;
+    final isOwner = trip.ownerId == currentUserId;
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Drag handle
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.cardBorder,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 18),
-
-          // Trip summary header
-          Row(
+      padding: EdgeInsets.fromLTRB(20, 12, 20, 20 + bottomInset),
+      child: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceLight,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.cardBorder),
-                ),
-                child: Center(
-                  child: Text(
-                    emoji,
-                    style: const TextStyle(fontSize: 24),
+              // Drag handle
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.cardBorder,
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      trip.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontFamily: AppTextStyles.fontHeading,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+              const SizedBox(height: 18),
+
+              // Trip summary header
+              Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceLight,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.cardBorder),
+                    ),
+                    child: Center(
+                      child: Text(
+                        emoji,
+                        style: const TextStyle(fontSize: 24),
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      trip.destination.isNotEmpty ? trip.destination : 'No destination specified',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
-                      ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          trip.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontFamily: AppTextStyles.fontHeading,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          trip.destination.isNotEmpty
+                              ? '${trip.destination} · ${DateFormat('MMM d').format(trip.fromDate)} - ${DateFormat('MMM d, yyyy').format(trip.toDate)}'
+                              : '${DateFormat('MMM d').format(trip.fromDate)} - ${DateFormat('MMM d, yyyy').format(trip.toDate)}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close_rounded, color: AppColors.textSecondary, size: 20),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 18),
+              const Divider(height: 1, color: AppColors.cardBorder),
+              const SizedBox(height: 10),
+
+              // Action Items
+              _ActionItem(
+                icon: Icons.navigation_rounded,
+                iconColor: AppColors.primary,
+                title: 'Live Navigation & Radar',
+                subtitle: 'Real-time group location sharing & convoy alerts',
+                onTap: () => _handleNavigation(context),
+              ),
+
+              _ActionItem(
+                icon: Icons.edit_outlined,
+                iconColor: const Color(0xFF2E86DE),
+                title: 'Edit Trip Details',
+                subtitle: 'Update dates, destination, budget or type',
+                onTap: () => _handleEdit(context),
+              ),
+
+              if (trip.inviteCode.isNotEmpty)
+                _ActionItem(
+                  icon: Icons.copy_rounded,
+                  iconColor: AppColors.primary,
+                  title: 'Copy Invite Code',
+                  subtitle: 'Code: ${trip.inviteCode}',
+                  onTap: () => _handleShare(context),
                 ),
+
+              _ActionItem(
+                icon: isArchived ? Icons.unarchive_outlined : Icons.archive_outlined,
+                iconColor: AppColors.amberText,
+                title: isArchived ? 'Restore Trip' : 'Archive Trip',
+                subtitle: isArchived ? 'Move back to active trips' : 'Move to archived archive storage',
+                onTap: () => _handleArchive(context),
               ),
-              IconButton(
-                onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.close_rounded, color: AppColors.textSecondary, size: 20),
-              ),
+
+              if (isOwner)
+                _ActionItem(
+                  icon: Icons.delete_outline_rounded,
+                  iconColor: const Color(0xFFEB4D4B),
+                  title: 'Delete Trip',
+                  subtitle: 'Permanently remove this trip and its data',
+                  isDestructive: true,
+                  onTap: () => _handleDelete(context),
+                )
+              else
+                _ActionItem(
+                  icon: Icons.exit_to_app_rounded,
+                  iconColor: const Color(0xFFE67E22),
+                  title: 'Leave Trip',
+                  subtitle: 'Remove yourself from this trip',
+                  isDestructive: true,
+                  onTap: () => _handleLeave(context),
+                ),
             ],
           ),
-
-          const SizedBox(height: 18),
-          const Divider(height: 1, color: AppColors.cardBorder),
-          const SizedBox(height: 10),
-
-          // Action Items
-          _ActionItem(
-            icon: Icons.navigation_rounded,
-            iconColor: AppColors.primary,
-            title: 'Live Navigation & Radar',
-            subtitle: 'Real-time group location sharing & convoy alerts',
-            onTap: () => _handleNavigation(context),
-          ),
-
-          _ActionItem(
-            icon: Icons.edit_outlined,
-            iconColor: const Color(0xFF2E86DE),
-            title: 'Edit Trip Details',
-            subtitle: 'Update dates, destination, budget or type',
-            onTap: () => _handleEdit(context),
-          ),
-
-          if (trip.inviteCode.isNotEmpty)
-            _ActionItem(
-              icon: Icons.copy_rounded,
-              iconColor: AppColors.primary,
-              title: 'Copy Invite Code',
-              subtitle: 'Code: ${trip.inviteCode}',
-              onTap: () => _handleShare(context),
-            ),
-
-          _ActionItem(
-            icon: isArchived ? Icons.unarchive_outlined : Icons.archive_outlined,
-            iconColor: AppColors.amberText,
-            title: isArchived ? 'Restore Trip' : 'Archive Trip',
-            subtitle: isArchived ? 'Move back to active trips' : 'Move to archived archive storage',
-            onTap: () => _handleArchive(context),
-          ),
-
-          _ActionItem(
-            icon: Icons.delete_outline_rounded,
-            iconColor: const Color(0xFFEB4D4B),
-            title: 'Delete Trip',
-            subtitle: 'Permanently remove this trip and its data',
-            isDestructive: true,
-            onTap: () => _handleDelete(context),
-          ),
-        ],
+        ),
       ),
     );
   }

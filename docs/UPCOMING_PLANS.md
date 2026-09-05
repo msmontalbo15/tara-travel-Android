@@ -9,10 +9,10 @@ This document serves as our compiled repository master plan, organized hierarchi
 ### 🟢 Tier 1: Minor Updates (UI Polish, Guards & Privacy Controls)
 | # | Plan / Feature | Status | Key Focus |
 |---|---|---|---|
-| **1** | [Role-Aware Trip Exit: "Leave Trip" vs "Delete Trip"](#plan-1-role-aware-trip-exit-leave-trip-vs-delete-trip) | 🟡 **Drafted / Queued** | Non-owners/members leave trip instead of delete; owner retains delete privilege |
-| **2** | [Invite Code Privacy & Safe Area Gesture Clearance](#plan-2-invite-code-privacy-safe-area-gesture-clearance) | 🟡 **Drafted / Queued** | Masked codes (`******`), auto-hide timer, bottom sheet `MediaQuery` insets & gesture clearance |
-| **3** | [Offline Read-Only Guard & Action Freezing](#plan-3-offline-read-only-guard-action-freezing) | 🟡 **Drafted / Queued** | Disables/locks write actions when disconnected, prevents stale sync errors, visual offline badges |
-| **4** | [Cloud-Native Avatar Storage & CDN Cache Architecture](#plan-4-cloud-native-avatar-storage-cdn-cache-architecture) | 🟡 **Drafted / Queued** | Supabase Storage bucket (`avatars`), WebP compression, RLS policies & CachedNetworkImage integration |
+| **1** | [Role-Aware Trip Exit: "Leave Trip" vs "Delete Trip"](#plan-1-role-aware-trip-exit-leave-trip-vs-delete-trip) | 🟢 **Complete** | Non-owners/members leave trip instead of delete; owner retains delete privilege |
+| **2** | [Invite Code Privacy & Safe Area Gesture Clearance](#plan-2-invite-code-privacy-safe-area-gesture-clearance) | 🟢 **Complete** | Masked codes (`******`), auto-hide timer, bottom sheet `MediaQuery` insets & gesture clearance |
+| **3** | [Offline Read-Only Guard & Action Freezing](#plan-3-offline-read-only-guard-action-freezing) | 🟢 **Complete** | Disables/locks write actions when disconnected, prevents stale sync errors, visual offline badges |
+| **4** | [Cloud-Native Avatar Storage & CDN Cache Architecture](#plan-4-cloud-native-avatar-storage-cdn-cache-architecture) | 🟢 **Complete** | Supabase Storage bucket (`avatars`), WebP compression, RLS policies & CachedNetworkImage integration |
 
 ### 🟡 Tier 2: Medium Features (Domain Tools, Local Logic & Services)
 | # | Plan / Feature | Status | Key Focus |

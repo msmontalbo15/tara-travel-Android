@@ -72,6 +72,7 @@
 | **`IMP-088`** | 2026-09-04 | Typography & Brand Identity Standardization | Formalized system branding font tokens in `AppTextStyles` (`fontHeading`, `fontBody`, `fontSerifFallback`), wired Georgia serif fallback for display headlines, splash "Tara TRAVEL" branding, and Home greeting name, aligned `AppTheme` light theme definitions, and synchronized `MEMORY.md`. |
 | **`IMP-093`** | 2026-09-05 | UI / Home Trip Card Avatar Removal | Removed the overlapping member avatar section (`MemberAvatarCircle` stack row) from `TripCard` on the Home screen, eliminating redundant `travelers` mapping and dead code. |
 | **`IMP-094`** | 2026-09-05 | Architecture & DevOps / Supabase Versioning, Direct OTA & CI/CD Pipeline (Plan 17) | Supabase `app_versions` remote config, 3-tier update modals (`ForceUpdateScreen`, `SoftUpdateSheet`, `MaintenanceModeScreen`), Settings update checker tile with notification pill, `ApkDownloadInstaller`, and automated GitHub Actions CI/CD release workflow (`auto_release.yml`). |
+| **`IMP-098`** | 2026-09-05 | Tier 1 Master / Polish, Guards & Privacy (Plans 1–4) | Role-aware trip exit (Leave vs Delete), Privacy masked invite code with auto-hide timer, Offline read-only banner & mutation freezing, and Cloud-native avatar storage with WebP compression & CDN caching. |
 
 ---
 
@@ -2273,6 +2274,51 @@
   - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
 - **Verification**:
   - `flutter analyze --no-pub`: **No issues found! (0 errors, 0 warnings)**.
+
+---
+
+### `IMP-098` · Tier 1 Master Implementation: Minor Updates, UI Polish, Guards & Privacy Controls (Plans 1–4)
+- **Date**: September 5, 2026
+- **Scope & Objectives**:
+  1. **Plan 1: Role-Aware Trip Exit ("Leave Trip" vs "Delete Trip")**:
+     - Evaluated `trip.ownerId == currentUserId` to distinguish trip owners from joined members.
+     - Owners maintain "Delete Trip" with permanent destruction confirmation dialog.
+     - Joined members see "Leave Trip" with exit door icon, triggering Supabase `leave_trip` RPC via `TripRepository.leaveTrip(trip.id)`, clearing `selectedTripIdProvider`, and invalidating all trip caches (`allTripsProvider`, `activeTripProvider`, `selectedTripProvider`).
+     - Standardized across `TripActionSheet`, `TripDetailScreen` header overflow menu, and `TripsScreen` swipe-to-reveal card actions.
+  2. **Plan 2: Invite Code Privacy & Safe Area Gesture Clearance**:
+     - Built `PrivacyInviteCodeWidget` providing masked code (`••••••`), eye toggle, 12-second auto-mask security timer, and direct copy/share buttons.
+     - Integrated masked privacy code card into `TripDetailScreen` (`_InviteCard`) and `MembersScreen` (`_buildInviteCard`).
+     - Added dynamic `MediaQuery.paddingOf(context).bottom` clearance and scroll bounds (`SingleChildScrollView`) to `TripActionSheet` to eliminate gesture bar overlap and `RenderFlex` warnings.
+  3. **Plan 3: Offline Read-Only Guard & Action Freezing**:
+     - Created `isOnlineProvider` backed by `ConnectivityService.instance.onlineStream`.
+     - Built `OfflineReadOnlyBanner` (amber pill banner) animated at top of `TripDetailScreen`.
+     - Guarded mutations in `ItineraryBottomDock` ("Stop" button) and `BudgetScreen` (Log Expense FAB) with lock icons and gentle informative offline toasts.
+  4. **Plan 4: Cloud-Native Avatar Storage & CDN Cache Architecture**:
+     - Generated `supabase/migrations/027_storage_avatars_bucket.sql` establishing public `avatars` bucket with RLS policies allowing public reads and authenticated user writes to `avatars/{user_id}/*`.
+     - Built `StorageService.instance.uploadAvatar` with upsert, WebP content type, and cache-busting timestamp URLs (`?t=...`).
+     - Refactored `ProfileRepository.uploadAvatar` to route through `StorageService`.
+     - Created `AppAvatar` unified widget using `CachedNetworkImage` with fallback to initials and disk/memory caching.
+     - Refactored `ProfileScreen` avatar container and photo picker to use `AppAvatar` and show upload progress feedback.
+- **Target Files**:
+  - `lib/core/widgets/privacy_invite_code_widget.dart` [NEW]
+  - `lib/core/providers/connectivity_provider.dart` [NEW]
+  - `lib/core/widgets/offline_read_only_banner.dart` [NEW]
+  - `lib/core/widgets/app_avatar.dart` [NEW]
+  - `lib/core/services/storage_service.dart` [NEW]
+  - `supabase/migrations/027_storage_avatars_bucket.sql` [NEW]
+  - `lib/features/home/widgets/trip_action_sheet.dart` [MODIFIED]
+  - `lib/features/trip_detail/trip_detail_screen.dart` [MODIFIED]
+  - `lib/features/trips/trips_screen.dart` [MODIFIED]
+  - `lib/features/members/members_screen.dart` [MODIFIED]
+  - `lib/features/itinerary/widgets/itinerary_bottom_dock.dart` [MODIFIED]
+  - `lib/features/budget/budget_screen.dart` [MODIFIED]
+  - `lib/features/profile/profile_screen.dart` [MODIFIED]
+  - `lib/core/repositories/profile_repository.dart` [MODIFIED]
+  - `docs/UPCOMING_PLANS.md` [MODIFIED]
+  - `docs/MEMORY.md` [MODIFIED]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+- **Verification**:
+  - `flutter analyze`: **No issues found! (0 errors, 0 warnings, 0 infos)**.
 
 
 

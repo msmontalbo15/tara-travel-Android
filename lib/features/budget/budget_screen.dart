@@ -26,6 +26,8 @@ import '../../core/constants/trip_types.dart';
 import '../../core/services/module_view_tracker_service.dart';
 import '../../core/widgets/buttons/app_back_button.dart';
 import '../../core/widgets/shimmer_loading.dart';
+import '../../core/widgets/feedback/app_feedback.dart';
+import '../../core/providers/connectivity_provider.dart';
 import '../../core/utils/currency_utils.dart';
 
 class BudgetScreen extends ConsumerStatefulWidget {
@@ -260,19 +262,39 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
               ),
             ],
           ),
-          floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => _showQuickAddExpenseSheet(trip),
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
-            elevation: 4,
-            icon: const Icon(Icons.add_rounded, size: 20),
-            label: Text(
-              _scopeIndex == 0 ? 'Log Pocket Expense' : 'Log Group Bill',
-              style: const TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 13,
-              ),
-            ),
+          floatingActionButton: Builder(
+            builder: (ctx) {
+              final isOnlineAsync = ref.watch(isOnlineProvider);
+              final isOnline = isOnlineAsync.value ?? true;
+
+              return FloatingActionButton.extended(
+                onPressed: () {
+                  if (!isOnline) {
+                    AppFeedback.showInfo(
+                      context,
+                      'You are in offline read-only mode. Logging expenses requires an internet connection.',
+                      title: 'Offline Mode ⚡',
+                    );
+                    return;
+                  }
+                  _showQuickAddExpenseSheet(trip);
+                },
+                backgroundColor: isOnline ? AppColors.primary : const Color(0xFF6B4226),
+                foregroundColor: Colors.white,
+                elevation: 4,
+                icon: Icon(
+                  isOnline ? Icons.add_rounded : Icons.lock_outline_rounded,
+                  size: 20,
+                ),
+                label: Text(
+                  _scopeIndex == 0 ? 'Log Pocket Expense' : 'Log Group Bill',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  ),
+                ),
+              );
+            },
           ),
         );
       },

@@ -1,6 +1,4 @@
 import 'package:tara_travel/core/theme/app_text_styles.dart';
-import 'dart:io';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,6 +17,7 @@ import '../../core/auth/services/mpin_service.dart';
 import '../../core/widgets/npc_privacy_policy_sheet.dart';
 import '../../core/widgets/feedback/app_feedback.dart';
 import '../../core/widgets/feedback/app_dialog.dart';
+import '../../core/widgets/app_avatar.dart';
 import '../../core/services/app_version_service.dart';
 import '../../core/widgets/versioning/soft_update_sheet.dart';
 import '../../core/widgets/versioning/force_update_screen.dart';
@@ -353,24 +352,22 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   Stack(
                     alignment: Alignment.bottomRight,
                     children: [
-                      Container(
-                        width: 92,
-                        height: 92,
-                        decoration: BoxDecoration(
-                          color: profile.avatarColor,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 3),
-                          boxShadow: [
-                            BoxShadow(
-                              color: profile.avatarColor.withValues(alpha: 0.4),
-                              blurRadius: 20,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
+                      AppAvatar(
+                        photoUrl: profile.profilePhotoUrl,
+                        initials: profile.initials,
+                        size: 92,
+                        backgroundColor: profile.avatarColor,
+                        border: Border.all(
+                          color: AppColors.primary.withValues(alpha: 0.3),
+                          width: 3,
                         ),
-                        child: ClipOval(
-                          child: _buildProfileAvatar(profile),
-                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: profile.avatarColor.withValues(alpha: 0.4),
+                            blurRadius: 20,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
                       ),
                       GestureDetector(
                         onTap: () => _showPhotoSheet(context),
@@ -1249,53 +1246,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildProfileAvatar(ProfileState profile) {
-    final url = profile.profilePhotoUrl;
-    if (url != null && url.isNotEmpty) {
-      if (url.startsWith('http')) {
-        return CachedNetworkImage(
-          imageUrl: url,
-          fit: BoxFit.cover,
-          width: 90,
-          height: 90,
-          errorWidget: (_, __, ___) => _initialsAvatar(profile),
-          placeholder: (_, __) => _initialsAvatar(profile),
-        );
-      }
-      final file = File(url);
-      if (file.existsSync()) {
-        return Image.file(
-          file,
-          fit: BoxFit.cover,
-          width: 90,
-          height: 90,
-          errorBuilder: (_, __, ___) => _initialsAvatar(profile),
-        );
-      }
-    }
-    return _initialsAvatar(profile);
-  }
-
-  Widget _initialsAvatar(ProfileState profile) {
-    return Center(
-      child: profile.initials.isNotEmpty
-          ? Text(
-              profile.initials,
-              style: const TextStyle(
-                fontFamily: AppTextStyles.fontHeading,
-                fontSize: 32,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
-            )
-          : const Icon(
-              Icons.person_rounded,
-              size: 44,
-              color: Colors.white,
-            ),
     );
   }
 
@@ -2229,10 +2179,31 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         imageQuality: 85,
       );
       if (pickedFile != null) {
+        if (mounted) {
+          AppFeedback.showInfo(
+            context,
+            'Uploading your new profile avatar... ⏳',
+            title: 'Uploading Photo',
+          );
+        }
         await ref.read(profileProvider.notifier).updatePhoto(pickedFile.path);
+        if (mounted) {
+          AppFeedback.showSuccess(
+            context,
+            'Profile photo updated and saved to cloud!',
+            title: 'Avatar Updated ✨',
+          );
+        }
       }
     } catch (e) {
       debugPrint('Error picking photo: $e');
+      if (mounted) {
+        AppFeedback.showError(
+          context,
+          'Failed to update profile photo: $e',
+          title: 'Photo Update Failed',
+        );
+      }
     }
   }
 

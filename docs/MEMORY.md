@@ -1120,20 +1120,24 @@ Client Tier               Storage Tier                Transport Tier
 - **Zero Hardcoded Dimension Multipliers**:
   - Eradicated raw `MediaQuery.of(context).size.height * fraction` and hardcoded `+ MediaQuery.of(context).padding.bottom` arithmetic across all 37+ modal sheets, dialogs, and screen lists.
 
-## 29. 🚀 APP VERSIONING, REMOTE CONFIG & CI/CD OTA AUTOMATION (PLAN 17 / IMP-093)
-- **Authoritative Remote Schema (`public.app_versions`)**:
-  - Columns: `id`, `platform`, `min_supported_version`, `latest_version`, `force_update_url`, `maintenance_mode`, `maintenance_title`, `maintenance_message`, `estimated_back_online`, `release_notes`, `created_at`, `updated_at`.
-  - Public read RLS (`anon_select_app_versions`) allows unauthenticated and authenticated clients to verify compatibility.
-  - Mutations strictly restricted to `service_role` (CI/CD pipeline only).
-- **Three-Tier User UX Modals**:
-  - **Tier 1: Mandatory Force-Update (`ForceUpdateScreen`)**: Non-dismissible full-screen gate when current version < `min_supported_version`. Disables app access, renders changelog, and features in-app streaming download & install via `ApkDownloadInstaller`.
-  - **Tier 2: Soft Update Recommendation (`SoftUpdateSheet`)**: Dismissible bottom sheet when current version < `latest_version` but supported. Highlights new features with "Update Now" and "Later" options.
-  - **Tier 3: Maintenance Mode (`MaintenanceModeScreen`)**: Non-dismissible full-screen gate when `maintenance_mode == true`. Displays estimated back-online timer and status verification retry action.
-- **Settings "Check for Updates"**:
-  - Embedded in `ProfileScreen` Account Settings. Shows live version pill (`UPDATE`), triggers immediate Supabase remote check, and notifies user via `AppFeedback` toast or update modal.
-- **Direct OTA Distribution & CI/CD Pipeline (`.github/workflows/auto_release.yml`)**:
-  - Triggered on push to `live` or `release/**` and `workflow_dispatch`.
-  - Enforces static analysis gate (`flutter analyze --fatal-warnings`), compiles release APK & Android App Bundle (.aab), uploads release APK to Supabase Storage bucket `app-releases`, and inserts new version record into `public.app_versions` via Supabase REST API curl.
+## 30. 🛡️ TIER 1 ARCHITECTURE & GUARDS (PLANS 1–4 / IMP-094)
+- **Plan 1: Role-Aware Trip Exit ("Leave Trip" vs "Delete Trip")**:
+  - `trip.ownerId == currentUserId` serves as strict ground-truth gate across all trip surfaces.
+  - Owners retain **"Delete Trip"** (`deleteTrip(trip.id)`).
+  - Members/non-owners see **"Leave Trip"** (`leaveTrip(trip.id)` calling `leave_trip` RPC), invalidating `allTripsProvider`, `activeTripProvider`, `selectedTripProvider`.
+  - Implemented across `TripActionSheet`, `TripDetailScreen` header overflow menu, and `TripsScreen` swipe-to-reveal action cards.
+- **Plan 2: Invite Code Privacy & Safe Area Gesture Clearance**:
+  - `PrivacyInviteCodeWidget`: Reusable masked code (`••••••`) with eye toggle, 12s auto-remask timer, and copy/share actions.
+  - Deployed to `TripDetailScreen` (`_InviteCard`) and `MembersScreen` (`_buildInviteCard`).
+  - Safe-area bottom padding with `MediaQuery.paddingOf(context).bottom` / `SafeArea` and `SingleChildScrollView` to prevent `RenderFlex` overflows in `TripActionSheet`.
+- **Plan 3: Offline Read-Only Guard & Action Freezing**:
+  - `isOnlineProvider`: Reactive StreamProvider backed by `ConnectivityService.instance.onlineStream`.
+  - `OfflineReadOnlyBanner`: Animated pill banner across `TripDetailScreen`.
+  - Write action freezing with gentle informative toasts across `ItineraryBottomDock` ("Stop") and `BudgetScreen` (FAB).
+- **Plan 4: Cloud-Native Avatar Storage & CDN Cache Architecture**:
+  - Supabase Storage bucket `avatars` with RLS policies (`027_storage_avatars_bucket.sql`). Standard path: `avatars/{user_id}/avatar.webp`.
+  - `StorageService.instance.uploadAvatar`: Uploads image with upsert and cache-busting timestamp `?t=...`.
+  - `AppAvatar`: Unified widget rendering `CachedNetworkImage` with initial fallback and memory caching across `ProfileScreen`.
 
 ---
 

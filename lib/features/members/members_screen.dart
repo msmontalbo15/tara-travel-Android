@@ -1,8 +1,6 @@
 import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:share_plus/share_plus.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_responsive.dart';
 import '../../core/providers/trip_provider.dart';
@@ -18,6 +16,7 @@ import '../../core/widgets/shimmer_loading.dart';
 import '../../core/widgets/feedback/app_feedback.dart';
 import '../../core/widgets/feedback/app_dialog.dart';
 import '../../core/widgets/member_avatar_circle.dart';
+import '../../core/widgets/privacy_invite_code_widget.dart';
 
 class MembersScreen extends ConsumerStatefulWidget {
   final bool showHeader;
@@ -309,8 +308,6 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
   }
 
   Widget _buildInviteCard(BuildContext context, TripModel trip) {
-    final code = trip.inviteCode.isNotEmpty ? trip.inviteCode : '------';
-
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -325,104 +322,58 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(Icons.link_rounded, color: Colors.white, size: 20),
-              SizedBox(width: 8),
-              Text('Trip Invite Code',
-                  style: TextStyle(
+              const Row(
+                children: [
+                  Icon(Icons.link_rounded, color: Colors.white, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'Trip Invite Code',
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white)),
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+              _iconBtn(Icons.refresh_rounded, () async {
+                final confirm = await AppDialog.showConfirmation(
+                  context,
+                  title: 'Regenerate Invite Code?',
+                  message:
+                      'This will invalidate the existing invite code. Previous invites will no longer work.',
+                  confirmLabel: 'Regenerate',
+                  icon: Icons.refresh_rounded,
+                );
+                if (confirm == true) {
+                  await ref
+                      .read(tripRepositoryProvider)
+                      .regenerateInviteCode(trip.id);
+                  ref.invalidate(selectedTripProvider);
+                  ref.invalidate(allTripsProvider);
+                  if (context.mounted) {
+                    AppFeedback.showSuccess(
+                      context,
+                      'Invite code regenerated successfully!',
+                      title: 'Code Updated 🔄',
+                    );
+                  }
+                }
+              }),
             ],
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
-                ),
-                child: Text(
-                  code,
-                  style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                      letterSpacing: 6),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Share this code',
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.white70)),
-                    const Text('Anyone with this code can join instantly',
-                        style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.white38)),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        _iconBtn(Icons.copy_rounded, () {
-                          if (trip.inviteCode.isNotEmpty) {
-                            Clipboard.setData(ClipboardData(text: trip.inviteCode));
-                            AppFeedback.showSuccess(
-                              context,
-                              'Invite code copied: ${trip.inviteCode}',
-                              title: 'Copied to Clipboard 📋',
-                            );
-                          }
-                        }),
-                        const SizedBox(width: 8),
-                        _iconBtn(Icons.share_rounded, () {
-                          if (trip.inviteCode.isNotEmpty) {
-                            SharePlus.instance.share(
-                              ShareParams(
-                                text: 'Join my trip "${trip.name}" on Tara Travel! Enter invite code: ${trip.inviteCode}',
-                                subject: 'Trip Invite Code for ${trip.name}',
-                              ),
-                            );
-                          }
-                        }),
-                        const SizedBox(width: 8),
-                        _iconBtn(Icons.refresh_rounded, () async {
-                          final confirm = await AppDialog.showConfirmation(
-                            context,
-                            title: 'Regenerate Invite Code?',
-                            message: 'This will invalidate the existing invite code. Previous invites will no longer work.',
-                            confirmLabel: 'Regenerate',
-                            icon: Icons.refresh_rounded,
-                          );
-
-                          if (confirm == true && context.mounted) {
-                            final newCode = await ref
-                                .read(tripRepositoryProvider)
-                                .regenerateInviteCode(trip.id);
-                            ref.invalidate(selectedTripProvider);
-                            ref.invalidate(allTripsProvider);
-                            if (context.mounted) {
-                              AppFeedback.showSuccess(
-                                context,
-                                'New invite code generated: $newCode',
-                                title: 'Code Regenerated ✨',
-                              );
-                            }
-                          }
-                        }),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          const SizedBox(height: 14),
+          PrivacyInviteCodeWidget(
+            inviteCode: trip.inviteCode,
+            tripName: trip.name,
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Tap code or eye to mask/unmask · Auto-masks in 12s for privacy',
+            style: TextStyle(fontSize: 11, color: Colors.white38),
           ),
         ],
       ),
