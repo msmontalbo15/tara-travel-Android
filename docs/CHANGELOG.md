@@ -1,7 +1,7 @@
 # Tara Travel - Version Changelog
 
 > Auto-generated from IMPLEMENTATION_MEMORY.md + git log
-> Last updated: **2026-09-05 18:46 PHT**
+> Last updated: **2026-09-05 19:05 PHT**
 
 ---
 
@@ -2465,14 +2465,6 @@
 ---
 
 ## 2026-09-05
-
-### IMP-095 - DevOps / CI Test Pipeline Stabilization & Unified Test Runner Architecture
-
-**Component**: DevOps / CI Test Pipeline & Coverage Gate
-
-**Summary**: Resolved `🧪 Unit Tests with LCOV Coverage Gate` failure in `.github/workflows/auto_release.yml` by introducing unified test suite runner `test/all_tests.dart`, adding `--no-test-assets` flag, and hardening `test/widget_test.dart`.
-
----
 
 ### IMP-094 - Architecture & DevOps / Supabase Versioning, Direct OTA & CI/CD Pipeline (Plan 17)
 
