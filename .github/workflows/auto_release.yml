@@ -186,17 +186,27 @@ jobs:
           fi
 
           VERSION="${{ github.event.inputs.version_name || '1.0.1+2' }}"
-          REMOTE_FILENAME="tara-travel-v${VERSION}.apk"
+          SAFE_VERSION=$(echo "$VERSION" | sed 's/+/_/g')
+          REMOTE_FILENAME="tara-travel-v${SAFE_VERSION}.apk"
 
           echo "Uploading $APK_FILE to Supabase Storage as $REMOTE_FILENAME..."
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+          UPLOAD_RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X POST \
             "${SUPABASE_URL}/storage/v1/object/app-releases/${REMOTE_FILENAME}" \
             -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
             -H "Content-Type: application/vnd.android.package-archive" \
             -H "x-upsert: true" \
             --data-binary "@${APK_FILE}")
 
+          HTTP_STATUS=$(echo "$UPLOAD_RESPONSE" | grep "HTTP_STATUS:" | cut -d':' -f2)
+          RESPONSE_BODY=$(echo "$UPLOAD_RESPONSE" | grep -v "HTTP_STATUS:")
           echo "Supabase upload HTTP Status: $HTTP_STATUS"
+          echo "Supabase response: $RESPONSE_BODY"
+
+          if [ "$HTTP_STATUS" -ne 200 ] && [ "$HTTP_STATUS" -ne 201 ]; then
+            echo "❌ Upload to Supabase Storage failed with status $HTTP_STATUS: $RESPONSE_BODY"
+            exit 1
+          fi
+
           DOWNLOAD_URL="${SUPABASE_URL}/storage/v1/object/public/app-releases/${REMOTE_FILENAME}"
           echo "DOWNLOAD_URL=${DOWNLOAD_URL}" >> $GITHUB_OUTPUT
 
