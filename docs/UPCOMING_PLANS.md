@@ -9,9 +9,9 @@ This document serves as our compiled repository master plan, organized hierarchi
 ### 🟢 Tier 1: Minor Updates (UI Polish, Guards & Privacy Controls)
 | # | Plan / Feature | Status | Key Focus |
 |---|---|---|---|
-| **1** | [Role-Aware Trip Exit: "Leave Trip" vs "Delete Trip"](#plan-1-role-aware-trip-exit-leave-trip-vs-delete-trip) | 🟡 **Drafted / Queued** | Non-owners/members leave trip instead of delete; owner retains delete privilege |
-| **2** | [Invite Code Privacy & Safe Area Gesture Clearance](#plan-2-invite-code-privacy-safe-area-gesture-clearance) | 🟡 **Drafted / Queued** | Masked codes (`******`), auto-hide timer, bottom sheet `MediaQuery` insets & gesture clearance |
-| **3** | [Offline Read-Only Guard & Action Freezing](#plan-3-offline-read-only-guard-action-freezing) | 🟡 **Drafted / Queued** | Disables/locks write actions when disconnected, prevents stale sync errors, visual offline badges |
+| **1** | [Role-Aware Trip Exit: "Leave Trip" vs "Delete Trip"](#plan-1-role-aware-trip-exit-leave-trip-vs-delete-trip) | 🟢 **Complete** | Non-owners/members leave trip instead of delete; owner retains delete privilege |
+| **2** | [Invite Code Privacy & Safe Area Gesture Clearance](#plan-2-invite-code-privacy-safe-area-gesture-clearance) | 🟢 **Complete** | Masked codes (`******`), auto-hide timer, bottom sheet `MediaQuery` insets & gesture clearance |
+| **3** | [Offline Read-Only Guard & Action Freezing](#plan-3-offline-read-only-guard-action-freezing) | 🟢 **Complete** | Disables/locks write actions when disconnected, prevents stale sync errors, visual offline badges |
 | **4** | [Cloud-Native Avatar Storage & CDN Cache Architecture](#plan-4-cloud-native-avatar-storage-cdn-cache-architecture) | 🟡 **Drafted / Queued** | Supabase Storage bucket (`avatars`), WebP compression, RLS policies & CachedNetworkImage integration |
 
 ### 🟡 Tier 2: Medium Features (Domain Tools, Local Logic & Services)
@@ -20,7 +20,7 @@ This document serves as our compiled repository master plan, organized hierarchi
 | **5** | [Google Maps & Pin Location Integration](#plan-5-google-maps-link-resolver-pin-location-applicable) | 🟡 **Approved / Ready to Implement** | Paste GMap link, auto-fill itinerary, pin-drop flying, zero-cost resolution |
 | **6** | [Tri-Modal Land Transport (Private, Commute, Rental) & Vehicle Garage Fuel Estimator](#plan-6-tri-modal-land-transport-private-commute-rental--vehicle-garage-fuel-estimator) | 🟡 **Drafted / Queued** | Finalized 3 land modes (Private, Commute, Rental; strictly no sea/plane), user garage, live fuel prices & rental splitting |
 | **7** | [Travel Circles (Squads & Barkada Presets) for Multi-Member Trip Creation](#plan-7-travel-circles-squads-barkada-presets-for-multi-member-trip-creation) | 🟡 **Drafted / Queued** | Friend circles/squad presets, 1-tap batch addition, smart co-traveler suggestions & deduplication |
-| **8** | [Real-Time Live Weather Forecast & Severe Condition Alerts Engine](#plan-8-real-time-live-weather-forecast-severe-condition-alerts-engine) | 🟡 **In Progress / Core Complete** | Open-Meteo API integration, offline caching, itinerary day-strip weather & severe storm alerts |
+| **8** | [Real-Time Live Weather Forecast & Severe Condition Alerts Engine](#plan-8-real-time-live-weather-forecast-severe-condition-alerts-engine) | 🟢 **Complete** | Open-Meteo API integration, offline caching, itinerary day-strip weather & severe storm alerts |
 | **9** | [Dual-Lens Budget & Expense Hub (Personal Pocket Tracker + Group Trip Summary)](#plan-9-dual-lens-budget-expense-hub-personal-pocket-tracker-group-trip-summary) | 🟡 **Drafted / Queued** | Private personal expenses, "My True Trip Cost", cash/GCash tracking & daily burn pace meter |
 | **10** | [Flexible & Optional Trip Map: Adventure, Multi-Point & Off-Grid Mode](#plan-10-flexible-optional-trip-map-adventure-multi-point-off-grid-mode) | 🟡 **Drafted / Queued** | Optional map tracking, multi-point waypoints, adventure trail roaming, battery-saving mapless mode |
 | **11** | [Meet-up Assembly, Smart Countdown & Automatic Departure Detection](#plan-11-meet-up-assembly-smart-countdown-automatic-departure-detection) | 🟡 **Drafted / Queued** | Day 1 Stop 0 auto-insertion, meet-up grace period, GPS distance countdown & auto departure |
@@ -29,7 +29,7 @@ This document serves as our compiled repository master plan, organized hierarchi
 ### 🔴 Tier 3: Major Architecture & Platform (End-to-End Systems, AI & Middleware)
 | # | Plan / Feature | Status | Key Focus |
 |---|---|---|---|
-| **13** | [Trip Detail Screen: Ongoing Command Center, HUD & Quick Action Hub](#plan-13-trip-detail-screen-ongoing-command-center-hud-quick-action-hub) | 🟡 **Drafted / Queued** | Active Quick Stop HUD, persistent bottom bar, telemetry, officers, announcements & weather |
+| **13** | [Trip Detail Screen: Ongoing Command Center, HUD & Quick Action Hub](#plan-13-trip-detail-screen-ongoing-command-center-hud-quick-action-hub) | 🟢 **Complete** | Active Quick Stop HUD, persistent bottom bar, telemetry, officers, announcements & weather |
 | **14** | [Day Map Intelligent Route Optimization & Arrival Geofence](#plan-14-day-map-intelligent-route-optimization-best-way-routing) | 🟡 **Drafted / Queued** | Street-network routing, best order optimization, arrival geofence pop-up & notification |
 | **15** | [Comprehensive Mobile Notifications Architecture (Push, In-App Banners & Deep-Link Routing)](#plan-15-comprehensive-mobile-notifications-architecture-push-in-app-banners-deep-link-routing) | 🟡 **Drafted / Queued** | Local scheduled alerts, FCM push, Island in-app banners, swipe dismissal & contextual tap routing |
 | **16** | [Gemini Embedded AI Travel Copilot & Assistant](#plan-16-gemini-embedded-ai-travel-copilot-assistant) | 🟡 **Drafted / Queued** | Natural language trip planner, smart itinerary recommendations, budget optimization & packing generator |
@@ -147,7 +147,7 @@ Enforce a consistent, transparent **Read-Only Mode** across the entire applicati
 
 ## Plan 4: Cloud-Native Avatar Storage & CDN Cache Architecture
 
-*(Referenced from `DEV_IDEA.md` IDEA-006)*
+*(Originally proposed as IDEA-006)*
 
 ### Goal
 Eliminate device isolation and local storage bloat by replacing local file path avatars with a cloud-native avatar storage pipeline: **Client Compression (WebP $\le 60\text{KB}$) + Supabase Storage Bucket (`avatars`) + PostgreSQL Public CDN URL Persistence + `CachedNetworkImage`**.
@@ -403,7 +403,7 @@ Establish a finalized, strictly land-based **Tri-Modal Transport Architecture** 
 
 ## Plan 7: Travel Circles (Squads & Barkada Presets) for Multi-Member Trip Creation
 
-*(Referenced from `DEV_IDEA.md` IDEA-009)*
+*(Originally proposed as IDEA-009)*
 
 ### Goal
 Accelerate group trip creation for frequent friend circles, family barkadas, or recurring travel groups. Instead of manually selecting and inviting friends one by one on every trip, users can create and manage reusable **"Travel Circles" (Squads)** in their profile or friends tab, and add the entire roster to a new trip in **1 tap**.
@@ -465,7 +465,7 @@ CREATE TABLE public.friend_circle_members (
 
 ## Plan 8: Real-Time Live Weather Forecast & Severe Condition Alerts Engine
 
-*(Referenced from `DEV_IDEA.md` IDEA-013)*
+*(Originally proposed as IDEA-013)*
 
 ### Goal
 Replace static mock weather data with an accurate, high-reliability, zero-cost weather forecasting engine powered by **Open-Meteo API**. Provides 10–14 day forecasts, WMO condition interpretation, precipitation probability, UV index, and offline caching for Philippine destinations, while hooking into severe weather alerts and dynamic packing recommendations.
@@ -500,7 +500,7 @@ Replace static mock weather data with an accurate, high-reliability, zero-cost w
 
 ## Plan 9: Dual-Lens Budget & Expense Hub (Personal Pocket Tracker + Group Trip Summary)
 
-*(Referenced from `DEV_IDEA.md` IDEA-012)*
+*(Originally proposed as IDEA-012)*
 
 ### Goal
 Transform the Budget screen into a comprehensive **Dual-Lens Financial Hub** that separates and harmonizes **Shared Group Expenses** (split meals, Airbnb, shared vans) with **Private Personal Expenses** (souvenirs, snacks, individual shopping, private transport). Calculates the traveler's **"True Trip Cost"** while providing daily spending pace meters and cash/GCash tracking.
@@ -895,7 +895,7 @@ Implement a rock-solid app versioning, compatibility, and maintenance gatekeeper
 
 ## Plan 18: Tara Laravel Middleware & SuperAdmin Dashboard (Universal Links, CMS & Ops)
 
-*(Referenced from `DEV_IDEA.md` IDEA-005)*
+*(Originally proposed as IDEA-005)*
 
 ### Goal
 Build a lightweight, production-grade **Laravel 11 + Filament v3** web middleware and SuperAdmin dashboard (hosted on zero-cost tiers: Fly.io/Render with Cloudflare Edge CDN). Handles **Universal Deep Linking** (web-to-app gateway for invite links, OpenGraph social previews), curated trip template CMS, user support ticket helpdesk, and dynamic remote config.

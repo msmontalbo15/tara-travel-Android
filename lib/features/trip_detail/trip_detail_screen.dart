@@ -10,19 +10,25 @@ import '../../core/providers/selected_trip_provider.dart';
 import '../../core/providers/trip_provider.dart';
 import '../../core/providers/repository_providers.dart';
 import '../../core/providers/expense_provider.dart';
-import '../../core/providers/packing_provider.dart';
 import '../../core/providers/itinerary_provider.dart';
 import '../../core/models/trip_model.dart';
 import '../../core/models/expense_model.dart';
 import '../../core/models/itinerary_model.dart';
 import '../../core/widgets/buttons/app_back_button.dart';
-import '../../core/widgets/navigation/floating_nav_bar.dart';
 import '../../core/widgets/share/share_trip_modal.dart';
 import '../../core/widgets/shimmer_loading.dart';
 import '../../core/widgets/feedback/app_feedback.dart';
 import '../../core/widgets/feedback/app_dialog.dart';
 import '../../core/widgets/member_avatar_circle.dart';
+import '../../core/widgets/privacy_invite_code_widget.dart';
+import '../../core/widgets/offline_read_only_banner.dart';
+import '../../core/providers/connectivity_provider.dart';
+import '../../core/providers/auth_provider.dart';
 import 'widgets/edit_trip_sheet.dart';
+import 'widgets/destination_weather_widget.dart';
+import 'widgets/ongoing_trip_hud.dart';
+
+import 'widgets/trip_detail_bottom_bar.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TripDetailScreen — Streamlined Dashboard (Zero-Redundancy Rich Hub)
@@ -154,12 +160,6 @@ class _TripDashboardState extends ConsumerState<_TripDashboard> {
     final budgetPct =
         trip.totalBudget > 0 ? (totalSpent / trip.totalBudget).clamp(0.0, 1.0) : 0.0;
 
-    // ── Packing ──────────────────────────────────────────────────
-    final packingProviderInst = ref.watch(packingProvider(trip.id));
-    final packingState = ref.watch(packingProviderInst);
-    final packedCount = packingState.packedItems;
-    final totalPacking = packingState.totalItems;
-
     // ── Itinerary ────────────────────────────────────────────────
     final itineraryProviderInst = ref.watch(itineraryProvider(trip.id));
     final itineraryAsync = ref.watch(itineraryProviderInst);
@@ -187,6 +187,7 @@ class _TripDashboardState extends ConsumerState<_TripDashboard> {
 
     final nights = trip.toDate.difference(trip.fromDate).inDays;
     final isActive = trip.isOngoing;
+    final isOnline = ref.watch(isOnlineProvider).value ?? true;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F3F0),
@@ -208,6 +209,13 @@ class _TripDashboardState extends ConsumerState<_TripDashboard> {
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
+                    // 0. Offline Read-Only Banner (when disconnected)
+                    if (!isOnline) ...[
+                      const OfflineReadOnlyBanner(
+                        padding: EdgeInsets.only(bottom: 12),
+                      ),
+                    ],
+
                     // A. Draft Publish Banner (if draft)
                     if (trip.isDraft) ...[
                       _DraftPublishCard(
@@ -217,25 +225,48 @@ class _TripDashboardState extends ConsumerState<_TripDashboard> {
                       const SizedBox(height: 12),
                     ],
 
-                    // B. Authoritative Itinerary / Next Stop Card (1-tap to /itinerary)
-                    _ItineraryHubCard(
-                      nextStop: nextStop,
-                      nextStopDate: nextStopDate,
-                      totalStops: totalStops,
-                      visitedStops: visitedStops,
-                      dayCount: itineraryDayCount,
-                      onTap: () => Navigator.pushNamed(context, '/itinerary'),
+                    // B. Real-Time Destination Weather Forecast
+                    DestinationWeatherWidget(
+                      tripId: trip.id,
+                      destinationName: trip.destination,
+                      nextStopTitle: nextStop?.title,
+                      stopLocation: nextStop?.location,
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 14),
 
-                    // C. Logistics & Departure Card (if defined)
+                    // C. Ongoing Travel Cockpit HUD (Active Trips) OR Standard Hub Card
+                    if (isActive) ...[
+                      OngoingTripHud(
+                        tripId: trip.id,
+                        activeStop: nextStop,
+                        nextStop: nextStop,
+                        totalStops: totalStops,
+                        visitedStops: visitedStops,
+                        onOpenItinerary: () => Navigator.pushNamed(context, '/itinerary'),
+                      ),
+                      const SizedBox(height: 14),
+                    ] else ...[
+                      _ItineraryHubCard(
+                        nextStop: nextStop,
+                        nextStopDate: nextStopDate,
+                        totalStops: totalStops,
+                        visitedStops: visitedStops,
+                        dayCount: itineraryDayCount,
+                        onTap: () => Navigator.pushNamed(context, '/itinerary'),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+
+
+
+                    // E. Logistics & Departure Card (if defined)
                     if ((trip.departurePoint != null && trip.departurePoint!.trim().isNotEmpty) ||
                         (trip.transportMode != null && trip.transportMode!.trim().isNotEmpty)) ...[
                       _LogisticsCard(trip: trip),
                       const SizedBox(height: 12),
                     ],
 
-                    // D. Authoritative Budget Progress Card (1-tap to /budget)
+                    // F. Authoritative Budget Progress Card (1-tap to /budget)
                     _BudgetCard(
                       totalSpent: totalSpent,
                       totalPending: totalPending,
@@ -247,70 +278,34 @@ class _TripDashboardState extends ConsumerState<_TripDashboard> {
                     ),
                     const SizedBox(height: 12),
 
-                    // E. Authoritative Squad & Members Card (1-tap to /members)
+                    // G. Authoritative Squad & Members Card (1-tap to /members)
                     _SquadPreviewCard(
                       trip: trip,
                       onTap: () => Navigator.pushNamed(context, '/members'),
                     ),
                     const SizedBox(height: 12),
 
-                    // F. 2-Tile Utility Hub (Packing Checklist + Group Chat)
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _QuickTile(
-                            icon: Icons.luggage_rounded,
-                            iconColor: const Color(0xFF854F0B),
-                            title: 'Packing List',
-                            subtitle: totalPacking > 0
-                                ? '$packedCount of $totalPacking packed'
-                                : 'Check items',
-                            progress: totalPacking > 0 ? (packedCount / totalPacking).clamp(0.0, 1.0) : null,
-                            onTap: () => Navigator.pushNamed(context, '/packing'),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _QuickTile(
-                            icon: Icons.chat_bubble_rounded,
-                            iconColor: const Color(0xFF4A2C7A),
-                            title: 'Chat & Polls',
-                            subtitle: 'Group discussions',
-                            onTap: () => Navigator.pushNamed(context, '/chat'),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-
-                    // G. Live Navigation CTA (active trips only)
-                    if (isActive) ...[
-                      _NavButton(
-                        onTap: () => Navigator.pushNamed(context, '/navigation'),
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-
-                    // H. Invite Code Card
+                    // H. Protected Invite Code Card
                     if (trip.inviteCode.isNotEmpty)
                       _InviteCard(trip: trip),
 
-                    // Bottom clearance for floating nav
-                    const SizedBox(height: 120),
+                    // Bottom clearance for persistent bottom bar
+                    const SizedBox(height: 140),
                   ]),
                 ),
               ),
             ],
           ),
 
-          // ── Bottom navigation bar ────────────────────────────────
-          const Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: FloatingNavBar(
-              currentIndex: 1,
-            ),
+          // ── Floating Quick Action Dock ─────────────────────────────
+          TripDetailBottomBar(
+            isOngoing: isActive,
+            onNavigationTap: () => Navigator.pushNamed(context, '/navigation'),
+            onItineraryTap: () => Navigator.pushNamed(context, '/itinerary'),
+            onPackingTap: () => Navigator.pushNamed(context, '/packing'),
+            onMembersTap: () => Navigator.pushNamed(context, '/members'),
+            onExpensesTap: () => Navigator.pushNamed(context, '/budget'),
+            onChatTap: () => Navigator.pushNamed(context, '/chat'),
           ),
         ],
       ),
@@ -362,6 +357,53 @@ class _CollapsibleHeroHeader extends ConsumerWidget {
       ref.invalidate(allTripsProvider);
       if (context.mounted) {
         Navigator.pop(context);
+      }
+    }
+  }
+
+  Future<void> _confirmLeaveTrip(BuildContext context, WidgetRef ref) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Leave Trip', style: AppTextStyles.titleLarge),
+        content: Text(
+          'Are you sure you want to leave "${trip.name}"? You will need an invite code to rejoin.',
+          style: AppTextStyles.bodyMedium.copyWith(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.redAccent),
+            child: const Text('Leave Trip'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && context.mounted) {
+      try {
+        final repo = ref.read(tripRepositoryProvider);
+        final leftName = await repo.leaveTrip(trip.id);
+        ref.read(selectedTripIdProvider.notifier).clear();
+        ref.invalidate(allTripsProvider);
+        ref.invalidate(selectedTripProvider);
+
+        if (context.mounted) {
+          AppFeedback.showSuccess(
+            context,
+            'You left "$leftName".',
+            title: 'Left Trip',
+          );
+          Navigator.pop(context);
+        }
+      } catch (e) {
+        if (context.mounted) {
+          AppFeedback.showError(context, 'Failed to leave trip: $e');
+        }
       }
     }
   }
@@ -433,56 +475,76 @@ class _CollapsibleHeroHeader extends ConsumerWidget {
         ),
       ),
       actions: [
-        PopupMenuButton<String>(
-          icon: const Icon(Icons.more_vert_rounded, color: Colors.white),
-          color: const Color(0xFF2C2016),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          onSelected: (value) {
-            if (value == 'edit') EditTripSheet.show(context, trip);
-            if (value == 'archive') _toggleArchiveTrip(context, ref);
-            if (value == 'delete') _confirmDeleteTrip(context, ref);
+        Consumer(
+          builder: (context, ref, _) {
+            final currentUserId = ref.watch(currentUserProvider)?.id;
+            final isOwner = currentUserId != null && trip.ownerId == currentUserId;
+
+            return PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert_rounded, color: Colors.white),
+              color: const Color(0xFF2C2016),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              onSelected: (value) {
+                if (value == 'edit') EditTripSheet.show(context, trip);
+                if (value == 'archive') _toggleArchiveTrip(context, ref);
+                if (value == 'delete') _confirmDeleteTrip(context, ref);
+                if (value == 'leave') _confirmLeaveTrip(context, ref);
+              },
+              itemBuilder: (_) => [
+                const PopupMenuItem(
+                  value: 'edit',
+                  child: Row(
+                    children: [
+                      Icon(Icons.edit_outlined, size: 18, color: Colors.white70),
+                      SizedBox(width: 12),
+                      Text('Edit Trip', style: TextStyle(color: Colors.white)),
+                    ],
+                  ),
+                ),
+                if (isOwner)
+                  PopupMenuItem(
+                    value: 'archive',
+                    child: Row(
+                      children: [
+                        Icon(
+                          trip.isArchived ? Icons.unarchive_outlined : Icons.archive_outlined,
+                          size: 18,
+                          color: Colors.white70,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          trip.isArchived ? 'Unarchive Trip' : 'Archive Trip',
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ),
+                const PopupMenuDivider(),
+                if (isOwner)
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete_outline_rounded, size: 18, color: Colors.redAccent),
+                        SizedBox(width: 12),
+                        Text('Delete Trip', style: TextStyle(color: Colors.redAccent)),
+                      ],
+                    ),
+                  )
+                else
+                  const PopupMenuItem(
+                    value: 'leave',
+                    child: Row(
+                      children: [
+                        Icon(Icons.logout_rounded, size: 18, color: Colors.redAccent),
+                        SizedBox(width: 12),
+                        Text('Leave Trip', style: TextStyle(color: Colors.redAccent)),
+                      ],
+                    ),
+                  ),
+              ],
+            );
           },
-          itemBuilder: (_) => [
-            const PopupMenuItem(
-              value: 'edit',
-              child: Row(
-                children: [
-                  Icon(Icons.edit_outlined, size: 18, color: Colors.white70),
-                  SizedBox(width: 12),
-                  Text('Edit Trip', style: TextStyle( color: Colors.white)),
-                ],
-              ),
-            ),
-            PopupMenuItem(
-              value: 'archive',
-              child: Row(
-                children: [
-                  Icon(
-                    trip.isArchived ? Icons.unarchive_outlined : Icons.archive_outlined,
-                    size: 18,
-                    color: Colors.white70,
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    trip.isArchived ? 'Unarchive Trip' : 'Archive Trip',
-                    style: const TextStyle( color: Colors.white),
-                  ),
-                ],
-              ),
-            ),
-            const PopupMenuDivider(),
-            const PopupMenuItem(
-              value: 'delete',
-              child: Row(
-                children: [
-                  Icon(Icons.delete_outline_rounded, size: 18, color: Colors.redAccent),
-                  SizedBox(width: 12),
-                  Text('Delete Trip',
-                      style: TextStyle( color: Colors.redAccent)),
-                ],
-              ),
-            ),
-          ],
         ),
       ],
       flexibleSpace: LayoutBuilder(
@@ -1490,307 +1552,23 @@ class _BudgetStat extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Quick Utility Tile (Packing & Chat side-by-side grid)
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _QuickTile extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
-  final String title;
-  final String subtitle;
-  final double? progress;
-  final VoidCallback onTap;
-
-  const _QuickTile({
-    required this.icon,
-    required this.iconColor,
-    required this.title,
-    required this.subtitle,
-    this.progress,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFE5E5EA), width: 0.8),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: iconColor.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(icon, size: 20, color: iconColor),
-                ),
-                const Icon(Icons.arrow_outward_rounded, size: 16, color: Color(0xFF8E8E93)),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF1A1A1A),
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              subtitle,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 11,
-                color: Color(0xFF8E8E93),
-              ),
-            ),
-            if (progress != null) ...[
-              const SizedBox(height: 8),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: progress,
-                  minHeight: 4,
-                  backgroundColor: const Color(0xFFF2F2F7),
-                  valueColor: AlwaysStoppedAnimation<Color>(iconColor),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Navigation CTA
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _NavButton extends StatelessWidget {
-  final VoidCallback onTap;
-  const _NavButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 17),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFFD85A30), Color(0xFFEF8A5E)],
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-          ),
-          borderRadius: BorderRadius.circular(22),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.40),
-              blurRadius: 18,
-              offset: const Offset(0, 7),
-            ),
-          ],
-        ),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.navigation_rounded, color: Colors.white, size: 20),
-            SizedBox(width: 8),
-            Text(
-              'Start Navigation',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Invite Code Card — dark glass with ambient glow
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _InviteCard extends ConsumerStatefulWidget {
+class _InviteCard extends StatelessWidget {
   final TripModel trip;
   const _InviteCard({required this.trip});
 
   @override
-  ConsumerState<_InviteCard> createState() => _InviteCardState();
-}
-
-class _InviteCardState extends ConsumerState<_InviteCard> {
-  bool _copied = false;
-
-  void _copy() {
-    Clipboard.setData(ClipboardData(text: widget.trip.inviteCode));
-    setState(() => _copied = true);
-    AppFeedback.showSuccess(
-      context,
-      'Invite code copied: ${widget.trip.inviteCode}',
-      title: 'Copied to Clipboard 📋',
-    );
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) setState(() => _copied = false);
-    });
-  }
-
-  void _share() {
-    ShareTripModal.show(
-      context,
-      ref,
-      widget.trip,
-      initialScope: ShareScope.overview,
-    );
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(22),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF1A0A04), Color(0xFF2C1A14)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.08),
-          ),
-        ),
-        child: Stack(
-          children: [
-            Positioned(
-              right: -20,
-              bottom: -20,
-              child: Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.primary.withValues(alpha: 0.20),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'INVITE CODE',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white.withValues(alpha: 0.40),
-                            letterSpacing: 1.8,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          widget.trip.inviteCode,
-                          style: const TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                            letterSpacing: 5,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Share with your squad to join this trip',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.white.withValues(alpha: 0.35),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Column(
-                    children: [
-                      _InviteIconBtn(
-                        icon: Icons.share_rounded,
-                        onTap: _share,
-                      ),
-                      const SizedBox(height: 8),
-                      _InviteIconBtn(
-                        icon: _copied
-                            ? Icons.check_circle_rounded
-                            : Icons.copy_rounded,
-                        activeColor: _copied ? AppColors.greenBright : null,
-                        onTap: _copy,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _InviteIconBtn extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  final Color? activeColor;
-  const _InviteIconBtn({required this.icon, required this.onTap, this.activeColor});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-        ),
-        child: Icon(
-          icon,
-          size: 18,
-          color: activeColor ?? Colors.white.withValues(alpha: 0.70),
-        ),
+    return Consumer(
+      builder: (context, ref, _) => PrivacyInviteCodeWidget(
+        code: trip.inviteCode,
+        onShare: () {
+          ShareTripModal.show(
+            context,
+            ref,
+            trip,
+            initialScope: ShareScope.overview,
+          );
+        },
       ),
     );
   }

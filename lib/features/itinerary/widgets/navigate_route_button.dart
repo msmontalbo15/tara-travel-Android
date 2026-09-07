@@ -27,6 +27,19 @@ class NavigateRouteButton extends StatefulWidget {
     this.dayNumber,
   });
 
+  /// Launches Google Maps navigation directly for a list of stops.
+  static Future<bool> launchDirectionsUrl({
+    required BuildContext context,
+    required List<ItineraryStop> stops,
+    String? origin,
+    String travelMode = 'driving',
+  }) => _NavigateRouteButtonState.launchDirectionsUrl(
+    context: context,
+    stops: stops,
+    origin: origin,
+    travelMode: travelMode,
+  );
+
   @override
   State<NavigateRouteButton> createState() => _NavigateRouteButtonState();
 }

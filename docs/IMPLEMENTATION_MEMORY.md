@@ -72,6 +72,9 @@
 | **`IMP-088`** | 2026-09-04 | Typography & Brand Identity Standardization | Formalized system branding font tokens in `AppTextStyles` (`fontHeading`, `fontBody`, `fontSerifFallback`), wired Georgia serif fallback for display headlines, splash "Tara TRAVEL" branding, and Home greeting name, aligned `AppTheme` light theme definitions, and synchronized `MEMORY.md`. |
 | **`IMP-093`** | 2026-09-05 | UI / Home Trip Card Avatar Removal | Removed the overlapping member avatar section (`MemberAvatarCircle` stack row) from `TripCard` on the Home screen, eliminating redundant `travelers` mapping and dead code. |
 | **`IMP-094`** | 2026-09-05 | Architecture & DevOps / Supabase Versioning, Direct OTA & CI/CD Pipeline (Plan 17) | Supabase `app_versions` remote config, 3-tier update modals (`ForceUpdateScreen`, `SoftUpdateSheet`, `MaintenanceModeScreen`), Settings update checker tile with notification pill, `ApkDownloadInstaller`, and automated GitHub Actions CI/CD release workflow (`auto_release.yml`). |
+| **`IMP-098`** | 2026-09-07 | Trip Detail / Command Center & HUD | OngoingTripHud hero card with next stop navigation & check-in, DestinationWeatherWidget with smart municipality extraction, PrivacyInviteCodeWidget, and OfflineReadOnlyBanner. |
+| **`IMP-099`** | 2026-09-07 | Trip Detail / 5-Tab Floating Nav Dock | Frosted-glass floating bottom dock (Itinerary, Packing, Members, Expenses, Chat), removed redundant in-scroll quick actions grid, pruned unused providers and listeners. |
+| **`IMP-100`** | 2026-09-07 | Documentation / Token Limit Optimization & Redundant File Consolidation | Consolidated redundant Markdown files across repository to maximize AI agent token efficiency: merged `DEV_IDEA.md` into `UPCOMING_PLANS.md`, merged `SOFTWARE_DESIGN_PATTERNS.md` and `Analyze.md` into `MEMORY.md` (Section 30), removed redundant empty root `CHANGELOG.md`, updated `.agents/workflows/run.md`, saving ~42,000+ tokens (~172 KB). |
 
 ---
 
@@ -2262,24 +2265,92 @@
 
 ---
 
-### `IMP-097` · Firebase Core App Bootstrap Integration
-- **Date**: September 5, 2026
+### `IMP-098` · Trip Detail Screen: Ongoing Command Center, HUD & Quick Action Hub
+- **Date**: September 7, 2026
 - **Scope & Objectives**:
-  1. **Firebase Core Initialization**:
-     - Embedded `Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform)` in `lib/main.dart` directly following `WidgetsFlutterBinding.ensureInitialized()`.
-     - Wrapped in structured error boundary to guarantee non-blocking cold starts across all execution targets.
+  1. **Plan 13: Ongoing Command Center & Cockpit HUD**:
+     - Created `OngoingTripHud`: Hero card highlighting the current active / next upcoming stop with stop type icon, start time formatting, direct "Navigate" and "Mark Arrived" controls, and tap-to-expand into `StopDetailSheet`.
+     - Created `TripQuickActionsGrid`: Consolidated scattered tiles into an ergonomic 6-tool hub (Itinerary & Schedule, Budget & Split, Squad & Members, Packing, Chat & Polls, Settings & Invites).
+     - Created `TripDetailBottomBar`: Prominent fixed bottom CTA dock ("Start Live Navigation & Convoy") with system navigation safe area clearance.
+     - Created `DestinationWeatherWidget`: Live weather conditions, temperature, rain chance, and severe weather warning badges for the destination. Intelligently renders the upcoming stop title (`NEXT DESTINATION • [STOP TITLE]`) paired with the stop's extracted municipality/city (e.g. `(Baguio City)` or `(Malay)`), utilizing `RichText` with `TextOverflow.ellipsis` to prevent label/badge overflow on compact displays.
+  2. **Plan 1: Role-Aware Trip Exit**:
+     - Inspected `currentUserId == trip.ownerId` in `_CollapsibleHeroHeader` overflow menu. Non-owners are presented with "Leave Trip" (calling `TripRepository.leaveTrip(trip.id)`), while the owner retains the "Delete Trip" privilege.
+  3. **Plan 2: Invite Code Privacy Protection**:
+     - Created `PrivacyInviteCodeWidget`: Reusable invite code component with bullet/asterisk privacy masking (`••••••`), 1-tap eye toggle reveal, 12-second auto-mask timer, and 1-tap clipboard copy.
+     - Integrated into `_InviteCard` on `TripDetailScreen`.
+  4. **Plan 3: Offline Read-Only Banner & Action Freezing**:
+     - Created `isOnlineProvider` in `lib/core/providers/connectivity_provider.dart` exposing reactive internet connectivity from `ConnectivityService`.
+     - Created `OfflineReadOnlyBanner` alerting travelers to offline read-only mode when disconnected.
 - **Target Files**:
-  - `lib/main.dart` [MODIFIED]
+  - `lib/core/widgets/privacy_invite_code_widget.dart` [NEW]
+  - `lib/core/widgets/offline_read_only_banner.dart` [NEW]
+  - `lib/core/providers/connectivity_provider.dart` [NEW]
+  - `lib/features/trip_detail/widgets/destination_weather_widget.dart` [NEW]
+  - `lib/features/trip_detail/widgets/ongoing_trip_hud.dart` [NEW]
+  - `lib/features/trip_detail/widgets/trip_quick_actions_grid.dart` [NEW]
+  - `lib/features/trip_detail/widgets/trip_detail_bottom_bar.dart` [NEW]
+  - `lib/features/trip_detail/trip_detail_screen.dart` [MODIFIED]
+  - `lib/features/itinerary/widgets/navigate_route_button.dart` [MODIFIED]
+  - `test/core/widgets/privacy_invite_code_widget_test.dart` [NEW]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+  - `docs/MEMORY.md` [MODIFIED]
+- **Verification**:
+  - `flutter analyze`: **0 errors, 0 warnings (No issues found!)** across all touched files.
+
+---
+
+### `IMP-099` · Trip Detail Screen: Frosted-Glass 5-Tab Navigation Dock & Hub Streamlining
+- **Date**: September 7, 2026
+- **Scope & Objectives**:
+  1. **Quick Actions Hub Streamlining**:
+     - Removed redundant in-scroll `TripQuickActionsGrid` from `TripDetailScreen`, decluttering the dashboard view and avoiding duplicated navigation paths.
+     - Pruned unused `packingProvider` subscription and unneeded local counters (`packedCount`, `totalPacking`, `memberCount`) to prevent wasteful widget rebuilds when packing or member state updates.
+  2. **Frosted-Glass 5-Tab Navigation Dock**:
+     - Rewrote `TripDetailBottomBar` into a floating frosted-glass navigation dock styled in deep earth glassmorphism (`AppColors.deepEarth.withValues(alpha: 0.93)`, 18px blur backdrop filter, 26px radius border).
+     - Provides 5 primary travel navigation targets with compact icon + micro-label layout:
+       - **Itinerary**: Hero accent pill (coral tinted icon container and label); for ongoing trips, supports long-press to launch live turn-by-turn navigation directly.
+       - **Packing**: Direct route navigation to trip packing checklist.
+       - **Members**: Direct route navigation to trip companion and member management.
+       - **Expenses**: Direct route navigation to trip budget and split expense screen.
+       - **Chat**: Direct route navigation to trip group chat and active polls.
+     - Added haptic feedback (`HapticFeedback.lightImpact` / `HapticFeedback.mediumImpact`) on tap and long-press interactions.
+- **Target Files**:
+  - `lib/features/trip_detail/widgets/trip_detail_bottom_bar.dart` [MODIFIED]
+  - `lib/features/trip_detail/trip_detail_screen.dart` [MODIFIED]
   - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
 - **Verification**:
-  - `flutter analyze --no-pub`: **No issues found! (0 errors, 0 warnings)**.
+  - `flutter analyze lib/features/trip_detail`: **0 errors, 0 warnings (No issues found!)**.
 
+---
 
-
-
-
-
-
-
+### `IMP-100` · Documentation Consolidation & Token Limit Optimization
+- **Date**: September 7, 2026
+- **Scope & Objectives**:
+  1. **Token Limit Optimization**:
+     - Consolidated redundant and overlapping Markdown documentation files across the codebase to minimize token usage when AI agents scan workspace context.
+     - Pruned ~172 KB of duplicate documentation text (~42,000+ tokens saved).
+  2. **Feature Roadmap Consolidation**:
+     - Consolidated all proposals and technical specs from `docs/DEV_IDEA.md` into `docs/UPCOMING_PLANS.md`.
+     - Standardized proposal cross-references in `UPCOMING_PLANS.md` (e.g. `Originally proposed as IDEA-XXX`).
+     - Removed redundant `docs/DEV_IDEA.md`.
+  3. **Architectural Ground Truth Consolidation**:
+     - Merged REST API guidelines (10 standards) and Flutter architecture design patterns (Repository pattern, MVI/MVVM, local caching, partitioned multitenancy, circuit breaker, 3-layer encryption) from `docs/SOFTWARE_DESIGN_PATTERNS.md` into `docs/MEMORY.md` Section 30.
+     - Consolidated domain models specifications from `docs/Analyze.md` into `docs/MEMORY.md` Section 30.
+     - Removed outdated and duplicate files `docs/SOFTWARE_DESIGN_PATTERNS.md` and `docs/Analyze.md`.
+  4. **Changelog & Workflow Alignment**:
+     - Deleted redundant 10-line stub `CHANGELOG.md` at project root, leaving `docs/CHANGELOG.md` as the canonical automatically generated version changelog.
+     - Updated `.agents/workflows/run.md` document mapping to point directly to the consolidated canonical documentation set (`MEMORY.md`, `UPCOMING_PLANS.md`, `UI_STRUCTURE.md`, `IMPLEMENTATION_MEMORY.md`, `CHANGELOG.md`).
+- **Target Files**:
+  - `docs/MEMORY.md` [MODIFIED]
+  - `docs/UPCOMING_PLANS.md` [MODIFIED]
+  - `.agents/workflows/run.md` [MODIFIED]
+  - `docs/DEV_IDEA.md` [DELETED]
+  - `docs/Analyze.md` [DELETED]
+  - `docs/SOFTWARE_DESIGN_PATTERNS.md` [DELETED]
+  - `CHANGELOG.md` (root) [DELETED]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+- **Verification**:
+  - `pwsh tools/generate_changelog.ps1` completed cleanly (70 milestones).
+  - Cleaned all dangling file references across codebase rules and workflows.
 
 

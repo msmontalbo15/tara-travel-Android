@@ -77,24 +77,21 @@ code modifications, or workspace operations.
 
 When performing specific agent lifecycle tasks, consult and update the corresponding documents in `docs/`:
 
-- **Codebase Index & Architecture Map (`docs/Analyze.md`):**
-  - **Role:** Pre-indexed codebase directory, dependency inventory, table schemas, Riverpod provider directory, repository index, security model, and common Gotchas.
-  - **Usage:** Read first during research/investigation to avoid re-scanning files and burning tokens.
-- **Master Schema & System Memory (`docs/MEMORY.md`):**
-  - **Role:** Ground-truth reference for Supabase schemas (16 tables, forbidden columns), stored RPC functions, security invariants (RLS anti-recursion, 3-layer encryption, name privacy), and Riverpod state graph.
-  - **Usage:** Consult before any database query, schema modification, or state management refactoring. Must be updated when any schema, RPC, or provider changes.
-- **Architectural Standards & REST API (`docs/SOFTWARE_DESIGN_PATTERNS.md`):**
-  - **Role:** Non-negotiable architectural guidelines for REST API design, Riverpod MVVM/MVI, repository isolation, multitenant DB partitioning, offline sync queue, and security protocols.
-  - **Usage:** Consult to ensure widgets, file organization, clean architecture boundaries, and error handling match project standards.
+- **Master Schema, System Memory & Architectural Standards (`docs/MEMORY.md`):**
+  - **Role:** Single ground-truth reference for Supabase schemas (16 tables, forbidden columns), stored RPC functions, security invariants (RLS anti-recursion, 3-layer encryption, name privacy), Riverpod state graph, REST API standards, and Flutter software design patterns.
+  - **Usage:** Read during research and consult before any database query, schema modification, or state management refactoring. Must be updated when any schema, RPC, or provider changes.
+- **Master Feature Roadmap & Backlog (`docs/UPCOMING_PLANS.md`):**
+  - **Role:** Canonical repository master plan and technical specifications organized hierarchically (Tier 1 Minor, Tier 2 Medium, Tier 3 Major).
+  - **Usage:** Reference when planning new features, checking UX specs, or updating plan status.
+- **UI Architecture & Component Structure (`docs/UI_STRUCTURE.md`):**
+  - **Role:** Authoritative UI component hierarchy, screen routing map, and shared widget catalog.
+  - **Usage:** Consult and update when UI screens, sheets, dialogs, or subcomponents are created, refactored, or rearranged.
 - **Implementation History & Change Log (`docs/IMPLEMENTATION_MEMORY.md`):**
   - **Role:** Chronological, authoritative lifetime record of all milestones (`IMP-001` to present) with modified files, architectural rationale, and verification checks.
   - **Usage:** Check for past decisions, previous refactorings, and append a new milestone entry whenever any feature, RPC, migration, or bugfix is delivered.
-- **Feature Ideas & Architecture Backlog (`docs/DEV_IDEA.md`):**
-  - **Role:** Developer proposals, backlog concept specifications, design token specs, and architectural RFCs.
-  - **Usage:** Reference when planning new features, checking UX specs, or updating proposal status (e.g. `[IN PROGRESS]` / `[COMPLETED]`).
 - **Version Changelog (`docs/CHANGELOG.md`):**
-  - **Role:** User-facing and release-level changelog synced with implementation milestones.
-  - **Usage:** Update when introducing or changing user-facing features, major architectural milestones, or fixes.
+  - **Role:** User-facing and release-level changelog synced automatically via `tools/generate_changelog.ps1`.
+  - **Usage:** Auto-synced or updated when introducing or changing user-facing features or major milestones.
 - **Project Overview & Setup (`docs/README.md`):**
   - **Role:** High-level project summary, quick-start commands (`flutter pub get`, `flutter run`), production build commands, and security hardening highlights.
 
@@ -102,9 +99,8 @@ When performing specific agent lifecycle tasks, consult and update the correspon
 
 Before marking any task complete:
 1. **Code & Lint Verification:** Run Dart analysis / `flutter analyze` to ensure zero compilation or lint errors.
-2. **Architecture Compliance:** Confirm that changes strictly follow patterns in `docs/SOFTWARE_DESIGN_PATTERNS.md` and database rules in `docs/MEMORY.md`.
+2. **Architecture Compliance:** Confirm that changes strictly follow patterns and database rules in `docs/MEMORY.md`.
 3. **Documentation Sync:**
    - **`docs/MEMORY.md`**: Update if schemas, RPC functions, repositories, or Riverpod providers were added/modified.
    - **`docs/IMPLEMENTATION_MEMORY.md`**: Append a new milestone entry (`IMP-XXX`) with target files, architectural rationale, and verification checks.
-   - **`docs/CHANGELOG.md`**: Log the release note entry if updating a public feature boundary.
-   - **`docs/Analyze.md`**: Update relevant index tables or counts if major architectural restructuring occurred.
+   - **`docs/CHANGELOG.md`**: Log the release note entry if updating a public feature boundary (or run `pwsh tools/generate_changelog.ps1`).

@@ -2,7 +2,7 @@
 > **AUTHORITATIVE CONTEXT FOR AI ASSISTANTS & CORE DEVELOPERS**  
 > **Status**: Production Verified  
 > **Last Synced**: September 2026  
-> **Scope**: Complete Database Schema, Stored Functions, RPCs, Repositories, State Providers, Security Invariants, Feature Implementations, and [Software Design Patterns & REST Standards](file:///d:/Spencer/Downloads/tara_travel/SOFTWARE_DESIGN_PATTERNS.md).
+> **Scope**: Complete Database Schema, Stored Functions, RPCs, Repositories, State Providers, Security Invariants, Feature Implementations, Software Design Patterns & REST Standards.
 
 ---
 
@@ -553,6 +553,7 @@ Client Tier               Storage Tier                Transport Tier
 | `navigationProvider` | `NotifierProvider<NavigationNotifier, NavigationState>` | Live group navigation state, telemetry streaming, member-as-waypoint routing, convoy separation alarms, SOS beacons, and privacy modes. |
 | `realtimeNotifierProvider(tripId)`| `StateNotifierProvider<RealtimeNotifier, RealtimeState>` | Live GPS member location tracking, stop voting broadcasts. |
 | `exploreProvider` | `FutureProvider<List<DestinationModel>>` | Destination catalog with search, tags, and rating filters. |
+| `isOnlineProvider` | `StreamProvider<bool>` | Reactive real-time internet connectivity stream powered by TCP socket probe in `ConnectivityService`. |
 
 ---
 
@@ -1011,7 +1012,7 @@ Client Tier               Storage Tier                Transport Tier
 ## 21. 📱 MOBILE RESPONSIVENESS & OVERFLOW PREVENTION INVARIANTS (IMP-079)
 
 - **Ground Truth Standard**: All Tara Travel screens, dialogs, and modal bottom sheets must adapt seamlessly to any mobile viewport dimension (from compact 320px–360px displays up to large devices and tablets) with zero layout overflow errors (`RenderFlex` exceptions).
-- **Core Guardrails (Detailed in [SOFTWARE_DESIGN_PATTERNS.md](file:///d:/Spencer/Downloads/tara_travel/docs/SOFTWARE_DESIGN_PATTERNS.md))**:
+- **Core Guardrails (Detailed in Section 30)**:
   1. **Scrollable Viewports**: Always wrap vertical or variable-length layouts in `SingleChildScrollView`, `ListView`, or `CustomScrollView` with keyboard insets awareness (`Scaffold.resizeToAvoidBottomInset: true`).
   2. **Bounded Row/Column Constraints**: In horizontal `Row` widgets, all dynamic text and flexible contents must be bounded via `Expanded` or `Flexible` with `TextOverflow.ellipsis`.
   3. **Safe Dynamic Typography**: Apply `maxLines` and `overflow: TextOverflow.ellipsis` on single-line and bounded text elements. Wrap critical action button texts in `FittedBox` or allow multi-line text wrapping.
@@ -1135,16 +1136,34 @@ Client Tier               Storage Tier                Transport Tier
   - Triggered on push to `live` or `release/**` and `workflow_dispatch`.
   - Enforces static analysis gate (`flutter analyze --fatal-warnings`), compiles release APK & Android App Bundle (.aab), uploads release APK to Supabase Storage bucket `app-releases`, and inserts new version record into `public.app_versions` via Supabase REST API curl.
 
+## 30. 📐 CORE API DESIGN GUIDELINES & SOFTWARE PATTERNS
+
+### 30.1 REST API Design Standards
+1. **Versioning**: Use explicit URL path versioning (e.g. `/v1/trips` -> `/v2/trips`). Never apply breaking changes without deprecation.
+2. **Pagination**: Set default page sizes (`limit=20`, `max=100`). Always return pagination metadata (total, limit, cursor/offset).
+3. **Rate Limiting**: Return `429 Too Many Requests` with Redis sliding window headers (`X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`).
+4. **Idempotency**: Accept `Idempotency-Key` headers on mutating requests (`POST`, `PATCH`, `PUT`) to prevent double-processing.
+5. **HATEOAS**: Embed actionable metadata and dynamic next links (`_links`) in responses where appropriate.
+6. **Meaningful HTTP Status Codes**: Use proper status codes (`200`, `201`, `400`, `401`, `403`, `404`, `409`, `429`, `500`). Never return `200 OK` with `{ "error": true }`.
+7. **Filtering & Sorting**: Database-side query parameters (e.g. `/trips?status=active&sort=-created_at`). Never client-filter firehoses.
+8. **Consistent Naming**: Plural nouns for collections (`/trips`, `/members`), consistent snake_case/lowerCamelCase, avoid verbs in paths.
+9. **Auth in Headers**: Pass JWT tokens strictly via `Authorization: Bearer <token>`. Never in URL query parameters.
+10. **Standard Error Envelopes**: Consistent `{ "error": { "code": "...", "message": "...", "details": [] } }` schema across all endpoints.
+
+### 30.2 Flutter Architecture & Software Design Patterns
+1. **Repository Pattern (Remote Single Source of Truth)**: UI widgets never execute raw Supabase/HTTP calls directly. All operations pass through typed domain repositories (`TripRepository`, `ExpenseRepository`, `ProfileRepository`, `AuthRepository`).
+2. **MVI / MVVM State Management (Riverpod Notifiers)**: Unidirectional data flow via immutable states (`AsyncValue`, `Notifier`, `AsyncNotifier`). Zero global mutable state.
+3. **Partitioned Multitenancy (Per-User Storage Isolation)**: Isolate local SQLite databases per user UUID (`DatabaseService.instance.switchUser(userId)`).
+4. **Circuit Breaker & Offline Sync Queue**: Network mutation failures queue into `OfflineSyncQueue` for FIFO replay with exponential backoff on reconnection.
+5. **Defense-in-Depth 3-Layer Encryption**: RSA-2048 keypair + AES-256-GCM data payload + TLS 1.3 transport.
+
+### 30.3 Core Domain Models Overview
+- **`TripModel` (`lib/core/models/trip_model.dart`)**: Represents a trip entity. Maps to `public.trips`. Derived styling via `AppTripTypes`. Never query dropped fields (`destination_lat/lng`, `invite_expires_at`, `cover_image_url`, `cover_color`, `cover_emoji`).
+- **`MemberModel` (`lib/core/models/member_model.dart`)**: Trip participant with roles (`MemberRole`), permissions, GCash details, and privacy-formatted display name (`MemberModel.formatDisplayName`).
+- **`ItineraryStop` (`lib/core/models/itinerary_model.dart`)**: Itinerary stop with timing, location coordinates, booking reference, and transport metadata.
+- **`ExpenseModel` (`lib/core/models/expense_model.dart`)**: Group expense with payer, amount, receipt image URL, approval status, and split calculations.
+- **`PackingItem` (`lib/core/models/packing_model.dart`)**: Packing checklist item with custom category, assignment, and completion status.
+
 ---
 
 *This document is the single source of architectural truth for Tara Travel. Update this file whenever database schemas, RPC functions, core repositories, or system flows are modified.*
-
-
-
-
-
-
-
-
-
-
