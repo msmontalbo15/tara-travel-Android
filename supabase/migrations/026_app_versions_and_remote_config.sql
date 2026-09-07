@@ -73,9 +73,18 @@ WHERE NOT EXISTS (
 
 -- ── 4. STORAGE BUCKET CONFIGURATION FOR DIRECT APK RELEASES ───────────────────
 
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('app-releases', 'app-releases', true)
-ON CONFLICT (id) DO NOTHING;
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'app-releases',
+  'app-releases',
+  true,
+  262144400,
+  ARRAY['application/vnd.android.package-archive', 'application/octet-stream']
+)
+ON CONFLICT (id) DO UPDATE SET
+  public = true,
+  file_size_limit = 262144400,
+  allowed_mime_types = ARRAY['application/vnd.android.package-archive', 'application/octet-stream'];
 
 DROP POLICY IF EXISTS "public_read_app_releases" ON storage.objects;
 CREATE POLICY "public_read_app_releases"

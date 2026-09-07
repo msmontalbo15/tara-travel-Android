@@ -1197,7 +1197,7 @@ Client Tier               Storage Tier                Transport Tier
   - Embedded in `ProfileScreen` Account Settings. Shows live version pill (`UPDATE`), triggers immediate Supabase remote check, and notifies user via `AppFeedback` toast or update modal.
 - **Direct OTA Distribution & CI/CD Pipeline (`.github/workflows/auto_release.yml`)**:
   - Triggered on push to `live` or `release/**` and `workflow_dispatch`.
-  - Enforces static analysis gate (`flutter analyze --fatal-warnings`), compiles release APK & Android App Bundle (.aab), uploads release APK to Supabase Storage bucket `app-releases`, and inserts new version record into `public.app_versions` via Supabase REST API curl.
+  - Enforces static analysis gate (`flutter analyze --fatal-warnings`), compiles release APK & Android App Bundle (.aab), uploads release APK to Supabase Storage bucket `app-releases` (with 250MB size limit and safe filename sanitization `1.0.1+2` -> `1.0.1-2`), and inserts new version record into `public.app_versions` via Supabase REST API curl.
 
 ## 30. 📐 CORE API DESIGN GUIDELINES & SOFTWARE PATTERNS
 

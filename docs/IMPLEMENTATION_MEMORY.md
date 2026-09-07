@@ -76,6 +76,7 @@
 | **`IMP-099`** | 2026-09-07 | Trip Detail / 5-Tab Floating Nav Dock | Frosted-glass floating bottom dock (Itinerary, Packing, Members, Expenses, Chat), removed redundant in-scroll quick actions grid, pruned unused providers and listeners. |
 | **`IMP-100`** | 2026-09-07 | Documentation / Token Limit Optimization & Redundant File Consolidation | Consolidated redundant Markdown files across repository to maximize AI agent token efficiency: merged `DEV_IDEA.md` into `UPCOMING_PLANS.md`, merged `SOFTWARE_DESIGN_PATTERNS.md` and `Analyze.md` into `MEMORY.md` (Section 30), removed redundant empty root `CHANGELOG.md`, updated `.agents/workflows/run.md`, saving ~42,000+ tokens (~172 KB). |
 | **`IMP-101`** | 2026-09-08 | Documentation / Master Token Saver & Architecture Index | Compacted `CHANGELOG.md` (179KB → 17KB) and generator script, merged `UI_STRUCTURE.md` into `MEMORY.md` and deleted file, pruned completed plans from `UPCOMING_PLANS.md` and renamed to `ROADMAP.md` (73KB → 50KB), generated high-density `INDEX.md` (~1,000 tokens), and enforced Section 7 Anti-Scanning Token Saver rule in `.agents/rules/architecture-memory.md`. |
+| **`IMP-102`** | 2026-09-08 | CI/CD & Storage / APK Upload Hardening & 250MB Limit | Fixed Supabase Storage HTTP 400 error on APK distribution: auto-provisioned/updated `app-releases` bucket with 250MB file size limit and APK MIME types, sanitized `+` to `-` in release artifact names, logged full response bodies, and added strict status code assertions. |
 
 
 ---
@@ -2374,6 +2375,20 @@
 - **Verification**:
   - Verified directory cleanliness in `docs/`: canonical set is now `MEMORY.md`, `INDEX.md`, `ROADMAP.md`, `CHANGELOG.md`, `IMPLEMENTATION_MEMORY.md`.
   - Confirmed zero broken references in agent workflows and rules.
-
-
-
+### `IMP-102` · Supabase Storage APK Upload Hardening & 250MB Limit
+- **Date**: September 8, 2026
+- **Target Files**:
+  - `supabase/migrations/026_app_versions_and_remote_config.sql` [MODIFIED]
+  - `.github/workflows/auto_release.yml` [MODIFIED]
+  - `docs/MEMORY.md` [MODIFIED]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+- **Architectural Rationale**:
+  - Fixes HTTP 400 Bad Request error observed during automated OTA APK uploads to Supabase Storage.
+  - Causes addressed:
+    1. Default Supabase storage bucket file size limit is 50MB; release APKs are ~120MB-125MB. Increased `file_size_limit` to 262144400 bytes (~250MB) and specified explicit MIME types (`application/vnd.android.package-archive`, `application/octet-stream`).
+    2. Version strings containing `+` (e.g., `1.0.1+2`) create invalid URL/storage path requests when unencoded. Added sanitization (`SAFE_VERSION=$(echo "$VERSION" | tr '+' '-')`) transforming destination filenames to `tara-travel-v1.0.1-2.apk`.
+    3. Added idempotency pre-flight calls directly in the GitHub Actions runner using `SUPABASE_SERVICE_ROLE_KEY` to ensure the bucket exists and update its configuration dynamically.
+    4. Enhanced error reporting by capturing and logging both HTTP status and response body, asserting on non-200/201 codes to fail the build cleanly if uploads are rejected.
+- **Verification**:
+  - Validated migration SQL syntax.
+  - Validated GitHub Actions YAML structure and curl script pipelines.

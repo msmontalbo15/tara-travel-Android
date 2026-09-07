@@ -1,4 +1,4 @@
-﻿# Tara Travel — Master Feature & Implementation Roadmap
+# Tara Travel — Master Feature & Implementation Roadmap
 
 This document serves as our compiled repository master plan, organized hierarchically from **Minor Updates (UI Polish, Guards & Privacy)** through **Medium Features (Domain Models & Local Services)** to **Major Architectural & Platform Upgrades (End-to-End Systems, AI & Middleware)**.
 
@@ -25,6 +25,7 @@ This document serves as our compiled repository master plan, organized hierarchi
 | **10** | [Flexible & Optional Trip Map: Adventure, Multi-Point & Off-Grid Mode](#plan-10-flexible-optional-trip-map-adventure-multi-point-off-grid-mode) | 🟡 **Drafted / Queued** | Optional map tracking, multi-point waypoints, adventure trail roaming, battery-saving mapless mode |
 | **11** | [Meet-up Assembly, Smart Countdown & Automatic Departure Detection](#plan-11-meet-up-assembly-smart-countdown-automatic-departure-detection) | 🟡 **Drafted / Queued** | Day 1 Stop 0 auto-insertion, meet-up grace period, GPS distance countdown & auto departure |
 | **12** | [Floating Travel Bubble & System Overlay HUD (PiP / Chathead Mode)](#plan-12-floating-travel-bubble-system-overlay-hud-pip-chathead-mode) | 🟡 **Drafted / Queued** | System-wide floating bubble overlay, live convoy/next stop glance, quick expense note & PiP |
+| **20** | [Chat Announcements Engine & Trip Detail Command Hub](#plan-20-chat-announcements-engine--trip-detail-command-hub) | 🟡 **Drafted / Queued** | Pinned announcements, priority tinting (Urgent vs Notice), live banner on Trip Detail & chat deep-linking |
 
 ### 🔴 Tier 3: Major Architecture & Platform (End-to-End Systems, AI & Middleware)
 | # | Plan / Feature | Status | Key Focus |
@@ -710,3 +711,35 @@ Build a lightweight, production-grade **Laravel 11 + Filament v3** web middlewar
 
 ---
 
+
+## Plan 20: Chat Announcements Engine & Trip Detail Command Hub
+
+### Goal
+Provide a streamlined, high-visibility communication bridge between Group Chat and the Trip Detail command screen. Allows organizers and travelers to post high-priority announcements, pin critical updates, and automatically stream them to an interactive announcement card on `TripDetailScreen` (`/trip-detail`) with 1-tap chat jump and deep linking.
+
+### Core Capabilities
+1. **Chat Attachment Announcement Flow (`ChatAttachmentPickerSheet`)**:
+   - Dedicated "📢 Trip Announcement" tile in the attachment sheet.
+   - Allows typing title/message and selecting priority level:
+     - **Urgent Alert**: `#D85A30` (Brand Coral) banner with high-contrast accent.
+     - **Trip Notice**: `#EF9F27` / `#FAECE7` (Warm Sunset / Sand) card.
+   - Automatically posts with `ChatMessageType.announcement` and sets `is_pinned: true`.
+2. **Authoritative Chat Bubbles & Pinned Stream**:
+   - Distinctive announcement banner styling in group chat.
+   - Pinned announcement top drawer in `ChatScreen` with multi-announcement counter (`+X more`).
+   - Contextual actions: any existing message can be pinned as an announcement by organizers.
+3. **Trip Detail Real-Time Announcement Hub**:
+   - Prominent `TripAnnouncementsCard` on `TripDetailScreen` right beneath the Destination Weather / HUD.
+   - Shows sender name, relative time ago (e.g., *"10m ago by Alex"*), priority badge, and announcement copy.
+   - Multi-announcement carousel / compact pager if multiple items are pinned.
+   - Collapsible state for travelers who have already acknowledged the message.
+4. **Context Deep-Linking**:
+   - 1-tap "Open in Chat →" button that navigates directly into `/chat` and auto-scrolls to the announcement message bubble.
+
+### Impacted Files & Architecture
+- `lib/core/repositories/chat_repository.dart` *(MODIFY — support `isPinned` parameter on `sendMessage`)*
+- `lib/core/providers/chat_provider.dart` *(MODIFY — add `tripAnnouncementsProvider(tripId)` & `sendAnnouncement`)*
+- `lib/features/chat/widgets/chat_attachment_picker_sheet.dart` *(MODIFY — add "📢 Trip Announcement" action)*
+- `lib/features/chat/chat_screen.dart` *(MODIFY — wire announcement compose modal & announcement bubble styling)*
+- `lib/features/trip_detail/widgets/trip_announcements_card.dart` *(NEW — interactive announcements card for trip detail)*
+- `lib/features/trip_detail/trip_detail_screen.dart` *(MODIFY — integrate announcements card below weather/HUD)*
