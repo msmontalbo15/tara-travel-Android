@@ -1106,8 +1106,71 @@ Client Tier               Storage Tier                Transport Tier
 
 
 ## 27. 📱 UI ARCHITECTURE & COMPONENT REGISTRY
-- Comprehensive UI component hierarchy, screen routing map, design tokens, sheets, and modal structure are maintained in [docs/UI_STRUCTURE.md](file:///d:/Spencer/Downloads/tara_travel/docs/UI_STRUCTURE.md).
-- Any screen or subcomponent restructuring must update `docs/UI_STRUCTURE.md` alongside code changes.
+
+### Route Registry (`lib/main.dart`)
+| Route | Widget | File |
+| :--- | :--- | :--- |
+| `/` | `SplashScreen` | `features/splash/splash_screen.dart` |
+| `/onboarding` | `OnboardingScreen` | `features/onboarding/onboarding_screen.dart` |
+| `/home` | `HomeScreen` | `features/home/home_screen.dart` |
+| `/create-trip` | `CreateTripFlow` | `features/create_trip/create_trip_flow.dart` |
+| `/notifications` | `NotificationsScreen` | `features/notifications/notifications_screen.dart` |
+| `/budget` | `BudgetScreen` | `features/budget/budget_screen.dart` |
+| `/itinerary` | `ItineraryScreen` | `features/itinerary/itinerary_screen.dart` |
+| `/navigation` | `LiveNavigationScreen` | `features/navigation/live_navigation_screen.dart` |
+| `/packing` | `PackingScreen` | `features/packing/packing_screen.dart` |
+| `/members` | `MembersScreen` | `features/members/members_screen.dart` |
+| `/explore` | `ExploreScreen` | `features/explore/explore_screen.dart` |
+| `/profile` | `ProfileScreen` | `features/profile/profile_screen.dart` |
+| `/trip-detail` | `TripDetailScreen` | `features/trip_detail/trip_detail_screen.dart` |
+| `/activity` | `ActivityLogScreen` | `features/activity/activity_log_screen.dart` |
+| `/chat` | `ChatScreen` | `features/chat/chat_screen.dart` |
+| `/trips` | `TripsScreen` | `features/trips/trips_screen.dart` |
+| `/friends` | `FriendsScreen` | `features/friends/friends_screen.dart` |
+
+### Core Component Library (`lib/core/widgets/`)
+| Category | File | Component |
+| :--- | :--- | :--- |
+| Brand | `app_brand_logo.dart` | `AppBrandLogo` |
+| Nav | `navigation/floating_nav_bar.dart` | `FloatingNavBar` |
+| Buttons | `buttons/app_back_button.dart` | `AppBackButton` (glass, light, brand, ghost) |
+| Cards | `glass_card.dart` | `GlassCard` |
+| Avatars | `member_avatar_circle.dart` | `MemberAvatarCircle` |
+| Pickers | `multi_member_picker_sheet.dart` | `MultiMemberPickerSheet` |
+| Location | `ph_location_picker.dart` | `PhLocationPicker` |
+| Location | `inputs/location_picker.dart` | `LocationPicker` |
+| Location | `inputs/map_pin_picker_modal.dart` | `MapPinPickerModal` |
+| Date | `inputs/tara_date_range_picker.dart` | `TaraDateRangePicker` |
+| Inputs | `inputs/app_text_field.dart` | `AppTextField` |
+| Inputs | `inputs/app_dropdown.dart` | `AppDropdown` |
+| Inputs | `inputs/app_numeric_field.dart` | `AppNumericField` |
+| Scanner | `scanner/qr_scanner_modal.dart` | `QrScannerModal` |
+| Share | `share/share_trip_modal.dart` | `ShareTripModal` |
+| Feedback | `feedback/app_banner.dart` | `AppBanner` |
+| Feedback | `feedback/app_dialog.dart` | `AppDialog` |
+| Feedback | `feedback/app_feedback.dart` | `AppFeedback` |
+| Loading | `shimmer_loading.dart` | `ShimmerLoading` / skeletons |
+| Privacy | `privacy_invite_code_widget.dart` | `PrivacyInviteCodeWidget` |
+| Offline | `offline_read_only_banner.dart` | `OfflineReadOnlyBanner` |
+
+### Screen Structure Summary
+- **Home** (`features/home/`): `IndexedStack` 5-tab shell + `FloatingNavBar`. Header with greeting, `NextTripCard` hero, trips list, quick actions grid, interactive walkthrough tour.
+- **Trip Detail** (`features/trip_detail/`): Command center with collapsible header, `OngoingTripHud`, `DestinationWeatherWidget`, `PrivacyInviteCodeWidget`, 5-tab floating bottom dock (Itinerary, Packing, Members, Expenses, Chat).
+- **Itinerary** (`features/itinerary/`): `DayStrip` horizontal selector, `StopCard` list/timeline, `ItineraryBottomDock` (Add Stop, Day Map, Day Actions), `StopDetailSheet`, `ArrivalPill` geofence, `DayInsightsHeader` weather.
+- **Budget** (`features/budget/`): Dual-lens scope switcher (Personal/Trip). Hero budget card, `DailyPacingCard`, `CategoryBudgetChart`, `ExpenseLog` with CRUD, `SplitBillPanel` settlement matrix.
+- **Create Trip** (`features/create_trip/`): 4-step wizard (Details → Transport → Budget → Confirm) with `StepIndicator` and `TripCreationLoadingOverlay`.
+- **Navigation** (`features/navigation/`): Live Map, Group Tracker, Proximity Alerts, Arrived tabs. `flutter_map` with convoy polylines, `SosEmergencyModal`.
+- **Packing** (`features/packing/`): Categorized checklist, AI suggestions, member assignment, templates.
+- **Chat** (`features/chat/`): Realtime messages, pinned polls drawer, `PollCard` interactive voting, rich embed cards (itinerary/expense), `CreatePollSheet`.
+- **Members** (`features/members/`): Role sections, invite via QR/share, member management actions.
+- **Friends** (`features/friends/`): Tabs (Friends/Requests/Find), QR scanner, mutual trip badges.
+- **Profile** (`features/profile/`): Avatar, bio, PH location picker, GCash, biometrics, MPIN, privacy toggles, logout.
+- **Explore** (`features/explore/`): Search, featured carousel, destination grid with quick plan shortcut.
+- **Notifications** (`features/notifications/`): Filter chips, notification items with deep-link tap, bulk mark read.
+- **Activity Log** (`features/activity/`): Chronological audit feed, standalone or inline mode.
+- **Splash** (`features/splash/`): Logo animations, session rehydration, Get Started gate.
+- **Onboarding** (`features/onboarding/`): 7-step PageView (mode, permissions, photo, name, preferences, health, done).
+
 
 ## 28. 📐 UNIVERSAL RESPONSIVE LAYOUT ENGINE (PLAN 19 / IMP-091)
 - **Centralized Tokens & Breakpoints (`lib/core/theme/app_responsive.dart`)**:

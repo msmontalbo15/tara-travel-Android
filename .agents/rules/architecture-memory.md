@@ -51,3 +51,10 @@ Enforces factual ground truth across all Flutter and Supabase development in Tar
   - Choose optimal algorithms ($O(1)$ lookups, memoization, efficient caching) for all data transformation pipelines.
   - Abstract repetitive UI blocks into modular, stateless sub-components or shared widgets in `core/` or `widgets/`.
 
+## 7. ⚡ Anti-Scanning Token Saver Rule (MANDATORY)
+
+- **Consult `docs/INDEX.md` First**: Always check `docs/INDEX.md` (~1,000 tokens) before scanning directories, loading multiple files, or doing repository-wide searches. It maps all routes, screens, models, providers, services, and repositories.
+- **No Unrequested Full-File Dumps**: Never read massive documentation files (`IMPLEMENTATION_MEMORY.md`, `MEMORY.md`, `CHANGELOG.md`) in their entirety unless explicitly directed. Use targeted line slices (`view_file` with StartLine/EndLine) or exact keyword grep (`grep_search`).
+- **No Automatic Full-Repo Audits**: Avoid triggering repository-wide file listings or multi-file inspections on general conversational prompts. Execute targeted, minimal file actions.
+
+

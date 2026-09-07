@@ -1,4 +1,4 @@
-# Tara Travel — Master Feature & Implementation Roadmap
+﻿# Tara Travel — Master Feature & Implementation Roadmap
 
 This document serves as our compiled repository master plan, organized hierarchically from **Minor Updates (UI Polish, Guards & Privacy)** through **Medium Features (Domain Models & Local Services)** to **Major Architectural & Platform Upgrades (End-to-End Systems, AI & Middleware)**.
 
@@ -39,111 +39,24 @@ This document serves as our compiled repository master plan, organized hierarchi
 
 ---
 
-## Plan 1: Role-Aware Trip Exit: "Leave Trip" vs "Delete Trip"
 
-### Goal
-Ensure that users who did not create the trip or do not possess owner/admin privileges cannot see or trigger "Delete Trip". Instead, they are presented with a **"Leave Trip"** option across all trip action surfaces.
+## ðŸŸ¢ Completed Plans Summary
 
-### Core Capabilities
-1. **Ownership & Role Detection**:
-   - Inspect `currentUserId == trip.ownerId` or member role via `tripMembersProvider(trip.id)`.
-   - **Trip Creator / Owner**: Retains **"Delete Trip"** (which deletes or archives the trip for everyone via Supabase RPC/RLS policies).
-   - **Non-Owner / Joined Member**: Replaces "Delete Trip" with **"Leave Trip"** (uses `TripRepository.leaveTrip(tripId)` which invokes Supabase `leave_trip` RPC).
-2. **Unified Surface Enforcement**:
-   - **Trip Action Sheet (`TripActionSheet`)**: Shows "Leave Trip" (door icon, red/amber text) with subtitle *"Remove yourself from this trip"* for members, and "Delete Trip" only for the owner.
-   - **Trip Details Menu (`TripDetailScreen`)**: Overflow menu dynamically swaps `"Delete Trip"` for `"Leave Trip"` based on user ownership.
-   - **Trips List Screen (`TripsScreen`)**: Context menus or swipe actions respect role-based exit.
-3. **Graceful State Invalidation & Feedback**:
-   - When a member leaves:
-     - Confirms via `AppDialog.showDestructive(title: 'Leave Trip', message: 'Are you sure you want to leave "[Trip Name]"? You will need an invite code to rejoin.', confirmLabel: 'Leave')`.
-     - Calls `leaveTrip(tripId)`.
-     - Clears `selectedTripIdProvider`.
-     - Invalidates `allTripsProvider`, `activeTripProvider`, and `selectedTripProvider`.
-     - Navigates back safely and displays confirmation toast: *"You left [Trip Name]"*.
+| Plan | Title | Milestone | Status | Key Deliverable |
+| :--- | :--- | :--- | :--- | :--- |
+| **Plan 1** | Role-Aware Trip Exit ("Leave" vs "Delete") | IMP-081 | âœ… Complete | Member leave vs owner delete with role validation & UI guards. |
+| **Plan 2** | Invite Code Privacy & Safe Area Clearance | IMP-082 | âœ… Complete | Masked codes (******), auto-hide timer, safe area gesture clearance. |
+| **Plan 3** | Offline Read-Only Guard & Action Freezing | IMP-083 | âœ… Complete | Offline write locks, visual badges, and stale sync error prevention. |
+| **Plan 8** | Real-Time Live Weather Forecast & Severe Alerts | IMP-088 | âœ… Complete | Open-Meteo API integration, offline cache, DayStrip weather & storm alerts. |
+| **Plan 13** | Trip Detail Screen: Ongoing Command Center & HUD | IMP-089 | âœ… Complete | Quick Stop HUD, persistent bottom dock, destination weather, officers. |
+| **Plan 17** | Supabase App Versioning & OTA Updates | IMP-094 | âœ… Complete | 3-tier update modals, Remote Config, automated CI/CD release pipeline. |
+| **Plan 19** | Universal Responsive Layout Engine | IMP-091 | âœ… Complete | Breakpoints, clamped text scaler, safe padding/insets, zero-overflow. |
 
-### Impacted Files & Architecture
-- `lib/features/home/widgets/trip_action_sheet.dart` *(MODIFY)*
-- `lib/features/trip_detail/trip_detail_screen.dart` *(MODIFY)*
-- `lib/features/trips/trips_screen.dart` *(MODIFY)*
-- `lib/core/repositories/trip_repository.dart` *(VERIFY RPC leaveTrip integration)*
-- `test/features/trips/role_aware_trip_exit_test.dart` *(NEW)*
+*Full architectural specifications and schemas for completed plans are preserved in docs/MEMORY.md and docs/IMPLEMENTATION_MEMORY.md.*
 
 ---
 
----
-
-## Plan 2: Invite Code Privacy & Safe Area Gesture Clearance
-
-### Goal
-Prevent shoulder-surfing, unwanted join leaks, and accidental gesture navigation dismissals across trip sharing and action surfaces: masking trip invite codes (`******` / `••••••`) with a 1-tap reveal and auto-hide timer, while ensuring modal bottom sheets dynamically compute system navigation insets (`MediaQuery.paddingOf(context).bottom`) so destructive actions (like "Leave Trip" or "Delete Trip") remain ergonomic and completely clear of gesture navigation bars.
-
-### Core Capabilities
-1. **Masked Display State (`••••••` / `******`)**:
-   - By default (or via tap toggle), the alphanumeric trip invite code is concealed using bullet/asterisk privacy glyphs (`••••••`) in monospace font and equal tracking.
-   - Prevents bystanders or screen recordings from exposing sensitive trip codes in public terminals, vehicles, or cafes.
-2. **Tap-to-Reveal & Eye Toggle (`IconButton` / `GestureDetector`)**:
-   - Tapping the code card or visibility toggle icon reveals plain text code with a subtle fade animation.
-   - Tapping again immediately re-masks the code back to dots.
-3. **Auto-Re-Mask Security Timer**:
-   - When revealed, an auto-mask timer (10–15 seconds) automatically reverts the code back to masked mode (`******`).
-4. **Copy & Share Safe Flow**:
-   - **Tap-to-Copy**: Tapping "Copy" copies the unmasked code to the clipboard with haptic feedback and privacy-safe notification toast.
-   - **Direct Share**: External share sheets pass the invite link directly without requiring manual unmasking.
-5. **Dynamic System Navigation Insets Clearance (`TripActionSheet`)**:
-   - Replaces static bottom padding with responsive system-aware edge insets:
-     - `EdgeInsets.only(bottom: 16 + MediaQuery.paddingOf(context).bottom)` or wrapping with bottom `SafeArea`.
-   - Ensures the final action button (Delete / Leave Trip) is positioned comfortably above gesture pill bars and 3-button navigation.
-6. **Scrollable Action Insets for Small Devices (`SingleChildScrollView`)**:
-   - Wraps sheet items in `Flexible` + `SingleChildScrollView(physics: BouncingScrollPhysics())` to eliminate `RenderFlex` overflow warnings across small screens, landscape orientation, and expanded accessibility font scales.
-
-### Impacted Files & Architecture
-- `lib/core/widgets/privacy_invite_code_widget.dart` *(NEW — reusable masked code component with eye toggle, copy action, and auto-timeout)*
-- `lib/features/home/widgets/trip_action_sheet.dart` *(MODIFY — replace static bottom padding with `MediaQuery.paddingOf(context).bottom` / `SafeArea`, add scroll safeguard & masked code preview)*
-- `lib/features/trip_detail/trip_detail_screen.dart` *(MODIFY — integrate privacy invite toggle in `_InviteCard`)*
-- `lib/features/members/members_screen.dart` *(MODIFY — integrate privacy masking in `_buildInviteCard`)*
-- `test/core/widgets/privacy_invite_code_widget_test.dart` *(NEW)*
-- `test/features/home/widgets/trip_action_sheet_test.dart` *(NEW)*
-
----
-
----
-
-## Plan 3: Offline Read-Only Guard & Action Freezing
-
-### Goal
-Enforce a consistent, transparent **Read-Only Mode** across the entire application when the device is offline or loses connection: allowing travelers to view all cached trips, schedules, maps, and details freely while disabling/freezing mutations (adding stops, editing details, deleting trips, logging expenses, voting on polls) to prevent failed remote calls, state conflicts, or lost unsaved changes.
-
-### Core Capabilities
-1. **Global Reactive Offline State via `ConnectivityService`**:
-   - Leverage `ConnectivityService.instance.onlineStream` and create a global Riverpod provider `isOnlineProvider`.
-   - Any screen or widget can instantly react to internet disconnection without manual polling.
-2. **Action Freezing & Read-Only Locks**:
-   - **Mutation Buttons & FABs**:
-     - Automatically disable "Add Stop", "Create Trip", "Log Expense", "Edit Trip", "Delete Trip", and "Invite Members" when offline.
-     - Visually dims buttons with an informative lock icon or muted color style.
-   - **Informative Disconnection Toast / SnackBar**:
-     - Tapping any disabled action displays a clear, gentle feedback banner: *"You are currently offline. Actions are in read-only mode to prevent data loss."*
-   - **Non-Destructive Navigation Stays Active**:
-     - Viewing offline-cached itinerary stops, packing checklists, offline map polylines, and stored guides remains 100% functional.
-3. **Persistent Top-Level Offline Banner**:
-   - A subtle, sleek amber/gray pill banner at the top of the active trip screen: *"⚡ Offline Mode — Viewing saved trip data (Read-Only)"*.
-   - Automatically slides away with a green toast (*"Back online! All actions restored 🌐"*) as soon as connectivity resumes.
-4. **Form Submit Guarding & Fail-Safe Protection**:
-   - Even if a modal form is already open when the connection drops, form submission buttons disable gracefully and display an offline hint instead of crashing or throwing network timeout exceptions.
-
-### Impacted Files & Architecture
-- `lib/core/services/connectivity_service.dart` *(VERIFY & enhance)*
-- `lib/core/providers/connectivity_provider.dart` *(NEW - Riverpod boolean provider)*
-- `lib/core/widgets/offline_read_only_banner.dart` *(NEW)*
-- `lib/core/widgets/buttons/app_button.dart` *(MODIFY - optional requiresOnline guard)*
-- `lib/features/trip_detail/trip_detail_screen.dart` *(MODIFY - bind read-only mode)*
-- `lib/features/itinerary/itinerary_screen.dart` *(MODIFY - freeze add/edit/reorder FABs when offline)*
-- `lib/features/expenses/expenses_screen.dart` *(MODIFY - freeze expense creation when offline)*
-- `test/core/services/offline_read_only_guard_test.dart` *(NEW)*
-
----
-
----
+## ðŸŸ¡ Active Implementation Plans
 
 ## Plan 4: Cloud-Native Avatar Storage & CDN Cache Architecture
 
@@ -193,6 +106,7 @@ create policy "User Avatar Write Access"
 
 ---
 
+
 ## Plan 5: Google Maps Link Resolver & Pin Location Applicable
 
 ### Goal
@@ -224,6 +138,7 @@ Make Google Maps directly applicable as a way to get places, pin locations on th
 ---
 
 ---
+
 
 ## Plan 6: Tri-Modal Land Transport (Private, Commute, Rental) & Vehicle Garage Fuel Estimator
 
@@ -401,6 +316,7 @@ Establish a finalized, strictly land-based **Tri-Modal Transport Architecture** 
 
 ---
 
+
 ## Plan 7: Travel Circles (Squads & Barkada Presets) for Multi-Member Trip Creation
 
 *(Originally proposed as IDEA-009)*
@@ -463,40 +379,6 @@ CREATE TABLE public.friend_circle_members (
 
 ---
 
-## Plan 8: Real-Time Live Weather Forecast & Severe Condition Alerts Engine
-
-*(Originally proposed as IDEA-013)*
-
-### Goal
-Replace static mock weather data with an accurate, high-reliability, zero-cost weather forecasting engine powered by **Open-Meteo API**. Provides 10–14 day forecasts, WMO condition interpretation, precipitation probability, UV index, and offline caching for Philippine destinations, while hooking into severe weather alerts and dynamic packing recommendations.
-
-### Core Capabilities
-1. **Real-Time Weather Integration via Open-Meteo**:
-   - Free, privacy-friendly, zero API key required.
-   - Fetches hourly and daily parameters: weather code, high/low temperatures, precipitation probability, UV index, wind speed.
-   - WMO interpretation codes mapped to local travel recommendations (Clear, Cloudy, Drizzle, Heavy Rain, Thunderstorm).
-2. **Destination Geocoding & Coordinate Resolution**:
-   - Uses `trip.departure_lat/lng` or stop coordinates directly ($O(1)$ lookup).
-   - Fallback to Open-Meteo Geocoding API with Philippine travel hub fast table and local caching.
-3. **Local Cache & Offline Resiliency Layer**:
-   - 3-hour TTL with local memory/disk cache.
-   - Offline fallback returns cached forecasts tagged `"Offline forecast"`.
-4. **UI Integration Across Tara Travel**:
-   - **Itinerary DayStrip & DayInsightsHeader**: Real temperatures, rain chance percentage, and severe weather warnings.
-   - **AI Packing Assistant**: Pre-fills packing essentials based on forecast (rain gear, sunscreen SPF50+, warm clothing).
-   - **Severe Weather Notifications**: Local scheduled alerts for heavy rainfall, typhoons, or gale warnings before departure.
-
-### Impacted Files & Architecture
-- `lib/core/services/weather_service.dart` *(CORE COMPLETE — Open-Meteo client, WMO code mapper, and local cache)*
-- `lib/core/providers/trip_weather_provider.dart` *(CORE COMPLETE — `tripWeatherProvider` & `tripCurrentWeatherProvider`)*
-- `lib/features/itinerary/widgets/day_insights_bar.dart` *(MODIFY — connect live forecast telemetry)*
-- `lib/features/packing/widgets/ai_packing_dialog.dart` *(MODIFY — pre-select weather forecast)*
-- `lib/core/services/notification_service.dart` *(MODIFY — hook severe weather notifications)*
-- `test/services/weather_service_test.dart` *(NEW)*
-
----
-
----
 
 ## Plan 9: Dual-Lens Budget & Expense Hub (Personal Pocket Tracker + Group Trip Summary)
 
@@ -552,6 +434,7 @@ USING (
 
 ---
 
+
 ## Plan 10: Flexible & Optional Trip Map: Adventure, Multi-Point & Off-Grid Mode
 
 ### Goal
@@ -586,6 +469,7 @@ Decouple rigid map requirements so trips can be created and managed without requ
 ---
 
 ---
+
 
 ## Plan 11: Meet-up Assembly, Smart Countdown & Automatic Departure Detection
 
@@ -636,6 +520,7 @@ Automatically insert the trip's specified **Meet-up Point / Departure Point** as
 
 ---
 
+
 ## Plan 12: Floating Travel Bubble & System Overlay HUD (PiP / Chathead Mode)
 
 ### Goal
@@ -670,67 +555,6 @@ Allow travelers, drivers, and convoy riders to minimize Tara Travel into a dragg
 
 ---
 
-## Plan 13: Trip Detail Screen: Ongoing Command Center, HUD & Quick Action Hub
-
-### Goal
-Transform the Trip Detail screen when a trip is **ongoing** into an active, actionable Travel Cockpit: replacing the scattered feature grid with an organized **Quick Action Hub**, anchoring a **persistent Full Bottom Navigation Bar**, and displaying an actionable **Quick Stop HUD**, urgent announcements/polls, vehicle telemetry, live destination weather, officer cards, and individual budget tracking.
-
-### Core Capabilities
-1. **"Quick Stop Detail" HUD (Replacing Static Stop List)**:
-   - Instead of a long scrollable stop list, highlights the **Current Active Stop** & **Next Upcoming Stop**:
-     - Large legible stop card with photo/emoji, ETA, time remaining, booking reference, and direct "Navigate" & "Slide to Arrive" actions.
-     - **Tap to Open Full Stop Detail**: Tapping anywhere on the quick stop card pops up the standard **`StopDetailSheet`** modal (ETA calculation, booking refs, member arrival roster, expense logging shortcut, and share).
-     - Collapsible/compact tray for remaining stops of the day.
-2. **Replace Feature Navigation Grid with Quick Action Hub**:
-   - Consolidate and replace scattered tiles into a unified, clean **Quick Action Grid**:
-     - **Itinerary & Day Route**: Direct shortcut with stop counter badge.
-     - **Budget & Split Bill**: Fast GCash/split bill entry with live expense tally.
-     - **Squad & Members**: Member avatar circles with organizer badges.
-     - **Packing Checklist**: Checklist completion progress chip.
-     - **Chat & Polls**: Unread message indicator and active poll tags.
-     - **Trip Settings & Invite**: Fast code copying and permission settings.
-3. **Full Bottom Navigation Bar (Persistent CTA Dock)**:
-   - Permanent, prominent **Full Bottom Navigation Bar**:
-     - Fixed at the bottom with safe-area padding and zero obstruction.
-     - Features an authoritative primary travel action (e.g. **"Start Live Navigation & Convoy"** when active, or **"Open Itinerary / Day Schedule"** when in planning mode).
-     - Includes quick companion buttons (e.g., SOS Emergency, Map View toggle, or 1-tap quick expense log).
-   - Preserves proper bottom scroll clearance (`SizedBox(height: 100)`) so all content remains fully legible above the fixed bottom bar.
-4. **Urgent Group Announcements & Active Polls**:
-   - Dynamic banner for pinned announcements and active group polls (e.g., *"Active Poll: Where to eat lunch? Vote immediately before 12:00 PM"*).
-   - Direct 1-tap voting bottom sheet.
-5. **Trip Officers & Roles In-Charge**:
-   - Highlights designated trip officers for quick communication:
-     - **Trip Leader / Coordinator**: Fast call/message button.
-     - **Finance Officer / Treasurer**: Budget & cash advances.
-     - **Lead Driver / Navigator**: Convoy coordination.
-     - **Medic / First Aider**: Emergency contact.
-6. **Vehicle Details & Convoy Status**:
-   - Shows active vehicle info (Model, Plate, Fuel Status, km/L rating, Passenger roster).
-7. **Total Trip Telemetry (Hours & Distance)**:
-   - Live odometer metrics: Total elapsed trip hours, remaining travel hours, completed distance (km), and remaining distance (km).
-8. **Today's Live Weather Widget**:
-   - Real-time forecast for current stop and destination (temperature, condition icon, rain probability, heat index).
-9. **Estimated Individual Budget Breakdown**:
-   - Personal financial snapshot:
-     - Total individual budget share vs. actual spent so far.
-     - Remaining personal allowance for the rest of the trip.
-     - Shared pool status & pending expense approvals.
-
-### Impacted Files & Architecture
-- `lib/features/trip_detail/trip_detail_screen.dart` *(MODIFY - dynamic Ongoing Mode switcher, replace grid with Quick Actions, anchor full bottom navigation bar)*
-- `lib/features/trip_detail/widgets/ongoing_trip_hud.dart` *(NEW - Cockpit/HUD view)*
-- `lib/features/trip_detail/widgets/trip_quick_actions_grid.dart` *(NEW)*
-- `lib/features/trip_detail/widgets/trip_detail_bottom_bar.dart` *(NEW)*
-- `lib/features/trip_detail/widgets/active_poll_announcement_banner.dart` *(NEW)*
-- `lib/features/trip_detail/widgets/trip_officers_card.dart` *(NEW)*
-- `lib/features/trip_detail/widgets/destination_weather_widget.dart` *(NEW)*
-- `lib/features/trip_detail/widgets/individual_budget_snapshot.dart` *(NEW)*
-- `test/features/trip_detail/ongoing_trip_hud_test.dart` *(NEW)*
-- `test/features/trip_detail/trip_detail_quick_action_nav_test.dart` *(NEW)*
-
----
-
----
 
 ## Plan 14: Day Map Intelligent Route Optimization & Best-Way Routing
 
@@ -768,6 +592,7 @@ Upgrade the Day Map from drawing simple linear/straight-line connections between
 ---
 
 ---
+
 
 ## Plan 15: Comprehensive Mobile Notifications Architecture (Push, In-App Banners & Deep-Link Routing)
 
@@ -809,6 +634,7 @@ Deliver a unified, multi-tier notification and in-app event system for Tara Trav
 
 ---
 
+
 ## Plan 16: Gemini Embedded AI Travel Copilot & Assistant
 
 ### Goal
@@ -848,50 +674,6 @@ Embed Google's **Gemini AI** directly into Tara Travel to deliver an intelligent
 
 ---
 
-## Plan 17: Supabase & Middleware App Versioning & OTA Updates [COMPLETED — IMP-094]
-
-### Status: ✅ COMPLETED (2026-09-05 · Milestone IMP-094)
-- **Database Schema**: `public.app_versions` migration `026_app_versions_and_remote_config.sql` deployed with public SELECT RLS and `app-releases` storage bucket.
-- **Client Gatekeeper**: `SemanticVersion` parser/comparator and `AppVersionService` registered in Riverpod.
-- **Three-Tier UX Modals**: `ForceUpdateScreen` (Tier 1), `SoftUpdateSheet` (Tier 2), and `MaintenanceModeScreen` (Tier 3) wired into `AuthGate` bootstrap and `MaterialApp.builder`.
-- **Settings "Check for Updates"**: Added to Account Settings in `ProfileScreen` with live version display, visual `UPDATE` notification pill, manual check action, and `AppFeedback` toast notifications.
-- **Direct OTA Distribution & CI/CD**: Production GitHub Actions workflow `.github/workflows/auto_release.yml` for automated compilation of release APK and Android App Bundle (.aab), Supabase Storage upload, and Supabase database version bump.
-- **Automated Tests**: Unit test suite in `test/core/services/app_version_service_test.dart`.
-
-### Goal
-Implement a rock-solid app versioning, compatibility, and maintenance gatekeeper powered by **Supabase Remote Config**, Shorebird OTA Code Push, and the **Tara Middleware Gateway (Plan 17)**. Prevents stale mobile clients from encountering schema mismatch crashes or corrupted RLS writes after database migrations, while enabling instant Dart code fixes without Play Store delays, remote maintenance mode, and automated release pipelines.
-
-### Core Capabilities
-1. **Remote Versioning Schema (`app_versions` / `remote_config`)**:
-   - Stores authoritative platform release records in Supabase: `min_supported_version`, `latest_version`, `force_update_url`, `maintenance_mode`, and `release_notes`.
-2. **Three-Tier User UX Modals**:
-   - **Tier 1: Mandatory Force-Update (Hard Gate)**: Non-dismissible modal with primary CTA: **"Update App"**.
-   - **Tier 2: Soft Update Recommendation (Dismissible)**: Friendly bottom sheet (*"New features available in v1.4!"*).
-   - **Tier 3: Maintenance Mode Screen**: Locks UI gracefully with status badge and estimated back-online timer.
-3. **Shorebird Over-The-Air (OTA) Code Push**:
-   - Integrates `shorebird_code_push` for instant over-the-air Dart patches pushed directly to users' phones in minutes, skipping app store delays for bugfixes and UI improvements.
-4. **Non-Google Play Direct Cloud Update Channels**:
-   - **Supabase Storage Direct APK Installer**: Downloads release APK via Dio with an animated progress bar and launches Android system install intent (`FileProvider`).
-   - **Firebase App Distribution**: Direct beta tester dispatch via CI/CD.
-5. **🤖 Fully Automated GitHub Actions Pipeline (`auto_release.yml`)**:
-   - Pushing or merging to release branch (`live`) automatically compiles release APK, uploads to Supabase Storage, dispatches to Firebase, and updates `app_versions` table in Supabase DB.
-
-### Impacted Files & Architecture
-- `.github/workflows/auto_release.yml` *(NEW — automated build, Supabase Storage upload, and version DB bump)*
-- `android/app/src/main/AndroidManifest.xml` *(MODIFY — added `REQUEST_INSTALL_PACKAGES`)*
-- `lib/core/services/app_version_service.dart` *(NEW — semantic version comparator, Supabase config fetcher, and update status provider)*
-- `lib/core/services/apk_download_installer.dart` *(NEW — downloads APK from Supabase Storage with progress and launches installer)*
-- `lib/core/widgets/versioning/force_update_screen.dart` *(NEW)*
-- `lib/core/widgets/versioning/soft_update_sheet.dart` *(NEW)*
-- `lib/core/widgets/versioning/maintenance_mode_screen.dart` *(NEW)*
-- `lib/core/widgets/auth_gate.dart` *(MODIFY — version verification check during bootstrap)*
-- `lib/features/profile/profile_screen.dart` *(MODIFY — added Settings Check for Updates tile & notification pill)*
-- `test/core/services/app_version_service_test.dart` *(NEW)*
-
-
----
-
----
 
 ## Plan 18: Tara Laravel Middleware & SuperAdmin Dashboard (Universal Links, CMS & Ops)
 
@@ -927,63 +709,4 @@ Build a lightweight, production-grade **Laravel 11 + Filament v3** web middlewar
 ---
 
 ---
-
-## Plan 19: Universal Responsive Layout Engine & Zero-Overflow Architecture
-
-### Goal
-Dynamically adapt all screens, modal bottom sheets, and dialogs across Tara Travel to any mobile form factor (from compact ~4.7″ devices like iPhone SE / 320–360dp Androids to tall flagships, foldables, and tablets) and accessibility text scaling, eliminating hardcoded viewport arithmetic and UI overflow errors.
-
-### Core Capabilities
-1. **Global Text Scaler Bounds (`AppResponsive.clampedTextScaleBuilder`)**:
-   - Injected at root `MaterialApp.builder`.
-   - Clamps `MediaQuery.textScaler` between `0.85` and `1.20` so extreme accessibility enlargement never ruptures fixed-height chips, pills, or action docks.
-2. **Centralized Responsive Tokens & Context Extensions (`lib/core/theme/app_responsive.dart`)**:
-   - Standard logical breakpoints: `compactWidth = 360`, `standardWidth = 414`, `tabletWidth = 600`.
-   - Dynamic `context.responsiveHPad` (16dp compact, 20dp standard, 24dp wide).
-   - Inset-aware sheet bounds: `context.sheetMaxHeight(fraction)` prevents sheet headers from colliding with notch/status bars.
-   - Keyboard & gesture safe insets: `context.safeBottomPadding(base)` and `context.keyboardBottomPadding(base)`.
-3. **Hardcoded MediaQuery Arithmetic Eradication**:
-   - All modal sheets (Itinerary Stop Detail, Map Sheet, Quick Budget, Poll Sheet, Chat Attachments, Pinned Messages, Friend Actions, SOS Modal, Profile QR) audited and refactored.
-   - Screen-level padding across Itinerary, Budget, Packing, Navigation, Explore, Members, and Notifications updated to utilize responsive context helpers.
-
-### Impacted Files & Architecture
-- `lib/core/theme/app_responsive.dart` *(NEW — centralized tokens, breakpoints, and BuildContext extensions)*
-- `lib/main.dart` *(MODIFY — registered clampedTextScaleBuilder in MaterialApp.builder)*
-- `lib/features/itinerary/widgets/stop_detail_sheet.dart` *(MODIFY — responsive sheetMaxHeight & safeBottomPadding)*
-- `lib/features/itinerary/widgets/itinerary_map_sheet.dart` *(MODIFY — responsive sheetMaxHeight)*
-- `lib/features/itinerary/widgets/navigate_route_button.dart` *(MODIFY — responsive sheetMaxHeight)*
-- `lib/features/itinerary/itinerary_screen.dart` *(MODIFY — responsive keyboard insets)*
-- `lib/features/packing/widgets/packing_template_modals.dart` *(MODIFY — responsive sheetMaxHeight)*
-- `lib/features/packing/widgets/ai_packing_dialog.dart` *(MODIFY — responsive keyboardBottomPadding)*
-- `lib/features/packing/packing_screen.dart` *(MODIFY — responsive safeBottomPadding & keyboardBottomPadding)*
-- `lib/features/profile/profile_screen.dart` *(MODIFY — responsive safeBottomPadding & sheetMaxHeight)*
-- `lib/features/chat/widgets/create_poll_sheet.dart` *(MODIFY — responsive sheetMaxHeight & keyboardHeight)*
-- `lib/features/chat/widgets/chat_attachment_picker_sheet.dart` *(MODIFY — responsive sheetMaxHeight)*
-- `lib/features/chat/chat_screen.dart` *(MODIFY — responsive sheetMaxHeight)*
-- `lib/features/home/widgets/quick_budget_sheet.dart` *(MODIFY — responsive keyboardBottomPadding)*
-- `lib/features/home/home_screen.dart` *(MODIFY — responsive topInset)*
-- `lib/features/navigation/navigation_screen.dart` *(MODIFY — responsive sheetMaxHeight)*
-- `lib/features/navigation/live_navigation_screen.dart` *(MODIFY — responsive topInset)*
-- `lib/features/navigation/widgets/nav_panels.dart` *(MODIFY — responsive safeBottomPadding)*
-- `lib/features/navigation/widgets/group_tracker_tab.dart` *(MODIFY — responsive safeBottomPadding)*
-- `lib/features/navigation/widgets/privacy_control_sheet.dart` *(MODIFY — responsive safeBottomPadding)*
-- `lib/features/navigation/widgets/sos_emergency_modal.dart` *(MODIFY — responsive keyboardBottomPadding)*
-- `lib/features/navigation/widgets/proximity_alert_tab.dart` *(MODIFY — responsive safeBottomPadding)*
-- `lib/features/navigation/widgets/navigate_to_member_sheet.dart` *(MODIFY — responsive safeBottomPadding)*
-- `lib/features/navigation/widgets/arrived_tab.dart` *(MODIFY — responsive safeBottomPadding)*
-- `lib/features/explore/explore_screen.dart` *(MODIFY — responsive sheetMaxHeight & safeBottomPadding)*
-- `lib/features/friends/friends_screen.dart` *(MODIFY — responsive safeBottomPadding)*
-- `lib/features/friends/widgets/friend_list_item.dart` *(MODIFY — responsive safeBottomPadding)*
-- `lib/features/members/members_screen.dart` *(MODIFY — responsive safeBottomPadding)*
-- `lib/features/notifications/notifications_screen.dart` *(MODIFY — responsive safeBottomPadding)*
-- `lib/features/trips/widgets/join_trip_modal.dart` *(MODIFY — responsive keyboardBottomPadding)*
-- `lib/features/trip_detail/trip_detail_screen.dart` *(MODIFY — responsive topInset)*
-- `lib/features/create_trip/steps/transport_step.dart` *(MODIFY — responsive safeBottomPadding)*
-- `lib/features/create_trip/steps/budget_step.dart` *(MODIFY — responsive keyboardBottomPadding)*
-- `lib/features/budget/budget_screen.dart` *(MODIFY — responsive keyboardHeight)*
-- `lib/features/budget/widgets/set_allowance_sheet.dart` *(MODIFY — responsive keyboardBottomPadding)*
-- `lib/core/widgets/inputs/map_pin_picker_modal.dart` *(MODIFY — responsive sheetMaxHeight)*
-- `lib/core/widgets/multi_member_picker_sheet.dart` *(MODIFY — responsive sheetMaxHeight)*
-- `lib/core/widgets/share/share_trip_modal.dart` *(MODIFY — responsive safeBottomPadding)*
-- `lib/features/activity/activity_log_screen.dart` *(MODIFY — responsive safeBottomPadding)*
 

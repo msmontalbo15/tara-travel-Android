@@ -75,6 +75,8 @@
 | **`IMP-098`** | 2026-09-07 | Trip Detail / Command Center & HUD | OngoingTripHud hero card with next stop navigation & check-in, DestinationWeatherWidget with smart municipality extraction, PrivacyInviteCodeWidget, and OfflineReadOnlyBanner. |
 | **`IMP-099`** | 2026-09-07 | Trip Detail / 5-Tab Floating Nav Dock | Frosted-glass floating bottom dock (Itinerary, Packing, Members, Expenses, Chat), removed redundant in-scroll quick actions grid, pruned unused providers and listeners. |
 | **`IMP-100`** | 2026-09-07 | Documentation / Token Limit Optimization & Redundant File Consolidation | Consolidated redundant Markdown files across repository to maximize AI agent token efficiency: merged `DEV_IDEA.md` into `UPCOMING_PLANS.md`, merged `SOFTWARE_DESIGN_PATTERNS.md` and `Analyze.md` into `MEMORY.md` (Section 30), removed redundant empty root `CHANGELOG.md`, updated `.agents/workflows/run.md`, saving ~42,000+ tokens (~172 KB). |
+| **`IMP-101`** | 2026-09-08 | Documentation / Master Token Saver & Architecture Index | Compacted `CHANGELOG.md` (179KB → 17KB) and generator script, merged `UI_STRUCTURE.md` into `MEMORY.md` and deleted file, pruned completed plans from `UPCOMING_PLANS.md` and renamed to `ROADMAP.md` (73KB → 50KB), generated high-density `INDEX.md` (~1,000 tokens), and enforced Section 7 Anti-Scanning Token Saver rule in `.agents/rules/architecture-memory.md`. |
+
 
 ---
 
@@ -2352,5 +2354,26 @@
 - **Verification**:
   - `pwsh tools/generate_changelog.ps1` completed cleanly (70 milestones).
   - Cleaned all dangling file references across codebase rules and workflows.
+
+### `IMP-101` · Master Token Saver, Documentation Pruning & Architecture Index
+- **Date**: September 8, 2026
+- **Target Files**:
+  - `docs/CHANGELOG.md` [MODIFIED - Compacted from 179KB to 17KB]
+  - `tools/generate_changelog.ps1` [MODIFIED - Compact generator keeping only latest 10 full milestones and compact historical table]
+  - `docs/MEMORY.md` [MODIFIED - Inlined Section 27 UI Architecture & Component Registry]
+  - `docs/UI_STRUCTURE.md` [DELETED - Merged into MEMORY.md]
+  - `docs/ROADMAP.md` [NEW - Pruned completed plans 1, 2, 3, 8, 13, 17, 19 to concise summaries, preserving uncompleted plans]
+  - `docs/UPCOMING_PLANS.md` [DELETED - Replaced by ROADMAP.md]
+  - `docs/INDEX.md` [NEW - Ultra-dense ~1,000-token reference mapping all routes, screens, providers, repos, models, services, and tables]
+  - `.agents/rules/architecture-memory.md` [MODIFIED - Added Section 7 Anti-Scanning Token Saver Rule]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+- **Architectural Rationale**:
+  - Dramatically reduces context consumption across model sessions (saving ~65,000+ tokens / ~220 KB of raw Markdown per full scan).
+  - Establishes a fast-path index (`docs/INDEX.md`) allowing AI agents to look up exact file paths and providers in a single ~1,000-token lookup without repo-wide directory exploration.
+  - Formally adds Rule 7 to `.agents/rules/architecture-memory.md` prohibiting agents from dumping large docs or executing indiscriminate repository audits.
+- **Verification**:
+  - Verified directory cleanliness in `docs/`: canonical set is now `MEMORY.md`, `INDEX.md`, `ROADMAP.md`, `CHANGELOG.md`, `IMPLEMENTATION_MEMORY.md`.
+  - Confirmed zero broken references in agent workflows and rules.
+
 
 
