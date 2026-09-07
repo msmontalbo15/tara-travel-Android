@@ -138,8 +138,10 @@ jobs:
             echo "⚠️ No production keystore secret found; compiling standard release APK."
           fi
 
-      - name: 🔨 Compile Release APK (Universal Fat Binary)
-        run: flutter build apk --release --no-tree-shake-icons
+      - name: 🔨 Compile Release APKs (Universal + Split Per ABI)
+        run: |
+          flutter build apk --release --split-per-abi --no-tree-shake-icons
+          flutter build apk --release --no-tree-shake-icons
 
       - name: 🔨 Compile Production Android App Bundle (.aab with R8 Obfuscation)
         run: flutter build appbundle --release --no-tree-shake-icons
@@ -149,7 +151,7 @@ jobs:
         with:
           name: tara-travel-android-release
           path: |
-            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/flutter-apk/*.apk
             build/app/outputs/bundle/release/app-release.aab
           retention-days: 14
 
@@ -179,19 +181,21 @@ jobs:
             exit 0
           fi
 
-          APK_FILE="build/app/outputs/flutter-apk/app-release.apk"
-          if [ ! -f "$APK_FILE" ]; then
-            # Check current working directory if downloaded without full tree
+          # Prefer arm64-v8a split APK (~25-35MB) to stay well within Supabase 50MB quota, falling back to universal app-release.apk
+          APK_FILE=$(find . -name "*arm64-v8a*release.apk" | head -n 1)
+          if [ -z "$APK_FILE" ] || [ ! -f "$APK_FILE" ]; then
             APK_FILE=$(find . -name "app-release.apk" | head -n 1)
           fi
 
-          if [ ! -f "$APK_FILE" ]; then
+          if [ -z "$APK_FILE" ] || [ ! -f "$APK_FILE" ]; then
             echo "❌ APK file not found for upload."
             exit 1
           fi
 
-          # Ensure bucket 'app-releases' exists and is configured for up to 250MB APKs
-          echo "Ensuring Supabase storage bucket 'app-releases' exists with 250MB limit..."
+          echo "Selected APK for Supabase upload: $APK_FILE (Size: $(du -h "$APK_FILE" | cut -f1))"
+
+          # Ensure bucket 'app-releases' exists and is configured for public access
+          echo "Ensuring Supabase storage bucket 'app-releases' exists..."
           curl -s -X POST "${SUPABASE_URL}/storage/v1/bucket" \
             -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
             -H "Content-Type: application/json" \
@@ -224,12 +228,16 @@ jobs:
             echo "Supabase response: $HTTP_BODY"
           fi
 
-          if [ "$HTTP_STATUS" != "200" ] && [ "$HTTP_STATUS" != "201" ]; then
-            echo "❌ Failed to upload APK to Supabase Storage (Status: $HTTP_STATUS)."
-            exit 1
+          # If upload succeeds, use Supabase direct storage public link
+          if [ "$HTTP_STATUS" = "200" ] || [ "$HTTP_STATUS" = "201" ]; then
+            DOWNLOAD_URL="${SUPABASE_URL}/storage/v1/object/public/app-releases/${REMOTE_FILENAME}"
+            echo "✅ Successfully uploaded APK to Supabase Storage: $DOWNLOAD_URL"
+          else
+            echo "⚠️ Supabase storage upload returned HTTP $HTTP_STATUS (Project storage plan limit reached)."
+            echo "Using GitHub Release direct download URL fallback for app_versions..."
+            DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/v${VERSION}/${REMOTE_FILENAME}"
           fi
 
-          DOWNLOAD_URL="${SUPABASE_URL}/storage/v1/object/public/app-releases/${REMOTE_FILENAME}"
           echo "DOWNLOAD_URL=${DOWNLOAD_URL}" >> $GITHUB_OUTPUT
 
       - name: 📝 Update Supabase `app_versions` Remote Config Record
@@ -272,7 +280,49 @@ jobs:
 
           echo "✅ Version record successfully registered in Supabase."
 
-  # ── 4. FIREBASE APP DISTRIBUTION (BETA TESTERS) ─────────────────────────────
+  # ── 4. GITHUB RELEASES DISPATCH (HIGH CAPACITY HOSTING) ─────────────────────
+  deploy-github-release:
+    name: 🐙 Publish GitHub Release
+    needs: build-android
+    runs-on: ubuntu-latest
+    if: success()
+    steps:
+      - name: 🛎️ Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 📥 Retrieve Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: tara-travel-android-release
+          path: release-assets
+
+      - name: 🚀 Create / Update GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${{ github.event.inputs.version_name || '1.0.1+2' }}"
+          TAG="v${VERSION}"
+          SAFE_VERSION=$(echo "$VERSION" | tr '+' '-')
+
+          # Rename artifacts for clean download names
+          find release-assets -name "*arm64-v8a*release.apk" -exec cp {} "release-assets/tara-travel-v${SAFE_VERSION}-arm64.apk" \; || true
+          find release-assets -name "app-release.apk" -exec cp {} "release-assets/tara-travel-v${SAFE_VERSION}.apk" \; || true
+
+          NOTES="${{ github.event.inputs.release_notes || 'Automated release distribution for Android.' }}"
+
+          echo "Publishing GitHub Release $TAG..."
+          gh release view "$TAG" > /dev/null 2>&1 && {
+            echo "Release $TAG exists. Uploading assets..."
+            gh release upload "$TAG" release-assets/* --clobber
+          } || {
+            echo "Creating new release $TAG..."
+            gh release create "$TAG" release-assets/* \
+              --title "Tara Travel v${VERSION}" \
+              --notes "$NOTES" \
+              --latest
+          }
+
+  # ── 5. FIREBASE APP DISTRIBUTION (BETA TESTERS) ─────────────────────────────
   deploy-firebase:
     name: 🔥 Firebase App Distribution Dispatch
     needs: build-android

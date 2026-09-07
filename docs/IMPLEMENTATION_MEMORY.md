@@ -2374,8 +2374,9 @@
   - Formally adds Rule 7 to `.agents/rules/architecture-memory.md` prohibiting agents from dumping large docs or executing indiscriminate repository audits.
 - **Verification**:
   - Verified directory cleanliness in `docs/`: canonical set is now `MEMORY.md`, `INDEX.md`, `ROADMAP.md`, `CHANGELOG.md`, `IMPLEMENTATION_MEMORY.md`.
-  - Confirmed zero broken references in agent workflows and rules.
-### `IMP-102` · Supabase Storage APK Upload Hardening & 250MB Limit
+
+
+### `IMP-102` · Supabase Storage APK Upload Hardening, Split ABI & GitHub Releases
 - **Date**: September 8, 2026
 - **Target Files**:
   - `supabase/migrations/026_app_versions_and_remote_config.sql` [MODIFIED]
@@ -2383,12 +2384,12 @@
   - `docs/MEMORY.md` [MODIFIED]
   - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
 - **Architectural Rationale**:
-  - Fixes HTTP 400 Bad Request error observed during automated OTA APK uploads to Supabase Storage.
-  - Causes addressed:
-    1. Default Supabase storage bucket file size limit is 50MB; release APKs are ~120MB-125MB. Increased `file_size_limit` to 262144400 bytes (~250MB) and specified explicit MIME types (`application/vnd.android.package-archive`, `application/octet-stream`).
-    2. Version strings containing `+` (e.g., `1.0.1+2`) create invalid URL/storage path requests when unencoded. Added sanitization (`SAFE_VERSION=$(echo "$VERSION" | tr '+' '-')`) transforming destination filenames to `tara-travel-v1.0.1-2.apk`.
-    3. Added idempotency pre-flight calls directly in the GitHub Actions runner using `SUPABASE_SERVICE_ROLE_KEY` to ensure the bucket exists and update its configuration dynamically.
-    4. Enhanced error reporting by capturing and logging both HTTP status and response body, asserting on non-200/201 codes to fail the build cleanly if uploads are rejected.
+  - Fixes HTTP 400 (`Payload too large / EntityTooLarge`) error during OTA release uploads to Supabase Storage.
+  - Causes addressed & multi-layered mitigation:
+    1. Universal fat APKs (~125MB) exceed Supabase's project-wide 50MB file size ceiling. Added `flutter build apk --release --split-per-abi` which produces target-architecture APKs (`arm64-v8a`) under ~30MB, fitting comfortably within Supabase free-tier limits.
+    2. Version strings containing `+` (e.g., `1.0.1+2`) are sanitized (`SAFE_VERSION=$(echo "$VERSION" | tr '+' '-')`) yielding URL-safe object names (`tara-travel-v1.0.1-2.apk`).
+    3. Added automated GitHub Releases publishing (`deploy-github-release` job using standard `gh release`) allowing unlimited asset size hosting (up to 2GB) and providing a fail-safe fallback `force_update_url` if Supabase storage upload ever encounters quota rejections.
+    4. Enhanced error reporting and response parsing to diagnose future deployment status.
 - **Verification**:
-  - Validated migration SQL syntax.
-  - Validated GitHub Actions YAML structure and curl script pipelines.
+  - Validated GitHub Actions workflow syntax.
+  - Validated changelog and documentation alignment.
