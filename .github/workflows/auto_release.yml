@@ -304,19 +304,26 @@ jobs:
           TAG="v${VERSION}"
           SAFE_VERSION=$(echo "$VERSION" | tr '+' '-')
 
-          # Rename artifacts for clean download names
-          find release-assets -name "*arm64-v8a*release.apk" -exec cp {} "release-assets/tara-travel-v${SAFE_VERSION}-arm64.apk" \; || true
-          find release-assets -name "app-release.apk" -exec cp {} "release-assets/tara-travel-v${SAFE_VERSION}.apk" \; || true
+          # Stash individual files into a flat upload directory
+          mkdir -p release-upload
+          find release-assets -type f \( -name "*.apk" -o -name "*.aab" \) -exec cp {} release-upload/ \;
+
+          # Clean naming for primary download links
+          find release-upload -name "*arm64-v8a*release.apk" -exec cp {} "release-upload/tara-travel-v${SAFE_VERSION}-arm64.apk" \; || true
+          find release-upload -name "app-release.apk" -exec cp {} "release-upload/tara-travel-v${SAFE_VERSION}.apk" \; || true
+          find release-upload -name "app-release.aab" -exec cp {} "release-upload/tara-travel-v${SAFE_VERSION}.aab" \; || true
 
           NOTES="${{ github.event.inputs.release_notes || 'Automated release distribution for Android.' }}"
 
-          echo "Publishing GitHub Release $TAG..."
+          echo "Publishing GitHub Release $TAG with assets:"
+          ls -la release-upload
+
           gh release view "$TAG" > /dev/null 2>&1 && {
             echo "Release $TAG exists. Uploading assets..."
-            gh release upload "$TAG" release-assets/* --clobber
+            gh release upload "$TAG" release-upload/* --clobber
           } || {
             echo "Creating new release $TAG..."
-            gh release create "$TAG" release-assets/* \
+            gh release create "$TAG" release-upload/* \
               --title "Tara Travel v${VERSION}" \
               --notes "$NOTES" \
               --latest
