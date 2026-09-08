@@ -22,7 +22,11 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase show AuthSta
 import '../auth/data/secure_session_repository.dart';
 import '../auth/presentation/auth_notifier.dart';
 import '../middleware/audit_logger.dart';
+import '../providers/activity_provider.dart';
+import '../providers/friend_provider.dart';
 import '../providers/profile_provider.dart';
+import '../providers/selected_trip_provider.dart';
+import '../providers/trip_provider.dart';
 import '../services/user_presence_service.dart';
 import '../services/app_version_service.dart';
 import 'versioning/force_update_screen.dart';
@@ -159,8 +163,16 @@ class _AuthGateState extends ConsumerState<AuthGate> {
       await UserPresenceService.instance.stop();
       await AuditLogger.instance.flush();
 
-      // Invalidate in-memory profile provider cache
+      // Invalidate ALL user-scoped providers so the next authenticated user
+      // gets a clean slate with no data leakage from the previous session.
       ref.invalidate(profileProvider);
+      ref.invalidate(allTripsProvider);
+      ref.invalidate(activeTripProvider);
+      ref.invalidate(selectedTripIdProvider);
+      ref.invalidate(friendsProvider);
+      ref.invalidate(incomingRequestsProvider);
+      ref.invalidate(outgoingRequestsProvider);
+      ref.invalidate(activityProvider);
 
       _navigatorKey.currentState
           ?.pushNamedAndRemoveUntil('/', (route) => false);

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../auth/presentation/auth_notifier.dart';
 import 'auth_provider.dart';
 import 'repository_providers.dart';
 
@@ -460,15 +461,19 @@ class ProfileNotifier extends Notifier<ProfileState> {
     _persist();
   }
 
-  /// Signs the user out from Supabase and resets in-memory profile state.
+  /// Signs the user out by delegating to [AuthNotifier], which clears the
+  /// Supabase session, Google Sign-In tokens, and encrypted session storage.
+  /// Provider invalidation (trips, friends, etc.) is handled by [AuthGate]
+  /// reacting to the Supabase [signedOut] event — no manual state reset needed here.
   Future<void> signOut() async {
     try {
-      await Supabase.instance.client.auth.signOut();
+      await ref.read(authNotifierProvider.notifier).signOut();
     } catch (e) {
       debugPrint('[ProfileProvider] signOut error: $e');
     }
-
-    state = const ProfileState(isLoaded: true);
+    // NOTE: Do NOT set state here. AuthGate observes the Supabase signedOut
+    // event and calls ref.invalidate(profileProvider), which disposes this
+    // notifier. Setting state on a disposed notifier throws a StateError.
   }
 }
 

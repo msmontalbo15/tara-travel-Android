@@ -51,3 +51,8 @@ analyze*.txt
 check*.txt
 flutter_*.log
 *.zip
+
+# Android signing keystore
+*.jks
+*.keystore
+android/key.properties
