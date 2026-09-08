@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 import '../auth/presentation/auth_notifier.dart';
 import 'auth_provider.dart';
 import 'repository_providers.dart';
@@ -250,7 +250,7 @@ class ProfileNotifier extends Notifier<ProfileState> {
   @override
   ProfileState build() {
     // Re-eval/load profile whenever the auth state changes
-    ref.listen<AsyncValue<AuthState>>(authStateProvider, (prev, next) {
+    ref.listen(authStateProvider, (prev, next) {
       next.whenOrNull(data: (_) => _loadProfile());
     });
     // Initial load of profile
