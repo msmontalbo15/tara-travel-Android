@@ -1,7 +1,7 @@
 # Tara Travel - Version Changelog
 
 > Auto-generated from IMPLEMENTATION_MEMORY.md + git log
-> Last updated: **2026-09-08 18:14 PHT**
+> Last updated: **2026-09-08 19:10 PHT**
 
 ---
 
@@ -152,6 +152,7 @@
 
 ## 2026-09-08
 
+- **IMP-106** (CI/CD & Release / Auto-Increment Version, Release Notes & Firebase App ID): Automated build number auto-increment via `prepare-release` job, dynamic release notes extraction from implementation history and commit messages, and package-matched Firebase App ID extraction for `com.taratravel.app`.
 - **IMP-105** (CI/CD & Android / Release Keystore & Fallback Signing Fix): Resolved GitHub Actions `:app:validateSigningRelease` failure by adding `android/key.properties` loading to `android/app/build.gradle.kts`, protecting the custom debug keystore lookup against missing files on CI runners, and injecting explicit signing environment variables into `auto_release.yml`.
 - **IMP-104** (Auth & Security / Native Google Sign-In Debug Keystore & OAuth Client ID): Bound dedicated `tara_debug.keystore` and updated `google-services.json` with Android OAuth client ID.
 - **IMP-103** (Versioning & UX / Startup Soft Update Suppression): Removed disturbing automatic `SoftUpdateSheet` prompt from cold-start `AuthGate`; preserved critical `ForceUpdateScreen` & `MaintenanceModeScreen` startup gates while maintaining manual on-demand soft updates via `ProfileScreen`.

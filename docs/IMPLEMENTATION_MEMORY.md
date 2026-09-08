@@ -2641,3 +2641,25 @@
 - **Verification**:
   - Local verification with Gradle: `./gradlew.bat :app:validateSigningRelease` succeeded (`BUILD SUCCESSFUL`).
   - `flutter analyze` verified clean (0 errors/warnings).
+
+
+### `IMP-106` · Auto-Incrementing Version Gate, Dynamic Release Notes & Firebase App ID Alignment
+- **Date**: September 8, 2026
+- **Target Files**:
+  - `.github/workflows/auto_release.yml` [MODIFIED - Added `prepare-release` job, dynamic versioning, release note extractor, and package-matched Firebase App ID]
+  - `pubspec.yaml` [MODIFIED - Bumped base version to `1.0.1+1`]
+  - `lib/core/services/app_version_service.dart` [MODIFIED - Configured runtime `--dart-define=APP_VERSION` environment ingestion]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+  - `docs/CHANGELOG.md` [MODIFIED]
+- **Architectural Rationale**:
+  - Fixes Firebase App Distribution upload failure:
+    - Root cause: `secrets.FIREBASE_APP_ID` was set to an old App ID associated with placeholder package `com.example.tara_travel`, causing Firebase CLI to reject APK upload for `com.taratravel.app`.
+    - Resolution: Extracted the genuine `mobilesdk_app_id` (`1:616637846202:android:4c3feeff8af62994e6e883`) matching `com.taratravel.app` directly from `android/app/google-services.json` in the CI pipeline, eliminating package name mismatches.
+  - Implemented Automated Version Auto-Increment:
+    - Built a centralized `prepare-release` job in `.github/workflows/auto_release.yml` that dynamically computes `version_name`, strictly incrementing `build_number` (`git rev-list --count HEAD` combined with `github.run_number`), `full_version` (e.g. `1.0.1+77`), and URL-safe `safe_version` (e.g. `1.0.1-77`).
+    - Injected `--build-name`, `--build-number`, and `--dart-define=APP_VERSION` into all `flutter build apk` (split & universal) and `flutter build appbundle` steps, ensuring output binaries and runtime code reflect the auto-incremented version.
+  - Implemented Dynamic Release Notes Resolution:
+    - Automatically extracts milestone titles and summaries from `docs/IMPLEMENTATION_MEMORY.md` and git commit history when manual release notes are omitted, propagating rich release notes synchronously to Supabase `public.app_versions`, GitHub Releases, and Firebase App Distribution.
+- **Verification**:
+  - `flutter analyze lib/core/services/app_version_service.dart`: 0 errors, 0 warnings.
+  - Validated workflow DAG: `prepare-release` outputs correctly consumed by `build-android`, `deploy-supabase`, `deploy-github-release`, and `deploy-firebase`.

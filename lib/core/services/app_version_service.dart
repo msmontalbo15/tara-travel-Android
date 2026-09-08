@@ -160,8 +160,9 @@ class VersionCheckResult {
 class AppVersionService {
   final SupabaseClient _supabase;
 
-  /// Default baseline version corresponding to `pubspec.yaml`.
-  static const String currentAppVersionString = '1.0.0+1';
+  /// Default baseline version corresponding to `pubspec.yaml` or injected via `--dart-define=APP_VERSION=...`.
+  static const String currentAppVersionString =
+      String.fromEnvironment('APP_VERSION', defaultValue: '1.0.1+1');
 
   AppVersionService({SupabaseClient? supabaseClient})
       : _supabase = supabaseClient ?? Supabase.instance.client;

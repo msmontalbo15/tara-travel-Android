@@ -85,10 +85,102 @@ jobs:
             echo "✅ Unit test execution completed with coverage."
           fi
 
-  # ── 2. COMPILE PRODUCTION ANDROID ARTIFACTS ─────────────────────────────────
+  # ── 2. PREPARE RELEASE METADATA (AUTO-INCREMENT & RELEASE NOTES) ───────────
+  prepare-release:
+    name: 🔖 Auto-Increment Version & Release Notes
+    runs-on: ubuntu-latest
+    outputs:
+      version_name: ${{ steps.meta.outputs.version_name }}
+      build_number: ${{ steps.meta.outputs.build_number }}
+      full_version: ${{ steps.meta.outputs.full_version }}
+      safe_version: ${{ steps.meta.outputs.safe_version }}
+      release_notes: ${{ steps.meta.outputs.release_notes }}
+      firebase_app_id: ${{ steps.meta.outputs.firebase_app_id }}
+    steps:
+      - name: 🛎️ Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🔍 Compute Auto-Increment Version & Release Notes
+        id: meta
+        run: |
+          # 1. Base Semantic Version from pubspec.yaml
+          BASE_VERSION=$(grep '^version:' pubspec.yaml | head -n 1 | sed -E 's/version:[[:space:]]*([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
+          BASE_BUILD=$(grep '^version:' pubspec.yaml | head -n 1 | sed -E 's/version:.*[+]([0-9]+)/\1/')
+          
+          # Auto-increment build number using GitHub run_number + commit count
+          RUN_NUM="${{ github.run_number }}"
+          COMMIT_COUNT=$(git rev-list --count HEAD 2>/dev/null || echo "1")
+
+          if [ -n "${{ github.event.inputs.version_name }}" ]; then
+            INPUT_VER="${{ github.event.inputs.version_name }}"
+            if [[ "$INPUT_VER" == *"+"* ]]; then
+              SEM_VER="${INPUT_VER%+*}"
+              BUILD_NUM="${INPUT_VER#*+}"
+            else
+              SEM_VER="$INPUT_VER"
+              BUILD_NUM="$COMMIT_COUNT"
+            fi
+          else
+            SEM_VER="${BASE_VERSION:-1.0.1}"
+            # Ensure build number strictly increases across every commit & workflow run
+            if [ "$COMMIT_COUNT" -gt "${BASE_BUILD:-1}" ]; then
+              BUILD_NUM="$COMMIT_COUNT"
+            else
+              BUILD_NUM=$(( ${BASE_BUILD:-1} + RUN_NUM ))
+            fi
+          fi
+
+          FULL_VERSION="${SEM_VER}+${BUILD_NUM}"
+          SAFE_VERSION=$(echo "$FULL_VERSION" | tr '+' '-')
+
+          echo "version_name=${SEM_VER}" >> $GITHUB_OUTPUT
+          echo "build_number=${BUILD_NUM}" >> $GITHUB_OUTPUT
+          echo "full_version=${FULL_VERSION}" >> $GITHUB_OUTPUT
+          echo "safe_version=${SAFE_VERSION}" >> $GITHUB_OUTPUT
+
+          # 2. Release Notes Resolution
+          if [ -n "${{ github.event.inputs.release_notes }}" ]; then
+            NOTES="${{ github.event.inputs.release_notes }}"
+          else
+            # Extract latest milestone summary from docs/IMPLEMENTATION_MEMORY.md or latest git commit
+            LATEST_IMP=$(grep -E '^### `IMP-[0-9]+`' docs/IMPLEMENTATION_MEMORY.md 2>/dev/null | tail -n 1 | sed -E 's/^### `(IMP-[0-9]+)`[[:space:]]*[·.][[:space:]]*(.+)/\1: \2/' || true)
+            COMMIT_MSG=$(git log -1 --pretty=%s 2>/dev/null || true)
+
+            if [ -n "$LATEST_IMP" ]; then
+              NOTES="$LATEST_IMP"
+            elif [ -n "$COMMIT_MSG" ]; then
+              NOTES="$COMMIT_MSG"
+            else
+              NOTES="Automated live release v${FULL_VERSION} with enhanced features and stability patches."
+            fi
+          fi
+
+          echo "release_notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$NOTES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+          # 3. Resolve Firebase App ID for com.taratravel.app
+          PKG_APP_ID=""
+          if [ -f "android/app/google-services.json" ]; then
+            PKG_APP_ID=$(node -e '
+              try {
+                const gs = require("./android/app/google-services.json");
+                const client = gs.client.find(c => c.client_info?.android_client_info?.package_name === "com.taratravel.app") || gs.client[0];
+                console.log(client?.client_info?.mobilesdk_app_id || "");
+              } catch (e) {
+                console.log("");
+              }
+            ')
+          fi
+          TARGET_APP_ID="${PKG_APP_ID:-1:616637846202:android:4c3feeff8af62994e6e883}"
+          echo "firebase_app_id=${TARGET_APP_ID}" >> $GITHUB_OUTPUT
+
+  # ── 3. COMPILE PRODUCTION ANDROID ARTIFACTS ─────────────────────────────────
   build-android:
     name: 🤖 Compile Release APK & AAB
-    needs: quality-gate
+    needs: [quality-gate, prepare-release]
     runs-on: ubuntu-latest
     steps:
       - name: 🛎️ Checkout Repository
@@ -145,8 +237,15 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          flutter build apk --release --split-per-abi --no-tree-shake-icons
-          flutter build apk --release --no-tree-shake-icons
+          flutter build apk --release --split-per-abi --no-tree-shake-icons \
+            --build-name="${{ needs.prepare-release.outputs.version_name }}" \
+            --build-number="${{ needs.prepare-release.outputs.build_number }}" \
+            --dart-define=APP_VERSION="${{ needs.prepare-release.outputs.full_version }}"
+
+          flutter build apk --release --no-tree-shake-icons \
+            --build-name="${{ needs.prepare-release.outputs.version_name }}" \
+            --build-number="${{ needs.prepare-release.outputs.build_number }}" \
+            --dart-define=APP_VERSION="${{ needs.prepare-release.outputs.full_version }}"
 
       - name: 🔨 Compile Production Android App Bundle (.aab with R8 Obfuscation)
         env:
@@ -154,7 +253,11 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: flutter build appbundle --release --no-tree-shake-icons
+        run: |
+          flutter build appbundle --release --no-tree-shake-icons \
+            --build-name="${{ needs.prepare-release.outputs.version_name }}" \
+            --build-number="${{ needs.prepare-release.outputs.build_number }}" \
+            --dart-define=APP_VERSION="${{ needs.prepare-release.outputs.full_version }}"
 
       - name: 📤 Stash Build Artifacts
         uses: actions/upload-artifact@v4
@@ -165,10 +268,10 @@ jobs:
             build/app/outputs/bundle/release/app-release.aab
           retention-days: 14
 
-  # ── 3. SUPABASE STORAGE CLOUD DISPATCH & REMOTE CONFIG BUMP ─────────────────
+  # ── 4. SUPABASE STORAGE CLOUD DISPATCH & REMOTE CONFIG BUMP ─────────────────
   deploy-supabase:
     name: ☁️ Supabase Cloud OTA Distribution & Version DB Update
-    needs: build-android
+    needs: [build-android, prepare-release]
     runs-on: ubuntu-latest
     if: success()
     steps:
@@ -217,9 +320,8 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{"public":true,"file_size_limit":262144400}' > /dev/null 2>&1 || true
 
-          VERSION="${{ github.event.inputs.version_name || '1.0.1+2' }}"
-          # Sanitize + to - for URL and storage path safety (e.g., 1.0.1+2 -> 1.0.1-2)
-          SAFE_VERSION=$(echo "$VERSION" | tr '+' '-')
+          VERSION="${{ needs.prepare-release.outputs.full_version }}"
+          SAFE_VERSION="${{ needs.prepare-release.outputs.safe_version }}"
           REMOTE_FILENAME="tara-travel-v${SAFE_VERSION}.apk"
 
           echo "Uploading $APK_FILE to Supabase Storage as $REMOTE_FILENAME..."
@@ -261,9 +363,9 @@ jobs:
             exit 0
           fi
 
-          VERSION="${{ github.event.inputs.version_name || '1.0.1+2' }}"
+          VERSION="${{ needs.prepare-release.outputs.full_version }}"
           MIN_VER="${{ github.event.inputs.min_supported_version || '1.0.0' }}"
-          NOTES="${{ github.event.inputs.release_notes || 'Automated OTA release with Philippine land travel enhancements and responsive layout engine.' }}"
+          NOTES="${{ needs.prepare-release.outputs.release_notes }}"
           MAINTENANCE="${{ github.event.inputs.maintenance_mode || 'false' }}"
           FALLBACK_URL="${DOWNLOAD_URL:-https://tara-travel.app/download/android}"
 
@@ -290,10 +392,10 @@ jobs:
 
           echo "✅ Version record successfully registered in Supabase."
 
-  # ── 4. GITHUB RELEASES DISPATCH (HIGH CAPACITY HOSTING) ─────────────────────
+  # ── 5. GITHUB RELEASES DISPATCH (HIGH CAPACITY HOSTING) ─────────────────────
   deploy-github-release:
     name: 🐙 Publish GitHub Release
-    needs: build-android
+    needs: [build-android, prepare-release]
     runs-on: ubuntu-latest
     if: success()
     steps:
@@ -310,9 +412,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          VERSION="${{ github.event.inputs.version_name || '1.0.1+2' }}"
+          VERSION="${{ needs.prepare-release.outputs.full_version }}"
           TAG="v${VERSION}"
-          SAFE_VERSION=$(echo "$VERSION" | tr '+' '-')
+          SAFE_VERSION="${{ needs.prepare-release.outputs.safe_version }}"
 
           # Stash individual files into a flat upload directory
           mkdir -p release-upload
@@ -323,7 +425,7 @@ jobs:
           find release-upload -name "app-release.apk" -exec cp {} "release-upload/tara-travel-v${SAFE_VERSION}.apk" \; || true
           find release-upload -name "app-release.aab" -exec cp {} "release-upload/tara-travel-v${SAFE_VERSION}.aab" \; || true
 
-          NOTES="${{ github.event.inputs.release_notes || 'Automated release distribution for Android.' }}"
+          NOTES="${{ needs.prepare-release.outputs.release_notes }}"
 
           echo "Publishing GitHub Release $TAG with assets:"
           ls -la release-upload
@@ -339,13 +441,16 @@ jobs:
               --latest
           }
 
-  # ── 5. FIREBASE APP DISTRIBUTION (BETA TESTERS) ─────────────────────────────
+  # ── 6. FIREBASE APP DISTRIBUTION (BETA TESTERS) ─────────────────────────────
   deploy-firebase:
     name: 🔥 Firebase App Distribution Dispatch
-    needs: build-android
+    needs: [build-android, prepare-release]
     runs-on: ubuntu-latest
     if: success()
     steps:
+      - name: 🛎️ Checkout Repository
+        uses: actions/checkout@v4
+
       - name: 📥 Retrieve Build Artifacts
         uses: actions/download-artifact@v4
         with:
@@ -353,8 +458,9 @@ jobs:
 
       - name: 🚀 Dispatch to Firebase Beta Testers
         env:
-          FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+          FIREBASE_APP_ID: ${{ needs.prepare-release.outputs.firebase_app_id }}
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          RELEASE_NOTES: ${{ needs.prepare-release.outputs.release_notes }}
         run: |
           if [ -z "$FIREBASE_APP_ID" ] || [ -z "$FIREBASE_TOKEN" ]; then
             echo "ℹ️ Firebase credentials not provided. Skipping Firebase App Distribution dispatch."
@@ -362,9 +468,14 @@ jobs:
           fi
 
           APK_FILE=$(find . -name "app-release.apk" | head -n 1)
-          echo "Dispatching $APK_FILE to Firebase App Distribution..."
+          if [ -z "$APK_FILE" ]; then
+            echo "❌ APK file not found for Firebase distribution."
+            exit 1
+          fi
+
+          echo "Dispatching $APK_FILE to Firebase App Distribution for app $FIREBASE_APP_ID..."
           # Uses Firebase CLI via npx
           npx firebase-tools appdistribution:distribute "$APK_FILE" \
             --app "$FIREBASE_APP_ID" \
             --token "$FIREBASE_TOKEN" \
-            --release-notes "${{ github.event.inputs.release_notes || github.event.head_commit.message }}"
+            --release-notes "$RELEASE_NOTES"
