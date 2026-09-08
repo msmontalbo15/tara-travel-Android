@@ -27,7 +27,6 @@ import '../services/user_presence_service.dart';
 import '../services/app_version_service.dart';
 import 'versioning/force_update_screen.dart';
 import 'versioning/maintenance_mode_screen.dart';
-import 'versioning/soft_update_sheet.dart';
 
 class _RouteTrackingObserver extends NavigatorObserver {
   String? currentRoute;
@@ -62,7 +61,6 @@ class _AuthGateState extends ConsumerState<AuthGate> {
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   final _RouteTrackingObserver _routeObserver = _RouteTrackingObserver();
   VersionCheckResult? _blockingVersionResult;
-  bool _hasPromptedSoftUpdate = false;
 
   @override
   void initState() {
@@ -77,6 +75,8 @@ class _AuthGateState extends ConsumerState<AuthGate> {
       if (!mounted) return;
 
       // 1. Evaluate Remote Version & Maintenance State (Plan 17)
+      // Hard locks (force update and maintenance) block navigation;
+      // soft updates are checked non-intrusively via Settings/Profile.
       try {
         final versionResult = await ref.read(appVersionCheckProvider.future);
         if (mounted) {
@@ -85,12 +85,6 @@ class _AuthGateState extends ConsumerState<AuthGate> {
               _blockingVersionResult = versionResult;
             });
             return; // Hard lock; halt further auto-login routing
-          } else if (versionResult.isSoftUpdate && !_hasPromptedSoftUpdate) {
-            _hasPromptedSoftUpdate = true;
-            final navContext = _navigatorKey.currentContext;
-            if (navContext != null && navContext.mounted) {
-              SoftUpdateSheet.show(navContext, versionResult);
-            }
           }
         }
       } catch (_) {}

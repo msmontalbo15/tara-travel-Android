@@ -26,21 +26,11 @@ import 'features/friends/friends_screen.dart';
 import 'core/widgets/auth_gate.dart';
 import 'core/auth/data/secure_session_repository.dart';
 import 'core/security/three_layer_encryption_service.dart';
-import 'core/services/firebase_notification_service.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // ── Firebase Core Initialization ──────────────────────────────────────────
-  try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-  } catch (e) {
-    debugPrint('[Firebase] Initialization error: $e');
-  }
 
   // ── 0. Full-screen edge-to-edge ──────────────────────────────────────────
   // Render content behind status bar and system navigation bar.
@@ -79,8 +69,6 @@ void main() async {
   // Subsequent calls are instant (keys are cached in memory after first load).
   await ThreeLayerEncryptionService.instance.init();
 
-  // ── 5. Initialise Firebase Notification Service (FCM) ───────────────────────
-  await FirebaseNotificationService.instance.initialize();
 
   runApp(
     const ProviderScope(

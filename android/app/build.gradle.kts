@@ -23,7 +23,7 @@ val hasReleaseKey    = keystorePath != null && keystorePassword != null &&
                        keyAlias != null && keyPassword != null
 
 android {
-    namespace   = "com.example.tara_travel"
+    namespace   = "com.taratravel.app"
     compileSdk  = flutter.compileSdkVersion
     ndkVersion  = flutter.ndkVersion
 
@@ -38,6 +38,12 @@ android {
 
     // ── Signing Configs ─────────────────────────────────────────────────────
     signingConfigs {
+        getByName("debug") {
+            storeFile = file("tara_debug.keystore")
+            storePassword = "taradebug"
+            keyAlias = "taradebugkey"
+            keyPassword = "taradebug"
+        }
         create("release") {
             if (hasReleaseKey) {
                 storeFile     = file(keystorePath!!)
@@ -49,7 +55,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.tara_travel"
+        applicationId = "com.taratravel.app"
         // minSdk 23 required by flutter_secure_storage EncryptedSharedPreferences
         // and the Google Credential Manager API.
         minSdk = flutter.minSdkVersion

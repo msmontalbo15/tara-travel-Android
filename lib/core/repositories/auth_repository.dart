@@ -127,20 +127,11 @@ class AuthRepository {
         return null;
       }
 
-      // Fallback: Trigger browser OAuth flow if native token wasn't issued or native SDK failed
-      debugPrint('[AuthRepository] Attempting browser OAuth fallback...');
-      final launched = await _supabase.auth.signInWithOAuth(
-        OAuthProvider.google,
-        redirectTo: 'taratravel://callback',
-      );
-      if (launched) {
-        return await waitForSession(timeout: const Duration(seconds: 15));
-      }
-
       if (nativeError != null) {
         throw UnknownAuthFailure('Google sign-in error: $nativeError');
       }
-      return null;
+
+      throw const UnknownAuthFailure('Failed to obtain Google ID token. Please check Google Play Services configuration.');
     } on AuthException catch (e) {
       throw AuthFailureMapper.fromAuthException(e);
     } catch (e) {
@@ -151,6 +142,70 @@ class AuthRepository {
         throw const NetworkFailure();
       }
       throw UnknownAuthFailure('Google sign-in failed: ${e.toString()}');
+    }
+  }
+
+  // ── Pure Supabase Email / Password Authentication ─────────────────────────
+
+  /// Signs in directly using Supabase Email and Password.
+  Future<User?> signInWithEmailPassword({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final response = await _supabase.auth.signInWithPassword(
+        email: email.trim(),
+        password: password,
+      );
+      return response.user;
+    } on AuthException catch (e) {
+      throw AuthFailureMapper.fromAuthException(e);
+    } catch (e) {
+      final msg = e.toString().toLowerCase();
+      if (msg.contains('network') || msg.contains('socket')) {
+        throw const NetworkFailure();
+      }
+      throw UnknownAuthFailure('Sign-in failed: $e');
+    }
+  }
+
+  /// Registers a new user directly using Supabase Email and Password.
+  Future<User?> signUpWithEmailPassword({
+    required String email,
+    required String password,
+    String? fullName,
+  }) async {
+    try {
+      final response = await _supabase.auth.signUp(
+        email: email.trim(),
+        password: password,
+        data: fullName != null && fullName.isNotEmpty ? {'full_name': fullName.trim()} : null,
+      );
+      return response.user;
+    } on AuthException catch (e) {
+      throw AuthFailureMapper.fromAuthException(e);
+    } catch (e) {
+      final msg = e.toString().toLowerCase();
+      if (msg.contains('network') || msg.contains('socket')) {
+        throw const NetworkFailure();
+      }
+      throw UnknownAuthFailure('Sign-up failed: $e');
+    }
+  }
+
+  /// Signs in anonymously directly via Supabase Auth (zero external providers).
+  Future<User?> signInAnonymously() async {
+    try {
+      final response = await _supabase.auth.signInAnonymously();
+      return response.user;
+    } on AuthException catch (e) {
+      throw AuthFailureMapper.fromAuthException(e);
+    } catch (e) {
+      final msg = e.toString().toLowerCase();
+      if (msg.contains('network') || msg.contains('socket')) {
+        throw const NetworkFailure();
+      }
+      throw UnknownAuthFailure('Anonymous sign-in failed: $e');
     }
   }
 

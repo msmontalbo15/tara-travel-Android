@@ -109,6 +109,103 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     }
   }
 
+  // ── Direct Supabase Email & Password Sign-In ──────────────────────────────
+
+  /// Signs in directly with Supabase email & password.
+  Future<void> signInWithEmailPassword({
+    required String email,
+    required String password,
+  }) async {
+    if (_throttled()) return;
+    _recordAttempt();
+
+    state = const AsyncData(AuthLoading());
+    try {
+      final user = await _authRepo.signInWithEmailPassword(
+        email: email,
+        password: password,
+      );
+      if (user == null) {
+        state = const AsyncData(AuthUnauthenticated());
+        return;
+      }
+      final session = Supabase.instance.client.auth.currentSession;
+      if (session != null) {
+        await _sessionRepo.persistSession(session);
+      }
+      state = AsyncData(AuthAuthenticated(user));
+    } on AuthFailure catch (f) {
+      state = AsyncData(AuthError(message: f.userMessage));
+    } on AuthException catch (e) {
+      final failure = AuthFailureMapper.fromAuthException(e);
+      state = AsyncData(AuthError(message: failure.userMessage));
+    } catch (e) {
+      state = AsyncData(AuthError(message: e.toString()));
+    }
+  }
+
+  /// Registers directly with Supabase email & password.
+  Future<void> signUpWithEmailPassword({
+    required String email,
+    required String password,
+    String? fullName,
+  }) async {
+    if (_throttled()) return;
+    _recordAttempt();
+
+    state = const AsyncData(AuthLoading());
+    try {
+      final user = await _authRepo.signUpWithEmailPassword(
+        email: email,
+        password: password,
+        fullName: fullName,
+      );
+      if (user == null) {
+        state = const AsyncData(AuthUnauthenticated());
+        return;
+      }
+      final session = Supabase.instance.client.auth.currentSession;
+      if (session != null) {
+        await _sessionRepo.persistSession(session);
+      }
+      state = AsyncData(AuthAuthenticated(user));
+    } on AuthFailure catch (f) {
+      state = AsyncData(AuthError(message: f.userMessage));
+    } on AuthException catch (e) {
+      final failure = AuthFailureMapper.fromAuthException(e);
+      state = AsyncData(AuthError(message: failure.userMessage));
+    } catch (e) {
+      state = AsyncData(AuthError(message: e.toString()));
+    }
+  }
+
+  /// Instant Supabase anonymous / guest sign-in.
+  Future<void> signInAnonymously() async {
+    if (_throttled()) return;
+    _recordAttempt();
+
+    state = const AsyncData(AuthLoading());
+    try {
+      final user = await _authRepo.signInAnonymously();
+      if (user == null) {
+        state = const AsyncData(AuthUnauthenticated());
+        return;
+      }
+      final session = Supabase.instance.client.auth.currentSession;
+      if (session != null) {
+        await _sessionRepo.persistSession(session);
+      }
+      state = AsyncData(AuthAuthenticated(user));
+    } on AuthFailure catch (f) {
+      state = AsyncData(AuthError(message: f.userMessage));
+    } on AuthException catch (e) {
+      final failure = AuthFailureMapper.fromAuthException(e);
+      state = AsyncData(AuthError(message: failure.userMessage));
+    } catch (e) {
+      state = AsyncData(AuthError(message: e.toString()));
+    }
+  }
+
   // ── Biometric Sign-In ─────────────────────────────────────────────────────
 
   /// Authenticates using device biometrics (Face ID / Fingerprint).

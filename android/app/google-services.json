@@ -1,26 +1,44 @@
 {
   "project_info": {
-    "project_number": "704416646683",
-    "project_id": "tara-travel-30b8e",
-    "storage_bucket": "tara-travel-30b8e.firebasestorage.app"
+    "project_number": "616637846202",
+    "project_id": "tara-travel-4a6a1",
+    "storage_bucket": "tara-travel-4a6a1.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:704416646683:android:a1d190172d5c7c676e9abe",
+        "mobilesdk_app_id": "1:616637846202:android:4c3feeff8af62994e6e883",
         "android_client_info": {
-          "package_name": "com.example.tara_travel"
+          "package_name": "com.taratravel.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "616637846202-phs9q9sve7vr7iangh7mlika823o066m.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.taratravel.app",
+            "certificate_hash": "7a1b30e8b081454729fbaff6112dcd0a01807115"
+          }
+        },
+        {
+          "client_id": "616637846202-puvdihfams46tvjiofdseamheem66pau.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSyC9ArRe2MzBRFmsvnvN9wWRrk6MZuhYxSE"
+          "current_key": "AIzaSyDiWlDp7CJeSleEpLNc0gXvnv0EghLDavU"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "616637846202-puvdihfams46tvjiofdseamheem66pau.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

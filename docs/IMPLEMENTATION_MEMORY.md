@@ -77,6 +77,7 @@
 | **`IMP-100`** | 2026-09-07 | Documentation / Token Limit Optimization & Redundant File Consolidation | Consolidated redundant Markdown files across repository to maximize AI agent token efficiency: merged `DEV_IDEA.md` into `UPCOMING_PLANS.md`, merged `SOFTWARE_DESIGN_PATTERNS.md` and `Analyze.md` into `MEMORY.md` (Section 30), removed redundant empty root `CHANGELOG.md`, updated `.agents/workflows/run.md`, saving ~42,000+ tokens (~172 KB). |
 | **`IMP-101`** | 2026-09-08 | Documentation / Master Token Saver & Architecture Index | Compacted `CHANGELOG.md` (179KB → 17KB) and generator script, merged `UI_STRUCTURE.md` into `MEMORY.md` and deleted file, pruned completed plans from `UPCOMING_PLANS.md` and renamed to `ROADMAP.md` (73KB → 50KB), generated high-density `INDEX.md` (~1,000 tokens), and enforced Section 7 Anti-Scanning Token Saver rule in `.agents/rules/architecture-memory.md`. |
 | **`IMP-102`** | 2026-09-08 | CI/CD & Storage / APK Upload Hardening & 250MB Limit | Fixed Supabase Storage HTTP 400 error on APK distribution: auto-provisioned/updated `app-releases` bucket with 250MB file size limit and APK MIME types, sanitized `+` to `-` in release artifact names, logged full response bodies, and added strict status code assertions. |
+| **`IMP-103`** | 2026-09-08 | Versioning & UX / Startup Soft Update Suppression | Removed disturbing automatic `SoftUpdateSheet` prompt from cold-start `AuthGate`; preserved critical `ForceUpdateScreen` & `MaintenanceModeScreen` startup gates while maintaining manual on-demand soft updates via `ProfileScreen`. |
 
 
 ---
@@ -2382,6 +2383,201 @@
   - `supabase/migrations/026_app_versions_and_remote_config.sql` [MODIFIED]
   - `.github/workflows/auto_release.yml` [MODIFIED]
   - `docs/MEMORY.md` [MODIFIED]
+- **Tier 1: Mandatory Force-Update (`ForceUpdateScreen`)**: Non-dismissible full-screen gate for versions strictly below `min_supported_version`. Shows version details, changelog, and direct download progress bar.
+     - **Tier 2: Soft Update Recommendation (`SoftUpdateSheet`)**: Dismissible bottom sheet highlighting new features with "Update Now" and "Later" actions.
+     - **Tier 3: Maintenance Mode (`MaintenanceModeScreen`)**: Non-dismissible status view with countdown timer and manual retry button.
+     - Integrated into `AuthGate.initState()` post-frame callback and `MaterialApp.builder` to prevent unauthorized usage or database corruption during migrations without breaking the navigator stack.
+  4. **Settings "Check for Updates" Tile (`ProfileScreen`)**:
+     - Embedded in Account Settings: displays current installed version, visual `UPDATE` notification pill when an update is pending, interactive check trigger, and floating `AppFeedback` toast notifications.
+  5. **Android Permission**:
+     - Registered `<uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />` in `AndroidManifest.xml`.
+  6. **Automated GitHub Actions CI/CD Workflow (`.github/workflows/auto_release.yml`)**:
+     - Enforces quality gate (`flutter analyze --fatal-warnings`), compiles release APK and Android App Bundle (.aab), uploads release APK to Supabase Storage bucket `app-releases`, inserts new release metadata into `public.app_versions` via REST API curl, and dispatches to Firebase App Distribution testers.
+  7. **Automated Unit Tests**:
+     - Pure unit test suite in `test/core/services/app_version_service_test.dart` verifying parsing, comparison hierarchy, build number handling, and version gate determination.
+- **Target Files**:
+  - `supabase/migrations/026_app_versions_and_remote_config.sql` [NEW]
+  - `android/app/src/main/AndroidManifest.xml` [MODIFIED]
+  - `lib/core/services/app_version_service.dart` [NEW]
+  - `lib/core/services/apk_download_installer.dart` [NEW]
+  - `lib/core/widgets/versioning/force_update_screen.dart` [NEW]
+  - `lib/core/widgets/versioning/maintenance_mode_screen.dart` [NEW]
+  - `lib/core/widgets/versioning/soft_update_sheet.dart` [NEW]
+  - `lib/core/widgets/auth_gate.dart` [MODIFIED]
+  - `lib/features/profile/profile_screen.dart` [MODIFIED]
+  - `.github/workflows/auto_release.yml` [NEW]
+  - `test/core/services/app_version_service_test.dart` [NEW]
+  - `docs/MEMORY.md` [MODIFIED]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+  - `docs/UPCOMING_PLANS.md` [MODIFIED]
+  - `docs/CHANGELOG.md` [MODIFIED]
+- **Verification**:
+  - `flutter analyze --no-pub`: **No issues found! (0 errors, 0 warnings)**.
+
+---
+
+### `IMP-095` · CI/CD Test Pipeline Stabilization & Unified Test Runner Architecture
+- **Date**: September 5, 2026
+- **Scope & Objectives**:
+  1. **Root Cause Resolution for CI LCOV Coverage Gate**:
+     - Resolved failure in `.github/workflows/auto_release.yml` at the `🧪 Unit Tests with LCOV Coverage Gate` step caused by passing multiple positional file arguments directly to `flutter test --coverage` alongside unhandled asset bundle compilation.
+  2. **Unified Test Runner Suite (`test/all_tests.dart`)**:
+     - Built unified test runner entrypoint `test/all_tests.dart` aggregating all project unit test suites (`auth_notifier_test`, `personal_allowance_test`, `app_version_service_test`, `core_model_mapping_test`, `google_maps_parser_service_test`).
+     - Enables deterministic, atomic test execution under a single process with clean coverage mapping.
+  3. **Workflow Command Optimization**:
+     - Updated `.github/workflows/auto_release.yml` quality-gate to execute `flutter test --coverage --no-test-assets test/all_tests.dart`, completely eliminating asset compilation latency and flag parsing errors.
+  4. **Widget Smoke Test Hardening**:
+     - Refactored `test/widget_test.dart` into a self-contained baseline smoke test, preventing accidental crashes when whole-suite directory scans run without Supabase/ProviderScope scaffolding.
+- **Target Files**:
+  - `test/all_tests.dart` [NEW]
+  - `test/widget_test.dart` [MODIFIED]
+  - `.github/workflows/auto_release.yml` [MODIFIED]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+- **Verification**:
+  - `flutter analyze --no-pub`: **No issues found! (0 errors, 0 warnings)**.
+
+---
+
+### `IMP-096` · Release Build Tree-Shaking Stabilization & Firebase Integration Setup
+- **Date**: September 5, 2026
+- **Scope & Objectives**:
+  1. **Release Icon Tree-Shaking Resolution**:
+     - Resolved `Target aot_android_asset_bundle failed: Error: Avoid non-constant invocations of IconData or try to build again with --no-tree-shake-icons` during `flutter build apk --release`.
+     - Root cause: `_kDefaultCategories` in `lib/core/repositories/packing_repository.dart` instantiated `IconData(catDef['icon'] as int, fontFamily: 'MaterialIcons')` at runtime, preventing the Flutter compiler from statically resolving icons to tree shake.
+     - Refactored `_kDefaultCategories` to use typed `_DefaultCategoryDef` structs storing constant `IconData` references directly (`Icons.backpack_outlined`, `Icons.checkroom_outlined`, etc.).
+  2. **CI/CD Build Command Guard**:
+     - Added `--no-tree-shake-icons` flag to `flutter build apk --release` and `flutter build appbundle --release` in `.github/workflows/auto_release.yml` as a fail-safe against external package icon font stripping.
+  3. **Firebase Core Dependency Integration**:
+     - Installed `firebase_core: ^4.14.0` in `pubspec.yaml` following `flutterfire configure --project=tara-travel-30b8e` app registration, resolving compilation errors for `lib/firebase_options.dart`.
+- **Target Files**:
+  - `lib/core/repositories/packing_repository.dart` [MODIFIED]
+  - `.github/workflows/auto_release.yml` [MODIFIED]
+  - `pubspec.yaml` [MODIFIED]
+  - `pubspec.lock` [MODIFIED]
+  - `lib/firebase_options.dart` [NEW]
+  - `firebase.json` [NEW]
+  - `android/app/google-services.json` [MODIFIED]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+  - `docs/CHANGELOG.md` [MODIFIED]
+- **Verification**:
+  - `flutter analyze --no-pub`: **No issues found! (0 errors, 0 warnings)**.
+
+---
+
+### `IMP-098` · Trip Detail Screen: Ongoing Command Center, HUD & Quick Action Hub
+- **Date**: September 7, 2026
+- **Scope & Objectives**:
+  1. **Plan 13: Ongoing Command Center & Cockpit HUD**:
+     - Created `OngoingTripHud`: Hero card highlighting the current active / next upcoming stop with stop type icon, start time formatting, direct "Navigate" and "Mark Arrived" controls, and tap-to-expand into `StopDetailSheet`.
+     - Created `TripQuickActionsGrid`: Consolidated scattered tiles into an ergonomic 6-tool hub (Itinerary & Schedule, Budget & Split, Squad & Members, Packing, Chat & Polls, Settings & Invites).
+     - Created `TripDetailBottomBar`: Prominent fixed bottom CTA dock ("Start Live Navigation & Convoy") with system navigation safe area clearance.
+     - Created `DestinationWeatherWidget`: Live weather conditions, temperature, rain chance, and severe weather warning badges for the destination. Intelligently renders the upcoming stop title (`NEXT DESTINATION • [STOP TITLE]`) paired with the stop's extracted municipality/city (e.g. `(Baguio City)` or `(Malay)`), utilizing `RichText` with `TextOverflow.ellipsis` to prevent label/badge overflow on compact displays.
+  2. **Plan 1: Role-Aware Trip Exit**:
+     - Inspected `currentUserId == trip.ownerId` in `_CollapsibleHeroHeader` overflow menu. Non-owners are presented with "Leave Trip" (calling `TripRepository.leaveTrip(trip.id)`), while the owner retains the "Delete Trip" privilege.
+  3. **Plan 2: Invite Code Privacy Protection**:
+     - Created `PrivacyInviteCodeWidget`: Reusable invite code component with bullet/asterisk privacy masking (`••••••`), 1-tap eye toggle reveal, 12-second auto-mask timer, and 1-tap clipboard copy.
+     - Integrated into `_InviteCard` on `TripDetailScreen`.
+  4. **Plan 3: Offline Read-Only Banner & Action Freezing**:
+     - Created `isOnlineProvider` in `lib/core/providers/connectivity_provider.dart` exposing reactive internet connectivity from `ConnectivityService`.
+     - Created `OfflineReadOnlyBanner` alerting travelers to offline read-only mode when disconnected.
+- **Target Files**:
+  - `lib/core/widgets/privacy_invite_code_widget.dart` [NEW]
+  - `lib/core/widgets/offline_read_only_banner.dart` [NEW]
+  - `lib/core/providers/connectivity_provider.dart` [NEW]
+  - `lib/features/trip_detail/widgets/destination_weather_widget.dart` [NEW]
+  - `lib/features/trip_detail/widgets/ongoing_trip_hud.dart` [NEW]
+  - `lib/features/trip_detail/widgets/trip_quick_actions_grid.dart` [NEW]
+  - `lib/features/trip_detail/widgets/trip_detail_bottom_bar.dart` [NEW]
+  - `lib/features/trip_detail/trip_detail_screen.dart` [MODIFIED]
+  - `lib/features/itinerary/widgets/navigate_route_button.dart` [MODIFIED]
+  - `test/core/widgets/privacy_invite_code_widget_test.dart` [NEW]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+  - `docs/MEMORY.md` [MODIFIED]
+- **Verification**:
+  - `flutter analyze`: **0 errors, 0 warnings (No issues found!)** across all touched files.
+
+---
+
+### `IMP-099` · Trip Detail Screen: Frosted-Glass 5-Tab Navigation Dock & Hub Streamlining
+- **Date**: September 7, 2026
+- **Scope & Objectives**:
+  1. **Quick Actions Hub Streamlining**:
+     - Removed redundant in-scroll `TripQuickActionsGrid` from `TripDetailScreen`, decluttering the dashboard view and avoiding duplicated navigation paths.
+     - Pruned unused `packingProvider` subscription and unneeded local counters (`packedCount`, `totalPacking`, `memberCount`) to prevent wasteful widget rebuilds when packing or member state updates.
+  2. **Frosted-Glass 5-Tab Navigation Dock**:
+     - Rewrote `TripDetailBottomBar` into a floating frosted-glass navigation dock styled in deep earth glassmorphism (`AppColors.deepEarth.withValues(alpha: 0.93)`, 18px blur backdrop filter, 26px radius border).
+     - Provides 5 primary travel navigation targets with compact icon + micro-label layout:
+       - **Itinerary**: Hero accent pill (coral tinted icon container and label); for ongoing trips, supports long-press to launch live turn-by-turn navigation directly.
+       - **Packing**: Direct route navigation to trip packing checklist.
+       - **Members**: Direct route navigation to trip companion and member management.
+       - **Expenses**: Direct route navigation to trip budget and split expense screen.
+       - **Chat**: Direct route navigation to trip group chat and active polls.
+     - Added haptic feedback (`HapticFeedback.lightImpact` / `HapticFeedback.mediumImpact`) on tap and long-press interactions.
+- **Target Files**:
+  - `lib/features/trip_detail/widgets/trip_detail_bottom_bar.dart` [MODIFIED]
+  - `lib/features/trip_detail/trip_detail_screen.dart` [MODIFIED]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+- **Verification**:
+  - `flutter analyze lib/features/trip_detail`: **0 errors, 0 warnings (No issues found!)**.
+
+---
+
+### `IMP-100` · Documentation Consolidation & Token Limit Optimization
+- **Date**: September 7, 2026
+- **Scope & Objectives**:
+  1. **Token Limit Optimization**:
+     - Consolidated redundant and overlapping Markdown documentation files across the codebase to minimize token usage when AI agents scan workspace context.
+     - Pruned ~172 KB of duplicate documentation text (~42,000+ tokens saved).
+  2. **Feature Roadmap Consolidation**:
+     - Consolidated all proposals and technical specs from `docs/DEV_IDEA.md` into `docs/UPCOMING_PLANS.md`.
+     - Standardized proposal cross-references in `UPCOMING_PLANS.md` (e.g. `Originally proposed as IDEA-XXX`).
+     - Removed redundant `docs/DEV_IDEA.md`.
+  3. **Architectural Ground Truth Consolidation**:
+     - Merged REST API guidelines (10 standards) and Flutter architecture design patterns (Repository pattern, MVI/MVVM, local caching, partitioned multitenancy, circuit breaker, 3-layer encryption) from `docs/SOFTWARE_DESIGN_PATTERNS.md` into `docs/MEMORY.md` Section 30.
+     - Consolidated domain models specifications from `docs/Analyze.md` into `docs/MEMORY.md` Section 30.
+     - Removed outdated and duplicate files `docs/SOFTWARE_DESIGN_PATTERNS.md` and `docs/Analyze.md`.
+  4. **Changelog & Workflow Alignment**:
+     - Deleted redundant 10-line stub `CHANGELOG.md` at project root, leaving `docs/CHANGELOG.md` as the canonical automatically generated version changelog.
+     - Updated `.agents/workflows/run.md` document mapping to point directly to the consolidated canonical documentation set (`MEMORY.md`, `UPCOMING_PLANS.md`, `UI_STRUCTURE.md`, `IMPLEMENTATION_MEMORY.md`, `CHANGELOG.md`).
+- **Target Files**:
+  - `docs/MEMORY.md` [MODIFIED]
+  - `docs/UPCOMING_PLANS.md` [MODIFIED]
+  - `.agents/workflows/run.md` [MODIFIED]
+  - `docs/DEV_IDEA.md` [DELETED]
+  - `docs/Analyze.md` [DELETED]
+  - `docs/SOFTWARE_DESIGN_PATTERNS.md` [DELETED]
+  - `CHANGELOG.md` (root) [DELETED]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+- **Verification**:
+  - `pwsh tools/generate_changelog.ps1` completed cleanly (70 milestones).
+  - Cleaned all dangling file references across codebase rules and workflows.
+
+### `IMP-101` · Master Token Saver, Documentation Pruning & Architecture Index
+- **Date**: September 8, 2026
+- **Target Files**:
+  - `docs/CHANGELOG.md` [MODIFIED - Compacted from 179KB to 17KB]
+  - `tools/generate_changelog.ps1` [MODIFIED - Compact generator keeping only latest 10 full milestones and compact historical table]
+  - `docs/MEMORY.md` [MODIFIED - Inlined Section 27 UI Architecture & Component Registry]
+  - `docs/UI_STRUCTURE.md` [DELETED - Merged into MEMORY.md]
+  - `docs/ROADMAP.md` [NEW - Pruned completed plans 1, 2, 3, 8, 13, 17, 19 to concise summaries, preserving uncompleted plans]
+  - `docs/UPCOMING_PLANS.md` [DELETED - Replaced by ROADMAP.md]
+  - `docs/INDEX.md` [NEW - Ultra-dense ~1,000-token reference mapping all routes, screens, providers, repos, models, services, and tables]
+  - `.agents/rules/architecture-memory.md` [MODIFIED - Added Section 7 Anti-Scanning Token Saver Rule]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+- **Architectural Rationale**:
+  - Dramatically reduces context consumption across model sessions (saving ~65,000+ tokens / ~220 KB of raw Markdown per full scan).
+  - Establishes a fast-path index (`docs/INDEX.md`) allowing AI agents to look up exact file paths and providers in a single ~1,000-token lookup without repo-wide directory exploration.
+  - Formally adds Rule 7 to `.agents/rules/architecture-memory.md` prohibiting agents from dumping large docs or executing indiscriminate repository audits.
+- **Verification**:
+  - Verified directory cleanliness in `docs/`: canonical set is now `MEMORY.md`, `INDEX.md`, `ROADMAP.md`, `CHANGELOG.md`, `IMPLEMENTATION_MEMORY.md`.
+
+
+### `IMP-102` · Supabase Storage APK Upload Hardening, Split ABI & GitHub Releases
+- **Date**: September 8, 2026
+- **Target Files**:
+  - `supabase/migrations/026_app_versions_and_remote_config.sql` [MODIFIED]
+  - `.github/workflows/auto_release.yml` [MODIFIED]
+  - `docs/MEMORY.md` [MODIFIED]
   - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
 - **Architectural Rationale**:
   - Fixes HTTP 400 (`Payload too large / EntityTooLarge`) error during OTA release uploads to Supabase Storage.
@@ -2393,3 +2589,35 @@
 - **Verification**:
   - Validated GitHub Actions workflow syntax.
   - Validated changelog and documentation alignment.
+
+
+### `IMP-103` · Startup Soft Update Modal Suppression & Flow Optimization
+- **Date**: September 8, 2026
+- **Target Files**:
+  - `lib/core/widgets/auth_gate.dart` [MODIFIED - Removed automatic startup `SoftUpdateSheet.show()` and `_hasPromptedSoftUpdate` state flag]
+  - `docs/MEMORY.md` [MODIFIED - Documented that soft update recommendation is kept on-demand in Profile screen]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+- **Architectural Rationale**:
+  - Eliminates cold-start modal friction: users opening the app to quickly review trips, expenses, or itineraries are no longer blocked by repetitive optional update sheets on every app launch.
+  - Preserves critical startup gates: `isForceUpdate` (`ForceUpdateScreen`) and `isMaintenance` (`MaintenanceModeScreen`) remain strictly enforced on startup to prevent protocol/security regressions.
+  - Preserves on-demand user discovery: users can still tap "Check for Updates" inside `ProfileScreen` Settings to view release notes and trigger `SoftUpdateSheet` at their convenience.
+2604: - **Verification**:
+2605:   - Static analysis clean: `flutter analyze lib/core/widgets/auth_gate.dart` exited 0 with no warnings or issues.
+2606: 
+2607: 
+2608: ### `IMP-104` · Native Google Sign-In Keystore & OAuth Client ID Architecture Resolution
+2609: - **Date**: September 8, 2026
+2610: - **Target Files**:
+2611:   - `android/app/tara_debug.keystore` [NEW - Dedicated debug keystore for Tara Travel]
+2612:   - `android/app/build.gradle.kts` [MODIFIED - Explicit debug signingConfig pointing to tara_debug.keystore]
+2613:   - `android/app/google-services.json` [MODIFIED - Added Android OAuth client `client_type: 1` with SHA-1 hash]
+2614:   - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+2615: - **Architectural Rationale**:
+2616:   - Resolved persistent Google Play Services `ApiException: 10 (DEVELOPER_ERROR)` during native Google Sign-In.
+2617:   - Cause: The default debug keystore SHA-1 collided with existing OAuth 2.0 client IDs across Google Cloud/Firebase projects. Additionally, `google-services.json` lacked an explicit Android OAuth client entry (`client_type: 1`).
+2618:   - Mitigation:
+2619:     1. Generated a dedicated project debug keystore (`tara_debug.keystore`) with a unique SHA-1 (`7A:1B:30:E8:B0:81:45:47:29:FB:AF:F6:11:2D:CD:0A:01:80:71:15`).
+2620:     2. Bound the Android debug build variant to `tara_debug.keystore` in `build.gradle.kts`.
+2621:     3. Configured the new Android OAuth 2.0 Client ID (`616637846202-phs9q9sve7vr7iangh7mlika823o066m.apps.googleusercontent.com`) into `google-services.json`.
+2622: - **Verification**:
+2623:   - Successful user sign-in and session acquisition verified in app execution logs (`[UserPresenceService] Started presence tracking for 21dee3f2-20ed-4585-803b-c26dd37ff856`).

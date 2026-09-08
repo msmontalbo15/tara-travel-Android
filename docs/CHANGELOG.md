@@ -1,7 +1,7 @@
 # Tara Travel - Version Changelog
 
 > Auto-generated from IMPLEMENTATION_MEMORY.md + git log
-> Last updated: **2026-09-08 04:01 PHT**
+> Last updated: **2026-09-08 13:32 PHT**
 
 ---
 
@@ -152,6 +152,7 @@
 
 ## 2026-09-08
 
+- **IMP-103** (Versioning & UX / Startup Soft Update Suppression): Removed disturbing automatic `SoftUpdateSheet` prompt from cold-start `AuthGate`; preserved critical `ForceUpdateScreen` & `MaintenanceModeScreen` startup gates while maintaining manual on-demand soft updates via `ProfileScreen`.
 - **IMP-102** (CI/CD & Storage / APK Upload Hardening & 250MB Limit): Fixed Supabase Storage HTTP 400 error on APK distribution: auto-provisioned/updated `app-releases` bucket with 250MB file size limit and APK MIME types, sanitized `+` to `-` in release artifact names, logged full response bodies, and added strict status code assertions.
 - **IMP-101** (Documentation / Master Token Saver & Architecture Index): Compacted `CHANGELOG.md` (179KB → 17KB) and generator script, merged `UI_STRUCTURE.md` into `MEMORY.md` and deleted file, pruned completed plans from `UPCOMING_PLANS.md` and renamed to `ROADMAP.md` (73KB → 50KB), generated high-density `INDEX.md` (~1,000 tokens), and enforced Section 7 Anti-Scanning Token Saver rule in `.agents/rules/architecture-memory.md`.
 

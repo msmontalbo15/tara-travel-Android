@@ -1191,10 +1191,10 @@ Client Tier               Storage Tier                Transport Tier
   - Mutations strictly restricted to `service_role` (CI/CD pipeline only).
 - **Three-Tier User UX Modals**:
   - **Tier 1: Mandatory Force-Update (`ForceUpdateScreen`)**: Non-dismissible full-screen gate when current version < `min_supported_version`. Disables app access, renders changelog, and features in-app streaming download & install via `ApkDownloadInstaller`.
-  - **Tier 2: Soft Update Recommendation (`SoftUpdateSheet`)**: Dismissible bottom sheet when current version < `latest_version` but supported. Highlights new features with "Update Now" and "Later" options.
+  - **Tier 2: Soft Update Recommendation (`SoftUpdateSheet`)**: Dismissible bottom sheet when current version < `latest_version` but supported. Triggered on-demand via Profile Screen "Check for Updates" to keep app cold-start uninterrupted.
   - **Tier 3: Maintenance Mode (`MaintenanceModeScreen`)**: Non-dismissible full-screen gate when `maintenance_mode == true`. Displays estimated back-online timer and status verification retry action.
 - **Settings "Check for Updates"**:
-  - Embedded in `ProfileScreen` Account Settings. Shows live version pill (`UPDATE`), triggers immediate Supabase remote check, and notifies user via `AppFeedback` toast or update modal.
+  - Embedded in `ProfileScreen` Account Settings. Shows live version pill (`UPDATE`), triggers immediate Supabase remote check, and launches `SoftUpdateSheet` or `AppFeedback` toast.
 - **Direct OTA Distribution & CI/CD Pipeline (`.github/workflows/auto_release.yml`)**:
   - Triggered on push to `live` or `release/**` and `workflow_dispatch`.
   - Enforces static analysis gate (`flutter analyze --fatal-warnings`), compiles release APK & Android App Bundle (.aab), uploads release APK to Supabase Storage bucket `app-releases` (with 250MB size limit and safe filename sanitization `1.0.1+2` -> `1.0.1-2`), and inserts new version record into `public.app_versions` via Supabase REST API curl.
