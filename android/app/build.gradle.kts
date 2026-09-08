@@ -1,3 +1,6 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -7,20 +10,38 @@ plugins {
     id("com.google.gms.google-services")
 }
 
-// ── Signing Config (environment-variable driven — zero hardcoded paths) ────────
-// Set these environment variables in your CI/CD pipeline secrets:
-//   KEYSTORE_PATH      — absolute path to the release .jks or .keystore file
-//   KEYSTORE_PASSWORD  — the keystore password
-//   KEY_ALIAS          — the key alias
-//   KEY_PASSWORD       — the key password
-//
-// During local debug builds these are not required (debug signing is used).
-val keystorePath     = System.getenv("KEYSTORE_PATH")
-val keystorePassword = System.getenv("KEYSTORE_PASSWORD")
-val keyAlias         = System.getenv("KEY_ALIAS")
-val keyPassword      = System.getenv("KEY_PASSWORD")
-val hasReleaseKey    = keystorePath != null && keystorePassword != null &&
-                       keyAlias != null && keyPassword != null
+// ── Signing Config (key.properties or environment variables) ────────
+val keystorePropertiesFile = rootProject.file("key.properties")
+val keystoreProperties = Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
+
+val releaseStoreFile = keystoreProperties.getProperty("RELEASE_STORE_FILE")
+    ?: keystoreProperties.getProperty("storeFile")
+    ?: System.getenv("KEYSTORE_PATH")
+
+val releaseStorePassword = keystoreProperties.getProperty("RELEASE_STORE_PASSWORD")
+    ?: keystoreProperties.getProperty("storePassword")
+    ?: System.getenv("KEYSTORE_PASSWORD")
+
+val releaseKeyAlias = keystoreProperties.getProperty("RELEASE_KEY_ALIAS")
+    ?: keystoreProperties.getProperty("keyAlias")
+    ?: System.getenv("KEY_ALIAS")
+
+val releaseKeyPassword = keystoreProperties.getProperty("RELEASE_KEY_PASSWORD")
+    ?: keystoreProperties.getProperty("keyPassword")
+    ?: System.getenv("KEY_PASSWORD")
+
+val resolvedStoreFile = releaseStoreFile?.let { path ->
+    val f = file(path)
+    if (f.exists()) f else rootProject.file(path)
+}
+
+val hasReleaseKey = resolvedStoreFile != null && resolvedStoreFile.exists() &&
+                    !releaseStorePassword.isNullOrBlank() &&
+                    !releaseKeyAlias.isNullOrBlank() &&
+                    !releaseKeyPassword.isNullOrBlank()
 
 android {
     namespace   = "com.taratravel.app"
@@ -39,17 +60,20 @@ android {
     // ── Signing Configs ─────────────────────────────────────────────────────
     signingConfigs {
         getByName("debug") {
-            storeFile = file("tara_debug.keystore")
-            storePassword = "taradebug"
-            keyAlias = "taradebugkey"
-            keyPassword = "taradebug"
+            val customDebugKeystore = file("tara_debug.keystore")
+            if (customDebugKeystore.exists()) {
+                storeFile = customDebugKeystore
+                storePassword = "taradebug"
+                keyAlias = "taradebugkey"
+                keyPassword = "taradebug"
+            }
         }
         create("release") {
-            if (hasReleaseKey) {
-                storeFile     = file(keystorePath!!)
-                storePassword = keystorePassword
-                keyAlias      = keyAlias
-                keyPassword   = keyPassword
+            if (hasReleaseKey && resolvedStoreFile != null) {
+                storeFile     = resolvedStoreFile
+                storePassword = releaseStorePassword
+                keyAlias      = releaseKeyAlias
+                keyPassword   = releaseKeyPassword
             }
         }
     }

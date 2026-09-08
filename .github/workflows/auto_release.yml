@@ -139,11 +139,21 @@ jobs:
           fi
 
       - name: 🔨 Compile Release APKs (Universal + Split Per ABI)
+        env:
+          KEYSTORE_PATH: ${{ github.workspace }}/android/app/release.keystore
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           flutter build apk --release --split-per-abi --no-tree-shake-icons
           flutter build apk --release --no-tree-shake-icons
 
       - name: 🔨 Compile Production Android App Bundle (.aab with R8 Obfuscation)
+        env:
+          KEYSTORE_PATH: ${{ github.workspace }}/android/app/release.keystore
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: flutter build appbundle --release --no-tree-shake-icons
 
       - name: 📤 Stash Build Artifacts

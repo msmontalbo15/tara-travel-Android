@@ -2612,12 +2612,32 @@
 2612:   - `android/app/build.gradle.kts` [MODIFIED - Explicit debug signingConfig pointing to tara_debug.keystore]
 2613:   - `android/app/google-services.json` [MODIFIED - Added Android OAuth client `client_type: 1` with SHA-1 hash]
 2614:   - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
-2615: - **Architectural Rationale**:
-2616:   - Resolved persistent Google Play Services `ApiException: 10 (DEVELOPER_ERROR)` during native Google Sign-In.
-2617:   - Cause: The default debug keystore SHA-1 collided with existing OAuth 2.0 client IDs across Google Cloud/Firebase projects. Additionally, `google-services.json` lacked an explicit Android OAuth client entry (`client_type: 1`).
-2618:   - Mitigation:
-2619:     1. Generated a dedicated project debug keystore (`tara_debug.keystore`) with a unique SHA-1 (`7A:1B:30:E8:B0:81:45:47:29:FB:AF:F6:11:2D:CD:0A:01:80:71:15`).
-2620:     2. Bound the Android debug build variant to `tara_debug.keystore` in `build.gradle.kts`.
-2621:     3. Configured the new Android OAuth 2.0 Client ID (`616637846202-phs9q9sve7vr7iangh7mlika823o066m.apps.googleusercontent.com`) into `google-services.json`.
-2622: - **Verification**:
-2623:   - Successful user sign-in and session acquisition verified in app execution logs (`[UserPresenceService] Started presence tracking for 21dee3f2-20ed-4585-803b-c26dd37ff856`).
+- **Architectural Rationale**:
+  - Resolved persistent Google Play Services `ApiException: 10 (DEVELOPER_ERROR)` during native Google Sign-In.
+  - Cause: The default debug keystore SHA-1 collided with existing OAuth 2.0 client IDs across Google Cloud/Firebase projects. Additionally, `google-services.json` lacked an explicit Android OAuth client entry (`client_type: 1`).
+  - Mitigation:
+    1. Generated a dedicated project debug keystore (`tara_debug.keystore`) with a unique SHA-1 (`7A:1B:30:E8:B0:81:45:47:29:FB:AF:F6:11:2D:CD:0A:01:80:71:15`).
+    2. Bound the Android debug build variant to `tara_debug.keystore` in `build.gradle.kts`.
+    3. Configured the new Android OAuth 2.0 Client ID (`616637846202-phs9q9sve7vr7iangh7mlika823o066m.apps.googleusercontent.com`) into `google-services.json`.
+- **Verification**:
+  - Successful user sign-in and session acquisition verified in app execution logs (`[UserPresenceService] Started presence tracking for 21dee3f2-20ed-4585-803b-c26dd37ff856`).
+
+
+### `IMP-105` · CI/CD Release Keystore Configuration & Graceful Fallback Resolution
+- **Date**: September 8, 2026
+- **Target Files**:
+  - `android/app/build.gradle.kts` [MODIFIED - Added key.properties loading, dual env-var support, and safe fallback for debug keystore]
+  - `.github/workflows/auto_release.yml` [MODIFIED - Injected explicit release signing environment variables into release compilation steps]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED]
+  - `docs/CHANGELOG.md` [MODIFIED]
+- **Architectural Rationale**:
+  - Fixes GitHub Actions CI failure on task `:app:validateSigningRelease` (`Keystore file 'tara_debug.keystore' not found for signing config 'debug'`).
+  - Causes & Resolution:
+    1. `android/app/build.gradle.kts` previously only read OS environment variables (`KEYSTORE_PATH`, `KEYSTORE_PASSWORD`, etc.), completely ignoring `android/key.properties` where `auto_release.yml` wrote release keystore configurations. Consequently, `hasReleaseKey` evaluated to false.
+    2. In `build.gradle.kts`, `release` build type fell back to the `debug` signing config when `hasReleaseKey` was false, and the `debug` signing config unconditionally referenced `tara_debug.keystore`. Because `tara_debug.keystore` is gitignored and absent on CI runners, Gradle failed during signing validation.
+    3. Updated `build.gradle.kts` to parse `android/key.properties` (standard Flutter pattern) as well as environment variables, properly resolving both relative and absolute paths.
+    4. Guarded `signingConfigs.debug` to only override `storeFile` if `tara_debug.keystore` physically exists on the filesystem; otherwise, it keeps Android Gradle Plugin's built-in default debug keystore.
+    5. Injected explicit signing environment variables into the compile steps in `.github/workflows/auto_release.yml` for defense-in-depth across all CI environments.
+- **Verification**:
+  - Local verification with Gradle: `./gradlew.bat :app:validateSigningRelease` succeeded (`BUILD SUCCESSFUL`).
+  - `flutter analyze` verified clean (0 errors/warnings).
