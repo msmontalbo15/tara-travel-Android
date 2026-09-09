@@ -98,14 +98,16 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
 
       state = AsyncData(AuthAuthenticated(user));
     } on AuthFailure catch (f) {
-      state = AsyncData(AuthError(message: f.userMessage));
+      final raw = f is UnknownAuthFailure ? f.rawDetails : null;
+      state = AsyncData(AuthError(message: f.userMessage, rawDetails: raw));
     } on AuthException catch (e) {
       final failure = AuthFailureMapper.fromAuthException(e);
-      state = AsyncData(AuthError(message: failure.userMessage));
+      final raw = failure is UnknownAuthFailure ? failure.rawDetails : e.message;
+      state = AsyncData(AuthError(message: failure.userMessage, rawDetails: raw));
     } catch (e) {
       debugPrint('[AuthNotifier] signInWithGoogle unexpected: $e');
-      state = const AsyncData(
-          AuthError(message: 'Google sign-in failed. Please try again.'));
+      state = AsyncData(
+          AuthError(message: 'Google sign-in failed. Please try again.', rawDetails: e.toString()));
     }
   }
 

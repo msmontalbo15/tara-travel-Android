@@ -38,8 +38,13 @@ final class AuthAuthenticated extends AuthState {
 final class AuthError extends AuthState {
   final String message;
   final bool isRetryable;
+  final String? rawDetails;
 
-  const AuthError({required this.message, this.isRetryable = true});
+  const AuthError({
+    required this.message,
+    this.isRetryable = true,
+    this.rawDetails,
+  });
 }
 
 // ── AuthFailure ───────────────────────────────────────────────────────────────
@@ -97,7 +102,10 @@ final class UnknownAuthFailure extends AuthFailure {
   const UnknownAuthFailure(this.raw);
 
   @override
-  String get userMessage => raw;
+  String get userMessage =>
+      raw.length > 80 ? 'Authentication failed. Please try again.' : raw;
+
+  String get rawDetails => raw;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

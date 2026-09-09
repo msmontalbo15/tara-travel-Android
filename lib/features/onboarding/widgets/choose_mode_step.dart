@@ -472,7 +472,7 @@ class _ChooseModeStepState extends ConsumerState<ChooseModeStep>
             user.userMetadata?['name'] as String?;
         widget.onModeSelected(_kModeGoogle, name);
       } else if (state is AuthError) {
-        setState(() => _generalError = state.message);
+        setState(() => _generalError = state.rawDetails ?? state.message);
       }
     });
 
