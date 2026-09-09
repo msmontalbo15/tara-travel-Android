@@ -11,6 +11,7 @@ import '../../../core/auth/services/biometric_service.dart';
 import '../../../core/auth/services/mpin_service.dart';
 import '../../../core/providers/profile_provider.dart';
 import '../../../core/widgets/npc_privacy_policy_sheet.dart';
+import '../../../core/services/app_version_service.dart';
 import 'gcash_mpin_view.dart';
 
 // ── Auth mode constant ────────────────────────────────────────────────────────
@@ -596,6 +597,24 @@ class _ChooseModeStepState extends ConsumerState<ChooseModeStep>
                                   ],
                                 ),
                               ),
+                              const SizedBox(height: 14),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.04),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
+                                ),
+                                child: const Text(
+                                  'Release Version: ${AppVersionService.currentAppVersionString}',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.muted,
+                                    fontFamily: 'monospace',
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -624,23 +643,58 @@ class _ChooseModeStepState extends ConsumerState<ChooseModeStep>
       );
 
   Widget _errorBox(String msg) => Container(
+        margin: const EdgeInsets.symmetric(vertical: 8),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: const Color(0xFFEF4444).withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(10),
+          color: const Color(0xFFEF4444).withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
-              color: const Color(0xFFEF4444).withValues(alpha: 0.25)),
+              color: const Color(0xFFEF4444).withValues(alpha: 0.4), width: 1.2),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.error_outline_rounded,
-                color: Color(0xFFEF4444), size: 18),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(msg,
-                  style: const TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFFEF4444))),
+            Row(
+              children: [
+                const Icon(Icons.bug_report_rounded,
+                    color: Color(0xFFEF4444), size: 20),
+                const SizedBox(width: 8),
+                const Text(
+                  'DEBUG AUTH ERROR',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.8,
+                    color: Color(0xFFEF4444),
+                  ),
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.copy_rounded, size: 16, color: Color(0xFFEF4444)),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  tooltip: 'Copy error message',
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: msg));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Error copied to clipboard!'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            SelectableText(
+              msg,
+              style: const TextStyle(
+                fontFamily: 'monospace',
+                fontSize: 12,
+                color: Color(0xFFB91C1C),
+                height: 1.3,
+              ),
             ),
           ],
         ),

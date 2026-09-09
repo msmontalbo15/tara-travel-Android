@@ -134,15 +134,12 @@ class AuthRepository {
 
       throw const UnknownAuthFailure('Failed to obtain Google ID token. Please check Google Play Services configuration.');
     } on AuthException catch (e) {
-      throw AuthFailureMapper.fromAuthException(e);
+      debugPrint('[AuthRepository] Supabase AuthException: ${e.message} (status: ${e.statusCode})');
+      throw UnknownAuthFailure('Supabase Auth: ${e.message} [Code: ${e.statusCode}]');
     } catch (e) {
       if (e is AuthFailure) rethrow;
       debugPrint('[AuthRepository] signInWithGoogle error: $e');
-      final msg = e.toString().toLowerCase();
-      if (msg.contains('network') || msg.contains('socket')) {
-        throw const NetworkFailure();
-      }
-      throw UnknownAuthFailure('Google sign-in failed: ${e.toString()}');
+      throw UnknownAuthFailure('Auth Error: $e');
     }
   }
 

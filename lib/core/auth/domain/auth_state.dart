@@ -97,8 +97,7 @@ final class UnknownAuthFailure extends AuthFailure {
   const UnknownAuthFailure(this.raw);
 
   @override
-  String get userMessage =>
-      raw.length > 80 ? 'Authentication failed. Please try again.' : raw;
+  String get userMessage => raw;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
