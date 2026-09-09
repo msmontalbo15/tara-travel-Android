@@ -202,17 +202,27 @@ jobs:
 
       - name: 🔐 Setup Environment (.env for Asset Bundle)
         run: |
-          if [ -f ".env.example" ]; then
-            cp .env.example .env
-          else
-            touch .env
-          fi
-          if [ -n "${{ secrets.SUPABASE_URL }}" ]; then
-            echo "EXPO_PUBLIC_SUPABASE_URL=${{ secrets.SUPABASE_URL }}" >> .env
-          fi
-          if [ -n "${{ secrets.SUPABASE_ANON_KEY }}" ]; then
-            echo "EXPO_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> .env
-          fi
+          # Start clean — never inherit stale values from .env.example
+          : > .env
+
+          # ── Supabase ──────────────────────────────────────────────────────
+          echo "EXPO_PUBLIC_SUPABASE_URL=${SUPABASE_URL}" >> .env
+          echo "EXPO_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}" >> .env
+
+          # ── Google Sign-In (Web Client ID for serverClientId) ─────────────
+          echo "GOOGLE_WEB_CLIENT_ID=${GOOGLE_WEB_CLIENT_ID}" >> .env
+
+          # ── Mapbox ────────────────────────────────────────────────────────
+          echo "MAPBOX_ACCESS_TOKEN=${MAPBOX_ACCESS_TOKEN}" >> .env
+
+          echo "✅ .env populated for release build"
+          echo "--- .env contents (keys only) ---"
+          cut -d= -f1 .env | grep -v '^#' | grep -v '^$'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://knhbkelbapqrnqaozwgb.supabase.co' }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtuaGJrZWxiYXBxcm5xYW96d2diIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5NTU2NDcsImV4cCI6MjEwMjUzMTY0N30.vZtZWqEXW9eDAVzfSf_KPrn8T6LCkuuNcU2WZ4t1GS8' }}
+          GOOGLE_WEB_CLIENT_ID: ${{ secrets.GOOGLE_WEB_CLIENT_ID || '616637846202-puvdihfams46tvjiofdseamheem66pau.apps.googleusercontent.com' }}
+          MAPBOX_ACCESS_TOKEN: ${{ secrets.MAPBOX_ACCESS_TOKEN }}
 
       - name: 📦 Install Dependencies
         run: flutter pub get

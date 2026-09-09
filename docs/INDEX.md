@@ -105,3 +105,14 @@
 - **`trip_members`**: Always use helper functions (`public.is_trip_member`, `public.user_owns_trip`) in RLS to prevent recursion.
 - **`friends`**: Exclusively `public.friends` (never use legacy `friendships`).
 - **`app_versions`**: Supabase table for version gating, force updates, and maintenance mode.
+
+---
+
+## 7. 📜 Architecture Governance & Workflow Index
+
+- **Governance Reference**: [`docs/GOVERNANCE.md`](file:///d:/Spencer/Downloads/tara_travel/docs/GOVERNANCE.md) (Persona, security, rate limiting, mobile best practices, DevOps standards).
+- **Available Workflows**:
+  - `/run`: Local environment test, build, and run guidelines.
+  - `/deploy-pipeline`: GitHub Actions CI/CD configuration generator.
+  - `/secure-docker`: Hardened multi-stage Dockerfile generator.
+

@@ -30,7 +30,8 @@ class AuthRepository {
 
   GoogleSignIn get _googleSignIn {
     _googleSignInInstance ??= GoogleSignIn(
-      serverClientId: dotenv.env['GOOGLE_WEB_CLIENT_ID'],
+      serverClientId: dotenv.env['GOOGLE_WEB_CLIENT_ID'] ??
+          '616637846202-puvdihfams46tvjiofdseamheem66pau.apps.googleusercontent.com',
       scopes: const ['email', 'profile', 'openid'],
     );
     return _googleSignInInstance!;
