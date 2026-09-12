@@ -85,7 +85,7 @@ class _AllSetStepState extends State<AllSetStep>
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: const Text(
-                  'Step 6 of 6',
+                  'Step 5 of 5',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,

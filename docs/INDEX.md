@@ -9,7 +9,7 @@
 | Route | Widget | File Path | Key Subcomponents |
 | :--- | :--- | :--- | :--- |
 | `/` | `SplashScreen` | `lib/features/splash/splash_screen.dart` | Session rehydration, version check |
-| `/onboarding` | `OnboardingScreen` | `lib/features/onboarding/onboarding_screen.dart` | Multi-step setup, permissions, profile |
+| `/onboarding` | `OnboardingScreen` | `lib/features/onboarding/onboarding_screen.dart` | 5-step setup, pure Google auth, NPC terms, profile |
 | `/home` | `HomeScreen` | `lib/features/home/home_screen.dart` | `NextTripCard`, `FloatingNavBar`, `IndexedStack` |
 | `/create-trip` | `CreateTripFlow` | `lib/features/create_trip/create_trip_flow.dart` | 4-step wizard, vehicle garage, transport |
 | `/trip-detail` | `TripDetailScreen` | `lib/features/trip_detail/trip_detail_screen.dart` | `OngoingTripHud`, `DestinationWeatherWidget`, Dock |

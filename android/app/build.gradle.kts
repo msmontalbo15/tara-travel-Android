@@ -61,11 +61,17 @@ android {
     signingConfigs {
         getByName("debug") {
             val customDebugKeystore = file("tara_debug.keystore")
+            val releaseKeystore = file("tara_release.keystore")
             if (customDebugKeystore.exists()) {
                 storeFile = customDebugKeystore
                 storePassword = "taradebug"
                 keyAlias = "taradebugkey"
                 keyPassword = "taradebug"
+            } else if (releaseKeystore.exists()) {
+                storeFile = releaseKeystore
+                storePassword = "SpenCer151196"
+                keyAlias = "tara_release_key"
+                keyPassword = "SpenCer151196"
             }
         }
         create("release") {

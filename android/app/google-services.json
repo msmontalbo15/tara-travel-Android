@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "616637846202-u4fiqac38taa5esoak6nleper0e627lj.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.taratravel.app",
+            "certificate_hash": "7a1b30e8b081454729fbaff6112dcd0a01807115"
+          }
+        },
+        {
           "client_id": "616637846202-phs9q9sve7vr7iangh7mlika823o066m.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

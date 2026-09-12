@@ -78,6 +78,10 @@
 | **`IMP-101`** | 2026-09-08 | Documentation / Master Token Saver & Architecture Index | Compacted `CHANGELOG.md` (179KB → 17KB) and generator script, merged `UI_STRUCTURE.md` into `MEMORY.md` and deleted file, pruned completed plans from `UPCOMING_PLANS.md` and renamed to `ROADMAP.md` (73KB → 50KB), generated high-density `INDEX.md` (~1,000 tokens), and enforced Section 7 Anti-Scanning Token Saver rule in `.agents/rules/architecture-memory.md`. |
 | **`IMP-102`** | 2026-09-08 | CI/CD & Storage / APK Upload Hardening & 250MB Limit | Fixed Supabase Storage HTTP 400 error on APK distribution: auto-provisioned/updated `app-releases` bucket with 250MB file size limit and APK MIME types, sanitized `+` to `-` in release artifact names, logged full response bodies, and added strict status code assertions. |
 | **`IMP-103`** | 2026-09-08 | Versioning & UX / Startup Soft Update Suppression | Removed disturbing automatic `SoftUpdateSheet` prompt from cold-start `AuthGate`; preserved critical `ForceUpdateScreen` & `MaintenanceModeScreen` startup gates while maintaining manual on-demand soft updates via `ProfileScreen`. |
+| **`IMP-107`** | 2026-09-13 | Onboarding / Streamlined 5-Step Architecture & Pure Google Auth | Streamlined onboarding flow: completely removed MPIN/Biometrics from onboarding, enforced mandatory NPC Data Privacy Act (RA 10173) & Terms checkbox gate, merged Photo + Nickname/Birthday into `PersonalProfileStep` (Step 2 of 5), added animated 5-segment top progress bar with back step navigation, and updated step resume matrix for interrupted sessions. |
+| **`IMP-108`** | 2026-09-13 | Auth & Android / Google Sign-In ApiException 10 Resolution | Resolved Google Sign-In `ApiException: 10` (`DEVELOPER_ERROR`): provisioned dedicated Android OAuth 2.0 client ID for debug keystore (`7a:1b:...`), added both debug and release entries to `google-services.json`, and configured fallback debug signing in `build.gradle.kts`. |
+| **`IMP-109`** | 2026-09-13 | Auth & UX / Logout Navigation Hardening & Seamless Consent | Fixed splash screen stacking upon logout by establishing `AuthGate` as the single navigation authority routing `signedOut` to `/onboarding`, removed duplicate Navigator calls in `ProfileScreen`, and removed the pre-auth checkbox in `ChooseModeStep` so returning users sign in seamlessly while new users consent in `_showCreateAccountConfirmationDialog`. |
+| **`IMP-110`** | 2026-09-13 | Legal & Auth / Mandatory Terms Review & Redundancy Removal | Enforced mandatory Terms & NPC Privacy Policy (RA 10173) reading before account creation: locked "Create Account" button until policy sheet is reviewed and accepted, updated `showNpcPrivacyPolicySheet` to return acceptance status (`Future<bool>`), added verified state tracking, and removed redundant terms links from the landing screen. |
 
 
 ---
@@ -2660,6 +2664,72 @@
     - Injected `--build-name`, `--build-number`, and `--dart-define=APP_VERSION` into all `flutter build apk` (split & universal) and `flutter build appbundle` steps, ensuring output binaries and runtime code reflect the auto-incremented version.
   - Implemented Dynamic Release Notes Resolution:
     - Automatically extracts milestone titles and summaries from `docs/IMPLEMENTATION_MEMORY.md` and git commit history when manual release notes are omitted, propagating rich release notes synchronously to Supabase `public.app_versions`, GitHub Releases, and Firebase App Distribution.
+
+### `IMP-107` · Onboarding Streamline, Pure Google Auth & Mandatory Terms Gate
+- **Date**: September 13, 2026
+- **Target Files**:
+  - `lib/features/onboarding/widgets/choose_mode_step.dart` [MODIFIED - Stripped MPIN/Biometrics, added mandatory Terms & NPC Privacy Policy agreement card]
+  - `lib/features/onboarding/widgets/personal_profile_step.dart` [NEW - Unified Profile Photo + Nickname + Birthday step]
+  - `lib/features/onboarding/widgets/permissions_step.dart` [MODIFIED - Labeled Step 1 of 5]
+  - `lib/features/onboarding/widgets/preferences_step.dart` [MODIFIED - Labeled Step 3 of 5]
+  - `lib/features/onboarding/widgets/health_safety_step.dart` [MODIFIED - Labeled Step 4 of 5]
+  - `lib/features/onboarding/widgets/all_set_step.dart` [MODIFIED - Labeled Step 5 of 5]
+  - `lib/features/onboarding/onboarding_screen.dart` [MODIFIED - Integrated 5-step flow, 5-segment top progress bar, back navigation, step resume matrix]
+  - `lib/features/onboarding/widgets/profile_photo_step.dart` [DELETED - Merged into PersonalProfileStep]
+  - `lib/features/onboarding/widgets/nickname_birthday_step.dart` [DELETED - Merged into PersonalProfileStep]
+- **Architectural Rationale**:
+  - Removed MPIN and Biometrics from initial onboarding to reduce early drop-off and friction; device security remains available in Profile settings.
+  - Enforced compliance with Republic Act No. 10173 (Data Privacy Act of 2012) and National Privacy Commission regulations via an interactive consent checkbox linked to `NpcPrivacyPolicySheet`.
+  - Merged Profile Photo and Nickname/Birthday into a single `PersonalProfileStep`, cutting redundant steps while maintaining pre-population from Google user metadata.
+  - Added an animated 5-segment top progress bar with back step navigation and updated `_computeResumeStep` to guarantee seamless resume for interrupted sessions.
 - **Verification**:
-  - `flutter analyze lib/core/services/app_version_service.dart`: 0 errors, 0 warnings.
-  - Validated workflow DAG: `prepare-release` outputs correctly consumed by `build-android`, `deploy-supabase`, `deploy-github-release`, and `deploy-firebase`.
+  - `flutter analyze lib/features/onboarding`: 0 errors, 0 warnings.
+
+
+### `IMP-108` · Google Sign-In ApiException 10 Resolution & Multi-Keystore OAuth Alignment
+- **Date**: September 13, 2026
+- **Target Files**:
+  - `android/app/google-services.json` [MODIFIED - Registered both debug (`616637846202-u4fiqac...`) and release (`616637846202-phs9q...`) OAuth 2.0 client IDs]
+  - `android/app/build.gradle.kts` [MODIFIED - Configured debug signing to cleanly prioritize `tara_debug.keystore` with fallback to `tara_release.keystore`]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED - Appended milestone record]
+  - `docs/CHANGELOG.md` [MODIFIED - Documented fix]
+- **Architectural Rationale**:
+  - Investigated `PlatformException(sign_in_failed, com.google.android.gms.common.api.ApiException: 10)` during Google Sign-In.
+  - Device logcat confirmed `[GetTokenResponseHandler] Server returned error: This android application is not registered to use OAuth2.0` due to SHA-1 signature mismatch between the debug APK and Google Cloud Console.
+  - Generated dedicated Android OAuth 2.0 Client ID in Google Cloud Console for `tara_debug.keystore` (`7A:1B:30:E8:B0:81:45:47:29:FB:AF:F6:11:2D:CD:0A:01:80:71:15` / `48:58:3E:...`).
+  - Synced `android/app/google-services.json` with both debug and release OAuth client blocks and verified local `flutter run` authentication.
+- **Verification**:
+  - `adb logcat` and runtime user verification: Google Sign-In authenticated successfully.
+
+
+### `IMP-109` · Logout Navigation Hardening & Frictionless Returning User Consent
+- **Date**: September 13, 2026
+- **Target Files**:
+  - `lib/core/widgets/auth_gate.dart` [MODIFIED - Centralized sign-out routing directly to `/onboarding`]
+  - `lib/features/profile/profile_screen.dart` [MODIFIED - Removed redundant `Navigator.pushNamedAndRemoveUntil` call]
+  - `lib/features/onboarding/widgets/choose_mode_step.dart` [MODIFIED - Streamlined sign-in flow by removing pre-auth checkbox for returning users]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED - Appended milestone record]
+- **Architectural Rationale**:
+  - **Single Source of Truth for Auth Routing**: `ProfileScreen._signOut()` and `AuthGate._onSupabaseAuthEvent(signedOut)` were executing concurrent `Navigator.pushNamedAndRemoveUntil('/', ...)` calls. Rerouting to `'/'` (Splash) re-triggered the 3.8s intro animation and caused route stacking. Updated `AuthGate` to be the sole navigation authority and route directly to `/onboarding` upon sign-out.
+  - **Frictionless Returning User Experience**: Returning users already consented to the Terms & NPC Privacy Policy upon initial registration. Removed the mandatory pre-auth checkbox in `ChooseModeStep` so returning users tap "Continue with Google" without friction. Explicit consent under Republic Act No. 10173 is presented via `_showCreateAccountConfirmationDialog` exclusively for brand-new users before profile creation.
+- **Verification**:
+  - `flutter analyze lib/features/onboarding/widgets/choose_mode_step.dart lib/core/widgets/auth_gate.dart lib/features/profile/profile_screen.dart`: 0 errors, 0 warnings.
+
+
+### `IMP-110` · Mandatory Terms Review Gate & Redundancy Elimination
+- **Date**: September 13, 2026
+- **Target Files**:
+  - `lib/core/widgets/npc_privacy_policy_sheet.dart` [MODIFIED - Updated `showNpcPrivacyPolicySheet` to return `Future<bool>` and emit true on agreement, false on dismissal]
+  - `lib/features/onboarding/widgets/choose_mode_step.dart` [MODIFIED - Removed redundant landing screen terms link, implemented mandatory terms review gate in `_showCreateAccountConfirmationDialog` locking account creation until terms are reviewed and agreed]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED - Appended milestone record]
+  - `docs/CHANGELOG.md` [MODIFIED - Documented feature and cleanup]
+- **Architectural Rationale**:
+  - **Compliance with RA 10173**: The Philippine Data Privacy Act of 2012 requires informed and explicit consent. A passive disclaimer allowed users to create accounts without ever viewing terms.
+  - **Eliminating Redundancies**: Removed loose terms links from the sign-in landing screen to reduce clutter and establish `_showCreateAccountConfirmationDialog` as the single, authoritative legal gate for new account creation.
+  - **Enforced Active Review**: Made the "Create Account" button disabled by default. Clicking "Read Terms & Conditions" or the agreement checkbox opens `NpcPrivacyPolicySheet`. Only when the user reviews the terms and taps "I Understand & Agree" does the sheet return `true`, unlocking the agreement checkbox and enabling the primary "Create Account" button.
+- **Verification**:
+  - `flutter analyze lib/core/widgets/npc_privacy_policy_sheet.dart lib/features/onboarding/widgets/choose_mode_step.dart`: 0 errors, 0 warnings.
+  - Full repo `flutter analyze`: 0 issues found across all packages.
+
+
+

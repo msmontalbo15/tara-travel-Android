@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supa;
 import '../../core/providers/profile_provider.dart';
+import '../../core/theme/app_colors.dart';
 import '../home/home_route_args.dart';
 import 'onboarding_route_args.dart';
 import 'widgets/choose_mode_step.dart';
 import 'widgets/permissions_step.dart';
-import 'widgets/profile_photo_step.dart';
-import 'widgets/nickname_birthday_step.dart';
+import 'widgets/personal_profile_step.dart';
 import 'widgets/preferences_step.dart';
 import 'widgets/health_safety_step.dart';
 import 'widgets/all_set_step.dart';
@@ -24,6 +24,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   bool _didReadRouteArgs = false;
   bool _autoGoogleSignIn = false;
   bool _didRestoreProgress = false;
+  int _currentStepIndex = 0;
 
   // State carried across steps
   String _userName = '';
@@ -38,14 +39,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   List<String> _healthNotes = [];
   String? _bloodType;
 
-
   /// Steps in onboarding (page index → name)
-  /// 0: ChooseMode, 1: Permissions, 2: ProfilePhoto,
-  /// 3: NicknameBirthday, 4: Preferences, 5: HealthSafety, 6: AllSet
-  static const int _kTotalSteps = 7;
+  /// 0: ChooseMode (Google Auth + Terms)
+  /// 1: Permissions (Step 1 of 5)
+  /// 2: PersonalProfile (Step 2 of 5: Photo + Nickname + DOB)
+  /// 3: Preferences (Step 3 of 5: Location & Currency)
+  /// 4: HealthSafety (Step 4 of 5: Blood Type & Health Notes)
+  /// 5: AllSet (Step 5 of 5: Summary & Final Confirmation)
+  static const int _kTotalPages = 6;
 
   void _goToStep(int step, {bool animate = true}) {
-    if (step >= _kTotalSteps) return;
+    if (step >= _kTotalPages) return;
+    setState(() => _currentStepIndex = step);
     if (animate && _pageController.hasClients) {
       _pageController.animateToPage(
         step,
@@ -54,6 +59,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       );
     } else if (_pageController.hasClients) {
       _pageController.jumpToPage(step);
+    }
+  }
+
+  void _goBack() {
+    if (_currentStepIndex > 1) {
+      _goToStep(_currentStepIndex - 1);
     }
   }
 
@@ -128,42 +139,37 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   /// Returns the step index to resume from based on what has been saved.
   /// Only call this when [_isTrulyNewUser] returns false.
   int _computeResumeStep(ProfileState profile) {
-    // Step 2: Photo — if photo is set, they passed photo step
-    if (profile.profilePhotoUrl == null || profile.profilePhotoUrl!.isEmpty) {
-      return 2; // Resume at Profile Photo step
-    }
-    // Step 3: Nickname/Birthday — if nickname is empty, resume here
+    // Step 2: Personal Profile — if nickname is empty and local photo unset, resume here
     if ((profile.nickname ?? '').isEmpty) {
-      return 3; // Resume at Nickname & Birthday step
+      return 2; // Resume at Your Profile step
     }
-    // Step 4: Preferences — if city is empty, resume here
+    // Step 3: Preferences — if city is empty, resume here
     if (profile.homeCity.isEmpty) {
-      return 4; // Resume at Preferences step
+      return 3; // Resume at Preferences step
     }
-    // Step 5: Health & Safety — if health notes were never saved, resume here
+    // Step 4: Health & Safety — if health notes were never saved, resume here
     if (profile.healthNotes.isEmpty) {
-      return 5; // Resume at Health & Safety step
+      return 4; // Resume at Health & Safety step
     }
-    // Step 6: All Set
-    return 6;
+    // Step 5: All Set
+    return 5;
   }
 
   void _onPermissionsNext() => _goToStep(2);
   void _onPermissionsSkip() => _goToStep(2);
 
-  void _onPhotoSelected(String? path) {
-    setState(() => _profilePhotoPath = path);
-    ref.read(profileProvider.notifier).updatePhoto(path);
-  }
-
-  void _onNicknameBirthdayNext(String nickname, String dob) {
+  void _onPersonalProfileNext(String? photoPath, String nickname, String dob) {
     setState(() {
+      _profilePhotoPath = photoPath;
       _nickname = nickname;
       _dateOfBirth = dob;
     });
+    if (photoPath != null) {
+      ref.read(profileProvider.notifier).updatePhoto(photoPath);
+    }
     ref.read(profileProvider.notifier).updateNickname(nickname);
     ref.read(profileProvider.notifier).updateDateOfBirth(dob);
-    _goToStep(4);
+    _goToStep(3);
   }
 
   void _onPreferencesChanged(String city, String country, String currency) {
@@ -279,73 +285,141 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final displayUserName =
         profile.effectiveName.isNotEmpty ? profile.effectiveName : _userName;
 
-    return PageView(
-      controller: _pageController,
-      physics: const NeverScrollableScrollPhysics(),
-      children: [
-        // Step 0 — Choose mode (Google sign-in)
-        ChooseModeStep(
-          onModeSelected: _onChooseModeSelected,
-          autoGoogleSignIn: _autoGoogleSignIn,
-        ),
+    return Scaffold(
+      backgroundColor: _currentStepIndex == 5
+          ? AppColors.deepEarth
+          : AppColors.surfaceLight,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Top Navigation & Step Progress Bar (Only visible during Steps 1 to 5)
+            if (_currentStepIndex >= 1 && _currentStepIndex <= 5)
+              _buildTopStepProgressHeader(),
 
-        // Step 1 — Permissions
-        PermissionsStep(
-          onNext: _onPermissionsNext,
-          onSkip: _onPermissionsSkip,
-        ),
+            Expanded(
+              child: PageView(
+                controller: _pageController,
+                physics: const NeverScrollableScrollPhysics(),
+                children: [
+                  // Step 0 — Choose mode (Google sign-in & Terms)
+                  ChooseModeStep(
+                    onModeSelected: _onChooseModeSelected,
+                    autoGoogleSignIn: _autoGoogleSignIn,
+                  ),
 
-        // Step 2 — Profile Photo
-        ProfilePhotoStep(
-          initialPhotoPath: _profilePhotoPath,
-          onPhotoSelected: _onPhotoSelected,
-          onNext: () => _goToStep(3),
-          onSkip: () => _goToStep(3),
-        ),
+                  // Step 1 — Permissions
+                  PermissionsStep(
+                    onNext: _onPermissionsNext,
+                    onSkip: _onPermissionsSkip,
+                  ),
 
-        // Step 3 — Nickname & Birthday
-        NicknameBirthdayStep(
-          initialNickname: _nickname,
-          initialDateOfBirth: _dateOfBirth,
-          userName: displayUserName,
-          onNext: _onNicknameBirthdayNext,
-          onSkip: () => _goToStep(4),
-        ),
+                  // Step 2 — Personal Profile (Photo + Nickname + Birthday)
+                  PersonalProfileStep(
+                    initialPhotoPath: _profilePhotoPath,
+                    initialNickname: _nickname,
+                    initialDateOfBirth: _dateOfBirth,
+                    userName: displayUserName,
+                    onNext: _onPersonalProfileNext,
+                    onSkip: () => _goToStep(3),
+                  ),
 
-        // Step 4 — Preferences (City, Region, Barangay)
-        PreferencesStep(
-          initialRegion: _homeRegion,
-          initialCity: _homeCity,
-          initialBarangay: _homeBarangay,
-          initialCountry: _homeCountry,
-          initialCurrency: _preferredCurrency,
-          onPreferencesChanged: _onPreferencesChanged,
-          onPhPreferencesChanged: _onPhPreferencesChanged,
-          onNext: () => _goToStep(5),
-        ),
+                  // Step 3 — Preferences (City, Region, Barangay)
+                  PreferencesStep(
+                    initialRegion: _homeRegion,
+                    initialCity: _homeCity,
+                    initialBarangay: _homeBarangay,
+                    initialCountry: _homeCountry,
+                    initialCurrency: _preferredCurrency,
+                    onPreferencesChanged: _onPreferencesChanged,
+                    onPhPreferencesChanged: _onPhPreferencesChanged,
+                    onNext: () => _goToStep(4),
+                  ),
 
-        // Step 5 — Health & Safety
-        HealthSafetyStep(
-          initialHealthNotes: _healthNotes,
-          initialBloodType: _bloodType,
-          onNotesChanged: _onHealthNotesChanged,
-          onBloodTypeSelected: _onBloodTypeSelected,
-          onNext: () => _goToStep(6),
-          onSkip: () => _goToStep(6),
-        ),
+                  // Step 4 — Health & Safety
+                  HealthSafetyStep(
+                    initialHealthNotes: _healthNotes,
+                    initialBloodType: _bloodType,
+                    onNotesChanged: _onHealthNotesChanged,
+                    onBloodTypeSelected: _onBloodTypeSelected,
+                    onNext: () => _goToStep(5),
+                    onSkip: () => _goToStep(5),
+                  ),
 
-        // Step 6 — All Set
-        AllSetStep(
-          userName: displayUserName,
-          accountEmail: profile.accountEmail ?? '',
-          homeCity: _homeBarangay.isNotEmpty
-              ? '$_homeBarangay, $_homeCity'
-              : _homeCity,
-          homeCountry: _homeCountry.isNotEmpty ? _homeCountry : 'Philippines',
-          currency: _preferredCurrency.isNotEmpty ? _preferredCurrency : 'PHP',
-          onLetsGo: _onLetsGo,
+                  // Step 5 — All Set
+                  AllSetStep(
+                    userName: displayUserName,
+                    accountEmail: profile.accountEmail ?? '',
+                    homeCity: _homeBarangay.isNotEmpty
+                        ? '$_homeBarangay, $_homeCity'
+                        : _homeCity,
+                    homeCountry:
+                        _homeCountry.isNotEmpty ? _homeCountry : 'Philippines',
+                    currency:
+                        _preferredCurrency.isNotEmpty ? _preferredCurrency : 'PHP',
+                    onLetsGo: _onLetsGo,
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
+    );
+  }
+
+  Widget _buildTopStepProgressHeader() {
+    final isDarkStep = _currentStepIndex == 5;
+    const totalSteps = 5;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: isDarkStep ? AppColors.deepEarth : AppColors.surfaceLight,
+      child: Row(
+        children: [
+          // Back button (visible when step > 1)
+          if (_currentStepIndex > 1)
+            IconButton(
+              icon: Icon(
+                Icons.arrow_back_ios_new_rounded,
+                size: 18,
+                color: isDarkStep ? Colors.white70 : AppColors.textPrimary,
+              ),
+              onPressed: _goBack,
+              tooltip: 'Previous step',
+            )
+          else
+            const SizedBox(width: 48),
+
+          // 5-Segment Animated Progress Bar
+          Expanded(
+            child: Row(
+              children: List.generate(totalSteps, (index) {
+                final stepNum = index + 1;
+                final isPassed = stepNum < _currentStepIndex;
+                final isCurrent = stepNum == _currentStepIndex;
+
+                return Expanded(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    height: 5,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(3),
+                      color: isPassed || isCurrent
+                          ? AppColors.primary
+                          : (isDarkStep
+                              ? Colors.white.withValues(alpha: 0.15)
+                              : AppColors.sand),
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+
+          const SizedBox(width: 48),
+        ],
+      ),
     );
   }
 }

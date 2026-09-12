@@ -132,7 +132,7 @@ class _HealthSafetyStepState extends State<HealthSafetyStep>
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: const Text(
-                            'Step 5 of 6',
+                            'Step 4 of 5',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,

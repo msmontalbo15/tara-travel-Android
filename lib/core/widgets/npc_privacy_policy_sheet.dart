@@ -4,13 +4,15 @@ import 'package:url_launcher/url_launcher.dart';
 import '../theme/app_colors.dart';
 
 /// Opens the NPC-compliant Privacy Policy & Terms of Service modal bottom sheet.
-void showNpcPrivacyPolicySheet(BuildContext context) {
-  showModalBottomSheet(
+/// Returns true if the user scrolled and tapped 'I Understand & Agree', or false if dismissed.
+Future<bool> showNpcPrivacyPolicySheet(BuildContext context) async {
+  final result = await showModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (ctx) => const NpcPrivacyPolicySheet(),
   );
+  return result ?? false;
 }
 
 /// A bottom sheet presenting Tara Travel's Terms and Conditions and Data Privacy
@@ -108,7 +110,7 @@ class NpcPrivacyPolicySheet extends StatelessWidget {
                 ),
                 IconButton(
                   icon: const Icon(Icons.close_rounded, color: AppColors.warmMuted),
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: () => Navigator.of(context).pop(false),
                 ),
               ],
             ),
@@ -246,7 +248,7 @@ class NpcPrivacyPolicySheet extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () => Navigator.of(context).pop(),
+                      onPressed: () => Navigator.of(context).pop(true),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,

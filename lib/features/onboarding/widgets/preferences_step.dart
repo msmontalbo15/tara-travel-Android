@@ -106,7 +106,7 @@ class _PreferencesStepState extends State<PreferencesStep>
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: const Text(
-                            'Step 4 of 6',
+                            'Step 3 of 5',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,

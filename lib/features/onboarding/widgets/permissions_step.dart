@@ -94,7 +94,7 @@ class _PermissionsStepState extends State<PermissionsStep>
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: const Text(
-                    'Step 2 of 6',
+                    'Step 1 of 5',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
