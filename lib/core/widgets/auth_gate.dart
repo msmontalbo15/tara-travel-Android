@@ -174,8 +174,10 @@ class _AuthGateState extends ConsumerState<AuthGate> {
       ref.invalidate(outgoingRequestsProvider);
       ref.invalidate(activityProvider);
 
-      _navigatorKey.currentState
-          ?.pushNamedAndRemoveUntil('/onboarding', (route) => false);
+      if (_routeObserver.currentRoute != '/onboarding') {
+        _navigatorKey.currentState
+            ?.pushNamedAndRemoveUntil('/onboarding', (route) => false);
+      }
     }
   }
 

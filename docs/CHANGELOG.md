@@ -1,7 +1,7 @@
 # Tara Travel - Version Changelog
 
 > Auto-generated from IMPLEMENTATION_MEMORY.md + git log
-> Last updated: **2026-09-13 02:31 PHT**
+> Last updated: **2026-09-13 02:41 PHT**
 
 ---
 
@@ -156,9 +156,8 @@
 - **IMP-102** (CI/CD & Storage / APK Upload Hardening & 250MB Limit): Fixed Supabase Storage HTTP 400 error on APK distribution: auto-provisioned/updated `app-releases` bucket with 250MB file size limit and APK MIME types, sanitized `+` to `-` in release artifact names, logged full response bodies, and added strict status code assertions.
 - **IMP-101** (Documentation / Master Token Saver & Architecture Index): Compacted `CHANGELOG.md` (179KB → 17KB) and generator script, merged `UI_STRUCTURE.md` into `MEMORY.md` and deleted file, pruned completed plans from `UPCOMING_PLANS.md` and renamed to `ROADMAP.md` (73KB → 50KB), generated high-density `INDEX.md` (~1,000 tokens), and enforced Section 7 Anti-Scanning Token Saver rule in `.agents/rules/architecture-memory.md`.
 
-## 2026-09-13
-
-- **IMP-111** (Onboarding & Auth / Canonical Onboarding Enforcement): Fixed new user onboarding bypass: eliminated displayName/firstName heuristics from `isAccountFullySet`, `_loadProfile()`, and `_persist()` in `profile_provider.dart`, establishing explicit `hasCompletedOnboarding` flag as the single source of truth for onboarding completion.
+- **IMP-112** (Auth & Navigation / Fix Sign-Out Route Stuck on Splash Screen): Fixed sign-out getting stuck on splash screen by changing `ProfileScreen._signOut` destination from `'/'` (SplashScreen) to `'/onboarding'` (ChooseMode/Google Sign-In), added route deduplication in `AuthGate` to avoid concurrent route transitions, and synced architecture docs.
+- **IMP-111** (Auth & Onboarding / Canonical Onboarding Enforcement & False-Positive Elimination): Removed premature auto-completion heuristics based on `displayName` in `_persist()`, `_loadProfile()`, and `isAccountFullySet`, ensuring returning and new users follow strict onboarding status checks.
 - **IMP-110** (Legal & Auth / Mandatory Terms Review & Redundancy Removal): Enforced mandatory Terms & NPC Privacy Policy (RA 10173) reading before account creation: locked "Create Account" button until policy sheet is reviewed and accepted, updated `showNpcPrivacyPolicySheet` to return acceptance status (`Future<bool>`), added verified state tracking, and removed redundant terms links from the landing screen.
 - **IMP-109** (Auth & UX / Logout Navigation Hardening & Seamless Consent): Fixed splash screen stacking upon logout by establishing `AuthGate` as the single navigation authority routing `signedOut` to `/onboarding`, removed duplicate Navigator calls in `ProfileScreen`, and removed the pre-auth checkbox in `ChooseModeStep` so returning users sign in seamlessly while new users consent in `_showCreateAccountConfirmationDialog`.
 - **IMP-108** (Auth & Android / Google Sign-In ApiException 10 Resolution): Resolved Google Sign-In `ApiException: 10` (`DEVELOPER_ERROR`): provisioned dedicated Android OAuth 2.0 client ID for debug keystore (`7a:1b:...`), added both debug and release entries to `google-services.json`, and configured fallback debug signing in `build.gradle.kts`.

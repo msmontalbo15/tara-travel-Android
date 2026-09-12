@@ -2017,7 +2017,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       onConfirm: () async {
         await ref.read(profileProvider.notifier).signOut();
         if (context.mounted) {
-          Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+          Navigator.of(context).pushNamedAndRemoveUntil('/onboarding', (route) => false);
         }
       },
     );

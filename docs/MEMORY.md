@@ -848,7 +848,7 @@ Client Tier               Storage Tier                Transport Tier
    │      └── Closes user DB file and unbinds user partition
    ├── 6. Invalidate Riverpod Stores:
    │      └── `ref.invalidate(profileProvider)`, `ref.invalidate(tripProvider)`, etc.
-   └── 7. Navigator routes to '/' (SplashScreen / Landing)
+   └── 7. Navigator routes to '/onboarding' (OnboardingScreen / Sign-In)
 ```
 
 ---

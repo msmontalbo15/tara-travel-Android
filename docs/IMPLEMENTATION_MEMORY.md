@@ -2744,3 +2744,19 @@
   - **Decoupled Auth Metadata from Account Completion**: Refactored `isAccountFullySet` to evaluate strictly `hasCompletedOnboarding || homeCity.isNotEmpty`. Auto-seeded names from OAuth providers no longer bypass or satisfy onboarding requirements.
 - **Verification**:
   - `dart analyze lib/` confirmed 0 issues across all packages.
+
+
+### `IMP-112` · Fix Sign-Out Route Stuck on Splash Screen
+- **Date**: September 13, 2026
+- **Target Files**:
+  - `lib/features/profile/profile_screen.dart` [MODIFIED - Updated `_signOut` destination from `'/'` to `'/onboarding'`]
+  - `lib/core/widgets/auth_gate.dart` [MODIFIED - Added guard in `AuthChangeEvent.signedOut` handler to avoid duplicate push when already on `'/onboarding'`]
+  - `docs/MEMORY.md` [MODIFIED - Synchronized signOut flow documentation to route to `'/onboarding'`]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED - Appended milestone record]
+  - `docs/CHANGELOG.md` [MODIFIED - Documented fix]
+- **Architectural Rationale**:
+  - **Root Cause**: In `profile_screen.dart`, `_signOut` invoked `Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false)`. In `main.dart`, `'/'` maps to `SplashScreen`, which is strictly intended for initial cold-start session restore and brand animations. Because the user was signed out, `SplashScreen` had no active session and did not auto-navigate, leaving the user permanently stuck on the splash screen (either viewing the brand intro with a "Get started" button or an indefinite shimmer while providers were invalidated).
+  - **Remediation**: Changed `_signOut` in `profile_screen.dart` to navigate directly to `'/onboarding'`, which immediately presents the Google Sign-In and Welcome interface. Additionally, guarded `AuthGate._onSupabaseAuthEvent` for `AuthChangeEvent.signedOut` to only route if `_routeObserver.currentRoute != '/onboarding'` to prevent redundant route transitions.
+- **Verification**:
+  - `flutter analyze lib/features/profile/profile_screen.dart lib/core/widgets/auth_gate.dart`: 0 errors, 0 warnings.
+
