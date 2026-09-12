@@ -124,7 +124,7 @@ class _AuthGateState extends ConsumerState<AuthGate> {
 
     final profile = ref.read(profileProvider);
     final destination =
-        profile.isAccountFullySet ? '/home' : '/onboarding';
+        profile.hasCompletedOnboarding ? '/home' : '/onboarding';
     _navigatorKey.currentState
         ?.pushNamedAndRemoveUntil(destination, (route) => false);
   }
@@ -153,7 +153,7 @@ class _AuthGateState extends ConsumerState<AuthGate> {
 
       final profile = ref.read(profileProvider);
       final destination =
-          profile.isAccountFullySet ? '/home' : '/onboarding';
+          profile.hasCompletedOnboarding ? '/home' : '/onboarding';
       _navigatorKey.currentState
           ?.pushNamedAndRemoveUntil(destination, (route) => false);
       return;

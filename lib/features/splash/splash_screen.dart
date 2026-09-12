@@ -102,8 +102,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   void _onProfileChanged(ProfileState? _, ProfileState profile) {
     if (_isNavigating || !profile.isLoaded) return;
-    if (_hasActiveSession || profile.hasCompletedOnboarding) {
-      _navigateTo('/home');
+    if (_hasActiveSession) {
+      if (profile.hasCompletedOnboarding) {
+        _navigateTo('/home');
+      } else {
+        _navigateTo('/onboarding');
+      }
     }
   }
 

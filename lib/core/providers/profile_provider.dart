@@ -109,8 +109,8 @@ class ProfileState {
   }
 
   /// Evaluates whether the account is sufficiently initialized to bypass onboarding.
-  bool get isAccountFullySet =>
-      hasCompletedOnboarding || homeCity.isNotEmpty;
+  /// Canonical gate: onboarding is only completed when explicitly finished.
+  bool get isAccountFullySet => hasCompletedOnboarding;
 
   Color get avatarColor => const Color(0xFFD85A30);
 
@@ -267,14 +267,10 @@ class ProfileNotifier extends Notifier<ProfileState> {
         final remoteData = await repo.getRemoteProfile(supaUser.id);
         if (remoteData != null) {
           final remote = ProfileState.fromJson(remoteData);
-          // If remote account has city or completed flag, treat onboarding as completed
-          final hasOnboarded = remote.hasCompletedOnboarding ||
-              remote.homeCity.isNotEmpty;
-
           current = remote.copyWith(
             accountEmail: supaUser.email,
             isCloudConnected: true,
-            hasCompletedOnboarding: hasOnboarded,
+            hasCompletedOnboarding: remote.hasCompletedOnboarding,
           );
         } else {
           // Seed initial name & photo from auth metadata if available

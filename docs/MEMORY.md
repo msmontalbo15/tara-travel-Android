@@ -535,8 +535,7 @@ Client Tier               Storage Tier                Transport Tier
 | `tripProvider` | `StateNotifierProvider<TripNotifier, AsyncValue<List<TripModel>>>` | Global list of user trips, add/edit/archive/delete/join actions. |
 | `selectedTripProvider` | `StateProvider<TripModel?>` | Active trip context across Detail, Itinerary, Budget, Packing, Chat. |
 | `tripQuickActionChangesProvider(trip)` | `FutureProvider.family<TripQuickActionChanges, TripModel>` | Computes contextual Red Notification Dot indicators (`🔴`) for trip quick action buttons (Itinerary, Packing, Members, Expenses, Chat) by comparing remote timestamps against Keystore `ModuleViewTrackerService` with self-action exemption. |
-| `activeTripProvider` | `FutureProvider<TripModel?>` | Returns the first non-draft, non-archived trip (or selected trip if unarchived); returns `null` when only archived trips exist. |
-| `profileProvider` | `StateNotifierProvider<ProfileNotifier, ProfileState>` | User profile state, surname privacy toggle, encrypted data sync, `isAccountFullySet` onboarding guard & auto-recovery. |
+| `profileProvider` | `NotifierProvider<ProfileNotifier, ProfileState>` | User profile state, surname privacy toggle, encrypted data sync, canonical `hasCompletedOnboarding` single source of truth. |
 | `chatNotifierProvider(tripId)`| `StateNotifierProvider<ChatNotifier, ChatState>` | Live chat messages, presence typing indicators, optimistic send. |
 | `itineraryNotifierProvider(tripId)` | `StateNotifierProvider<ItineraryNotifier, AsyncValue<List<ItineraryDay>>>` | Multi-day stops, voting counters, drag-and-drop ordering. |
 | `packingNotifierProvider(tripId)` | `StateNotifierProvider<PackingNotifier, PackingState>` | Categorized packing list, progress percentage, member assignment. |
@@ -700,14 +699,14 @@ Client Tier               Storage Tier                Transport Tier
    └── Inserts default row into `public.user_settings`
       │
       ▼
-4. AuthGate intercepts `AuthChangeEvent.signedIn`:
-   ├── DatabaseService.instance.switchUser(user.id)
-   ├── ProfileRepository.getRemoteProfile(user.id) (decrypts sensitive fields)
-   └── Route to '/onboarding' (Step 0: Mode Selection -> Step 1: Privacy -> Step 2: Location)
-      │
-      ▼
-5. ProfileCompletion:
-   ├── Saves profile tags: `onboarding:completed`, `privacy:hide_surname`
+4. AuthGate & OnboardingScreen handle Sign-In:
+   ├── Refreshes profile via `ProfileNotifier.refreshProfile()` (decrypts sensitive fields)
+   ├── Existing User (hasCompletedOnboarding == true) ──▶ Skip onboarding immediately to '/home'
+   └── Incomplete / New User (hasCompletedOnboarding == false):
+       ├── Returning In-Progress: Auto-resumes at saved step (e.g. Step 2-4)
+       └── Truly New User: Advances to Step 1 (Permissions -> Personal Profile -> Preferences -> Health -> All Set)
+5. Step 5 Completion:
+   ├── Saves profile tag: `onboarding:completed`
    └── Navigator.pushReplacementNamed('/home')
 ```
 

@@ -69,46 +69,33 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   void _onChooseModeSelected(String mode, String? name) async {
-    setState(() {
-      if (name != null && name.isNotEmpty) _userName = name;
-    });
-
-    final notifier = ref.read(profileProvider.notifier);
-    final supaUser = supa.Supabase.instance.client.auth.currentUser;
-
-    // Update name immediately so it's visible in subsequent steps
-    notifier.updateDisplayName(_userName);
-
-    // All sign-in modes are cloud-connected (Google only)
-    final googlePhotoUrl = supaUser?.userMetadata?['avatar_url'] as String? ??
-        supaUser?.userMetadata?['picture'] as String?;
-
-    notifier.updateProfile(ref.read(profileProvider).copyWith(
-      isGoogleConnected: true,
-      isCloudConnected: true,
-      accountEmail: supaUser?.email,
-      profilePhotoUrl:
-          googlePhotoUrl ?? ref.read(profileProvider).profilePhotoUrl,
-    ));
-
+    // 1. First refresh remote profile from Supabase so we have canonical state
     await ref.read(profileProvider.notifier).refreshProfile();
     if (!mounted) return;
 
     final current = ref.read(profileProvider);
-    // Returning user who already finished onboarding → skip straight to home
+
+    // 2. Returning user who already finished onboarding → skip straight to home
+    // Do NOT mutate or overwrite remote profile with empty local state!
     if (current.hasCompletedOnboarding) {
       Navigator.of(context).pushReplacementNamed('/home');
       return;
     }
 
-    // Resume from where they left off based on saved profile data.
-    // Only jump ahead if the user actually progressed past step 1 in a
-    // previous session — a brand-new user should always see step 1.
+    final supaUser = supa.Supabase.instance.client.auth.currentUser;
+    final googlePhotoUrl = supaUser?.userMetadata?['avatar_url'] as String? ??
+        supaUser?.userMetadata?['picture'] as String?;
+    final resolvedName = (name != null && name.isNotEmpty)
+        ? name
+        : (current.displayName.isNotEmpty ? current.displayName : '');
+
+    // 3. Returning user who dropped off mid-onboarding in a previous session
     if (!_isTrulyNewUser(current)) {
       final resumeStep = _computeResumeStep(current);
       // Pre-fill local state from saved profile
       setState(() {
-        _profilePhotoPath = current.profilePhotoUrl;
+        _userName = resolvedName;
+        _profilePhotoPath = current.profilePhotoUrl ?? googlePhotoUrl;
         _nickname = current.nickname ?? '';
         _dateOfBirth = current.dateOfBirth ?? '';
         _homeRegion = current.homeRegion;
@@ -123,6 +110,20 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       return;
     }
 
+    // 4. Truly new user: seed initial Google details into state and advance to Step 1
+    setState(() {
+      _userName = resolvedName;
+      _profilePhotoPath = googlePhotoUrl;
+    });
+
+    final notifier = ref.read(profileProvider.notifier);
+    if (resolvedName.isNotEmpty) {
+      notifier.updateDisplayName(resolvedName);
+    }
+    if (googlePhotoUrl != null && googlePhotoUrl.isNotEmpty) {
+      notifier.updatePhoto(googlePhotoUrl);
+    }
+
     _goToStep(1);
   }
 
@@ -132,14 +133,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   bool _isTrulyNewUser(ProfileState profile) {
     final noNickname = (profile.nickname ?? '').isEmpty;
     final noCity = profile.homeCity.isEmpty;
-    final noHealth = profile.healthNotes.isEmpty;
+    final noHealth = profile.healthNotes.isEmpty && (profile.bloodType ?? '').isEmpty;
     return noNickname && noCity && noHealth;
   }
 
   /// Returns the step index to resume from based on what has been saved.
   /// Only call this when [_isTrulyNewUser] returns false.
   int _computeResumeStep(ProfileState profile) {
-    // Step 2: Personal Profile — if nickname is empty and local photo unset, resume here
+    // Step 2: Personal Profile — if nickname is empty, resume here
     if ((profile.nickname ?? '').isEmpty) {
       return 2; // Resume at Your Profile step
     }
@@ -147,8 +148,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     if (profile.homeCity.isEmpty) {
       return 3; // Resume at Preferences step
     }
-    // Step 4: Health & Safety — if health notes were never saved, resume here
-    if (profile.healthNotes.isEmpty) {
+    // Step 4: Health & Safety — if health notes and blood type were never saved, resume here
+    if (profile.healthNotes.isEmpty && (profile.bloodType ?? '').isEmpty) {
       return 4; // Resume at Health & Safety step
     }
     // Step 5: All Set
@@ -230,46 +231,56 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       _autoGoogleSignIn = args.autoGoogleSignIn;
     }
 
-    // If user is already authenticated when landing on onboarding
-    // (e.g. finishing setup post-login), skip step 0 (Google sign-in) and proceed.
+    // Check progress on initial load
     if (!_didRestoreProgress) {
       _didRestoreProgress = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         final profile = ref.read(profileProvider);
-        final supaUser = supa.Supabase.instance.client.auth.currentUser;
-
-        // If user already has an established account/profile, skip onboarding entirely
-        if (supaUser != null && profile.isAccountFullySet) {
-          Navigator.of(context).pushReplacementNamed('/home');
-          return;
-        }
-
-        if (supaUser != null &&
-            !profile.hasCompletedOnboarding &&
-            profile.isLoaded) {
-          final startStep =
-              _isTrulyNewUser(profile) ? 1 : _computeResumeStep(profile);
-          setState(() {
-            _userName = profile.displayName;
-            _profilePhotoPath = profile.profilePhotoUrl;
-            _nickname = profile.nickname ?? '';
-            _dateOfBirth = profile.dateOfBirth ?? '';
-            _homeRegion = profile.homeRegion;
-            _homeCity = profile.homeCity;
-            _homeBarangay = profile.homeBarangay;
-            _homeCountry = profile.homeCountry.isNotEmpty
-                ? profile.homeCountry
-                : 'Philippines';
-            _preferredCurrency = profile.preferredCurrency.isNotEmpty
-                ? profile.preferredCurrency
-                : 'PHP';
-            _healthNotes = profile.healthNotes;
-            _bloodType = profile.bloodType;
-          });
-          _goToStep(startStep, animate: false);
-        }
+        _checkAndRestoreProgress(profile);
       });
+    }
+  }
+
+  /// Restores onboarding step progress or redirects completed accounts to /home.
+  void _checkAndRestoreProgress(ProfileState profile) {
+    if (!profile.isLoaded || !mounted) return;
+    final supaUser = supa.Supabase.instance.client.auth.currentUser;
+    if (supaUser == null) return;
+
+    // If user already has an established account/profile, skip onboarding entirely
+    if (profile.hasCompletedOnboarding) {
+      Navigator.of(context).pushReplacementNamed('/home');
+      return;
+    }
+
+    // If user is authenticated and sitting on Step 0, auto-advance
+    if (_currentStepIndex == 0) {
+      final isNew = _isTrulyNewUser(profile);
+      final startStep = isNew ? 1 : _computeResumeStep(profile);
+      final googlePhotoUrl = supaUser.userMetadata?['avatar_url'] as String? ??
+          supaUser.userMetadata?['picture'] as String?;
+
+      setState(() {
+        _userName = profile.displayName.isNotEmpty
+            ? profile.displayName
+            : (supaUser.userMetadata?['full_name'] as String? ?? '');
+        _profilePhotoPath = profile.profilePhotoUrl ?? googlePhotoUrl;
+        _nickname = profile.nickname ?? '';
+        _dateOfBirth = profile.dateOfBirth ?? '';
+        _homeRegion = profile.homeRegion;
+        _homeCity = profile.homeCity;
+        _homeBarangay = profile.homeBarangay;
+        _homeCountry = profile.homeCountry.isNotEmpty
+            ? profile.homeCountry
+            : 'Philippines';
+        _preferredCurrency = profile.preferredCurrency.isNotEmpty
+            ? profile.preferredCurrency
+            : 'PHP';
+        _healthNotes = profile.healthNotes;
+        _bloodType = profile.bloodType;
+      });
+      _goToStep(startStep, animate: false);
     }
   }
 
@@ -281,6 +292,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Reactively monitor profile state transitions (e.g. initial remote load completing)
+    ref.listen<ProfileState>(profileProvider, (previous, next) {
+      _checkAndRestoreProgress(next);
+    });
+
     final profile = ref.watch(profileProvider);
     final displayUserName =
         profile.effectiveName.isNotEmpty ? profile.effectiveName : _userName;

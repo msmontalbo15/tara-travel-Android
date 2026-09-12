@@ -2760,3 +2760,26 @@
 - **Verification**:
   - `flutter analyze lib/features/profile/profile_screen.dart lib/core/widgets/auth_gate.dart`: 0 errors, 0 warnings.
 
+
+### `IMP-113` · Onboarding Lifecycle Fix for Old & New Users
+- **Date**: September 13, 2026
+- **Target Files**:
+  - `lib/core/providers/profile_provider.dart` [MODIFIED - Removed `homeCity` heuristic from `isAccountFullySet` and `_loadProfile`]
+  - `lib/features/onboarding/onboarding_screen.dart` [MODIFIED - Prevented profile wiping on Google sign-in by awaiting `refreshProfile()` before writes, reactively restored progress via `ref.listen`]
+  - `lib/features/splash/splash_screen.dart` [MODIFIED - Prevented bypassing onboarding on active session if onboarding is incomplete]
+  - `lib/core/widgets/auth_gate.dart` [MODIFIED - Explicitly used `profile.hasCompletedOnboarding` for destination routing]
+  - `docs/MEMORY.md` [MODIFIED - Updated onboarding lifecycle invariants]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED - Appended milestone record]
+  - `docs/CHANGELOG.md` [MODIFIED - Documented fix]
+- **Architectural Rationale**:
+  - **Root Cause (Old Users)**: When existing users signed in with Google, `_onChooseModeSelected` in `onboarding_screen.dart` immediately invoked `updateDisplayName` prior to loading remote profile data from Supabase. This dispatched uninitialized local default state to `saveRemoteProfile`, wiping the user's remote profile in `public.users` (including removing the `onboarding:completed` tag). The user was then treated as incomplete and forced into onboarding Step 1.
+  - **Root Cause (New Users)**: `isAccountFullySet` and `_loadProfile` contained a `homeCity.isNotEmpty` heuristic. When a new user selected their city at Step 3 (`PreferencesStep`), `homeCity` became non-empty, falsely marking `isAccountFullySet = true` and `hasCompletedOnboarding = true`, causing premature ejection to `/home` and skipping Step 4 (Health & Safety) and Step 5 (All Set).
+  - **Root Cause (Session & Step 0 Hangs)**: `SplashScreen` routed to `/home` whenever `_hasActiveSession` was true regardless of onboarding status. Furthermore, in `onboarding_screen.dart`, a one-shot `_didRestoreProgress` check in `didChangeDependencies` failed if `profile.isLoaded` was false during the first frame, stranding authenticated in-progress users on Step 0.
+  - **Remediation**:
+    - Made `hasCompletedOnboarding` the strict single source of truth for onboarding completion across `isAccountFullySet`, `_loadProfile`, `AuthGate`, and `SplashScreen`.
+    - In `_onChooseModeSelected`, awaited `refreshProfile()` first before any state writes; existing completed users are routed straight to `/home` with zero profile mutation.
+    - Added reactive `ref.listen<ProfileState>` progress restoration in `OnboardingScreen` so authenticated users automatically advance from Step 0 to Step 1 or their computed resume step as soon as profile loading resolves.
+- **Verification**:
+  - `dart analyze lib/`: 0 errors, 0 warnings.
+
+
