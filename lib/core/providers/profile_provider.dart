@@ -110,10 +110,7 @@ class ProfileState {
 
   /// Evaluates whether the account is sufficiently initialized to bypass onboarding.
   bool get isAccountFullySet =>
-      hasCompletedOnboarding ||
-      homeCity.isNotEmpty ||
-      (displayName.isNotEmpty && displayName != 'User') ||
-      (firstName.isNotEmpty && firstName != 'User');
+      hasCompletedOnboarding || homeCity.isNotEmpty;
 
   Color get avatarColor => const Color(0xFFD85A30);
 
@@ -270,10 +267,9 @@ class ProfileNotifier extends Notifier<ProfileState> {
         final remoteData = await repo.getRemoteProfile(supaUser.id);
         if (remoteData != null) {
           final remote = ProfileState.fromJson(remoteData);
-          // If remote account has city or valid name, treat onboarding as completed
+          // If remote account has city or completed flag, treat onboarding as completed
           final hasOnboarded = remote.hasCompletedOnboarding ||
-              remote.homeCity.isNotEmpty ||
-              ((remote.displayName.isNotEmpty) && remote.displayName != 'User');
+              remote.homeCity.isNotEmpty;
 
           current = remote.copyWith(
             accountEmail: supaUser.email,
@@ -312,11 +308,6 @@ class ProfileNotifier extends Notifier<ProfileState> {
   Future<void> refreshProfile() => _loadProfile();
 
   Future<void> _persist() async {
-    if (!state.hasCompletedOnboarding &&
-        (state.homeCity.isNotEmpty || state.displayName.isNotEmpty)) {
-      state = state.copyWith(hasCompletedOnboarding: true);
-    }
-
     final repo = ref.read(profileRepositoryProvider);
     final json = state.toJson();
 

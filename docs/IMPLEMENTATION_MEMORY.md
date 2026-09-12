@@ -2732,4 +2732,15 @@
   - Full repo `flutter analyze`: 0 issues found across all packages.
 
 
-
+### `IMP-111` · Canonical Onboarding Enforcement & False-Positive Elimination
+- **Date**: September 13, 2026
+- **Target Files**:
+  - `lib/core/providers/profile_provider.dart` [MODIFIED - Removed displayName heuristics from `_persist()`, `_loadProfile()`, and `isAccountFullySet`]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED - Appended milestone record]
+  - `docs/CHANGELOG.md` [MODIFIED - Documented fix]
+- **Architectural Rationale**:
+  - **Root Cause**: New users signing in with Google were immediately bypassed from `/onboarding` to `/home`. When Google Sign-In completed, `userMetadata` provided the user's Google display name, triggering `updateDisplayName()`. In `profile_provider.dart`, `_persist()` contained an auto-complete check (`if (state.homeCity.isNotEmpty || state.displayName.isNotEmpty) state = state.copyWith(hasCompletedOnboarding: true);`), which prematurely marked `hasCompletedOnboarding = true`. Concurrently, `isAccountFullySet` returned `true` if `displayName != 'User'`, causing `AuthGate` and `OnboardingScreen` to immediately eject new users to `/home`.
+  - **Single Source of Truth**: Removed the premature auto-completion logic in `_persist()` so that `hasCompletedOnboarding` can only be set to `true` when the traveler explicitly completes the final step via `completeOnboarding()`.
+  - **Decoupled Auth Metadata from Account Completion**: Refactored `isAccountFullySet` to evaluate strictly `hasCompletedOnboarding || homeCity.isNotEmpty`. Auto-seeded names from OAuth providers no longer bypass or satisfy onboarding requirements.
+- **Verification**:
+  - `dart analyze lib/` confirmed 0 issues across all packages.
