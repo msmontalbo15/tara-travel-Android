@@ -493,3 +493,17 @@ final itineraryProvider = Provider.autoDispose
     });
   },
 );
+
+/// Convenience family provider that aggregates and streams all stops across days for a trip.
+final itineraryStopsProvider = Provider.autoDispose.family<AsyncValue<List<ItineraryStop>>, String>((ref, tripId) {
+  final subProvider = ref.watch(itineraryProvider(tripId));
+  final asyncState = ref.watch(subProvider);
+  return asyncState.whenData((state) {
+    final allStops = <ItineraryStop>[];
+    for (final day in state.days) {
+      allStops.addAll(day.stops);
+    }
+    return allStops;
+  });
+});
+

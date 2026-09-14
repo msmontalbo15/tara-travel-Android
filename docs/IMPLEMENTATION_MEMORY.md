@@ -85,6 +85,7 @@
 | **`IMP-115`** | 2026-09-14 | Friends / Clean Header & Find Friends Action Bar | Cleaned top header bar (removed all 3 action icons, centered title with balanced back button) and consolidated Scan QR, My QR, and Add by ID into a dedicated discovery strip exclusively inside `_buildFindFriendsTab`. |
 | **`IMP-116`** | 2026-09-14 | Create Trip & Itinerary / Optional Destination & Auto-Seeded Itinerary Stops | Made destination field optional during trip creation flow with graceful 'TBD' fallback, and automatically seeded Day 1 itinerary stops with departure point as start (`StopType.transport`) and destination as arrival (`StopType.activity`). |
 | **`IMP-117`** | 2026-09-14 | Maps & Itinerary / Google Maps Link Resolver & Pin Location Integration (Plan 5) | Zero-cost Google Maps shortened/place URL parser, coordinate regex extraction, reverse geocode enrichment via Nominatim, automatic StopType inference, and interactive map camera fly in MapPinPickerModal and LocationPicker. |
+| **`IMP-119`** | 2026-09-15 | Trip Detail / Command Cluster (Plans 20, 11, 16) | Announcements Hub, Departure Advisory Engine & Countdown, Tara Copilot AI Assistant. |
 
 
 ---
@@ -2847,3 +2848,30 @@
   - When all 5 checks pass, a celebratory "all set" card replaces the checklist.
 - **Verification**:
   - `flutter analyze lib/features/trip_detail/`: 0 errors, 0 warnings.
+
+### `IMP-119` · Trip Detail Command Cluster: Announcements Hub, Smart Departure Advisory & Tara Copilot (Plans 20, 11, & 16)
+- **Date**: September 15, 2026
+- **Target Files**:
+  - `lib/core/services/departure_advisory_service.dart` [NEW - Assembly countdown, ETA buffer, grace period, and status detector]
+  - `lib/core/services/gemini_ai_service.dart` [NEW - Dual-path conversational travel assistant & tool-calling action chip generator]
+  - `lib/features/trip_detail/widgets/trip_announcements_card.dart` [NEW - Real-time announcement card, priority badges, carousel & history modal]
+  - `lib/features/trip_detail/widgets/smart_departure_advisory_card.dart` [NEW - Live countdown hero card, grace buffer gauge & map launch]
+  - `lib/features/ai_assistant/screens/tara_copilot_sheet.dart` [NEW - Conversational chat modal with instant prompts & action chips]
+  - `lib/core/repositories/chat_repository.dart` [MODIFIED - Added `isPinned` support to `sendMessage`]
+  - `lib/core/providers/chat_provider.dart` [MODIFIED - Added `sendAnnouncement` & `tripAnnouncementsProvider`]
+  - `lib/core/providers/packing_provider.dart` [MODIFIED - Added `addItem` helper to `PackingNotifier` for action chips]
+  - `lib/features/chat/widgets/chat_attachment_picker_sheet.dart` [MODIFIED - Added Announcement tile with priority selection]
+  - `lib/features/trip_detail/widgets/trip_quick_actions_grid.dart` [MODIFIED - Added Tara Copilot action tile]
+  - `lib/features/trip_detail/trip_detail_screen.dart` [MODIFIED - Integrated Announcements card, Departure card, and Ask Tara pill button]
+  - `test/services/departure_advisory_service_test.dart` [NEW - Comprehensive test suite for countdown, grace period, and advisory status]
+  - `docs/INDEX.md` [MODIFIED - Registered new services, providers, and routes]
+  - `docs/ROADMAP.md` [MODIFIED - Marked Plans 11, 20, 16 as Complete in TOC and Completed Plans table]
+  - `docs/MEMORY.md` [MODIFIED - Added Section 32 documenting Command Cluster architecture]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED - Recorded milestone and updated index table]
+  - `docs/CHANGELOG.md` [MODIFIED - Recorded release entry]
+- **Architectural Rationale**:
+  - **Batch Execution Synergy**: Bundling Plans 20, 11, and 16 into a single Trip Detail Command Cluster eliminated redundant layout revisions on `TripDetailScreen`, delivering a unified card stacking hierarchy: `OfflineReadOnlyBanner` -> `PlanningRecommendationsCard` -> `TripAnnouncementsCard` -> `SmartDepartureAdvisoryCard` -> `DestinationWeatherWidget` -> `OngoingTripHud` -> `TripQuickActionsGrid`.
+  - **Zero-Latency In-Trip Action Flow**: The Tara Copilot sheet synthesizes structured action chips that allow travelers to execute state changes (add itinerary stops, append packing items, record expenses) in 1 tap without navigating away from their conversation.
+  - **High-Visibility Squad Coordination**: Pinned announcements bridge the chat and dashboard, giving organizers high-visibility broadcast power without spamming group channels.
+- **Verification**:
+  - `flutter analyze --no-fatal-infos --no-fatal-warnings`: 0 issues found (clean pass).

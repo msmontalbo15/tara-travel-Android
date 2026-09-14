@@ -256,6 +256,36 @@ class PackingNotifier extends Notifier<PackingState> {
     );
   }
 
+  /// Convenience method to add an item, resolving or defaulting category if needed
+  Future<void> addItem(
+    String itemName, {
+    String? categoryId,
+    String? subCategory,
+    MemberModel? assignedMember,
+  }) async {
+    String targetCatId = categoryId ?? 'essentials';
+    if (categoryId == null && subCategory != null) {
+      final matchedCat = state.categories.where((c) =>
+          c.id.toLowerCase() == subCategory.toLowerCase() ||
+          c.name.toLowerCase() == subCategory.toLowerCase()).firstOrNull;
+      if (matchedCat != null) {
+        targetCatId = matchedCat.id;
+      }
+    } else if (state.categories.isNotEmpty && !state.categories.any((c) => c.id == targetCatId)) {
+      final matchedCat = state.categories.where((c) =>
+          c.id.toLowerCase() == targetCatId.toLowerCase() ||
+          c.name.toLowerCase() == targetCatId.toLowerCase()).firstOrNull;
+      targetCatId = matchedCat?.id ?? (state.categories.isNotEmpty ? state.categories.first.id : 'essentials');
+    }
+
+    await addItemToCategory(
+      targetCatId,
+      itemName,
+      subCategory: subCategory,
+      assignedMember: assignedMember,
+    );
+  }
+
   Future<void> addItemToCategory(
     String categoryId,
     String itemName, {

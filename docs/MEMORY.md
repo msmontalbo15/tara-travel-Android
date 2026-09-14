@@ -1244,3 +1244,34 @@ Client Tier               Storage Tier                Transport Tier
 ---
 
 *This document is the single source of architectural truth for Tara Travel. Update this file whenever database schemas, RPC functions, core repositories, or system flows are modified.*
+
+## 32. 🚀 TRIP DETAIL COMMAND CLUSTER: ANNOUNCEMENTS, DEPARTURE ADVISORY & TARA COPILOT (PLANS 20, 11, & 16 / IMP-119)
+
+### 32.1 Plan 20: Chat Announcements Engine & Trip Detail Command Hub
+- **Group Chat Integration & Auto-Pinning**:
+  - `ChatRepository.sendMessage(..., isPinned: true)` persists message with announcement flag and creates an entry in `tripAnnouncementsProvider(tripId)`.
+  - `ChatAttachmentPickerSheet` provides a dedicated "📢 Trip Announcement" item with Urgent Alert (`#D85A30`) vs Notice (`#EF9F27`) priority classification.
+- **Trip Detail Announcements Card (`TripAnnouncementsCard`)**:
+  - Prominently positioned on `TripDetailScreen` below the weather widget / HUD.
+  - Features real-time priority badge, relative time ago indicator, author name, collapsible state for acknowledged notices, and a full announcement history bottom modal.
+  - Includes 1-tap "Open in Chat →" button with smooth navigation and deep-linking to the chat conversation.
+
+### 32.2 Plan 11: Meet-up Assembly, Smart Countdown & Departure Detection
+- **Day 1 Stop 0 Auto-Provisioning & Sync**:
+  - Newly created trips in `CreateTripFlow` or updated departure points in `TripRepository` automatically seed Day 1 Stop 0 ("Meet-up & Assembly") at scheduled start date.
+  - Stop 0 coordinates, departure point name, and maps URL stay strictly in sync with `trips(departure_point, departure_lat, departure_lng, departure_map_url)`.
+- **Departure Advisory Engine (`DepartureAdvisoryService`)**:
+  - Calculates real-time countdown to assembly time, wheels-up departure time, configurable grace period (default 15m), and traveler readiness states (`ahead`, `onTime`, `delayed`, `departed`).
+  - `SmartDepartureAdvisoryCard` renders above HUD with interactive progress gauge, assembly location preview, and direct Google Maps navigation handoff.
+
+### 32.3 Plan 16: Tara Copilot Generative Travel Assistant
+- **Dual-Path Resilient Execution (`GeminiAiService`)**:
+  - Primary path: Secure Supabase Edge Function (`tara-copilot`) proxying to Gemini 1.5 Flash / 2.0.
+  - Fallback path: Direct client-side Gemini API execution or offline contextual heuristics primed with local Philippine travel recommendations.
+- **Interactive Tool Calling & In-Trip Action Chips**:
+  - Copilot synthesizes contextual responses along with structured action chips (`CopilotActionChip`):
+    - `addStop`: Directly provisions a recommended attraction or food spot to the active day itinerary via `itineraryDaysProvider`.
+    - `addPackingItem`: Ingests suggested gear or essentials into `packingProvider` with category matching via `addItem`.
+    - `logExpense`: Navigates to budget tracker with pre-populated expense parameters.
+- **Entry Surfaces**:
+  - Accessible via the "✨ Tara Copilot" tile in `TripQuickActionsGrid` and the "✨ Ask Tara" glass pill header button in `TripDetailScreen`.

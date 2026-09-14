@@ -179,6 +179,36 @@ class TripRepository {
       debugPrint('[TripRepository] Updating trip ${trip.id} with payload: $payload');
       await _supabase.from('trips').update(payload).eq('id', trip.id);
       debugPrint('[TripRepository] Trip ${trip.id} successfully updated in Supabase.');
+
+      // Sync Day 1 Stop 0 (Meet-up / Departure) if departurePoint exists
+      if (trip.departurePoint != null && trip.departurePoint!.trim().isNotEmpty) {
+        try {
+          final stops = await _supabase
+              .from('itinerary_stops')
+              .select('id, type, title')
+              .eq('trip_id', trip.id)
+              .eq('day_number', 1)
+              .order('sort_order', ascending: true)
+              .limit(1);
+
+          if ((stops as List).isNotEmpty) {
+            final firstStop = (stops.first as Map).cast<String, dynamic>();
+            final stopType = firstStop['type']?.toString();
+            if (stopType == 'transport') {
+              await _supabase.from('itinerary_stops').update({
+                'title': 'Meet-up & Assembly: ${trip.departurePoint!.trim()}',
+                'address': trip.departurePoint!.trim(),
+                if (trip.departureLat != null) 'lat': trip.departureLat,
+                if (trip.departureLng != null) 'lng': trip.departureLng,
+                'updated_at': DateTime.now().toUtc().toIso8601String(),
+              }).eq('id', firstStop['id']);
+              debugPrint('[TripRepository] Stop 0 departure point synced.');
+            }
+          }
+        } catch (stopErr) {
+          debugPrint('[TripRepository] Stop 0 sync note: $stopErr');
+        }
+      }
     } on PostgrestException catch (e) {
       debugPrint('[TripRepository] updateTrip PostgrestException: code=${e.code} message=${e.message} details=${e.details}');
       rethrow;

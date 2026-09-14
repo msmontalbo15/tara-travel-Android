@@ -23,9 +23,9 @@ This document serves as our compiled repository master plan, organized hierarchi
 | **8** | [Real-Time Live Weather Forecast & Severe Condition Alerts Engine](#plan-8-real-time-live-weather-forecast-severe-condition-alerts-engine) | 🟢 **Complete** | Open-Meteo API integration, offline caching, itinerary day-strip weather & severe storm alerts |
 | **9** | [Dual-Lens Budget & Expense Hub (Personal Pocket Tracker + Group Trip Summary)](#plan-9-dual-lens-budget-expense-hub-personal-pocket-tracker-group-trip-summary) | 🟡 **Drafted / Queued** | Private personal expenses, "My True Trip Cost", cash/GCash tracking & daily burn pace meter |
 | **10** | [Flexible & Optional Trip Map: Adventure, Multi-Point & Off-Grid Mode](#plan-10-flexible-optional-trip-map-adventure-multi-point-off-grid-mode) | 🟡 **Drafted / Queued** | Optional map tracking, multi-point waypoints, adventure trail roaming, battery-saving mapless mode |
-| **11** | [Meet-up Assembly, Smart Countdown & Automatic Departure Detection](#plan-11-meet-up-assembly-smart-countdown-automatic-departure-detection) | 🟡 **Drafted / Queued** | Day 1 Stop 0 auto-insertion, meet-up grace period, GPS distance countdown & auto departure |
+| **11** | [Meet-up Assembly, Smart Countdown & Automatic Departure Detection](#plan-11-meet-up-assembly-smart-countdown-automatic-departure-detection) | 🟢 **Complete** | Day 1 Stop 0 auto-insertion, meet-up grace period, GPS distance countdown & auto departure |
 | **12** | [Floating Travel Bubble & System Overlay HUD (PiP / Chathead Mode)](#plan-12-floating-travel-bubble-system-overlay-hud-pip-chathead-mode) | 🟡 **Drafted / Queued** | System-wide floating bubble overlay, live convoy/next stop glance, quick expense note & PiP |
-| **20** | [Chat Announcements Engine & Trip Detail Command Hub](#plan-20-chat-announcements-engine--trip-detail-command-hub) | 🟡 **Drafted / Queued** | Pinned announcements, priority tinting (Urgent vs Notice), live banner on Trip Detail & chat deep-linking |
+| **20** | [Chat Announcements Engine & Trip Detail Command Hub](#plan-20-chat-announcements-engine--trip-detail-command-hub) | 🟢 **Complete** | Pinned announcements, priority tinting (Urgent vs Notice), live banner on Trip Detail & chat deep-linking |
 
 ### 🔴 Tier 3: Major Architecture & Platform (End-to-End Systems, AI & Middleware)
 | # | Plan / Feature | Status | Key Focus |
@@ -33,10 +33,14 @@ This document serves as our compiled repository master plan, organized hierarchi
 | **13** | [Trip Detail Screen: Ongoing Command Center, HUD & Quick Action Hub](#plan-13-trip-detail-screen-ongoing-command-center-hud-quick-action-hub) | 🟢 **Complete** | Active Quick Stop HUD, persistent bottom bar, telemetry, officers, announcements & weather |
 | **14** | [Day Map Intelligent Route Optimization & Arrival Geofence](#plan-14-day-map-intelligent-route-optimization-best-way-routing) | 🟡 **Drafted / Queued** | Street-network routing, best order optimization, arrival geofence pop-up & notification |
 | **15** | [Comprehensive Mobile Notifications Architecture (Push, In-App Banners & Deep-Link Routing)](#plan-15-comprehensive-mobile-notifications-architecture-push-in-app-banners-deep-link-routing) | 🟡 **Drafted / Queued** | Local scheduled alerts, FCM push, Island in-app banners, swipe dismissal & contextual tap routing |
-| **16** | [Gemini Embedded AI Travel Copilot & Assistant](#plan-16-gemini-embedded-ai-travel-copilot-assistant) | 🟡 **Drafted / Queued** | Natural language trip planner, smart itinerary recommendations, budget optimization & packing generator |
+| **16** | [Gemini Embedded AI Travel Copilot & Assistant](#plan-16-gemini-embedded-ai-travel-copilot-assistant) | 🟢 **Complete** | Natural language trip planner, smart itinerary recommendations, budget optimization & packing generator |
 | **17** | [Supabase & Middleware App Versioning & OTA Updates](#plan-17-supabase-middleware-app-versioning-ota-updates) | 🟡 **Drafted / Queued** | Version gatekeeper, Shorebird OTA code push, Supabase storage APK download & force/soft update dialogs |
 | **18** | [Tara Laravel Middleware & SuperAdmin Dashboard (Universal Links, CMS & Ops)](#plan-18-tara-laravel-middleware-superadmin-dashboard-universal-links-cms-ops) | 🟡 **Drafted / Queued** | Web-to-app deep linking gateway, Filament v3 CMS, trip templates, feedback helpdesk & remote config |
 | **19** | [Universal Responsive Layout Engine & Zero-Overflow Architecture](#plan-19-universal-responsive-layout-engine--zero-overflow-architecture) | 🟢 **Complete** | Breakpoints, clamped text scaler, safe padding/insets, zero hardcoded MediaQuery dimensions |
+
+### 📱 Screen-by-Screen & Batching Index
+- [Screen-by-Screen Feature Matrix & Implementation Clusters](#-screen-by-screen-feature-matrix--implementation-clusters)
+- [Recommendations for Batch Execution](#-recommendations-for-batch-execution)
 
 ---
 
@@ -696,3 +700,61 @@ Provide a streamlined, high-visibility communication bridge between Group Chat a
 - `lib/features/chat/chat_screen.dart` *(MODIFY — wire announcement compose modal & announcement bubble styling)*
 - `lib/features/trip_detail/widgets/trip_announcements_card.dart` *(NEW — interactive announcements card for trip detail)*
 - `lib/features/trip_detail/trip_detail_screen.dart` *(MODIFY — integrate announcements card below weather/HUD)*
+
+---
+
+---
+
+## 📱 Screen-by-Screen Feature Matrix & Implementation Clusters
+
+This matrix aggregates all active roadmap plans that share identical screens/surfaces, identifying the **level of changes needed** (Low, Medium, High, Extreme) to enable efficient multi-feature batching.
+
+### 🗺️ Screen Modification Summary Table
+
+| Screen / Feature Surface | Primary File Path | Associated Plans | Level of Changes | Key Modifications & Architecture |
+| :--- | :--- | :--- | :---: | :--- |
+| **Trip Detail Command Center** | `lib/features/trip_detail/trip_detail_screen.dart` | **Plan 20** (Announcements)<br>**Plan 11** (Meet-up Advisory)<br>**Plan 16** (Copilot Action)<br>**Plan 12** (Floating HUD Bubble)<br>**Plan 10** (Optional Map Mode)<br>**Plan 6** (Transport Summary)<br>**Plan 15** (Deep-Link Arguments) | **High** *(Multiple Components)* | • Mount `TripAnnouncementsCard` below weather/HUD with priority tinting.<br>• Mount `SmartDepartureAdvisoryCard` for wheels-up countdown & headcount.<br>• Add `[✨ Tara Copilot]` and `[Pop out Bubble]` actions to quick actions.<br>• Condition map actions based on `is_map_enabled`.<br>• Adapt `TransportSummaryCard` for Private/Commute/Rental.<br>• Accept `initialTabIndex` & `highlightItemId` routing arguments. |
+| **Trip Creation Wizard** | `lib/features/create_trip/create_trip_flow.dart` | **Plan 6** (Tri-Modal Transport)<br>**Plan 7** (Travel Circles)<br>**Plan 10** (Optional Map Mode)<br>**Plan 11** (Stop 0 Meet-up) | **High** | • Refactor `TransportStep` into 3-mode selector (Private/Commute/Rental).<br>• Add Friend Circle batch chips in `DetailsStep` friends picker.<br>• Add toggle for Optional Map / Adventure / Multi-point mode in `DetailsStep`.<br>• Auto-provision Day 1 Stop 0 (`Meet-up & Assembly`) from departure coordinates upon trip submission. |
+| **Itinerary & Day Map** | `lib/features/itinerary/itinerary_screen.dart`<br>`lib/features/itinerary/widgets/day_map_view.dart` | **Plan 14** (Route Optimization & Geofence)<br>**Plan 10** (Optional Map Mode)<br>**Plan 16** (AI Stop Addition) | **High** | • Integrate street-level road polyline routing (OSRM/Mapbox) into `DayMapView`.<br>• Add "Optimize Day Route" (TSP reordering) action.<br>• Proximity geofence trigger with `ArrivalDialog` celebrating arrival.<br>• Adapt `ItineraryBottomDock` buttons to "Adventure Compass / Timeline" when map is disabled.<br>• Support multi-point waypoints in `ItineraryMapSheet`. |
+| **Budget & Expense Hub** | `lib/features/budget/budget_screen.dart`<br>`lib/features/expenses/widgets/add_expense_form.dart` | **Plan 9** (Dual-Lens Budget & Pocket)<br>**Plan 15** (Expense Deep Links) | **High** | • Add segmented toggle: `My Personal Pocket` vs `Group Finances`.<br>• Mount `PersonalPocketCard` & `DailyPaceGauge` speedometer.<br>• In `AddExpenseForm`, add `is_personal` toggle and `payment_method` chips (`cash`, `gcash`, `maya`).<br>• Auto-scroll/highlight specific expense cards when opened via push notification. |
+| **Group Chat Hub** | `lib/features/chat/chat_screen.dart`<br>`lib/features/chat/widgets/chat_attachment_picker_sheet.dart` | **Plan 20** (Announcements Engine) | **Medium** | • Add "📢 Trip Announcement" item in `ChatAttachmentPickerSheet`.<br>• Add compose announcement modal with priority selection.<br>• Pinned announcement top drawer with counter.<br>• Styled announcement bubble cards with deep-link anchors. |
+| **Friends & Squads** | `lib/features/friends/friends_screen.dart` | **Plan 7** (Travel Circles) | **High** | • Add "Circles" tab to friends management.<br>• Circle CRUD sheets with name, emoji, and default roles.<br>• Shareable `circle_invite_code` onboarding flow. |
+| **User Profile & Garage** | `lib/features/profile/profile_screen.dart` | **Plan 6** (User Garage & Vehicles)<br>**Plan 7** (Circles Shortcut) | **Medium** | • Add "My Vehicles / Garage" entry tile launching `UserVehiclesSheet`.<br>• Vehicle CRUD (model, fuel type, km/L efficiency rating).<br>• Quick navigation entry to manage Travel Circles. |
+| **Notifications Center** | `lib/features/notifications/notifications_screen.dart` | **Plan 15** (Mobile Notifications) | **Medium** | • Make notification list tiles interactive with category-tinted icons.<br>• Wire tap actions to `NotificationRouter` for deep-link screen navigation. |
+| **System Overlay & Background** | Global App Services & Android Manifest | **Plan 12** (Floating Bubble Overlay)<br>**Plan 15** (Local/Push Notifications)<br>**Plan 16** (Gemini AI Service Core)<br>**Plan 18** (Laravel Middleware) | **High to Extreme** | • Android `SYSTEM_ALERT_WINDOW` & `FOREGROUND_SERVICE` for PiP bubble.<br>• Local timed notification channels & top slide-down `InAppNotificationOverlay`.<br>• Edge Function `tara-copilot` & client fallback.<br>• External Laravel 11 + Filament v3 backend for `/join/{code}` deep links. |
+
+---
+
+### 💡 Recommendations for Batch Execution
+
+When scheduling implementation sprints, bundle features by screen to avoid touching the same files across separate PRs and prevent regression churn:
+
+1. **Trip Detail Command Cluster**:
+   - **Bundle**: **Plan 20** (Announcements) + **Plan 11** (Meet-up Advisory) + **Plan 16** (Copilot Action) on [`lib/features/trip_detail/trip_detail_screen.dart`](file:///d:/Spencer/Downloads/tara_travel/lib/features/trip_detail/trip_detail_screen.dart).
+   - **Rationale**: All three add high-visibility cards and actions to the Trip Detail view. Implementing them together ensures a cohesive vertical layout, uniform scroll physics, and unified quick-action sheet integration.
+   - **Dashboard UI Layout & Stacking Order**:
+     1. `OfflineReadOnlyBanner` (offline safety guard)
+     2. `_DraftPublishCard` (if `trip.isDraft`)
+     3. `PlanningRecommendationsCard` (if `trip.status == TripStatus.planning`)
+     4. `TripAnnouncementsCard` (**Plan 20** — pinned organizer alerts with urgent Coral / notice Sunset styling & tap-to-chat)
+     5. `SmartDepartureAdvisoryCard` (**Plan 11** — assembly time countdown, grace period gauge, companion headcount & departure detector)
+     6. `DestinationWeatherWidget` (destination forecast & weather conditions)
+     7. `OngoingTripHud` / `_ItineraryHubCard` (cockpit active stop tracker)
+     8. `_LogisticsCard` & `_BudgetCard` (financial snapshot)
+     9. `TripQuickActionsGrid` / Floating Action Dock (**Plan 16** — add `[✨ Tara Copilot]` entry to launch conversational AI assistant)
+   - **Shared Technical Dependencies**:
+     - `lib/features/trip_detail/widgets/trip_announcements_card.dart` *(NEW)*
+     - `lib/features/trip_detail/widgets/smart_departure_advisory_card.dart` *(NEW)*
+     - `lib/features/ai_assistant/screens/tara_copilot_sheet.dart` *(NEW)*
+     - `lib/core/providers/chat_provider.dart` *(Announcements stream & sender)*
+     - `lib/core/services/departure_advisory_service.dart` *(Assembly time & distance calculator)*
+
+
+2. **Trip Creation & Setup Cluster**:
+   - **Bundle**: **Plan 6** (Transport Step) + **Plan 7** (Circles) + **Plan 10** (Optional Map) on [`lib/features/create_trip/create_trip_flow.dart`](file:///d:/Spencer/Downloads/tara_travel/lib/features/create_trip/create_trip_flow.dart).
+   - **Rationale**: Avoids revising wizard step data flow multiple times. `DetailsStep` absorbs Circles and Map modes simultaneously, while `TransportStep` is finalized to the Tri-Modal model in one pass.
+
+3. **Map & Itinerary Optimization Cluster**:
+   - **Bundle**: **Plan 10** (Map Modes) + **Plan 14** (Street Navigation & Geofence) on [`lib/features/itinerary/widgets/day_map_view.dart`](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/day_map_view.dart) and [`lib/features/itinerary/itinerary_screen.dart`](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/itinerary_screen.dart).
+   - **Rationale**: `DayMapView` and `ItineraryBottomDock` undergo architectural changes for routing geometries and alternative timeline modes; modifying them concurrently prevents conflicting layout constraints.
+

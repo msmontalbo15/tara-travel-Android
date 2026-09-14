@@ -262,6 +262,203 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               );
           _scrollToBottom(force: true);
         },
+        onCreateAnnouncement: _openCreateAnnouncement,
+      ),
+    );
+  }
+
+  void _openCreateAnnouncement() {
+    HapticFeedback.mediumImpact();
+    final titleController = TextEditingController();
+    final messageController = TextEditingController();
+    String priority = 'urgent';
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: EdgeInsets.fromLTRB(
+            20,
+            16,
+            20,
+            MediaQuery.of(ctx).viewInsets.bottom + 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.cardBorder,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: priority == 'urgent'
+                          ? const Color(0xFFFDE8E1)
+                          : const Color(0xFFFEF3C7),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.campaign_rounded,
+                      color: priority == 'urgent' ? AppColors.primary : const Color(0xFFD97706),
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text(
+                      'Post Trip Announcement',
+                      style: TextStyle(
+                        fontFamily: AppTextStyles.fontHeading,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.deepEarth,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              // Priority Segmented Selector
+              Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => setModalState(() => priority = 'urgent'),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          color: priority == 'urgent' ? AppColors.primary : AppColors.surfaceLight,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: priority == 'urgent' ? AppColors.primary : AppColors.cardBorder,
+                          ),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          '🚨 Urgent Alert',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: priority == 'urgent' ? Colors.white : AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => setModalState(() => priority = 'notice'),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          color: priority == 'notice' ? const Color(0xFFEF9F27) : AppColors.surfaceLight,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: priority == 'notice' ? const Color(0xFFEF9F27) : AppColors.cardBorder,
+                          ),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          '📌 Trip Notice',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: priority == 'notice' ? Colors.white : AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: titleController,
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                decoration: InputDecoration(
+                  hintText: 'Headline (e.g., Meet at North Terminal by 5:30 AM)',
+                  hintStyle: const TextStyle(fontSize: 13, color: AppColors.muted),
+                  filled: true,
+                  fillColor: AppColors.surfaceLight,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.cardBorder),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: messageController,
+                maxLines: 3,
+                style: const TextStyle(fontSize: 14),
+                decoration: InputDecoration(
+                  hintText: 'Detailed announcement instructions for the squad...',
+                  hintStyle: const TextStyle(fontSize: 13, color: AppColors.muted),
+                  filled: true,
+                  fillColor: AppColors.surfaceLight,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.cardBorder),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () async {
+                    final title = titleController.text.trim();
+                    final body = messageController.text.trim();
+                    if (title.isEmpty && body.isEmpty) return;
+
+                    Navigator.pop(ctx);
+
+                    final profile = ref.read(profileProvider);
+                    final senderName = profile.effectiveName.isNotEmpty
+                        ? MemberModel.formatDisplayName(profile.effectiveName,
+                            hideSurname: profile.hideSurname)
+                        : 'Organizer';
+
+                    await ref.read(chatProvider.notifier).sendAnnouncement(
+                          title: title.isNotEmpty ? title : 'Announcement',
+                          message: body,
+                          senderName: senderName,
+                          priority: priority,
+                        );
+                    _scrollToBottom(force: true);
+                  },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: priority == 'urgent' ? AppColors.primary : const Color(0xFFEF9F27),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text(
+                    'Broadcast & Pin Announcement 📢',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

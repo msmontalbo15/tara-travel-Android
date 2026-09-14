@@ -287,13 +287,13 @@ class _CreateTripFlowState extends ConsumerState<CreateTripFlow> {
       final depLat = _draft.transportDetail?.departureLat ?? _draft.departureLat;
       final depLng = _draft.transportDetail?.departureLng ?? _draft.departureLng;
 
-      // 1. Departure Point as Day 1 Start stop
+      // 1. Day 1 Stop 0: Meet-up & Assembly Point
       if (departure != null && departure.trim().isNotEmpty) {
         seedStops.add(
           ItineraryStop(
             id: const Uuid().v4(),
-            title: 'Departure: ${departure.trim()}',
-            notes: 'Trip departure point',
+            title: 'Meet-up & Assembly: ${departure.trim()}',
+            notes: 'Trip assembly point & wheels-up departure',
             type: StopType.transport,
             location: departure.trim(),
             lat: depLat,

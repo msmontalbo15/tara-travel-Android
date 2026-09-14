@@ -23,6 +23,7 @@ class ChatAttachmentPickerSheet extends ConsumerWidget {
   final Function(double lat, double lng, String label) onDropLocation;
   final ValueChanged<String> onSharePhoto;
   final ValueChanged<String> onSendMorningBriefing;
+  final VoidCallback? onCreateAnnouncement;
 
   const ChatAttachmentPickerSheet({
     super.key,
@@ -35,6 +36,7 @@ class ChatAttachmentPickerSheet extends ConsumerWidget {
     required this.onDropLocation,
     required this.onSharePhoto,
     required this.onSendMorningBriefing,
+    this.onCreateAnnouncement,
   });
 
   // ── 1. PICK ITINERARY STOP ────────────────────────────────────────────────
@@ -556,17 +558,39 @@ class ChatAttachmentPickerSheet extends ConsumerWidget {
               ),
               const SizedBox(height: 10),
 
-              // Action Grid Row 4: Morning Briefing Bot
-              _AttachmentTile(
-                icon: Icons.wb_sunny_rounded,
-                iconBg: const Color(0xFFFEF3C7),
-                iconColor: const Color(0xFFD97706),
-                title: '🤖 Tara Bot Morning Briefing',
-                subtitle: 'Summarize today’s schedule and stops for the group',
-                onTap: () {
-                  Navigator.pop(context);
-                  _generateBriefing(context, ref);
-                },
+              // Action Grid Row 4: Trip Announcement & Morning Briefing Bot
+              Row(
+                children: [
+                  if (onCreateAnnouncement != null) ...[
+                    Expanded(
+                      child: _AttachmentTile(
+                        icon: Icons.campaign_rounded,
+                        iconBg: const Color(0xFFFDE8E1),
+                        iconColor: AppColors.primary,
+                        title: '📢 Announcement',
+                        subtitle: 'Urgent pinned alert',
+                        onTap: () {
+                          Navigator.pop(context);
+                          onCreateAnnouncement!();
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                  ],
+                  Expanded(
+                    child: _AttachmentTile(
+                      icon: Icons.wb_sunny_rounded,
+                      iconBg: const Color(0xFFFEF3C7),
+                      iconColor: const Color(0xFFD97706),
+                      title: '🤖 Tara Bot',
+                      subtitle: 'Morning briefing',
+                      onTap: () {
+                        Navigator.pop(context);
+                        _generateBriefing(context, ref);
+                      },
+                    ),
+                  ),
+                ],
               ),
 
               const SizedBox(height: 14),

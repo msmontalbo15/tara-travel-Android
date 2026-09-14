@@ -197,6 +197,26 @@ class ChatNotifier extends AsyncNotifier<List<ChatMessage>> {
     await ref.read(chatRepositoryProvider).togglePinMessage(messageId, isPinned);
     // Real-time stream refreshes state
   }
+
+  /// Sends a high-priority announcement (urgent or notice) and pins it.
+  Future<void> sendAnnouncement({
+    required String title,
+    required String message,
+    required String senderName,
+    String priority = 'urgent', // 'urgent' or 'notice'
+  }) async {
+    await sendRichCard(
+      type: ChatMessageType.announcement,
+      text: title.trim().isNotEmpty ? '$title\n${message.trim()}' : message.trim(),
+      senderName: senderName,
+      metadata: {
+        'title': title.trim(),
+        'body': message.trim(),
+        'priority': priority,
+        'is_announcement': true,
+      },
+    );
+  }
 }
 
 final chatProvider =
@@ -209,3 +229,17 @@ final pinnedMessagesProvider = Provider<List<ChatMessage>>((ref) {
   final messages = ref.watch(chatProvider).value ?? [];
   return messages.where((m) => m.isPinned).toList();
 });
+
+/// Dedicated stream/family provider for trip announcements on TripDetailScreen.
+/// Filters messages for `isPinned == true` or `messageType == ChatMessageType.announcement`.
+final tripAnnouncementsProvider = StreamProvider.autoDispose.family<List<ChatMessage>, String>((ref, tripId) {
+  final repo = ref.watch(chatRepositoryProvider);
+  return repo.messagesStream(tripId).map((messages) {
+    return messages
+        .where((m) => m.isPinned || m.messageType == ChatMessageType.announcement)
+        .toList()
+        .reversed
+        .toList(); // Newest first
+  });
+});
+

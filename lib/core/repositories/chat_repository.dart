@@ -265,6 +265,7 @@ class ChatRepository {
     ChatMessageType messageType = ChatMessageType.text,
     String? pollId,
     Map<String, dynamic>? metadata,
+    bool isPinned = false,
   }) async {
     if (!_isAuthenticated || text.trim().isEmpty) return null;
     final uid = _uid!;
@@ -277,6 +278,7 @@ class ChatRepository {
         'content': text.trim(),
         'message_type': messageType.dbValue,
         'poll_id': pollId,
+        'is_pinned': isPinned || messageType == ChatMessageType.announcement,
       };
       if (metadata != null) {
         insertData['metadata'] = metadata;

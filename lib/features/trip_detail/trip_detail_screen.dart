@@ -226,25 +226,16 @@ class _TripDashboardState extends ConsumerState<_TripDashboard> {
                       const SizedBox(height: 12),
                     ],
 
-                    // A2. Smart Planning Recommendations (planning trips only)
-                    PlanningRecommendationsCard(
-                      trip: trip,
-                      totalStops: totalStops,
-                    ),
-                    // Spacing handled internally when card renders
-                    if (trip.status == TripStatus.planning)
-                      const SizedBox(height: 12),
-
-                    // B. Real-Time Destination Weather Forecast
+                    // 1. Real-Time Destination Weather Forecast (Top Content Card)
                     DestinationWeatherWidget(
                       tripId: trip.id,
                       destinationName: trip.destination,
                       nextStopTitle: nextStop?.title,
                       stopLocation: nextStop?.location,
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 12),
 
-                    // C. Ongoing Travel Cockpit HUD (Active Trips) OR Standard Hub Card
+                    // 2. Ongoing Travel Cockpit HUD (Active Trips) OR Standard Hub Card
                     if (isActive) ...[
                       OngoingTripHud(
                         tripId: trip.id,
@@ -254,7 +245,7 @@ class _TripDashboardState extends ConsumerState<_TripDashboard> {
                         visitedStops: visitedStops,
                         onOpenItinerary: () => Navigator.pushNamed(context, '/itinerary'),
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 12),
                     ] else ...[
                       _ItineraryHubCard(
                         nextStop: nextStop,
@@ -267,16 +258,14 @@ class _TripDashboardState extends ConsumerState<_TripDashboard> {
                       const SizedBox(height: 12),
                     ],
 
-
-
-                    // E. Logistics & Departure Card (if defined)
+                    // 3. Logistics & Departure Card (if defined)
                     if ((trip.departurePoint != null && trip.departurePoint!.trim().isNotEmpty) ||
                         (trip.transportMode != null && trip.transportMode!.trim().isNotEmpty)) ...[
                       _LogisticsCard(trip: trip),
                       const SizedBox(height: 12),
                     ],
 
-                    // F. Authoritative Budget Progress Card (1-tap to /budget)
+                    // 4. Authoritative Budget Progress Card (1-tap to /budget)
                     _BudgetCard(
                       totalSpent: totalSpent,
                       totalPending: totalPending,
@@ -288,16 +277,26 @@ class _TripDashboardState extends ConsumerState<_TripDashboard> {
                     ),
                     const SizedBox(height: 12),
 
-                    // G. Authoritative Squad & Members Card (1-tap to /members)
+                    // 5. Smart Planning Recommendations (planning trips only)
+                    PlanningRecommendationsCard(
+                      trip: trip,
+                      totalStops: totalStops,
+                    ),
+                    if (trip.status == TripStatus.planning)
+                      const SizedBox(height: 12),
+
+                    // 6. Authoritative Squad & Members Card (1-tap to /members)
                     _SquadPreviewCard(
                       trip: trip,
                       onTap: () => Navigator.pushNamed(context, '/members'),
                     ),
                     const SizedBox(height: 12),
 
-                    // H. Protected Invite Code Card
-                    if (trip.inviteCode.isNotEmpty)
+                    // 7. Protected Invite Code Card
+                    if (trip.inviteCode.isNotEmpty) ...[
                       _InviteCard(trip: trip),
+                      const SizedBox(height: 14),
+                    ],
 
                     // Bottom clearance for persistent bottom bar
                     const SizedBox(height: 140),

@@ -12,7 +12,7 @@
 | `/onboarding` | `OnboardingScreen` | `lib/features/onboarding/onboarding_screen.dart` | 5-step setup, pure Google auth, NPC terms, profile |
 | `/home` | `HomeScreen` | `lib/features/home/home_screen.dart` | `NextTripCard`, `FloatingNavBar`, `IndexedStack` |
 | `/create-trip` | `CreateTripFlow` | `lib/features/create_trip/create_trip_flow.dart` | 4-step wizard, vehicle garage, transport |
-| `/trip-detail` | `TripDetailScreen` | `lib/features/trip_detail/trip_detail_screen.dart` | `OngoingTripHud`, `DestinationWeatherWidget`, `PlanningRecommendationsCard`, Dock |
+| `/trip-detail` | `TripDetailScreen` | `lib/features/trip_detail/trip_detail_screen.dart` | `OngoingTripHud`, `DestinationWeatherWidget`, `PlanningRecommendationsCard`, `TripAnnouncementsCard`, `SmartDepartureAdvisoryCard`, `TaraCopilotSheet`, Dock |
 | `/itinerary` | `ItineraryScreen` | `lib/features/itinerary/itinerary_screen.dart` | `DayStrip`, `StopCard`, `ItineraryBottomDock` |
 | `/budget` | `BudgetScreen` | `lib/features/budget/budget_screen.dart` | `DailyPacingCard`, `CategoryBudgetChart`, Split |
 | `/navigation` | `LiveNavigationScreen` | `lib/features/navigation/live_navigation_screen.dart` | `flutter_map`, convoy tracking, `SosModal` |
@@ -39,7 +39,7 @@
 | **Budget & Expense**| `expense_provider.dart` | `tripExpensesProvider(tripId)`, `expenseSummaryProvider(tripId)` |
 | **Allowance** | `personal_allowance_provider.dart` | `personalAllowanceProvider(tripId)` |
 | **Packing** | `packing_provider.dart` | `packingItemsProvider(tripId)`, `packingCategoryProgressProvider` |
-| **Chat & Polls** | `chat_provider.dart`, `poll_provider.dart` | `chatMessagesProvider(tripId)`, `tripPollsProvider(tripId)` |
+| **Chat & Polls** | `chat_provider.dart`, `poll_provider.dart` | `chatMessagesProvider(tripId)`, `tripPollsProvider(tripId)`, `tripAnnouncementsProvider(tripId)` |
 | **Weather** | `trip_weather_provider.dart` | `tripWeatherProvider(tripId)`, `destinationWeatherProvider` |
 | **Friends** | `friend_provider.dart` | `friendsListProvider`, `pendingFriendRequestsProvider` |
 | **Profile** | `profile_provider.dart` | `userProfileProvider`, `profileNotifierProvider` |
@@ -60,7 +60,7 @@
 | `ItineraryRepository`| `itinerary_repository.dart` | Itinerary stop ordering, day grouping, GPS coordinates |
 | `ExpenseRepository` | `expense_repository.dart` | Group expenses, receipt images, approvals, settlements |
 | `PackingRepository` | `packing_repository.dart` | Packing items, category assignments, pack toggles |
-| `ChatRepository` | `chat_repository.dart` | Message persistence, poll creation & vote recording |
+| `ChatRepository` | `chat_repository.dart` | Message persistence, poll creation, announcements & vote recording |
 | `ProfileRepository` | `profile_repository.dart` | User profile data, avatars, emergency contacts, MPIN |
 | `FriendRepository` | `friend_repository.dart` | `public.friends` friendship graph & requests |
 | `PersonalAllowanceRepository` | `personal_allowance_repository.dart` | Private personal expense tracking |
@@ -96,6 +96,8 @@
 | `ConnectivityService`| `connectivity_service.dart` | Online/offline detection & network state broadcasting |
 | `PhilippineGeocodingService`| `philippine_geocoding_service.dart` | Offline PH region/province/city data & coordinates |
 | `GoogleMapsParserService`| `google_maps_parser_service.dart` | Zero-cost Google Maps URL & coordinate resolver with stop inference |
+| `DepartureAdvisoryService`| `departure_advisory_service.dart` | Meet-up assembly countdown, ETA buffer, grace period & departure detector |
+| `GeminiAiService`| `gemini_ai_service.dart` | Dual-path generative AI travel copilot & action chip synthesis |
 | `ReceiptOcrService`| `receipt_ocr_service.dart` | ML Kit client receipt text extraction |
 
 ---

@@ -25,6 +25,7 @@ class TripQuickActionsGrid extends StatelessWidget {
   final VoidCallback onPackingTap;
   final VoidCallback onChatTap;
   final VoidCallback onSettingsTap;
+  final VoidCallback? onCopilotTap;
 
   const TripQuickActionsGrid({
     super.key,
@@ -41,6 +42,7 @@ class TripQuickActionsGrid extends StatelessWidget {
     required this.onPackingTap,
     required this.onChatTap,
     required this.onSettingsTap,
+    this.onCopilotTap,
   });
 
   @override
@@ -147,6 +149,76 @@ class TripQuickActionsGrid extends StatelessWidget {
             ),
           ],
         ),
+        if (onCopilotTap != null) ...[
+          const SizedBox(height: 10),
+          GestureDetector(
+            onTap: onCopilotTap,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF2C1A14), Color(0xFF4A281E)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: const Color(0xFFEF9F27).withValues(alpha: 0.3),
+                  width: 1.2,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFD85A30), Color(0xFF8B5CF6)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.auto_awesome_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '✨ Tara Copilot',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'AI travel assistant for spots, packing, & budget advice',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFFD9D4CE),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: Color(0xFFEF9F27),
+                    size: 20,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
