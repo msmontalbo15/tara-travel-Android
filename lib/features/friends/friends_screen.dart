@@ -583,11 +583,12 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
               child: Row(
                 children: [
-                  if (Navigator.canPop(context))
+                  if (Navigator.canPop(context)) ...[
                     const AppBackButton(
                       variant: AppBackButtonVariant.light,
                     ),
-                  if (Navigator.canPop(context)) const SizedBox(width: 12),
+                    const SizedBox(width: 12),
+                  ],
                   const Expanded(
                     child: Center(
                       child: Text(
@@ -600,30 +601,8 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                       ),
                     ),
                   ),
-                  // Header Action Buttons
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _headerIconBtn(
-                        icon: Icons.qr_code_scanner_rounded,
-                        tooltip: 'Scan Friend QR',
-                        onTap: _scanFriendQr,
-                      ),
-                      const SizedBox(width: 8),
-                      _headerIconBtn(
-                        icon: Icons.qr_code_rounded,
-                        tooltip: 'My QR Code',
-                        onTap: _showMyQrCodeModal,
-                      ),
-                      const SizedBox(width: 8),
-                      _headerIconBtn(
-                        icon: Icons.person_add_rounded,
-                        tooltip: 'Add Friend',
-                        onTap: () => _showAddByCodeDialog(),
-                        isPrimary: true,
-                      ),
-                    ],
-                  ),
+                  if (Navigator.canPop(context))
+                    const SizedBox(width: 48), // Balances the AppBackButton (36px + 12px)
                 ],
               ),
             ),
@@ -1166,41 +1145,39 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
     return ListView(
       padding: EdgeInsets.fromLTRB(20, 8, 20, context.safeBottomPadding(24)),
       children: [
-        // Quick Action Tiles
+        // Discovery Action Bar
         Row(
           children: [
             Expanded(
-              child: _quickActionCard(
+              child: _discoveryActionBtn(
                 icon: Icons.qr_code_scanner_rounded,
                 label: 'Scan QR',
-                subtitle: 'Camera scan',
                 color: AppColors.primary,
                 onTap: _scanFriendQr,
               ),
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: _quickActionCard(
+              child: _discoveryActionBtn(
                 icon: Icons.qr_code_rounded,
-                label: 'My QR',
-                subtitle: 'Show & share',
+                label: 'My QR Code',
                 color: AppColors.deepEarth,
                 onTap: _showMyQrCodeModal,
               ),
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: _quickActionCard(
-                icon: Icons.badge_rounded,
+              child: _discoveryActionBtn(
+                icon: Icons.person_add_rounded,
                 label: 'Add by ID',
-                subtitle: 'Code / username',
-                color: AppColors.blue,
+                color: AppColors.primary,
+                isPrimary: true,
                 onTap: () => _showAddByCodeDialog(),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 14),
 
         // Live Search Bar
         AppTextField(
@@ -1224,10 +1201,10 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
               borderRadius: BorderRadius.circular(18),
               border: Border.all(color: AppColors.cardBorder, width: 0.8),
             ),
-            child: Column(
+            child: const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
+                Row(
                   children: [
                     Icon(Icons.explore_rounded, color: AppColors.primary, size: 20),
                     SizedBox(width: 8),
@@ -1241,31 +1218,15 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
-                const Text(
+                SizedBox(height: 10),
+                Text(
                   '• Type a friend\'s display name or email in the search bar above\n'
-                  '• Tap "Add by ID" to paste a friend\'s unique user code\n'
-                  '• Share your personal QR code so others can add you instantly',
+                  '• Tap "Add by ID" to connect using a friend\'s unique user code\n'
+                  '• Use "Scan QR" or "My QR Code" for quick camera-to-camera discovery',
                   style: TextStyle(
                     fontSize: 13,
                     color: AppColors.textSecondary,
                     height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                SizedBox(
-                  width: double.infinity,
-                  height: 44,
-                  child: OutlinedButton.icon(
-                    onPressed: _showMyQrCodeModal,
-                    icon: const Icon(Icons.share_rounded, size: 16),
-                    label: const Text('Share My Profile Link',
-                        style: TextStyle( fontWeight: FontWeight.w600)),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primary,
-                      side: const BorderSide(color: AppColors.primary, width: 1.2),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
                   ),
                 ),
               ],
@@ -1273,6 +1234,61 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
           ),
         ],
       ],
+    );
+  }
+
+  Widget _discoveryActionBtn({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+    bool isPrimary = false,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        decoration: BoxDecoration(
+          color: isPrimary ? AppColors.primary : Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isPrimary ? AppColors.primary : AppColors.cardBorder,
+            width: 0.8,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: isPrimary
+                  ? AppColors.primary.withValues(alpha: 0.2)
+                  : Colors.black.withValues(alpha: 0.03),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 17,
+              color: isPrimary ? Colors.white : color,
+            ),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: isPrimary ? Colors.white : AppColors.textPrimary,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -1335,93 +1351,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
       error: (e, _) => Center(
         child: Text('Error: $e',
             style: const TextStyle( color: AppColors.red)),
-      ),
-    );
-  }
-
-  Widget _headerIconBtn({
-    required IconData icon,
-    required String tooltip,
-    required VoidCallback onTap,
-    bool isPrimary = false,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Tooltip(
-        message: tooltip,
-        child: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: isPrimary ? AppColors.primary : Colors.white,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: isPrimary ? AppColors.primary : AppColors.cardBorder),
-          ),
-          child: Icon(icon, size: 18, color: isPrimary ? Colors.white : AppColors.deepEarth),
-        ),
-      ),
-    );
-  }
-
-  Widget _quickActionCard({
-    required IconData icon,
-    required String label,
-    required String subtitle,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.cardBorder, width: 0.7),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: color, size: 20),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      fontSize: 10,
-                      color: AppColors.textSecondary,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

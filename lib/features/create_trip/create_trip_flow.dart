@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/models/trip_model.dart';
 import '../../core/models/member_model.dart';
 import '../../core/models/personal_allowance_model.dart';
+import '../../core/models/itinerary_model.dart';
 import '../../core/providers/repository_providers.dart';
 import '../../core/providers/selected_trip_provider.dart';
 import '../../core/providers/trip_provider.dart';
@@ -115,9 +116,9 @@ class _CreateTripFlowState extends ConsumerState<CreateTripFlow> {
         totalBudget: _draft.totalBudget ?? 0,
         splitEqually: _draft.splitEqually,
         inviteCode: InviteCodeGenerator.generate(),
-        departurePoint: _draft.transportDetail?.departurePoint,
-        departureLat: _draft.departureLat,
-        departureLng: _draft.departureLng,
+        departurePoint: _draft.transportDetail?.departurePoint ?? _draft.departurePoint,
+        departureLat: _draft.transportDetail?.departureLat ?? _draft.departureLat,
+        departureLng: _draft.transportDetail?.departureLng ?? _draft.departureLng,
         transportMode: transportMode,
         transportMeta: transportMeta,
         isDraft: false,
@@ -135,6 +136,11 @@ class _CreateTripFlowState extends ConsumerState<CreateTripFlow> {
       // Save trip to repository (local + Supabase)
       final tripRepo = ref.read(tripRepositoryProvider);
       await tripRepo.createTrip(trip);
+
+      if (mounted) setState(() => _loadingProgress = 0.5);
+
+      // Auto-seed initial itinerary stops: departure as start, destination as arrival
+      await _seedInitialItinerary(tripId);
 
       if (mounted) setState(() => _loadingProgress = 0.65);
 
@@ -225,7 +231,7 @@ class _CreateTripFlowState extends ConsumerState<CreateTripFlow> {
       final trip = TripModel(
         id: tripId,
         name: _draft.tripName.isEmpty ? 'Draft Trip' : _draft.tripName,
-        destination: _draft.destination,
+        destination: _draft.destination.trim().isEmpty ? 'TBD' : _draft.destination.trim(),
         fromDate:
             _draft.fromDate ?? DateTime.now().add(const Duration(days: 7)),
         toDate: _draft.toDate ??
@@ -234,15 +240,16 @@ class _CreateTripFlowState extends ConsumerState<CreateTripFlow> {
         totalBudget: _draft.totalBudget ?? 0,
         splitEqually: _draft.splitEqually,
         inviteCode: InviteCodeGenerator.generate(),
-        departurePoint: _draft.transportDetail?.departurePoint,
-        departureLat: _draft.departureLat,
-        departureLng: _draft.departureLng,
+        departurePoint: _draft.transportDetail?.departurePoint ?? _draft.departurePoint,
+        departureLat: _draft.transportDetail?.departureLat ?? _draft.departureLat,
+        departureLng: _draft.transportDetail?.departureLng ?? _draft.departureLng,
         transportMode: transportMode,
         transportMeta: transportMeta,
         isDraft: true,
       );
 
       await ref.read(tripRepositoryProvider).createTrip(trip);
+      await _seedInitialItinerary(tripId);
       ref.invalidate(allTripsProvider);
 
       if (mounted) {
@@ -265,6 +272,66 @@ class _CreateTripFlowState extends ConsumerState<CreateTripFlow> {
           _errorMessage = 'Supabase error: $e';
         });
       }
+    }
+  }
+
+  /// Automatically seeds initial itinerary stops:
+  /// - Departure point as Day 1 start stop (StopType.transport)
+  /// - Destination as Day 1 arrival stop (StopType.activity)
+  Future<void> _seedInitialItinerary(String tripId) async {
+    try {
+      final itineraryRepo = ref.read(itineraryRepositoryProvider);
+      final seedStops = <ItineraryStop>[];
+
+      final departure = _draft.transportDetail?.departurePoint ?? _draft.departurePoint;
+      final depLat = _draft.transportDetail?.departureLat ?? _draft.departureLat;
+      final depLng = _draft.transportDetail?.departureLng ?? _draft.departureLng;
+
+      // 1. Departure Point as Day 1 Start stop
+      if (departure != null && departure.trim().isNotEmpty) {
+        seedStops.add(
+          ItineraryStop(
+            id: const Uuid().v4(),
+            title: 'Departure: ${departure.trim()}',
+            notes: 'Trip departure point',
+            type: StopType.transport,
+            location: departure.trim(),
+            lat: depLat,
+            lng: depLng,
+            startTime: const TimeOfDay(hour: 6, minute: 0),
+            transportMode: _draft.transportDetail?.mode,
+          ),
+        );
+      }
+
+      // 2. Destination as Day 1 Destination/Arrival stop
+      final dest = _draft.destination.trim();
+      if (dest.isNotEmpty && dest.toUpperCase() != 'TBD') {
+        seedStops.add(
+          ItineraryStop(
+            id: const Uuid().v4(),
+            title: 'Arrival: $dest',
+            notes: 'Main trip destination',
+            type: StopType.activity,
+            location: dest,
+            lat: _draft.destinationLat,
+            lng: _draft.destinationLng,
+            startTime: const TimeOfDay(hour: 12, minute: 0),
+          ),
+        );
+      }
+
+      if (seedStops.isNotEmpty) {
+        final day1 = ItineraryDay(
+          dayNumber: 1,
+          date: _draft.fromDate ?? DateTime.now().add(const Duration(days: 7)),
+          stops: seedStops,
+        );
+        await itineraryRepo.saveItineraryDay(tripId, day1);
+        debugPrint('[CreateTripFlow] Seeded ${seedStops.length} itinerary stop(s) for trip $tripId');
+      }
+    } catch (e) {
+      debugPrint('[CreateTripFlow] itinerary seed error: $e');
     }
   }
 

@@ -62,16 +62,14 @@ class _DetailsStepState extends ConsumerState<DetailsStep> {
       _nameError = _nameController.text.trim().isEmpty
           ? 'Please enter a trip name'
           : null;
-      _destError = _destController.text.trim().isEmpty
-          ? 'Please enter a destination'
-          : null;
+      _destError = null;
       _dateError = widget.trip.fromDate == null || widget.trip.toDate == null
           ? 'Please select travel dates'
           : (widget.trip.toDate!.isBefore(widget.trip.fromDate!)
               ? 'End date must be after start date'
               : null);
     });
-    if (_nameError != null || _destError != null || _dateError != null) {
+    if (_nameError != null || _dateError != null) {
       ok = false;
     }
     return ok;
@@ -198,8 +196,8 @@ class _DetailsStepState extends ConsumerState<DetailsStep> {
 
                       // Destination
                       LocationPicker(
-                        label: 'Destination',
-                        hint: 'Search Philippine destination...',
+                        label: 'Destination (Optional)',
+                        hint: 'Search Philippine destination (optional)...',
                         initialValue: widget.trip.destination.isNotEmpty ? widget.trip.destination : null,
                         initialLat: widget.trip.destinationLat,
                         initialLon: widget.trip.destinationLng,

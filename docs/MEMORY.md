@@ -84,7 +84,7 @@ public.friends (
 public.trips (
   id uuid primary key default gen_random_uuid(),
   name text not null,
-  destination text not null,
+  destination text not null,               -- Dart: destination ('TBD' fallback if omitted by user in Create Trip flow)
   start_date timestamptz not null,         -- Dart: fromDate
   end_date timestamptz not null,           -- Dart: toDate
   type text not null check (type in ('beach','city','adventure','nature','cultural','heritage','pilgrimage','business','other')),

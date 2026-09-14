@@ -82,6 +82,8 @@
 | **`IMP-108`** | 2026-09-13 | Auth & Android / Google Sign-In ApiException 10 Resolution | Resolved Google Sign-In `ApiException: 10` (`DEVELOPER_ERROR`): provisioned dedicated Android OAuth 2.0 client ID for debug keystore (`7a:1b:...`), added both debug and release entries to `google-services.json`, and configured fallback debug signing in `build.gradle.kts`. |
 | **`IMP-109`** | 2026-09-13 | Auth & UX / Logout Navigation Hardening & Seamless Consent | Fixed splash screen stacking upon logout by establishing `AuthGate` as the single navigation authority routing `signedOut` to `/onboarding`, removed duplicate Navigator calls in `ProfileScreen`, and removed the pre-auth checkbox in `ChooseModeStep` so returning users sign in seamlessly while new users consent in `_showCreateAccountConfirmationDialog`. |
 | **`IMP-110`** | 2026-09-13 | Legal & Auth / Mandatory Terms Review & Redundancy Removal | Enforced mandatory Terms & NPC Privacy Policy (RA 10173) reading before account creation: locked "Create Account" button until policy sheet is reviewed and accepted, updated `showNpcPrivacyPolicySheet` to return acceptance status (`Future<bool>`), added verified state tracking, and removed redundant terms links from the landing screen. |
+| **`IMP-115`** | 2026-09-14 | Friends / Clean Header & Find Friends Action Bar | Cleaned top header bar (removed all 3 action icons, centered title with balanced back button) and consolidated Scan QR, My QR, and Add by ID into a dedicated discovery strip exclusively inside `_buildFindFriendsTab`. |
+| **`IMP-116`** | 2026-09-14 | Create Trip & Itinerary / Optional Destination & Auto-Seeded Itinerary Stops | Made destination field optional during trip creation flow with graceful 'TBD' fallback, and automatically seeded Day 1 itinerary stops with departure point as start (`StopType.transport`) and destination as arrival (`StopType.activity`). |
 
 
 ---
@@ -2776,6 +2778,39 @@
   - **Actionable Launchpad**: Replaced the single "Tara na! Let's go" button with dual actionable completion pathways: "Plan your first trip" (`/create-trip`) as primary CTA and "Explore Tara Travel" (`/home`) as secondary CTA.
 - **Verification**:
   - `flutter analyze lib/features/onboarding`: 0 errors, 0 warnings.
+
+
+### `IMP-115` · Clean Top Header & Find Friends Discovery Action Bar (Option B)
+- **Date**: September 14, 2026
+- **Target Files**:
+  - `lib/features/friends/friends_screen.dart` [MODIFIED - Cleaned top navigation bar removing all header action buttons and properly centering 'Friends' title; consolidated friend discovery actions (Scan QR, My QR Code, Add by ID) exclusively into `_buildFindFriendsTab()` via `_discoveryActionBtn`, pruned `_headerIconBtn`]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED - Appended milestone record and updated index table]
+  - `docs/CHANGELOG.md` [MODIFIED - Documented UI refinement]
+- **Architectural Rationale**:
+  - **Single Responsibility & Minimalist Header**: The top app bar was overloaded with 3 icon buttons that competed with the screen title. Under Option B, all header action icons were removed and the back button is balanced symmetrically with a matching placeholder on the right, keeping the screen title perfectly centered.
+  - **Contextual Discovery Strip**: All friend discovery actions (**Scan QR**, **My QR Code**, and **Add by ID**) now live exclusively within the *Find Friends* tab where discovery activities naturally belong.
+  - **Polished Touch Targets**: Used brand-consistent `_discoveryActionBtn` with 14px border radius, subtle shadows, high-contrast primary fill for "Add by ID", and clear iconography and typography.
+- **Verification**:
+  - `flutter analyze lib/features/friends/friends_screen.dart`: 0 errors, 0 warnings.
+
+
+### `IMP-116` · Optional Destination & Auto-Seeded Itinerary Stops
+- **Date**: September 14, 2026
+- **Target Files**:
+  - `lib/features/create_trip/steps/details_step.dart` [MODIFIED - Removed hard validation for destination input; updated `LocationPicker` label and hint to reflect optionality]
+  - `lib/features/create_trip/steps/confirm_step.dart` [MODIFIED - Relaxed readiness score check to allow optional destination; preserved destination fallback display]
+  - `lib/features/create_trip/create_trip_flow.dart` [MODIFIED - Added `_seedInitialItinerary` helper method that automatically provisions Day 1 itinerary stops from departure point as start (`StopType.transport`) and destination as arrival (`StopType.activity`), updated `_handleConfirm` and `_handleSaveDraft` to invoke itinerary seeding, and fortified departure point fallback resolution]
+  - `docs/MEMORY.md` [MODIFIED - Updated trips table annotation to note optional destination in Create Trip flow]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED - Appended milestone record and updated index table]
+  - `docs/CHANGELOG.md` [MODIFIED - Documented feature enhancement]
+- **Architectural Rationale**:
+  - **Frictionless Trip Initiation**: Travelers often begin trip planning before finalizing a specific destination (e.g. road trips, spontaneous getaways, or group brainstorming sessions). Removing the mandatory validation on `DetailsStep` eliminates unnecessary friction while defaulting empty destinations to `'TBD'` for database integrity.
+  - **Immediate Itinerary Value**: Newly created trips now instantly reflect meaningful Day 1 context. If a departure point is specified, a `StopType.transport` stop is pre-populated at 6:00 AM. If a destination is configured, an arrival stop of `StopType.activity` is pre-populated at 12:00 PM.
+  - **Best-Effort Resilient Execution**: Itinerary stop seeding executes defensively within a dedicated try/catch wrapper matching the existing packing items seeding pattern, ensuring trip creation never fails if stop seeding encounters an transient error.
+- **Verification**:
+  - `flutter analyze lib/features/create_trip/`: 0 errors, 0 warnings.
+
+
 
 
 

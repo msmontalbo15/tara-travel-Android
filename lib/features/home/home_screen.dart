@@ -6,7 +6,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
 import '../../core/models/trip_model.dart';
 import '../../core/providers/profile_provider.dart';
-import '../../core/providers/packing_provider.dart';
 import '../../core/providers/trip_provider.dart';
 import '../../core/providers/selected_trip_provider.dart';
 import '../../core/providers/itinerary_provider.dart';
@@ -15,6 +14,7 @@ import '../../core/services/module_view_tracker_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_responsive.dart';
 import '../../core/widgets/app_brand_logo.dart';
+import '../../core/widgets/feedback/app_feedback.dart';
 import '../../core/widgets/navigation/floating_nav_bar.dart';
 import '../../core/widgets/shimmer_loading.dart';
 import '../../core/utils/jit_guard.dart';
@@ -24,6 +24,7 @@ import '../budget/budget_screen.dart';
 import '../explore/explore_screen.dart';
 import '../profile/profile_screen.dart';
 import '../trips/trips_screen.dart';
+import '../trips/widgets/join_trip_modal.dart';
 import 'home_route_args.dart';
 import 'widgets/next_trip_card.dart';
 import 'widgets/quick_action_tile.dart';
@@ -270,13 +271,6 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
 
     final activeTripAsync = ref.watch(activeTripProvider);
     final trip = activeTripAsync.value;
-    final String packedPct;
-    if (trip != null) {
-      final packing = ref.watch(ref.watch(packingProvider(trip.id)));
-      packedPct = (packing.overallProgress * 100).toStringAsFixed(0);
-    } else {
-      packedPct = '0';
-    }
 
     final topPadding = context.topInset;
 
@@ -486,56 +480,40 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
                                   },
                                 ),
                                 QuickActionTile(
-                                  icon: Icons.person_add_outlined,
-                                  label: 'Invite',
-                                  sublabel: 'Plan together',
-                                  onTap: () async {
-                                    final activeTrip = await ref
-                                        .read(activeTripProvider.future);
-                                    if (activeTrip != null) {
-                                      ref
-                                          .read(selectedTripIdProvider.notifier)
-                                          .select(activeTrip.id);
-                                    }
-                                    if (context.mounted) {
-                                      Navigator.pushNamed(context, '/members');
-                                    }
+                                  icon: Icons.group_add_outlined,
+                                  label: 'Join trip',
+                                  sublabel: 'Enter code',
+                                  onTap: () {
+                                    showJoinTripModal(context, ref);
                                   },
                                 ),
                                 QuickActionTile(
-                                  icon: Icons.receipt_long_outlined,
-                                  label: 'Split bill',
-                                  sublabel: 'Settle fast',
-                                  onTap: () async {
-                                    final canProceed = await JitGuard.checkExpensePaymentGuard(context, ref);
-                                    if (!canProceed || !context.mounted) return;
-                                    final activeTrip = await ref
-                                        .read(activeTripProvider.future);
-                                    if (activeTrip != null) {
-                                      ref
-                                          .read(selectedTripIdProvider.notifier)
-                                          .select(activeTrip.id);
-                                    }
-                                    if (context.mounted) {
-                                      Navigator.pushNamed(context, '/budget');
-                                    }
+                                  icon: Icons.people_outline_rounded,
+                                  label: 'Friends',
+                                  sublabel: 'Find & connect',
+                                  onTap: () {
+                                    Navigator.pushNamed(context, '/friends');
                                   },
                                 ),
                                 QuickActionTile(
-                                  icon: Icons.checklist_rounded,
-                                  label: 'Packing',
-                                  sublabel: '$packedPct% packed',
+                                  icon: Icons.navigation_outlined,
+                                  label: 'Navigate',
+                                  sublabel: trip != null ? 'Convoy & map' : 'Start a trip first',
                                   onTap: () async {
                                     final activeTrip = await ref
                                         .read(activeTripProvider.future);
-                                    if (activeTrip != null) {
-                                      ref
-                                          .read(selectedTripIdProvider.notifier)
-                                          .select(activeTrip.id);
+                                    if (!context.mounted) return;
+                                    if (activeTrip == null) {
+                                      AppFeedback.showInfo(
+                                        context,
+                                        'Create or join a trip first to start live navigation & convoy tracking!',
+                                      );
+                                      return;
                                     }
-                                    if (context.mounted) {
-                                      Navigator.pushNamed(context, '/packing');
-                                    }
+                                    ref
+                                        .read(selectedTripIdProvider.notifier)
+                                        .select(activeTrip.id);
+                                    Navigator.pushNamed(context, '/navigation');
                                   },
                                 ),
                               ],

@@ -84,7 +84,7 @@ class ConfirmStep extends StatelessWidget {
 
   int get _readinessScore {
     int score = 0;
-    if (trip.tripName.isNotEmpty && trip.destination.isNotEmpty && trip.fromDate != null && trip.toDate != null) {
+    if (trip.tripName.isNotEmpty && trip.fromDate != null && trip.toDate != null) {
       score++;
     }
     if (trip.transportDetail != null) {
