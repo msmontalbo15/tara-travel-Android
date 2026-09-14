@@ -1,7 +1,7 @@
 # Tara Travel - Version Changelog
 
 > Auto-generated from IMPLEMENTATION_MEMORY.md + git log
-> Last updated: **2026-09-14 16:53 PHT**
+> Last updated: **2026-09-14 19:00 PHT**
 
 ---
 
@@ -158,20 +158,16 @@
 
 ## 2026-09-13
 
-- **IMP-112** (Fix Sign-Out Route Stuck on Splash Screen): Updated `_signOut` destination from `'/'` to `'/onboarding'`, preventing session lock on splash screen.
-- **IMP-111** (Canonical Onboarding Enforcement & False-Positive Elimination): Removed displayName heuristics from `_persist()`, `_loadProfile()`, and `isAccountFullySet` to prevent premature onboarding bypass.
-- **IMP-110** (Legal & Auth / Mandatory Terms Review & Redundancy Removal): Enforced mandatory Terms & NPC Privacy Policy (RA 10173) reading before account creation: locked "Create Account" button until policy sheet is reviewed and accepted.
-- **IMP-109** (Auth & UX / Logout Navigation Hardening & Seamless Consent): Fixed splash screen stacking upon logout by establishing `AuthGate` as the single navigation authority routing `signedOut` to `/onboarding`.
-- **IMP-108** (Auth & Android / Google Sign-In ApiException 10 Resolution): Resolved Google Sign-In `ApiException: 10` (`DEVELOPER_ERROR`): provisioned dedicated Android OAuth 2.0 client ID for debug keystore.
-- **IMP-107** (Onboarding / Streamlined 5-Step Architecture & Pure Google Auth): Streamlined onboarding flow: completely removed MPIN/Biometrics from onboarding, enforced mandatory NPC Data Privacy Act (RA 10173) & Terms checkbox gate.
+- **IMP-110** (Legal & Auth / Mandatory Terms Review & Redundancy Removal): Enforced mandatory Terms & NPC Privacy Policy (RA 10173) reading before account creation: locked "Create Account" button until policy sheet is reviewed and accepted, updated `showNpcPrivacyPolicySheet` to return acceptance status (`Future<bool>`), added verified state tracking, and removed redundant terms links from the landing screen.
+- **IMP-109** (Auth & UX / Logout Navigation Hardening & Seamless Consent): Fixed splash screen stacking upon logout by establishing `AuthGate` as the single navigation authority routing `signedOut` to `/onboarding`, removed duplicate Navigator calls in `ProfileScreen`, and removed the pre-auth checkbox in `ChooseModeStep` so returning users sign in seamlessly while new users consent in `_showCreateAccountConfirmationDialog`.
+- **IMP-108** (Auth & Android / Google Sign-In ApiException 10 Resolution): Resolved Google Sign-In `ApiException: 10` (`DEVELOPER_ERROR`): provisioned dedicated Android OAuth 2.0 client ID for debug keystore (`7a:1b:...`), added both debug and release entries to `google-services.json`, and configured fallback debug signing in `build.gradle.kts`.
+- **IMP-107** (Onboarding / Streamlined 5-Step Architecture & Pure Google Auth): Streamlined onboarding flow: completely removed MPIN/Biometrics from onboarding, enforced mandatory NPC Data Privacy Act (RA 10173) & Terms checkbox gate, merged Photo + Nickname/Birthday into `PersonalProfileStep` (Step 2 of 5), added animated 5-segment top progress bar with back step navigation, and updated step resume matrix for interrupted sessions.
 
 ## 2026-09-14
 
-- **IMP-116** (Create Trip & Itinerary / Optional Destination & Auto-Seeded Itinerary Stops): Made destination optional in Create Trip flow (fallback to 'TBD' for DB integrity) and auto-seeded Day 1 itinerary stops: departure point as start (`StopType.transport` at 6:00 AM) and destination as arrival (`StopType.activity` at 12:00 PM).
-- **IMP-115** (Friends / Clean Header & Find Friends Action Bar): Cleaned top navigation bar (removed all 3 action icons, centered title with balanced back button) and consolidated Scan QR, My QR, and Add by ID into a dedicated discovery strip exclusively inside `_buildFindFriendsTab`.
-- **IMP-114** (Refined Onboarding Step 5 & Google Account Sync Label): Removed obsolete 'Mode' row, renamed 'Sync' to 'Google Account', added Health & Safety summary row, and provided dual launchpad action CTAs in `AllSetStep`.
+- **IMP-117** (Maps & Itinerary / Google Maps Link Resolver & Pin Location Integration (Plan 5)): Zero-cost Google Maps shortened (`maps.app.goo.gl`) and place URL parser, coordinate regex extraction, reverse geocode enrichment via Nominatim PH bounding box, automatic StopType inference, and interactive map camera fly in MapPinPickerModal and LocationPicker.
+- **IMP-116** (Create Trip & Itinerary / Optional Destination & Auto-Seeded Itinerary Stops): Made destination field optional during trip creation flow with graceful 'TBD' fallback, and automatically seeded Day 1 itinerary stops with departure point as start (`StopType.transport`) and destination as arrival (`StopType.activity`).
+- **IMP-115** (Friends / Clean Header & Find Friends Action Bar): Cleaned top header bar (removed all 3 action icons, centered title with balanced back button) and consolidated Scan QR, My QR, and Add by ID into a dedicated discovery strip exclusively inside `_buildFindFriendsTab`.
 
 *Generated by tools/generate_changelog.ps1*
-
-
 

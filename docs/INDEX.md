@@ -95,6 +95,7 @@
 | `LocationTrackingService`| `location_tracking_service.dart`| GPS telemetry & geofence distance calculation |
 | `ConnectivityService`| `connectivity_service.dart` | Online/offline detection & network state broadcasting |
 | `PhilippineGeocodingService`| `philippine_geocoding_service.dart` | Offline PH region/province/city data & coordinates |
+| `GoogleMapsParserService`| `google_maps_parser_service.dart` | Zero-cost Google Maps URL & coordinate resolver with stop inference |
 | `ReceiptOcrService`| `receipt_ocr_service.dart` | ML Kit client receipt text extraction |
 
 ---

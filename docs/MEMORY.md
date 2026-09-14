@@ -1227,6 +1227,20 @@ Client Tier               Storage Tier                Transport Tier
 - **`ExpenseModel` (`lib/core/models/expense_model.dart`)**: Group expense with payer, amount, receipt image URL, approval status, and split calculations.
 - **`PackingItem` (`lib/core/models/packing_model.dart`)**: Packing checklist item with custom category, assignment, and completion status.
 
+## 31. 🗺️ GOOGLE MAPS LINK RESOLVER & PIN LOCATION INTEGRATION (PLAN 5 / IMP-117)
+- **Zero-Cost Link Resolution (`GoogleMapsParserService`)**:
+  - Automatically parses shortened links (`maps.app.goo.gl`, `goo.gl/maps`), web location URLs (`google.com/maps/place/...`), search links (`maps.google.com/?q=...`), and raw latitude/longitude coordinate pairs (`14.5995, 120.9842`).
+  - Follows HTTP redirects safely via `Dio` client without requiring paid Google Maps Places API keys.
+  - Extracts coordinates via regex (`@lat,lng` and query parameters) and location names from URL paths.
+  - Enriches coordinates with human-readable addresses via `PhilippineGeocodingService.reverseGeocode`.
+  - Infers `StopType` automatically (`hotel`, `food`, `transport`, `activity`) based on place naming semantics (e.g. *Resort*, *Jollibee*, *Terminal*).
+- **Interactive Pinning in `MapPinPickerModal`**:
+  - Pasting a Google Maps link or coordinates directly into the search bar flies the map camera (`_mapController.move`) and pins the exact location with a 16x zoom.
+  - Includes an "Open in Google Maps" icon button for visual verification in the native Google Maps app via external URL intent.
+- **Form Auto-Fill in `LocationPicker` & `AddStopForm`**:
+  - Pasting links or coordinates into `LocationPicker` auto-populates place title, full address, and GPS coordinates.
+  - In `AddStopForm`, auto-fills stop title and smartly pre-selects the inferred `StopType` if not already customized.
+
 ---
 
 *This document is the single source of architectural truth for Tara Travel. Update this file whenever database schemas, RPC functions, core repositories, or system flows are modified.*

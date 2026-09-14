@@ -12,12 +12,12 @@ This document serves as our compiled repository master plan, organized hierarchi
 | **1** | [Role-Aware Trip Exit: "Leave Trip" vs "Delete Trip"](#plan-1-role-aware-trip-exit-leave-trip-vs-delete-trip) | 🟢 **Complete** | Non-owners/members leave trip instead of delete; owner retains delete privilege |
 | **2** | [Invite Code Privacy & Safe Area Gesture Clearance](#plan-2-invite-code-privacy-safe-area-gesture-clearance) | 🟢 **Complete** | Masked codes (`******`), auto-hide timer, bottom sheet `MediaQuery` insets & gesture clearance |
 | **3** | [Offline Read-Only Guard & Action Freezing](#plan-3-offline-read-only-guard-action-freezing) | 🟢 **Complete** | Disables/locks write actions when disconnected, prevents stale sync errors, visual offline badges |
-| **4** | [Cloud-Native Avatar Storage & CDN Cache Architecture](#plan-4-cloud-native-avatar-storage-cdn-cache-architecture) | 🟡 **Drafted / Queued** | Supabase Storage bucket (`avatars`), WebP compression, RLS policies & CachedNetworkImage integration |
+| **4** | [Cloud-Native Avatar Storage & CDN Cache Architecture](#completed-plans-summary) | 🟢 **Complete** | Supabase Storage bucket (`avatars`), WebP/quality compression & CachedNetworkImage integration |
 
 ### 🟡 Tier 2: Medium Features (Domain Tools, Local Logic & Services)
 | # | Plan / Feature | Status | Key Focus |
 |---|---|---|---|
-| **5** | [Google Maps & Pin Location Integration](#plan-5-google-maps-link-resolver-pin-location-applicable) | 🟡 **Approved / Ready to Implement** | Paste GMap link, auto-fill itinerary, pin-drop flying, zero-cost resolution |
+| **5** | [Google Maps & Pin Location Integration](#completed-plans-summary) | 🟢 **Complete** | Paste GMap link, auto-fill itinerary, pin-drop flying, zero-cost resolution |
 | **6** | [Tri-Modal Land Transport (Private, Commute, Rental) & Vehicle Garage Fuel Estimator](#plan-6-tri-modal-land-transport-private-commute-rental--vehicle-garage-fuel-estimator) | 🟡 **Drafted / Queued** | Finalized 3 land modes (Private, Commute, Rental; strictly no sea/plane), user garage, live fuel prices & rental splitting |
 | **7** | [Travel Circles (Squads & Barkada Presets) for Multi-Member Trip Creation](#plan-7-travel-circles-squads-barkada-presets-for-multi-member-trip-creation) | 🟡 **Drafted / Queued** | Friend circles/squad presets, 1-tap batch addition, smart co-traveler suggestions & deduplication |
 | **8** | [Real-Time Live Weather Forecast & Severe Condition Alerts Engine](#plan-8-real-time-live-weather-forecast-severe-condition-alerts-engine) | 🟢 **Complete** | Open-Meteo API integration, offline caching, itinerary day-strip weather & severe storm alerts |
@@ -48,6 +48,8 @@ This document serves as our compiled repository master plan, organized hierarchi
 | **Plan 1** | Role-Aware Trip Exit ("Leave" vs "Delete") | IMP-081 | âœ… Complete | Member leave vs owner delete with role validation & UI guards. |
 | **Plan 2** | Invite Code Privacy & Safe Area Clearance | IMP-082 | âœ… Complete | Masked codes (******), auto-hide timer, safe area gesture clearance. |
 | **Plan 3** | Offline Read-Only Guard & Action Freezing | IMP-083 | âœ… Complete | Offline write locks, visual badges, and stale sync error prevention. |
+| **Plan 4** | Cloud-Native Avatar Storage & CDN Cache Architecture | IMP-082 | âœ… Complete | Supabase Storage avatars bucket, ProfileRepository upload, and MemberAvatarCircle. |
+| **Plan 5** | Google Maps Link Resolver & Pin Location Integration | IMP-117 | âœ… Complete | Zero-cost GMap URL resolver, Nominatim reverse geocode, instant camera fly, and itinerary auto-fill. |
 | **Plan 8** | Real-Time Live Weather Forecast & Severe Alerts | IMP-088 | âœ… Complete | Open-Meteo API integration, offline cache, DayStrip weather & storm alerts. |
 | **Plan 13** | Trip Detail Screen: Ongoing Command Center & HUD | IMP-089 | âœ… Complete | Quick Stop HUD, persistent bottom dock, destination weather, officers. |
 | **Plan 17** | Supabase App Versioning & OTA Updates | IMP-094 | âœ… Complete | 3-tier update modals, Remote Config, automated CI/CD release pipeline. |
@@ -58,55 +60,6 @@ This document serves as our compiled repository master plan, organized hierarchi
 ---
 
 ## ðŸŸ¡ Active Implementation Plans
-
-## Plan 4: Cloud-Native Avatar Storage & CDN Cache Architecture
-
-*(Originally proposed as IDEA-006)*
-
-### Goal
-Eliminate device isolation and local storage bloat by replacing local file path avatars with a cloud-native avatar storage pipeline: **Client Compression (WebP $\le 60\text{KB}$) + Supabase Storage Bucket (`avatars`) + PostgreSQL Public CDN URL Persistence + `CachedNetworkImage`**.
-
-### Core Capabilities
-1. **Dedicated Supabase Storage Bucket (`avatars`)**:
-   - Standardized path: `avatars/{user_id}/avatar.webp` (upsert enabled).
-   - Strict RLS policies: public read access, authenticated insert/update/delete restricted to `auth.uid()`.
-2. **Client-Side Image Optimization**:
-   - Resizes and compresses picked gallery/camera photos to $512 \times 512\text{px}$ WebP at 85% quality ($\le 60\text{KB}$).
-   - Automatically cleans up temporary files from device cache after upload.
-3. **Database Synchronization & Riverpod State**:
-   - Stores public CDN URL with cache-busting timestamp in `public.users.avatar_url` and `auth.users` metadata.
-   - Propagates changes instantly across trip members, friends, and chat cards via Riverpod.
-4. **Unified `AppAvatar` Component**:
-   - Renders CDN images via `CachedNetworkImage` with memory/disk caching.
-   - Gracefully falls back to stylized brand initials when offline or when no photo is set.
-
-### Database Schema
-```sql
--- Storage RLS Policies
-create policy "Public Avatar Read Access"
-  on storage.objects for select
-  using (bucket_id = 'avatars');
-
-create policy "User Avatar Write Access"
-  on storage.objects for insert to authenticated
-  with check (
-    bucket_id = 'avatars' 
-    and (storage.foldername(name))[1] = auth.uid()::text
-  );
-```
-
-### Impacted Files & Architecture
-- `supabase/migrations/021_storage_avatars_bucket.sql` *(NEW — bucket creation and RLS policies)*
-- `lib/core/services/storage_service.dart` *(NEW — upload avatar with WebP compression)*
-- `lib/core/repositories/profile_repository.dart` *(MODIFY — update avatar URL persistence)*
-- `lib/core/widgets/app_avatar.dart` *(NEW — unified avatar widget with CachedNetworkImage & initial fallbacks)*
-- `lib/features/profile/profile_screen.dart` *(MODIFY — use `StorageService` for photo pick)*
-- `test/widgets/app_avatar_test.dart` *(NEW)*
-
----
-
----
-
 
 ## Plan 5: Google Maps Link Resolver & Pin Location Applicable
 

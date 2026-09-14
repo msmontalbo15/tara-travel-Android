@@ -84,6 +84,7 @@
 | **`IMP-110`** | 2026-09-13 | Legal & Auth / Mandatory Terms Review & Redundancy Removal | Enforced mandatory Terms & NPC Privacy Policy (RA 10173) reading before account creation: locked "Create Account" button until policy sheet is reviewed and accepted, updated `showNpcPrivacyPolicySheet` to return acceptance status (`Future<bool>`), added verified state tracking, and removed redundant terms links from the landing screen. |
 | **`IMP-115`** | 2026-09-14 | Friends / Clean Header & Find Friends Action Bar | Cleaned top header bar (removed all 3 action icons, centered title with balanced back button) and consolidated Scan QR, My QR, and Add by ID into a dedicated discovery strip exclusively inside `_buildFindFriendsTab`. |
 | **`IMP-116`** | 2026-09-14 | Create Trip & Itinerary / Optional Destination & Auto-Seeded Itinerary Stops | Made destination field optional during trip creation flow with graceful 'TBD' fallback, and automatically seeded Day 1 itinerary stops with departure point as start (`StopType.transport`) and destination as arrival (`StopType.activity`). |
+| **`IMP-117`** | 2026-09-14 | Maps & Itinerary / Google Maps Link Resolver & Pin Location Integration (Plan 5) | Zero-cost Google Maps shortened/place URL parser, coordinate regex extraction, reverse geocode enrichment via Nominatim, automatic StopType inference, and interactive map camera fly in MapPinPickerModal and LocationPicker. |
 
 
 ---
@@ -2810,7 +2811,24 @@
 - **Verification**:
   - `flutter analyze lib/features/create_trip/`: 0 errors, 0 warnings.
 
-
-
-
+### `IMP-117` · Google Maps Link Resolver & Pin Location Integration (Plan 5)
+- **Date**: September 14, 2026
+- **Target Files**:
+  - `lib/core/services/google_maps_parser_service.dart` [NEW - Zero-cost Google Maps shortened/place URL parser, coordinate regex extraction, reverse geocode enrichment via Nominatim, and automatic StopType inference]
+  - `lib/core/widgets/inputs/map_pin_picker_modal.dart` [MODIFIED - Instant GMap link & coordinate detection in search bar, direct camera fly to pin coordinates, and 'View in Google Maps' external app action]
+  - `lib/core/widgets/inputs/location_picker.dart` [MODIFIED - Direct GMap URL & coordinate paste listener, clipboard paste trigger, and auto-resolution]
+  - `lib/features/itinerary/widgets/add_stop_form.dart` [MODIFIED - Connected LocationPicker to auto-fill stop title and intelligently infer StopType (hotel, food, transport, activity)]
+  - `test/services/google_maps_parser_service_test.dart` [NEW - Comprehensive unit tests for URL parsing, coordinate regex, and StopType classification]
+  - `docs/INDEX.md` [MODIFIED - Registered GoogleMapsParserService in key services table]
+  - `docs/ROADMAP.md` [MODIFIED - Marked Plan 5 as Complete in Table of Contents and Completed Plans table]
+  - `docs/MEMORY.md` [MODIFIED - Added Section 31 documenting Google Maps link resolver & pin location architecture]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED - Appended milestone record and updated index table]
+  - `docs/CHANGELOG.md` [MODIFIED - Documented Plan 5 delivery]
+- **Architectural Rationale**:
+  - **Zero-Cost Link Resolution**: Eliminated dependencies on paid Google Maps Places API keys by following HTTP redirects via `Dio` for shortened links (`maps.app.goo.gl`) and extracting coordinates and place names directly via regex patterns.
+  - **Philippine Context Enrichment**: Coordinates extracted from Google Maps links are reverse-geocoded against `PhilippineGeocodingService` (OpenStreetMap Nominatim constrained to the PH bounding box) to enrich stops with accurate barangays, municipalities, and provinces.
+  - **Frictionless Map Pinning**: In `MapPinPickerModal`, pasting a Google Maps link or coordinates immediately centers and animates the map camera (`_mapController.move(target, 16)`), providing instant visual validation.
+  - **Intelligent Stop Inferencing**: Place names and address strings are parsed through semantic keyword filters to guess the appropriate `StopType` (`hotel`, `food`, `transport`, `activity`), speeding up itinerary creation.
+- **Verification**:
+  - `flutter analyze lib/core/services/google_maps_parser_service.dart lib/core/widgets/inputs/map_pin_picker_modal.dart lib/core/widgets/inputs/location_picker.dart lib/features/itinerary/widgets/add_stop_form.dart test/services/google_maps_parser_service_test.dart`: 0 errors, 0 warnings.
 
