@@ -4,6 +4,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/constants/trip_types.dart';
 import '../../../core/utils/currency_utils.dart';
 import '../models/trip_card_badge_data.dart';
+import '../models/trip_status_recommendation.dart';
 
 /// A trip list card — used for both "Upcoming" and "Draft" states.
 /// Brand-aligned with premium card styling and animations.
@@ -21,6 +22,7 @@ class TripCard extends StatelessWidget {
   final int? visitedStops;
   final int? totalStops;
   final VoidCallback? onTap;
+  final TripStatusRecommendation? statusRecommendation;
   // New metadata
   final String? tripId;
   final Color? coverColor;
@@ -67,6 +69,7 @@ class TripCard extends StatelessWidget {
     this.onNavigation,
     this.actionChanges,
     this.overlappingTripName,
+    this.statusRecommendation,
   })  : isUpcoming = true;
 
   const TripCard.draft({
@@ -78,6 +81,7 @@ class TripCard extends StatelessWidget {
     this.onTap,
     this.onMore,
     this.overlappingTripName,
+    this.statusRecommendation,
   })  : isUpcoming = false,
         budget = null,
         totalBudget = null,
@@ -183,53 +187,103 @@ class TripCard extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.22),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
-                              ),
-                              child: const Text(
-                                'Upcoming',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                  letterSpacing: 0.2,
-                                ),
-                              ),
-                            ),
-                            if (overlappingTripName != null) ...[
-                              const SizedBox(width: 8),
+                        Flexible(
+                          child: Wrap(
+                            spacing: 6,
+                            runSpacing: 4,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFFEF3C7), // Warm amber
+                                  color: statusRecommendation?.statusBgColor ??
+                                      Colors.white.withValues(alpha: 0.22),
                                   borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: const Color(0xFFF59E0B)),
+                                  border: Border.all(
+                                    color: statusRecommendation?.statusBorderColor ??
+                                        Colors.white.withValues(alpha: 0.35),
+                                  ),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    const Icon(Icons.warning_amber_rounded, size: 12, color: Color(0xFFB45309)),
-                                    const SizedBox(width: 4),
+                                    if (statusRecommendation?.statusIcon != null) ...[
+                                      Icon(
+                                        statusRecommendation!.statusIcon,
+                                        size: 11,
+                                        color: statusRecommendation!.statusColor,
+                                      ),
+                                      const SizedBox(width: 4),
+                                    ],
                                     Text(
-                                      'Overlaps: $overlappingTripName',
-                                      style: const TextStyle(
+                                      statusRecommendation?.statusLabel ?? 'Upcoming',
+                                      style: TextStyle(
                                         fontSize: 10,
                                         fontWeight: FontWeight.w700,
-                                        color: Color(0xFFB45309),
+                                        color: statusRecommendation?.statusColor ?? Colors.white,
+                                        letterSpacing: 0.3,
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
+                              if (overlappingTripName != null)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFEF3C7), // Warm amber
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(color: const Color(0xFFF59E0B)),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.warning_amber_rounded, size: 12, color: Color(0xFFB45309)),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'Overlaps: $overlappingTripName',
+                                        style: const TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700,
+                                          color: Color(0xFFB45309),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              if (statusRecommendation != null)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.18),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: Colors.white.withValues(alpha: 0.28),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        statusRecommendation!.recommendationIcon,
+                                        size: 11,
+                                        color: Colors.white.withValues(alpha: 0.95),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        statusRecommendation!.recommendation,
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white.withValues(alpha: 0.95),
+                                          letterSpacing: 0.1,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                             ],
-                          ],
+                          ),
                         ),
                         if (onMore != null)
                           GestureDetector(
@@ -605,6 +659,32 @@ class TripCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
+                  if (statusRecommendation != null) ...[
+                    const SizedBox(height: 6),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          statusRecommendation!.recommendationIcon,
+                          size: 11,
+                          color: statusRecommendation!.recommendationColor,
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            statusRecommendation!.recommendation,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: statusRecommendation!.recommendationColor,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),

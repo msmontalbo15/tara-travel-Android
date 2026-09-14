@@ -1,7 +1,7 @@
 # Tara Travel - Version Changelog
 
 > Auto-generated from IMPLEMENTATION_MEMORY.md + git log
-> Last updated: **2026-09-14 19:00 PHT**
+> Last updated: **2026-09-14 22:41 PHT**
 
 ---
 
@@ -165,7 +165,7 @@
 
 ## 2026-09-14
 
-- **IMP-117** (Maps & Itinerary / Google Maps Link Resolver & Pin Location Integration (Plan 5)): Zero-cost Google Maps shortened (`maps.app.goo.gl`) and place URL parser, coordinate regex extraction, reverse geocode enrichment via Nominatim PH bounding box, automatic StopType inference, and interactive map camera fly in MapPinPickerModal and LocationPicker.
+- **IMP-117** (Maps & Itinerary / Google Maps Link Resolver & Pin Location Integration (Plan 5)): Zero-cost Google Maps shortened/place URL parser, coordinate regex extraction, reverse geocode enrichment via Nominatim, automatic StopType inference, and interactive map camera fly in MapPinPickerModal and LocationPicker.
 - **IMP-116** (Create Trip & Itinerary / Optional Destination & Auto-Seeded Itinerary Stops): Made destination field optional during trip creation flow with graceful 'TBD' fallback, and automatically seeded Day 1 itinerary stops with departure point as start (`StopType.transport`) and destination as arrival (`StopType.activity`).
 - **IMP-115** (Friends / Clean Header & Find Friends Action Bar): Cleaned top header bar (removed all 3 action icons, centered title with balanced back button) and consolidated Scan QR, My QR, and Add by ID into a dedicated discovery strip exclusively inside `_buildFindFriendsTab`.
 

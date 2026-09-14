@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/models/trip_model.dart';
+import '../models/trip_status_recommendation.dart';
 
 /// Collapsible Next Trip card.
 ///
@@ -15,6 +16,7 @@ class NextTripCard extends StatefulWidget {
   final bool collapsed;
   final VoidCallback? onTap;
   final VoidCallback? onNavigation;
+  final TripStatusRecommendation? statusRecommendation;
 
   const NextTripCard({
     super.key,
@@ -22,6 +24,7 @@ class NextTripCard extends StatefulWidget {
     this.collapsed = false,
     this.onTap,
     this.onNavigation,
+    this.statusRecommendation,
   });
 
   @override
@@ -384,6 +387,46 @@ class _NextTripCardState extends State<NextTripCard>
                               height: 1.2,
                             ),
                           ),
+                          if (widget.statusRecommendation != null) ...[
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.20),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    widget.statusRecommendation!.recommendationIcon,
+                                    size: 13,
+                                    color: Colors.white.withValues(alpha: 0.90),
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Flexible(
+                                    child: Text(
+                                      widget.statusRecommendation!.recommendation,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white.withValues(alpha: 0.90),
+                                        letterSpacing: 0.1,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),

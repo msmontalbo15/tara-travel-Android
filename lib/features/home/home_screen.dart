@@ -33,6 +33,7 @@ import 'widgets/trip_action_sheet.dart';
 import 'widgets/quick_budget_sheet.dart';
 import 'widgets/empty_trip_hero_card.dart';
 import 'widgets/starter_templates_carousel.dart';
+import 'models/trip_status_recommendation.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -274,6 +275,26 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
 
     final topPadding = context.topInset;
 
+    TripStatusRecommendation? activeRecommendation;
+    if (trip != null) {
+      final activeItinerary = ref.watch(ref.watch(itineraryProvider(trip.id))).value;
+      int totalStops = 0;
+      int visitedStops = 0;
+      if (activeItinerary != null) {
+        for (final day in activeItinerary.days) {
+          totalStops += day.stops.length;
+          for (final stop in day.stops) {
+            if (stop.isCompleted) visitedStops++;
+          }
+        }
+      }
+      activeRecommendation = TripStatusRecommendation.fromTrip(
+        trip: trip,
+        totalStops: totalStops,
+        visitedStops: visitedStops,
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppColors.deepEarth,
       body: Stack(
@@ -295,6 +316,7 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
                   delegate: _HomeHeaderDelegate(
                     profile: profile,
                     activeTrip: trip,
+                    activeRecommendation: activeRecommendation,
                     isLoadingTrip: activeTripAsync.isLoading,
                     tripError: activeTripAsync.error?.toString(),
                     unreadCount: unreadCount,
@@ -406,12 +428,14 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
                                                 final overlappingTripName = conflicts.isNotEmpty ? conflicts.first.name : null;
 
                                                 if (trip.isDraft) {
+                                                  final draftRecommendation = TripStatusRecommendation.fromTrip(trip: trip);
                                                   return TripCard.draft(
                                                     name: trip.name,
                                                     destination: trip.destination.isNotEmpty ? trip.destination : null,
                                                     isIncomplete: trip.isIncomplete,
                                                     dateRange: dateRangeStr,
                                                     overlappingTripName: overlappingTripName,
+                                                    statusRecommendation: draftRecommendation,
                                                     onMore: () => TripActionSheet.show(context, ref, trip),
                                                     onTap: () {
                                                       ref
@@ -859,6 +883,7 @@ class _NameLoadingShimmer extends StatelessWidget {
 class _HomeHeaderDelegate extends SliverPersistentHeaderDelegate {
   final ProfileState profile;
   final TripModel? activeTrip;
+  final TripStatusRecommendation? activeRecommendation;
   final bool isLoadingTrip;
   final String? tripError;
   final int unreadCount;
@@ -873,6 +898,7 @@ class _HomeHeaderDelegate extends SliverPersistentHeaderDelegate {
   const _HomeHeaderDelegate({
     required this.profile,
     required this.activeTrip,
+    this.activeRecommendation,
     required this.isLoadingTrip,
     this.tripError,
     required this.unreadCount,
@@ -1091,6 +1117,7 @@ class _HomeHeaderDelegate extends SliverPersistentHeaderDelegate {
                     child: NextTripCard(
                       trip: activeTrip!,
                       collapsed: isCollapsed,
+                      statusRecommendation: activeRecommendation,
                       onTap: onTapTrip,
                       onNavigation: onNavigateTrip,
                     ),
@@ -1125,6 +1152,7 @@ class _HomeHeaderDelegate extends SliverPersistentHeaderDelegate {
   bool shouldRebuild(covariant _HomeHeaderDelegate oldDelegate) {
     return oldDelegate.profile != profile ||
         oldDelegate.activeTrip != activeTrip ||
+        oldDelegate.activeRecommendation != activeRecommendation ||
         oldDelegate.isLoadingTrip != isLoadingTrip ||
         oldDelegate.tripError != tripError ||
         oldDelegate.unreadCount != unreadCount ||
@@ -1168,6 +1196,12 @@ class _HomeTripCardItem extends ConsumerWidget {
     final actionChangesAsync = ref.watch(tripQuickActionChangesProvider(trip));
     final actionChanges = actionChangesAsync.value;
 
+    final statusRecommendation = TripStatusRecommendation.fromTrip(
+      trip: trip,
+      totalStops: totalStops,
+      visitedStops: visitedStops,
+    );
+
     return TripCard.upcoming(
       name: trip.name,
       destination: trip.destination,
@@ -1186,6 +1220,7 @@ class _HomeTripCardItem extends ConsumerWidget {
       coverEmoji: trip.coverEmoji,
       actionChanges: actionChanges,
       overlappingTripName: overlappingTripName,
+      statusRecommendation: statusRecommendation,
       onMore: () => TripActionSheet.show(context, ref, trip),
       onTap: () {
         ref.read(selectedTripIdProvider.notifier).select(trip.id);
