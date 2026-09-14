@@ -18,7 +18,7 @@ class ForceUpdateScreen extends StatefulWidget {
 }
 
 class _ForceUpdateScreenState extends State<ForceUpdateScreen> {
-  final ApkDownloadInstaller _installer = ApkDownloadInstaller();
+  final ApkDownloadInstaller _installer = const ApkDownloadInstaller();
   DownloadProgress _downloadProgress = DownloadProgress.initial;
   bool _isDownloading = false;
 
@@ -262,7 +262,7 @@ class _ForceUpdateScreenState extends State<ForceUpdateScreen> {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            _isDownloading ? 'Downloading Update...' : 'Update App Now',
+                            _isDownloading ? 'Downloading & Installing...' : 'Install Update Now',
                             style: const TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w700,

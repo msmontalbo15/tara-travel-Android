@@ -28,7 +28,7 @@ class SoftUpdateSheet extends StatefulWidget {
 }
 
 class _SoftUpdateSheetState extends State<SoftUpdateSheet> {
-  final ApkDownloadInstaller _installer = ApkDownloadInstaller();
+  final ApkDownloadInstaller _installer = const ApkDownloadInstaller();
   DownloadProgress _downloadProgress = DownloadProgress.initial;
   bool _isDownloading = false;
 
@@ -241,7 +241,7 @@ class _SoftUpdateSheetState extends State<SoftUpdateSheet> {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        _isDownloading ? 'Downloading...' : 'Update Now',
+                        _isDownloading ? 'Downloading & Installing...' : 'Update Now',
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,

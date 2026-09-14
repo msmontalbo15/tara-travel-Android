@@ -2875,3 +2875,17 @@
   - **High-Visibility Squad Coordination**: Pinned announcements bridge the chat and dashboard, giving organizers high-visibility broadcast power without spamming group channels.
 - **Verification**:
   - `flutter analyze --no-fatal-infos --no-fatal-warnings`: 0 issues found (clean pass).
+
+### `IMP-120` · Direct In-App OTA Update Engine & Native Package Installer
+- **Date**: September 15, 2026
+- **Target Files**:
+  - `android/app/src/main/res/xml/file_paths.xml` [NEW - Configured FileProvider paths for internal & external cache/files directories]
+  - `android/app/src/main/AndroidManifest.xml` [MODIFIED - Registered `androidx.core.content.FileProvider` with `${applicationId}.fileProvider` authority]
+  - `android/app/src/main/kotlin/com/taratravel/app/MainActivity.kt` [MODIFIED - Implemented `com.taratravel.app/ota_installer` platform channel handling `installApk` using `Intent.ACTION_VIEW` and content URIs]
+  - `lib/core/services/apk_download_installer.dart` [MODIFIED - Built direct chunked streaming HTTP download with live byte/percentage progress, writing to app temporary directory, followed by invoking `installApk` on Android]
+  - `lib/core/widgets/versioning/soft_update_sheet.dart` [MODIFIED - Real-time progress bar UI and 'Update Now' / 'Downloading & Installing...' states]
+  - `lib/core/widgets/versioning/force_update_screen.dart` [MODIFIED - 'Install Update Now' direct download & install execution]
+- **Architectural Rationale**:
+  - Delivers a true zero-redirect in-app OTA update experience. The app streams the release APK directly to cache with continuous byte tracking and passes the content URI to Android's native system package installer (`Intent.ACTION_VIEW`, `application/vnd.android.package-archive`) with `FLAG_GRANT_READ_URI_PERMISSION`.
+- **Verification**:
+  - `dart analyze lib/core/services/apk_download_installer.dart lib/core/widgets/versioning/soft_update_sheet.dart lib/core/widgets/versioning/force_update_screen.dart`: 0 issues found (clean pass).
