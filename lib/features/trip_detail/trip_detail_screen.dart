@@ -88,12 +88,14 @@ class _TripDashboardState extends ConsumerState<_TripDashboard> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+            child: const Text('Cancel',
+                style: TextStyle(color: AppColors.textSecondary)),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.primary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
             ),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Publish Now'),
@@ -158,8 +160,9 @@ class _TripDashboardState extends ConsumerState<_TripDashboard> {
         .where((e) => e.status == ExpenseStatus.pending)
         .fold<double>(0, (s, e) => s + e.amount);
     final remaining = trip.totalBudget - totalSpent;
-    final budgetPct =
-        trip.totalBudget > 0 ? (totalSpent / trip.totalBudget).clamp(0.0, 1.0) : 0.0;
+    final budgetPct = trip.totalBudget > 0
+        ? (totalSpent / trip.totalBudget).clamp(0.0, 1.0)
+        : 0.0;
 
     // ── Itinerary ────────────────────────────────────────────────
     final itineraryProviderInst = ref.watch(itineraryProvider(trip.id));
@@ -243,7 +246,8 @@ class _TripDashboardState extends ConsumerState<_TripDashboard> {
                         nextStop: nextStop,
                         totalStops: totalStops,
                         visitedStops: visitedStops,
-                        onOpenItinerary: () => Navigator.pushNamed(context, '/itinerary'),
+                        onOpenItinerary: () =>
+                            Navigator.pushNamed(context, '/itinerary'),
                       ),
                       const SizedBox(height: 12),
                     ] else ...[
@@ -259,8 +263,10 @@ class _TripDashboardState extends ConsumerState<_TripDashboard> {
                     ],
 
                     // 3. Logistics & Departure Card (if defined)
-                    if ((trip.departurePoint != null && trip.departurePoint!.trim().isNotEmpty) ||
-                        (trip.transportMode != null && trip.transportMode!.trim().isNotEmpty)) ...[
+                    if ((trip.departurePoint != null &&
+                            trip.departurePoint!.trim().isNotEmpty) ||
+                        (trip.transportMode != null &&
+                            trip.transportMode!.trim().isNotEmpty)) ...[
                       _LogisticsCard(trip: trip),
                       const SizedBox(height: 12),
                     ],
@@ -344,7 +350,8 @@ class _CollapsibleHeroHeader extends ConsumerWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Trip', style: AppTextStyles.titleLarge),
-        content: Text('Are you sure you want to delete "${trip.name}"? This action cannot be undone.'),
+        content: Text(
+            'Are you sure you want to delete "${trip.name}"? This action cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -441,7 +448,9 @@ class _CollapsibleHeroHeader extends ConsumerWidget {
       if (context.mounted) {
         AppFeedback.showSuccess(
           context,
-          willArchive ? 'Trip archived and closed.' : 'Trip unarchived and active.',
+          willArchive
+              ? 'Trip archived and closed.'
+              : 'Trip unarchived and active.',
           title: willArchive ? 'Trip Archived 📦' : 'Trip Restored ✨',
         );
 
@@ -456,7 +465,8 @@ class _CollapsibleHeroHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final accentLight = HSLColor.fromColor(coverColor)
-        .withLightness((HSLColor.fromColor(coverColor).lightness + 0.18).clamp(0.0, 1.0))
+        .withLightness(
+            (HSLColor.fromColor(coverColor).lightness + 0.18).clamp(0.0, 1.0))
         .toColor();
 
     final emoji = trip.coverEmoji;
@@ -487,12 +497,14 @@ class _CollapsibleHeroHeader extends ConsumerWidget {
         Consumer(
           builder: (context, ref, _) {
             final currentUserId = ref.watch(currentUserProvider)?.id;
-            final isOwner = currentUserId != null && trip.ownerId == currentUserId;
+            final isOwner =
+                currentUserId != null && trip.ownerId == currentUserId;
 
             return PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert_rounded, color: Colors.white),
               color: const Color(0xFF2C2016),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
               onSelected: (value) {
                 if (value == 'edit') EditTripSheet.show(context, trip);
                 if (value == 'archive') _toggleArchiveTrip(context, ref);
@@ -504,7 +516,8 @@ class _CollapsibleHeroHeader extends ConsumerWidget {
                   value: 'edit',
                   child: Row(
                     children: [
-                      Icon(Icons.edit_outlined, size: 18, color: Colors.white70),
+                      Icon(Icons.edit_outlined,
+                          size: 18, color: Colors.white70),
                       SizedBox(width: 12),
                       Text('Edit Trip', style: TextStyle(color: Colors.white)),
                     ],
@@ -516,7 +529,9 @@ class _CollapsibleHeroHeader extends ConsumerWidget {
                     child: Row(
                       children: [
                         Icon(
-                          trip.isArchived ? Icons.unarchive_outlined : Icons.archive_outlined,
+                          trip.isArchived
+                              ? Icons.unarchive_outlined
+                              : Icons.archive_outlined,
                           size: 18,
                           color: Colors.white70,
                         ),
@@ -534,9 +549,11 @@ class _CollapsibleHeroHeader extends ConsumerWidget {
                     value: 'delete',
                     child: Row(
                       children: [
-                        Icon(Icons.delete_outline_rounded, size: 18, color: Colors.redAccent),
+                        Icon(Icons.delete_outline_rounded,
+                            size: 18, color: Colors.redAccent),
                         SizedBox(width: 12),
-                        Text('Delete Trip', style: TextStyle(color: Colors.redAccent)),
+                        Text('Delete Trip',
+                            style: TextStyle(color: Colors.redAccent)),
                       ],
                     ),
                   )
@@ -545,9 +562,11 @@ class _CollapsibleHeroHeader extends ConsumerWidget {
                     value: 'leave',
                     child: Row(
                       children: [
-                        Icon(Icons.logout_rounded, size: 18, color: Colors.redAccent),
+                        Icon(Icons.logout_rounded,
+                            size: 18, color: Colors.redAccent),
                         SizedBox(width: 12),
-                        Text('Leave Trip', style: TextStyle(color: Colors.redAccent)),
+                        Text('Leave Trip',
+                            style: TextStyle(color: Colors.redAccent)),
                       ],
                     ),
                   ),
@@ -562,7 +581,9 @@ class _CollapsibleHeroHeader extends ConsumerWidget {
           final currentHeight = constraints.biggest.height;
           final minHeight = kToolbarHeight + topPad;
           final delta = 270.0 - minHeight;
-          final expandRatio = delta > 0 ? ((currentHeight - minHeight) / delta).clamp(0.0, 1.0) : 0.0;
+          final expandRatio = delta > 0
+              ? ((currentHeight - minHeight) / delta).clamp(0.0, 1.0)
+              : 0.0;
           final isCollapsed = expandRatio < 0.28;
 
           return FlexibleSpaceBar(
@@ -612,7 +633,9 @@ class _CollapsibleHeroHeader extends ConsumerWidget {
                         colors: [
                           HSLColor.fromColor(coverColor)
                               .withLightness(
-                                  (HSLColor.fromColor(coverColor).lightness - 0.12).clamp(0.0, 1.0))
+                                  (HSLColor.fromColor(coverColor).lightness -
+                                          0.12)
+                                      .clamp(0.0, 1.0))
                               .toColor(),
                           coverColor,
                         ],
@@ -696,7 +719,6 @@ class _CollapsibleHeroHeader extends ConsumerWidget {
                           isDraft: trip.isDraft,
                         ),
                         const SizedBox(height: 10),
-
                         Text(
                           trip.name,
                           maxLines: 1,
@@ -704,11 +726,11 @@ class _CollapsibleHeroHeader extends ConsumerWidget {
                           style: AppTextStyles.headlineWhite,
                         ),
                         const SizedBox(height: 6),
-
                         Row(
                           children: [
                             Icon(Icons.place_rounded,
-                                color: Colors.white.withValues(alpha: 0.75), size: 14),
+                                color: Colors.white.withValues(alpha: 0.75),
+                                size: 14),
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
@@ -725,7 +747,6 @@ class _CollapsibleHeroHeader extends ConsumerWidget {
                           ],
                         ),
                         const SizedBox(height: 4),
-
                         Text(
                           () {
                             final String dateStr;
@@ -855,7 +876,9 @@ class _ItineraryHubCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (nextStop != null) {
-      final dateStr = nextStopDate != null ? DateFormat('EEE, MMM d').format(nextStopDate!) : '';
+      final dateStr = nextStopDate != null
+          ? DateFormat('EEE, MMM d').format(nextStopDate!)
+          : '';
       final timeStr = nextStop!.startTime != null
           ? nextStop!.startTime!.format(context)
           : 'Scheduled';
@@ -867,7 +890,8 @@ class _ItineraryHubCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.primary.withValues(alpha: 0.25), width: 1.2),
+            border: Border.all(
+                color: AppColors.primary.withValues(alpha: 0.25), width: 1.2),
             boxShadow: [
               BoxShadow(
                 color: AppColors.primary.withValues(alpha: 0.08),
@@ -929,11 +953,13 @@ class _ItineraryHubCard extends StatelessWidget {
                         color: Color(0xFF1A1A1A),
                       ),
                     ),
-                    if (nextStop!.location != null && nextStop!.location!.isNotEmpty) ...[
+                    if (nextStop!.location != null &&
+                        nextStop!.location!.isNotEmpty) ...[
                       const SizedBox(height: 2),
                       Row(
                         children: [
-                          const Icon(Icons.place_outlined, size: 12, color: Color(0xFF8E8E93)),
+                          const Icon(Icons.place_outlined,
+                              size: 12, color: Color(0xFF8E8E93)),
                           const SizedBox(width: 3),
                           Expanded(
                             child: Text(
@@ -959,7 +985,8 @@ class _ItineraryHubCard extends StatelessWidget {
                   color: const Color(0xFFF2F2F7),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.chevron_right_rounded, size: 18, color: Color(0xFF8E8E93)),
+                child: const Icon(Icons.chevron_right_rounded,
+                    size: 18, color: Color(0xFF8E8E93)),
               ),
             ],
           ),
@@ -1033,7 +1060,8 @@ class _ItineraryHubCard extends StatelessWidget {
                 color: const Color(0xFFF2F2F7),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.chevron_right_rounded, size: 18, color: Color(0xFF8E8E93)),
+              child: const Icon(Icons.chevron_right_rounded,
+                  size: 18, color: Color(0xFF8E8E93)),
             ),
           ],
         ),
@@ -1085,7 +1113,8 @@ class _LogisticsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasDeparture = trip.departurePoint != null && trip.departurePoint!.trim().isNotEmpty;
+    final hasDeparture =
+        trip.departurePoint != null && trip.departurePoint!.trim().isNotEmpty;
     final transportMode = trip.transportMode;
 
     return Container(
@@ -1110,7 +1139,8 @@ class _LogisticsCard extends StatelessWidget {
             children: [
               const Row(
                 children: [
-                  Icon(Icons.near_me_rounded, size: 16, color: AppColors.primary),
+                  Icon(Icons.near_me_rounded,
+                      size: 16, color: AppColors.primary),
                   SizedBox(width: 6),
                   Text(
                     'Logistics & Departure',
@@ -1124,7 +1154,8 @@ class _LogisticsCard extends StatelessWidget {
               ),
               if (transportMode != null && transportMode.isNotEmpty)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: AppColors.sand,
                     borderRadius: BorderRadius.circular(12),
@@ -1132,7 +1163,8 @@ class _LogisticsCard extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(_resolveTransportIcon(transportMode), size: 13, color: AppColors.primary),
+                      Icon(_resolveTransportIcon(transportMode),
+                          size: 13, color: AppColors.primary),
                       const SizedBox(width: 4),
                       Text(
                         _formatTransportLabel(transportMode),
@@ -1159,7 +1191,8 @@ class _LogisticsCard extends StatelessWidget {
                     color: const Color(0xFFF2F2F7),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.place_rounded, size: 18, color: Color(0xFF185FA5)),
+                  child: const Icon(Icons.place_rounded,
+                      size: 18, color: Color(0xFF185FA5)),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -1190,7 +1223,8 @@ class _LogisticsCard extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.copy_rounded, size: 16, color: Color(0xFF8E8E93)),
+                  icon: const Icon(Icons.copy_rounded,
+                      size: 16, color: Color(0xFF8E8E93)),
                   tooltip: 'Copy Departure Point',
                   onPressed: () => _copyDeparturePoint(context),
                 ),
@@ -1221,7 +1255,8 @@ class _SquadPreviewCard extends StatelessWidget {
     final members = trip.members;
     const maxAvatars = 4;
     final displayMembers = members.take(maxAvatars).toList();
-    final remainingCount = members.length > maxAvatars ? members.length - maxAvatars : 0;
+    final remainingCount =
+        members.length > maxAvatars ? members.length - maxAvatars : 0;
 
     return GestureDetector(
       onTap: onTap,
@@ -1244,7 +1279,8 @@ class _SquadPreviewCard extends StatelessWidget {
             // Overlapping avatar cluster
             SizedBox(
               height: 38,
-              width: (displayMembers.length * 26.0) + (remainingCount > 0 ? 32 : 12),
+              width: (displayMembers.length * 26.0) +
+                  (remainingCount > 0 ? 32 : 12),
               child: Stack(
                 children: [
                   for (int i = 0; i < displayMembers.length; i++)
@@ -1325,7 +1361,8 @@ class _SquadPreviewCard extends StatelessWidget {
                     ),
                   ),
                   SizedBox(width: 2),
-                  Icon(Icons.chevron_right_rounded, size: 16, color: Color(0xFF8E8E93)),
+                  Icon(Icons.chevron_right_rounded,
+                      size: 16, color: Color(0xFF8E8E93)),
                 ],
               ),
             ),
@@ -1547,15 +1584,11 @@ class _BudgetStat extends StatelessWidget {
       crossAxisAlignment: align,
       children: [
         Text(label,
-            style: const TextStyle(
-                fontSize: 11,
-                color: Color(0xFF8E8E93))),
+            style: const TextStyle(fontSize: 11, color: Color(0xFF8E8E93))),
         const SizedBox(height: 2),
         Text(value,
             style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: valueColor)),
+                fontSize: 13, fontWeight: FontWeight.w700, color: valueColor)),
       ],
     );
   }
@@ -1609,7 +1642,8 @@ class _DraftPublishCard extends StatelessWidget {
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.amber.withValues(alpha: 0.35), width: 1.2),
+        border: Border.all(
+            color: AppColors.amber.withValues(alpha: 0.35), width: 1.2),
         boxShadow: [
           BoxShadow(
             color: AppColors.amber.withValues(alpha: 0.08),
@@ -1627,7 +1661,8 @@ class _DraftPublishCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppColors.amberBg,
               shape: BoxShape.circle,
-              border: Border.all(color: AppColors.amber.withValues(alpha: 0.25)),
+              border:
+                  Border.all(color: AppColors.amber.withValues(alpha: 0.25)),
             ),
             child: const Icon(
               Icons.edit_note_rounded,
