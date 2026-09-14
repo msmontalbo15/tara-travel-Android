@@ -2832,3 +2832,18 @@
 - **Verification**:
   - `flutter analyze lib/core/services/google_maps_parser_service.dart lib/core/widgets/inputs/map_pin_picker_modal.dart lib/core/widgets/inputs/location_picker.dart lib/features/itinerary/widgets/add_stop_form.dart test/services/google_maps_parser_service_test.dart`: 0 errors, 0 warnings.
 
+
+### `IMP-118` — Smart Planning Recommendations Card (Trip Detail)
+- **Date**: 2026-09-14
+- **Modified Files**:
+  - `lib/features/trip_detail/widgets/planning_recommendations_card.dart` [NEW]
+  - `lib/features/trip_detail/trip_detail_screen.dart` [MODIFIED]
+  - `docs/INDEX.md` [MODIFIED]
+- **Rationale**: The Home screen already surfaces a single-tip `TripStatusRecommendation` per trip card. This new `PlanningRecommendationsCard` expands that concept into a comprehensive multi-item checklist rendered only in the trip detail dashboard for trips in `TripStatus.planning`. It evaluates 5 dimensions (itinerary stops, budget, members, departure/transport, packing) and surfaces every gap as a tappable action row. Uses `packingProvider` for packing state and existing trip model fields for the remaining checks.
+- **Key Decisions**:
+  - Card renders exclusively for `TripStatus.planning` — not draft, ongoing, or completed.
+  - Tapping "Set departure & transport" opens `EditTripSheet` rather than navigating to a route, since that data is edited inline.
+  - Collapse/expand animation via `SizeTransition` + `AnimationController` for smooth UX.
+  - When all 5 checks pass, a celebratory "all set" card replaces the checklist.
+- **Verification**:
+  - `flutter analyze lib/features/trip_detail/`: 0 errors, 0 warnings.

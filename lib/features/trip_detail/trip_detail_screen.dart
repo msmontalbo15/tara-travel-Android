@@ -27,6 +27,7 @@ import '../../core/providers/auth_provider.dart';
 import 'widgets/edit_trip_sheet.dart';
 import 'widgets/destination_weather_widget.dart';
 import 'widgets/ongoing_trip_hud.dart';
+import 'widgets/planning_recommendations_card.dart';
 
 import 'widgets/trip_detail_bottom_bar.dart';
 
@@ -224,6 +225,15 @@ class _TripDashboardState extends ConsumerState<_TripDashboard> {
                       ),
                       const SizedBox(height: 12),
                     ],
+
+                    // A2. Smart Planning Recommendations (planning trips only)
+                    PlanningRecommendationsCard(
+                      trip: trip,
+                      totalStops: totalStops,
+                    ),
+                    // Spacing handled internally when card renders
+                    if (trip.status == TripStatus.planning)
+                      const SizedBox(height: 12),
 
                     // B. Real-Time Destination Weather Forecast
                     DestinationWeatherWidget(

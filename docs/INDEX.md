@@ -12,7 +12,7 @@
 | `/onboarding` | `OnboardingScreen` | `lib/features/onboarding/onboarding_screen.dart` | 5-step setup, pure Google auth, NPC terms, profile |
 | `/home` | `HomeScreen` | `lib/features/home/home_screen.dart` | `NextTripCard`, `FloatingNavBar`, `IndexedStack` |
 | `/create-trip` | `CreateTripFlow` | `lib/features/create_trip/create_trip_flow.dart` | 4-step wizard, vehicle garage, transport |
-| `/trip-detail` | `TripDetailScreen` | `lib/features/trip_detail/trip_detail_screen.dart` | `OngoingTripHud`, `DestinationWeatherWidget`, Dock |
+| `/trip-detail` | `TripDetailScreen` | `lib/features/trip_detail/trip_detail_screen.dart` | `OngoingTripHud`, `DestinationWeatherWidget`, `PlanningRecommendationsCard`, Dock |
 | `/itinerary` | `ItineraryScreen` | `lib/features/itinerary/itinerary_screen.dart` | `DayStrip`, `StopCard`, `ItineraryBottomDock` |
 | `/budget` | `BudgetScreen` | `lib/features/budget/budget_screen.dart` | `DailyPacingCard`, `CategoryBudgetChart`, Split |
 | `/navigation` | `LiveNavigationScreen` | `lib/features/navigation/live_navigation_screen.dart` | `flutter_map`, convoy tracking, `SosModal` |
