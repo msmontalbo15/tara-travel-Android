@@ -705,9 +705,10 @@ Client Tier               Storage Tier                Transport Tier
    └── Incomplete / New User (hasCompletedOnboarding == false):
        ├── Returning In-Progress: Auto-resumes at saved step (e.g. Step 2-4)
        └── Truly New User: Advances to Step 1 (Permissions -> Personal Profile -> Preferences -> Health -> All Set)
-5. Step 5 Completion:
+5. Step 5 Completion (All Set):
+   ├── Displays refined summary (Google Account, Home, Currency, Health & Safety info)
    ├── Saves profile tag: `onboarding:completed`
-   └── Navigator.pushReplacementNamed('/home')
+   └── Launch options: "Plan your first trip" (`/create-trip`) or "Explore Tara Travel" (`/home`)
 ```
 
 ---

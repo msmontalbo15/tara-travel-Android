@@ -2,18 +2,26 @@ import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 
-/// Final onboarding confirmation screen.
+/// Final onboarding confirmation screen (Step 5 of 5).
 ///
-/// Always displays the "Google connected + local cache" state since
-/// offline-only mode has been removed. All data is synced via Supabase
-/// and transparently cached locally in Sembast for session persistence.
+/// Displays the refined summary of the user's travel setup:
+/// - Connected Google Account
+/// - Home Location (City, Country)
+/// - Preferred Currency
+/// - Health & Safety summary (Blood type and medical notes if provided)
+///
+/// Provides launchpad actions to jump straight into planning a first trip
+/// or explore the app.
 class AllSetStep extends StatefulWidget {
   final String userName;
   final String accountEmail;
   final String homeCity;
   final String homeCountry;
   final String currency;
+  final String? bloodType;
+  final List<String> healthNotes;
   final VoidCallback onLetsGo;
+  final VoidCallback? onCreateFirstTrip;
 
   const AllSetStep({
     super.key,
@@ -22,7 +30,10 @@ class AllSetStep extends StatefulWidget {
     required this.homeCity,
     required this.homeCountry,
     required this.currency,
+    this.bloodType,
+    this.healthNotes = const [],
     required this.onLetsGo,
+    this.onCreateFirstTrip,
   });
 
   @override
@@ -51,8 +62,29 @@ class _AllSetStepState extends State<AllSetStep>
     super.dispose();
   }
 
+  String _formatHealthSafetySummary() {
+    final hasBloodType = widget.bloodType != null &&
+        widget.bloodType!.isNotEmpty &&
+        widget.bloodType != 'Unknown';
+    final notes = widget.healthNotes
+        .where((n) => n.trim().isNotEmpty && n != 'None')
+        .toList();
+
+    if (hasBloodType && notes.isNotEmpty) {
+      return '${widget.bloodType} • ${notes.length} ${notes.length == 1 ? "note" : "notes"}';
+    } else if (hasBloodType) {
+      return widget.bloodType!;
+    } else if (notes.isNotEmpty) {
+      return '${notes.length} ${notes.length == 1 ? "condition noted" : "conditions noted"}';
+    }
+    return 'None specified';
+  }
+
   @override
   Widget build(BuildContext context) {
+    final healthSummary = _formatHealthSafetySummary();
+    final hasSafetyInfo = healthSummary != 'None specified';
+
     return Scaffold(
       backgroundColor: AppColors.deepEarth,
       body: SafeArea(
@@ -61,20 +93,20 @@ class _AllSetStepState extends State<AllSetStep>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(height: 48),
+              const SizedBox(height: 32),
 
               // Plain Logo
               ScaleTransition(
                 scale: _scaleAnim,
                 child: Image.asset(
                   'assets/logo.png',
-                  width: 100,
-                  height: 100,
+                  width: 88,
+                  height: 88,
                   fit: BoxFit.contain,
                 ),
               ),
 
-              const SizedBox(height: 28),
+              const SizedBox(height: 20),
 
               // Step pill
               Container(
@@ -93,7 +125,7 @@ class _AllSetStepState extends State<AllSetStep>
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
 
               // Title
               FadeTransition(
@@ -103,46 +135,57 @@ class _AllSetStepState extends State<AllSetStep>
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontFamily: AppTextStyles.fontHeading,
-                    fontSize: 36,
+                    fontSize: 32,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
                     height: 1.2,
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
 
               FadeTransition(
                 opacity: _ctrl,
                 child: Text(
-                  'Connected with Google. Your first adventure is\nwaiting to be planned.',
+                  'Your profile is synced and travel-ready.\nYour next journey begins here.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.white.withValues(alpha: 0.45),
-                    height: 1.5,
+                    fontSize: 13.5,
+                    color: Colors.white.withValues(alpha: 0.5),
+                    height: 1.4,
                   ),
                 ),
               ),
 
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
 
               // Your Setup card
               FadeTransition(
                 opacity: _ctrl,
                 child: Container(
                   decoration: BoxDecoration(
-                    color: AppColors.deepEarth,
-                    borderRadius: BorderRadius.circular(20),
+                    color: Colors.white.withValues(alpha: 0.04),
+                    borderRadius: BorderRadius.circular(18),
                     border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.06)),
+                        color: Colors.white.withValues(alpha: 0.08)),
                   ),
                   child: Column(
                     children: [
                       _SetupRow(
-                        label: 'Home',
-                        value: '${widget.homeCity}, ${widget.homeCountry}',
+                        label: 'Google Account',
+                        value: widget.accountEmail.isNotEmpty
+                            ? widget.accountEmail
+                            : 'Connected',
+                        valueColor: const Color(0xFF4CAF50),
+                        showDot: true,
                         isFirst: true,
+                      ),
+                      _divider(),
+                      _SetupRow(
+                        label: 'Home',
+                        value: widget.homeCity.isNotEmpty
+                            ? '${widget.homeCity}, ${widget.homeCountry}'
+                            : widget.homeCountry,
                       ),
                       _divider(),
                       _SetupRow(
@@ -151,17 +194,9 @@ class _AllSetStepState extends State<AllSetStep>
                       ),
                       _divider(),
                       _SetupRow(
-                        label: 'Sync',
-                        value: widget.accountEmail.isNotEmpty
-                            ? widget.accountEmail
-                            : 'Google connected',
-                        valueColor: const Color(0xFF4CAF50),
-                        showDot: true,
-                      ),
-                      _divider(),
-                      const _SetupRow(
-                        label: 'Mode',
-                        value: 'Online + local cache',
+                        label: 'Health & Safety',
+                        value: healthSummary,
+                        valueColor: hasSafetyInfo ? AppColors.sand : Colors.white54,
                         isLast: true,
                       ),
                     ],
@@ -171,32 +206,66 @@ class _AllSetStepState extends State<AllSetStep>
 
               const Spacer(),
 
-              // Tara na! Let's go button
+              // Primary Launch Option: Create First Trip
+              if (widget.onCreateFirstTrip != null) ...[
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton.icon(
+                    onPressed: widget.onCreateFirstTrip,
+                    icon: const Icon(Icons.add_location_alt_rounded, size: 20),
+                    label: const Text(
+                      'Plan your first trip',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+              ],
+
+              // Secondary Launch Option: Go to Home
               SizedBox(
                 width: double.infinity,
-                height: 54,
-                child: ElevatedButton(
+                height: 50,
+                child: OutlinedButton(
                   onPressed: widget.onLetsGo,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
+                  style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.white,
-                    elevation: 0,
+                    side: BorderSide(
+                      color: Colors.white.withValues(alpha: widget.onCreateFirstTrip != null ? 0.25 : 0.6),
+                      width: 1.2,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  child: const Text(
-                    "Tara na! Let's go",
+                  child: Text(
+                    widget.onCreateFirstTrip != null
+                        ? 'Explore Tara Travel'
+                        : "Tara na! Let's go",
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 15,
                       fontWeight: FontWeight.w600,
+                      color: widget.onCreateFirstTrip != null
+                          ? Colors.white.withValues(alpha: 0.85)
+                          : Colors.white,
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
 
-              const SizedBox(height: 32),
+              const SizedBox(height: 28),
             ],
           ),
         ),
@@ -230,7 +299,7 @@ class _SetupRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -238,31 +307,39 @@ class _SetupRow extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: 13,
-              color: Colors.white.withValues(alpha: 0.35),
+              color: Colors.white.withValues(alpha: 0.45),
             ),
           ),
-          Row(
-            children: [
-              if (showDot) ...[
-                Container(
-                  width: 7,
-                  height: 7,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF4CAF50),
-                    shape: BoxShape.circle,
+          const SizedBox(width: 12),
+          Flexible(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (showDot) ...[
+                  Container(
+                    width: 7,
+                    height: 7,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF4CAF50),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                Flexible(
+                  child: Text(
+                    value,
+                    textAlign: TextAlign.right,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: valueColor ?? Colors.white70,
+                    ),
                   ),
                 ),
-                const SizedBox(width: 6),
               ],
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: valueColor ?? Colors.white70,
-                ),
-              ),
-            ],
+            ),
           ),
         ],
       ),

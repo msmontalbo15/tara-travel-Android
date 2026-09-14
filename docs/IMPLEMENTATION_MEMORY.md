@@ -2758,28 +2758,24 @@
   - **Root Cause**: In `profile_screen.dart`, `_signOut` invoked `Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false)`. In `main.dart`, `'/'` maps to `SplashScreen`, which is strictly intended for initial cold-start session restore and brand animations. Because the user was signed out, `SplashScreen` had no active session and did not auto-navigate, leaving the user permanently stuck on the splash screen (either viewing the brand intro with a "Get started" button or an indefinite shimmer while providers were invalidated).
   - **Remediation**: Changed `_signOut` in `profile_screen.dart` to navigate directly to `'/onboarding'`, which immediately presents the Google Sign-In and Welcome interface. Additionally, guarded `AuthGate._onSupabaseAuthEvent` for `AuthChangeEvent.signedOut` to only route if `_routeObserver.currentRoute != '/onboarding'` to prevent redundant route transitions.
 - **Verification**:
-  - `flutter analyze lib/features/profile/profile_screen.dart lib/core/widgets/auth_gate.dart`: 0 errors, 0 warnings.
-
-
-### `IMP-113` · Onboarding Lifecycle Fix for Old & New Users
-- **Date**: September 13, 2026
-- **Target Files**:
-  - `lib/core/providers/profile_provider.dart` [MODIFIED - Removed `homeCity` heuristic from `isAccountFullySet` and `_loadProfile`]
-  - `lib/features/onboarding/onboarding_screen.dart` [MODIFIED - Prevented profile wiping on Google sign-in by awaiting `refreshProfile()` before writes, reactively restored progress via `ref.listen`]
-  - `lib/features/splash/splash_screen.dart` [MODIFIED - Prevented bypassing onboarding on active session if onboarding is incomplete]
-  - `lib/core/widgets/auth_gate.dart` [MODIFIED - Explicitly used `profile.hasCompletedOnboarding` for destination routing]
-  - `docs/MEMORY.md` [MODIFIED - Updated onboarding lifecycle invariants]
-  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED - Appended milestone record]
-  - `docs/CHANGELOG.md` [MODIFIED - Documented fix]
-- **Architectural Rationale**:
-  - **Root Cause (Old Users)**: When existing users signed in with Google, `_onChooseModeSelected` in `onboarding_screen.dart` immediately invoked `updateDisplayName` prior to loading remote profile data from Supabase. This dispatched uninitialized local default state to `saveRemoteProfile`, wiping the user's remote profile in `public.users` (including removing the `onboarding:completed` tag). The user was then treated as incomplete and forced into onboarding Step 1.
-  - **Root Cause (New Users)**: `isAccountFullySet` and `_loadProfile` contained a `homeCity.isNotEmpty` heuristic. When a new user selected their city at Step 3 (`PreferencesStep`), `homeCity` became non-empty, falsely marking `isAccountFullySet = true` and `hasCompletedOnboarding = true`, causing premature ejection to `/home` and skipping Step 4 (Health & Safety) and Step 5 (All Set).
-  - **Root Cause (Session & Step 0 Hangs)**: `SplashScreen` routed to `/home` whenever `_hasActiveSession` was true regardless of onboarding status. Furthermore, in `onboarding_screen.dart`, a one-shot `_didRestoreProgress` check in `didChangeDependencies` failed if `profile.isLoaded` was false during the first frame, stranding authenticated in-progress users on Step 0.
-  - **Remediation**:
-    - Made `hasCompletedOnboarding` the strict single source of truth for onboarding completion across `isAccountFullySet`, `_loadProfile`, `AuthGate`, and `SplashScreen`.
-    - In `_onChooseModeSelected`, awaited `refreshProfile()` first before any state writes; existing completed users are routed straight to `/home` with zero profile mutation.
-    - Added reactive `ref.listen<ProfileState>` progress restoration in `OnboardingScreen` so authenticated users automatically advance from Step 0 to Step 1 or their computed resume step as soon as profile loading resolves.
-- **Verification**:
   - `dart analyze lib/`: 0 errors, 0 warnings.
+
+
+### `IMP-114` · Refined Onboarding Step 5 & Google Account Sync Label
+- **Date**: September 14, 2026
+- **Target Files**:
+  - `lib/features/onboarding/widgets/all_set_step.dart` [MODIFIED - Removed obsolete 'Mode' row, renamed 'Sync' to 'Google Account', added Health & Safety summary row, and provided dual launchpad action CTAs]
+  - `lib/features/onboarding/onboarding_screen.dart` [MODIFIED - Passed `bloodType`, `healthNotes`, and `onCreateFirstTrip` navigation callback to `AllSetStep`]
+  - `docs/MEMORY.md` [MODIFIED - Updated Step 5 onboarding sequence description]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED - Appended milestone record]
+  - `docs/CHANGELOG.md` [MODIFIED - Documented feature enhancement]
+- **Architectural Rationale**:
+  - **Single Source of Truth & Clean UI**: Removed the redundant "Mode: Online + local cache" row from the onboarding setup confirmation card. Since offline-first caching is transparently managed via Sembast and all users authenticate via Google, displaying "Mode" was technical noise.
+  - **Google Account Label Clarity**: Replaced the ambiguous label "Sync" with "Google Account" (with connected status indicator) to clearly communicate to travelers which account is backing their cloud sync.
+  - **Health & Safety Recap**: Added a concise recap of the traveler's blood type and medical conditions recorded in Step 4, verifying their safety profile is prepared before they embark.
+  - **Actionable Launchpad**: Replaced the single "Tara na! Let's go" button with dual actionable completion pathways: "Plan your first trip" (`/create-trip`) as primary CTA and "Explore Tara Travel" (`/home`) as secondary CTA.
+- **Verification**:
+  - `flutter analyze lib/features/onboarding`: 0 errors, 0 warnings.
+
 
 

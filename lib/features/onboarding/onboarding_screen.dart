@@ -372,7 +372,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         _homeCountry.isNotEmpty ? _homeCountry : 'Philippines',
                     currency:
                         _preferredCurrency.isNotEmpty ? _preferredCurrency : 'PHP',
+                    bloodType: _bloodType ?? profile.bloodType,
+                    healthNotes: _healthNotes.isNotEmpty
+                        ? _healthNotes
+                        : profile.healthNotes,
                     onLetsGo: _onLetsGo,
+                    onCreateFirstTrip: () {
+                      ref.read(profileProvider.notifier).completeOnboarding();
+                      Navigator.of(context).pushReplacementNamed('/create-trip');
+                    },
                   ),
                 ],
               ),
