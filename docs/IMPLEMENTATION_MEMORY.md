@@ -2965,3 +2965,20 @@
   - Synchronized `docs/MEMORY.md` with the newly created `public.destinations` schema and `DestinationRepository`, completing the mandatory continuous memory synchronization per Rule §5.
 - **Verification**:
   - `dart analyze lib/core/repositories/destination_repository.dart lib/core/models/destination_model.dart lib/features/explore/explore_screen.dart`: 0 errors, 0 warnings.
+
+### `IMP-126` · Collapsible Budget Hero Header Architecture & Scroll-Aware Auto-Collapse
+- **Date**: September 15, 2026
+- **Target Files**:
+  - `lib/features/budget/widgets/personal_trip_budget_hero_card.dart` [MODIFIED - Converted to support animated collapsible state via `AnimatedSize`, compact 1-line summary row when collapsed, and chevron expand/collapse toggles]
+  - `lib/features/budget/widgets/trip_budget_hero_card.dart` [MODIFIED - Converted to support animated collapsible state via `AnimatedSize`, compact summary row with remaining funds badge, and chevron expand/collapse toggles]
+  - `lib/features/budget/widgets/budget_overview_card.dart` [MODIFIED - Updated for collapsible state consistency]
+  - `lib/features/budget/budget_screen.dart` [MODIFIED - Added `_isHeroCollapsed` state, wired collapse toggle callbacks to hero cards, and integrated `NotificationListener<ScrollNotification>` on body scrollview to auto-collapse when scrolling down past 20px and auto-expand upon returning to the top]
+  - `docs/MEMORY.md` [MODIFIED - Updated §25 Budget Hero Card documentation]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED - Logged milestone IMP-126]
+- **Architectural Rationale**:
+  - The hero budget card in `BudgetScreen` occupied ~250px of fixed vertical viewport real estate above the scrollable content. On smaller devices, this left limited room to view expenses logs, category breakdown charts, and settlement graphs.
+  - Implemented an animated collapsible architecture (`Curves.easeInOutCubic`, 250ms duration) allowing users to collapse the card into a sleek ~50px summary bar showing Total Budget, Remaining Funds (with Emerald Green / danger color coding), % used pill, and an expand chevron.
+  - Integrated `NotificationListener<ScrollNotification>` on `SingleChildScrollView`: when the traveler scrolls downwards (`delta > 1.0` and `pixels > 20`), the card automatically and smoothly transitions into collapsed mode to prioritize content visibility. When scrolled back to top (`pixels <= 8`), the hero card automatically re-expands without manual interaction.
+- **Verification**:
+  - `flutter analyze lib/features/budget`: 0 errors, 0 warnings.
+  - `flutter analyze lib`: 0 errors, 0 warnings across the entire codebase.

@@ -1117,12 +1117,12 @@ Client Tier               Storage Tier                Transport Tier
   - Invariant: Never insert or query forbidden columns `split_meta` or `rejected_by`.
 - **Trip Expenses (Group Focus & Classic Layout)**:
   - Preserves the established group layout:
-    - **Hero Card (`TripBudgetHeroCard`)**: Trip Name, Subtitle, Ring Chart with "% spent", total budget, remaining amount, and "₱X spent by Y members".
+    - **Hero Card (`TripBudgetHeroCard`)**: Trip Name, Subtitle, Ring Chart with "% spent", total budget, remaining amount, and "₱X spent by Y members". Supports animated collapsible mode with compact summary bar (Total, Remaining, % used, and expand chevron) to maximize viewport scrolling room.
     - **Sub-tabs**: `Overview` (Category breakdown & Member contributions), `Expenses` (Transactional CRUD log with approval workflow and receipt inspection), and `Split` (Greedy settlement plan & balances).
   - Transactional CRUD: `AddExpenseForm` with Camera / Gallery receipt upload via `ReceiptOcrService`, heuristic OCR price extraction, split-member multi-select with per-person calculations, and `ExpenseLog` with status filters (`All`, `Pending`, `Approved`, `Rejected`).
 - **Budget (Personal Focus + Trip Summary)**:
   - Tailored specifically to the traveler's personal target and overall trip expense footprint:
-    - **Hero Card (`PersonalTripBudgetHeroCard`)**: Modeled after the clean template design with Deep Earth `#2C1A14` container, Playfair Display typography, personal budget readout, emerald green remaining badge, slim horizontal progress bar, and an integrated **Trip Expenses Summary** pill row (Solo Spent, Group Liability share, and Trip Total).
+    - **Hero Card (`PersonalTripBudgetHeroCard`)**: Modeled after the clean template design with Deep Earth `#2C1A14` container, personal budget readout, emerald green remaining badge, slim horizontal progress bar, and an integrated **Trip Expenses Summary** pill row (Solo Spent, Group Liability share, and Trip Total). Supports interactive animated collapse into a compact summary bar via chevron toggle.
     - **Content**: `DailyPacingCard` (daily burn rate & velocity tips), `CashVsDigitalCard` (cash-in & digital split), `CategoryBudgetChart` (trip category breakdown summary), and `PersonalExpenseList` (pocket expense history).
   - Trip context switcher carousel: pure UI state allowing seamless trip flipping without state mutation or persistence overhead.
 

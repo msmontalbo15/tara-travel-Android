@@ -40,6 +40,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
   // 0: Personal Budget (with trip summary), 1: Trip Expenses (group fund & CRUD)
   int _scopeIndex = 0; 
   int _activeTripSubTabIndex = 0; // 0: Overview, 1: Expenses, 2: Split
+  bool _isHeroCollapsed = false;
 
   @override
   Widget build(BuildContext context) {
@@ -193,6 +194,8 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                         tripTotalSpent: derivedTripSpent,
                         tripDestination: trip.destination,
                         tripName: trip.name,
+                        isCollapsed: _isHeroCollapsed,
+                        onToggleCollapse: () => setState(() => _isHeroCollapsed = !_isHeroCollapsed),
                       ),
                     ] else ...[
                       // Trip Expenses: classic overview card with the exact ring chart & trip spending
@@ -202,6 +205,8 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                         memberCount: trip.members.length,
                         tripSubtitle: '${trip.destination} · ${AppTripTypes.getEmoji(trip.tripType)} ${AppTripTypes.getLabel(trip.tripType)}',
                         tripName: trip.name,
+                        isCollapsed: _isHeroCollapsed,
+                        onToggleCollapse: () => setState(() => _isHeroCollapsed = !_isHeroCollapsed),
                       ),
                       if (isTripOverBudget)
                         Padding(
@@ -244,16 +249,34 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
 
               // ── Body Section ─────────────────────────────────────────
               Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                  physics: const BouncingScrollPhysics(),
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 250),
-                    child: KeyedSubtree(
-                      key: ValueKey<String>('${_scopeIndex}_$_activeTripSubTabIndex'),
-                      child: _scopeIndex == 0
-                          ? _buildPersonalBudgetScope(trip, allowance, myGroupLiability, categoryTotals, derivedTripSpent)
-                          : _buildTripExpensesScope(trip, categoryTotals, derivedTripSpent, derivedTripRemaining),
+                child: NotificationListener<ScrollNotification>(
+                  onNotification: (notification) {
+                    if (notification is ScrollUpdateNotification) {
+                      final pixels = notification.metrics.pixels;
+                      final delta = notification.scrollDelta ?? 0.0;
+
+                      // Auto-collapse when scrolling down past 20px
+                      if (delta > 1.0 && pixels > 20.0 && !_isHeroCollapsed) {
+                        setState(() => _isHeroCollapsed = true);
+                      }
+                      // Auto-expand when returned to top
+                      else if (pixels <= 8.0 && _isHeroCollapsed) {
+                        setState(() => _isHeroCollapsed = false);
+                      }
+                    }
+                    return false;
+                  },
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                    physics: const BouncingScrollPhysics(),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 250),
+                      child: KeyedSubtree(
+                        key: ValueKey<String>('${_scopeIndex}_$_activeTripSubTabIndex'),
+                        child: _scopeIndex == 0
+                            ? _buildPersonalBudgetScope(trip, allowance, myGroupLiability, categoryTotals, derivedTripSpent)
+                            : _buildTripExpensesScope(trip, categoryTotals, derivedTripSpent, derivedTripRemaining),
+                      ),
                     ),
                   ),
                 ),

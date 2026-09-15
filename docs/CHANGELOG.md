@@ -1,7 +1,7 @@
 # Tara Travel - Version Changelog
 
 > Auto-generated from IMPLEMENTATION_MEMORY.md + git log
-> Last updated: **2026-09-15 12:42 PHT**
+> Last updated: **2026-09-15 13:29 PHT**
 
 ---
 
@@ -170,7 +170,9 @@
 
 ## 2026-09-15
 
-- **IMP-124** (Explore / Supabase Integration & Contextual Travel Recommendations): Connected Explore screen to Supabase `public.destinations`, added category pills, proximity calculation, and prefilled Plan Trip flow.
+- **IMP-126** (Budget / Collapsible Hero Header Architecture): Implemented interactive, animated collapsible mode (`Curves.easeInOutCubic`, 250ms) for `PersonalTripBudgetHeroCard`, `TripBudgetHeroCard`, and `BudgetOverviewCard`. Features a sleek ~50px compact summary bar with Total Budget, Remaining Funds, % used pill, and chevron toggle to maximize viewport scrolling room.
+- **IMP-125** (Explore / Real Location-Specific Imagery & Supabase Seed Sync): Replaced generic stock photos with authentic location-specific Unsplash imagery across 14 Philippine destinations.
+- **IMP-124** (Explore / Supabase Integration & Contextual Travel Recommendations): Connected Explore screen to Supabase `public.destinations`, added category pills, proximity calculation, and prefilled Plan Trip flow. [commit:c97e716](https://github.com/msmontalbo15/tara-travel-Android/commit/c97e716)
 - **IMP-123** (Profile / Modular Optimization & Sub-Screens): Refactored 2,812-line ProfileScreen into 6 dedicated modular widgets and NotificationSettingsScreen.
 - **IMP-122** (Home / Trip Hero vs Trip Card Separation & Overflow Hardening): Separated high-level summary on NextTripCard from granular itinerary stats on TripCard, and protected stats with FittedBox.
 - **IMP-121** (Home & Trips Provider / Completed Trips Filter): Excluded completed trips from the Home screen visible list and `activeTripProvider` fallback, keeping Home focused on active/upcoming journeys while completed trips remain accessible under Trips > Past.
