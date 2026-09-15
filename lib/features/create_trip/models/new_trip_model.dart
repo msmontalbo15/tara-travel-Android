@@ -28,7 +28,7 @@ class NewTripModel {
     this.destinationLng,
     this.fromDate,
     this.toDate,
-    this.tripType = 'beach',
+    this.tripType = 'rides_meets',
     List<TravelerModel>? travelers,
     this.totalBudget,
     this.personalAllowance,

@@ -34,8 +34,9 @@ final activeTripProvider = FutureProvider<TripModel?>((ref) async {
   if (ongoingTrips.isNotEmpty) return ongoingTrips.first;
   final planningTrips = trips.where((t) => t.isPlanning).toList();
   if (planningTrips.isNotEmpty) return planningTrips.first;
-  final activeUpcoming =
-      trips.where((t) => !t.isDraft && !t.isArchived).toList();
+  final activeUpcoming = trips
+      .where((t) => !t.isDraft && !t.isArchived && t.status != TripStatus.completed)
+      .toList();
   if (activeUpcoming.isNotEmpty) return activeUpcoming.first;
   return null;
 });

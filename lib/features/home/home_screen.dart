@@ -349,8 +349,10 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
                         children: [
                           ref.watch(allTripsProvider).when(
                                 data: (trips) {
-                                  // Exclude archived trips from the homepage
-                                  final visibleTrips = trips.where((t) => !t.isArchived).toList();
+                                  // Exclude archived and completed trips from the homepage
+                                  final visibleTrips = trips
+                                      .where((t) => !t.isArchived && t.status != TripStatus.completed)
+                                      .toList();
                                   if (visibleTrips.isEmpty) {
                                     return const StarterTemplatesCarousel();
                                   }

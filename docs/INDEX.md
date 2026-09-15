@@ -20,7 +20,7 @@
 | `/chat` | `ChatScreen` | `lib/features/chat/chat_screen.dart` | Realtime messaging, `PollCard`, embeds |
 | `/members` | `MembersScreen` | `lib/features/members/members_screen.dart` | Role management, QR invite, permissions |
 | `/friends` | `FriendsScreen` | `lib/features/friends/friends_screen.dart` | Friends / Requests / Find tabs, QR add |
-| `/profile` | `ProfileScreen` | `lib/features/profile/profile_screen.dart` | Avatar, GCash, MPIN, Check for Updates |
+| `/profile` | `ProfileScreen` | `lib/features/profile/profile_screen.dart` | `ProfileHeroHeader`, `ProfileHealthCard`, `ProfilePaymentCard`, `ProfileSecurityCard`, `ProfileAccountCard`, `NotificationSettingsScreen` |
 | `/explore` | `ExploreScreen` | `lib/features/explore/explore_screen.dart` | Search, destination carousel, quick plan |
 | `/notifications` | `NotificationsScreen` | `lib/features/notifications/notifications_screen.dart` | In-app alerts, deep-link triggers |
 | `/activity` | `ActivityLogScreen` | `lib/features/activity/activity_log_screen.dart` | Audit trail, timeline cards |
@@ -45,8 +45,8 @@
 | **Profile** | `profile_provider.dart` | `userProfileProvider`, `profileNotifierProvider` |
 | **Activity** | `activity_provider.dart` | `tripActivitiesProvider(tripId)` |
 | **Group Tracking** | `group_tracking_provider.dart` | `liveMembersLocationProvider(tripId)` |
-| **Connectivity** | `connectivity_provider.dart` | `isOnlineProvider`, `offlineSyncQueueProvider` |
-| **Repositories** | `repository_providers.dart` | `tripRepositoryProvider`, `expenseRepoProvider`, etc. |
+| **Explore** | `explore_provider.dart` | `exploreProvider`, `exploreCategoryFilterProvider` |
+| **Repositories** | `repository_providers.dart` | `tripRepositoryProvider`, `expenseRepoProvider`, `destinationRepositoryProvider`, etc. |
 
 ---
 
@@ -57,6 +57,7 @@
 | Repository | File | Primary Responsibility |
 | :--- | :--- | :--- |
 | `TripRepository` | `trip_repository.dart` | Remote single source of truth for trips & trip members |
+| `DestinationRepository` | `destination_repository.dart` | Remote single source of truth for `public.destinations` with offline fallbacks |
 | `ItineraryRepository`| `itinerary_repository.dart` | Itinerary stop ordering, day grouping, GPS coordinates |
 | `ExpenseRepository` | `expense_repository.dart` | Group expenses, receipt images, approvals, settlements |
 | `PackingRepository` | `packing_repository.dart` | Packing items, category assignments, pack toggles |
@@ -73,6 +74,7 @@
 | Model | File | Primary Database Table |
 | :--- | :--- | :--- |
 | `TripModel` | `trip_model.dart` | `public.trips` (never query dropped lat/lng/cover fields) |
+| `DestinationModel` | `destination_model.dart` | `public.destinations` |
 | `MemberModel` | `member_model.dart` | `public.trip_members` (use `MemberModel.formatDisplayName`) |
 | `ItineraryStop` | `itinerary_model.dart` | `public.itinerary_stops` |
 | `ExpenseModel` | `expense_model.dart` | `public.expenses` |

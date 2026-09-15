@@ -4,14 +4,18 @@ class TripTypeOption {
   final String id;
   final String label;
   final String emoji;
+  final String? secondaryEmoji;
   final String subtitle;
   final String category;
   final Color accentColor;
+
+  bool get hasCompositeEmoji => secondaryEmoji != null;
 
   const TripTypeOption({
     required this.id,
     required this.label,
     required this.emoji,
+    this.secondaryEmoji,
     required this.subtitle,
     required this.category,
     required this.accentColor,
@@ -33,6 +37,17 @@ class AppTripTypes {
   ];
 
   static const List<TripTypeOption> all = [
+    // Featured
+    TripTypeOption(
+      id: 'rides_meets',
+      label: 'Rides & Meets',
+      emoji: '🏍️',
+      secondaryEmoji: '🚗',
+      subtitle: 'Bikes, motor & car meets with convoys',
+      category: catPopular,
+      accentColor: Color(0xFFE65100),
+    ),
+
     // Popular
     TripTypeOption(
       id: 'beach',
@@ -134,7 +149,6 @@ class AppTripTypes {
       category: catLifestyle,
       accentColor: Color(0xFF3F51B5),
     ),
-
     // Leisure & Travel
     TripTypeOption(
       id: 'family',
@@ -173,6 +187,16 @@ class AppTripTypes {
   static TripTypeOption getOption(String? typeStr) {
     if (typeStr == null || typeStr.isEmpty) return all.first;
     final normalized = typeStr.trim().toLowerCase().replaceAll('-', '_').replaceAll(' ', '_');
+    // Handle common aliases for unified rides & meets
+    if (normalized == 'tambike' ||
+        normalized == 'car_meet' ||
+        normalized == 'carmeet' ||
+        normalized == 'motor_meet' ||
+        normalized == 'rides_and_meets' ||
+        normalized == 'rides_meets') {
+      return all.firstWhere((opt) => opt.id == 'rides_meets');
+    }
+
     return all.firstWhere(
       (opt) =>
           opt.id == normalized ||

@@ -275,15 +275,26 @@ public.notifications (
   created_at timestamptz default now()
 );
 
--- 16. DESTINATIONS
+-- 16. DESTINATIONS (Migration 002, 027)
 public.destinations (
-  id uuid primary key default gen_random_uuid(),
+  id uuid primary key default uuid_generate_v4(),
   name text not null,
-  country text not null default 'Philippines',
+  country text default 'Philippines',
+  distance_from_metro text,
+  best_mode text,
+  avg_cost_range text,
+  photo_emoji text default '🌏',
+  tag text default 'General',
   description text,
+  is_trending boolean default false,
+  is_weekend_getaway boolean default false,
+  is_recommended boolean default false,
+  recommended_reason text,
+  best_time_to_visit text default 'Year-round',
   image_url text,
-  tags text[],
-  rating numeric(3,2) default 5.00,
+  latitude double precision,
+  longitude double precision,
+  trip_type text default 'sightseeing_tours',
   created_at timestamptz default now()
 );
 
@@ -631,6 +642,11 @@ Client Tier               Storage Tier                Transport Tier
 ### Name Privacy Invariant
 - Every user-facing name display MUST invoke `MemberModel.formatDisplayName(name, hideSurname: profile.hideSurname)`.
 - When `hideSurname` is `true`: `"Juan Dela Cruz"` -> `"Juan D."`.
+
+### Home Trip Hero vs. Trip Card Separation of Concerns
+- **Trip Hero (`NextTripCard` in Home)**: Focused strictly on high-level glanceable context — countdown (`X days away` or `Day X of Y`), dates, destination, member count, and status badge. Keeps the hero card airy, glassmorphic, and lightweight without stop-by-stop details or "Stop N of N" badges.
+- **Trip Card (`TripCard`)**: Houses high-level progress counters (`ITINERARY: N/M`, `DAYS`, `PEOPLE`, budget progress bar, quick actions). Stat values are wrapped with `FittedBox(fit: BoxFit.scaleDown)` to prevent overflow on varying screen widths.
+- **Trip Detail & Itinerary (`TripDetailScreen` / `ItineraryScreen`)**: Authoritative source for detailed stop-by-stop timelines, active/next stop hub cards, and live map navigation.
 
 ---
 

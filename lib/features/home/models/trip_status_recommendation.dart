@@ -83,22 +83,6 @@ class TripStatusRecommendation {
     }
 
     if (status == TripStatus.ongoing) {
-      if (totalStops > 0 && visitedStops < totalStops) {
-        return TripStatusRecommendation(
-          status: TripStatus.ongoing,
-          statusLabel: 'Ongoing',
-          statusColor: AppColors.greenBright,
-          statusBgColor: AppColors.green.withValues(alpha: 0.35),
-          statusBorderColor: AppColors.greenBright.withValues(alpha: 0.60),
-          statusIcon: Icons.fiber_manual_record_rounded,
-          recommendation: 'Next: Stop ${visitedStops + 1} of $totalStops',
-          recommendationIcon: Icons.navigation_rounded,
-          recommendationColor: AppColors.greenBright,
-          recommendationBgColor: AppColors.greenBg,
-          recommendationBorderColor: AppColors.greenBright.withValues(alpha: 0.5),
-          suggestedActionRoute: '/navigation',
-        );
-      }
       return TripStatusRecommendation(
         status: TripStatus.ongoing,
         statusLabel: 'Ongoing',
@@ -106,7 +90,7 @@ class TripStatusRecommendation {
         statusBgColor: AppColors.green.withValues(alpha: 0.35),
         statusBorderColor: AppColors.greenBright.withValues(alpha: 0.60),
         statusIcon: Icons.fiber_manual_record_rounded,
-        recommendation: 'Live trip in progress • Tap to navigate',
+        recommendation: 'Trip in progress',
         recommendationIcon: Icons.explore_rounded,
         recommendationColor: AppColors.greenBright,
         recommendationBgColor: AppColors.greenBg,

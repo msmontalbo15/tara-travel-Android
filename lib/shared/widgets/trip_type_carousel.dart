@@ -182,13 +182,44 @@ class _TripTypeCarouselState extends State<TripTypeCarousel> {
                                   opacity: 0.28,
                                   child: Transform.rotate(
                                     angle: -0.12,
-                                    child: Text(
-                                      option.emoji,
-                                      style: const TextStyle(
-                                        fontSize: 64,
-                                        height: 1.0,
-                                      ),
-                                    ),
+                                    child: option.hasCompositeEmoji
+                                        ? SizedBox(
+                                            width: 72,
+                                            height: 68,
+                                            child: Stack(
+                                              children: [
+                                                Positioned(
+                                                  right: 0,
+                                                  bottom: 0,
+                                                  child: Text(
+                                                    option.secondaryEmoji!,
+                                                    style: const TextStyle(
+                                                      fontSize: 44,
+                                                      height: 1.0,
+                                                    ),
+                                                  ),
+                                                ),
+                                                Positioned(
+                                                  left: 0,
+                                                  top: 0,
+                                                  child: Text(
+                                                    option.emoji,
+                                                    style: const TextStyle(
+                                                      fontSize: 52,
+                                                      height: 1.0,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          )
+                                        : Text(
+                                            option.emoji,
+                                            style: const TextStyle(
+                                              fontSize: 64,
+                                              height: 1.0,
+                                            ),
+                                          ),
                                   ),
                                 ),
                               ),
@@ -233,10 +264,35 @@ class _TripTypeCarouselState extends State<TripTypeCarousel> {
                                                 color: Colors.white.withValues(alpha: 0.3),
                                                 shape: BoxShape.circle,
                                               ),
-                                              child: Text(
-                                                option.emoji,
-                                                style: const TextStyle(fontSize: 18),
-                                              ),
+                                              child: option.hasCompositeEmoji
+                                                  ? SizedBox(
+                                                      width: 28,
+                                                      height: 22,
+                                                      child: Stack(
+                                                        children: [
+                                                          Positioned(
+                                                            right: 0,
+                                                            bottom: 0,
+                                                            child: Text(
+                                                              option.secondaryEmoji!,
+                                                              style: const TextStyle(fontSize: 13),
+                                                            ),
+                                                          ),
+                                                          Positioned(
+                                                            left: 0,
+                                                            top: 0,
+                                                            child: Text(
+                                                              option.emoji,
+                                                              style: const TextStyle(fontSize: 15),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    )
+                                                  : Text(
+                                                      option.emoji,
+                                                      style: const TextStyle(fontSize: 18),
+                                                    ),
                                             ),
                                             const SizedBox(width: 8),
                                             Text(

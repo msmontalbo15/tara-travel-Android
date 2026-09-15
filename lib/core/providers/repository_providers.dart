@@ -10,6 +10,7 @@ import '../repositories/itinerary_repository.dart';
 import '../repositories/profile_repository.dart';
 import '../repositories/packing_repository.dart';
 import '../repositories/personal_allowance_repository.dart';
+import '../repositories/destination_repository.dart';
 import '../services/connectivity_service.dart';
 
 // ── SERVICES ─────────────────────────────────────────────────────────────────
@@ -47,4 +48,9 @@ final packingRepositoryProvider = Provider<PackingRepository>((ref) {
 final personalAllowanceRepositoryProvider = Provider<PersonalAllowanceRepository>((ref) {
   return PersonalAllowanceRepository();
 });
+
+final destinationRepositoryProvider = Provider<DestinationRepository>((ref) {
+  return DestinationRepository();
+});
+
 

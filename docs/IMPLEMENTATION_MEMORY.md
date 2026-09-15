@@ -84,8 +84,10 @@
 | **`IMP-110`** | 2026-09-13 | Legal & Auth / Mandatory Terms Review & Redundancy Removal | Enforced mandatory Terms & NPC Privacy Policy (RA 10173) reading before account creation: locked "Create Account" button until policy sheet is reviewed and accepted, updated `showNpcPrivacyPolicySheet` to return acceptance status (`Future<bool>`), added verified state tracking, and removed redundant terms links from the landing screen. |
 | **`IMP-115`** | 2026-09-14 | Friends / Clean Header & Find Friends Action Bar | Cleaned top header bar (removed all 3 action icons, centered title with balanced back button) and consolidated Scan QR, My QR, and Add by ID into a dedicated discovery strip exclusively inside `_buildFindFriendsTab`. |
 | **`IMP-116`** | 2026-09-14 | Create Trip & Itinerary / Optional Destination & Auto-Seeded Itinerary Stops | Made destination field optional during trip creation flow with graceful 'TBD' fallback, and automatically seeded Day 1 itinerary stops with departure point as start (`StopType.transport`) and destination as arrival (`StopType.activity`). |
-| **`IMP-117`** | 2026-09-14 | Maps & Itinerary / Google Maps Link Resolver & Pin Location Integration (Plan 5) | Zero-cost Google Maps shortened/place URL parser, coordinate regex extraction, reverse geocode enrichment via Nominatim, automatic StopType inference, and interactive map camera fly in MapPinPickerModal and LocationPicker. |
-| **`IMP-119`** | 2026-09-15 | Trip Detail / Command Cluster (Plans 20, 11, 16) | Announcements Hub, Departure Advisory Engine & Countdown, Tara Copilot AI Assistant. |
+| **`IMP-121`** | 2026-09-15 | Home & Trips Provider / Completed Trips Filter | Excluded completed trips from the Home screen visible list and `activeTripProvider` fallback, keeping Home focused on active/upcoming journeys while completed trips remain accessible under Trips > Past. |
+| **`IMP-122`** | 2026-09-15 | Home / Trip Hero vs Trip Card Separation & Overflow Hardening | Separated high-level summary on NextTripCard from granular itinerary stats on TripCard, and protected stats with FittedBox. |
+| **`IMP-123`** | 2026-09-15 | Profile / Modular Optimization & Sub-Screens | Refactored 2,812-line ProfileScreen into 6 dedicated modular widgets and NotificationSettingsScreen. |
+| **`IMP-124`** | 2026-09-15 | Explore / Supabase Integration & Contextual Travel Recommendations | Connected Explore screen to Supabase `public.destinations`, added category pills, proximity calculation, and prefilled Plan Trip flow. |
 
 
 ---
@@ -2877,15 +2879,76 @@
   - `flutter analyze --no-fatal-infos --no-fatal-warnings`: 0 issues found (clean pass).
 
 ### `IMP-120` · Direct In-App OTA Update Engine & Native Package Installer
+### `IMP-121` · Completed Trips Filter on Home & Active Trip Provider Guard
 - **Date**: September 15, 2026
 - **Target Files**:
-  - `android/app/src/main/res/xml/file_paths.xml` [NEW - Configured FileProvider paths for internal & external cache/files directories]
-  - `android/app/src/main/AndroidManifest.xml` [MODIFIED - Registered `androidx.core.content.FileProvider` with `${applicationId}.fileProvider` authority]
-  - `android/app/src/main/kotlin/com/taratravel/app/MainActivity.kt` [MODIFIED - Implemented `com.taratravel.app/ota_installer` platform channel handling `installApk` using `Intent.ACTION_VIEW` and content URIs]
-  - `lib/core/services/apk_download_installer.dart` [MODIFIED - Built direct chunked streaming HTTP download with live byte/percentage progress, writing to app temporary directory, followed by invoking `installApk` on Android]
-  - `lib/core/widgets/versioning/soft_update_sheet.dart` [MODIFIED - Real-time progress bar UI and 'Update Now' / 'Downloading & Installing...' states]
-  - `lib/core/widgets/versioning/force_update_screen.dart` [MODIFIED - 'Install Update Now' direct download & install execution]
+  - `lib/features/home/home_screen.dart` [MODIFIED - Filtered out `t.status == TripStatus.completed` from `visibleTrips`]
+  - `lib/core/providers/trip_provider.dart` [MODIFIED - Filtered out `t.status == TripStatus.completed` from `activeTripProvider` fallback]
+  - `docs/MEMORY.md` [MODIFIED - Synchronized Home trip visibility invariant]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED - Logged milestone IMP-121]
 - **Architectural Rationale**:
-  - Delivers a true zero-redirect in-app OTA update experience. The app streams the release APK directly to cache with continuous byte tracking and passes the content URI to Android's native system package installer (`Intent.ACTION_VIEW`, `application/vnd.android.package-archive`) with `FLAG_GRANT_READ_URI_PERMISSION`.
+  - Kept the Home screen strictly focused on forward-looking planning, upcoming countdowns, and active ongoing navigation by excluding trips in `TripStatus.completed`.
+  - Guaranteed `activeTripProvider` fallback prioritizes ongoing, planning, and draft trips without latching onto past completed trips.
+  - Completed trips remain fully accessible in `TripsScreen` under the dedicated "Past" tab.
 - **Verification**:
-  - `dart analyze lib/core/services/apk_download_installer.dart lib/core/widgets/versioning/soft_update_sheet.dart lib/core/widgets/versioning/force_update_screen.dart`: 0 issues found (clean pass).
+  - `dart analyze lib/features/home/home_screen.dart lib/core/providers/trip_provider.dart`: Clean pass.
+
+### `IMP-122` · Home Trip Hero vs Trip Card Separation of Concerns & Overflow Hardening
+- **Date**: September 15, 2026
+- **Target Files**:
+  - `lib/features/home/widgets/next_trip_card.dart` [MODIFIED - Removed status recommendation pill from Trip Hero card entirely for clean, lightweight summary]
+  - `lib/features/home/models/trip_status_recommendation.dart` [MODIFIED - Simplified ongoing recommendation to 'Trip in progress']
+  - `lib/features/home/widgets/trip_card.dart` [MODIFIED - Protected `_statBox` values with `FittedBox(fit: BoxFit.scaleDown)` to prevent overflow]
+  - `docs/MEMORY.md` [MODIFIED - Codified Home Trip Hero vs. Trip Card architectural separation of concerns]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED - Logged milestone IMP-122]
+- **Architectural Rationale**:
+  - **Separation of Concerns**: Kept `NextTripCard` in Home focused strictly on high-level glanceable summary info (countdown / ongoing day tracker, destination, trip title, dates, and member count) without cluttering it with granular "Stop N of N" details or redundant recommendation pills.
+  - Granular itinerary progress lives in `TripCard` (`ITINERARY: N/M`), while authoritative stop timelines and live map navigation live in `TripDetailScreen` and `ItineraryScreen`.
+  - Hardened `_statBox` in `TripCard` with `FittedBox(fit: BoxFit.scaleDown)` to guarantee zero `RenderFlex` overflow on narrow devices or large accessibility font scale settings.
+- **Verification**:
+  - `flutter analyze lib/features/home/`: Zero issues found.
+
+### `IMP-123` · ProfileScreen Modular Optimization & Redundancy Elimination
+- **Date**: September 15, 2026
+- **Target Files**:
+  - `lib/features/profile/widgets/profile_card.dart` [NEW - Reusable `ProfileCard`, `ProfileSectionTitle`, `ProfileDivider`, `ProfileRow`]
+  - `lib/features/profile/widgets/profile_qr_modal.dart` [NEW - Extracted `showProfileQrCodeModal` with QR preview & share sheet]
+  - `lib/features/profile/widgets/profile_hero_header.dart` [NEW - Avatar with camera picker, Playfair heading, location, and clean Copy ID / My QR chips]
+  - `lib/features/profile/widgets/profile_security_card.dart` [NEW - 4-Digit MPIN set/change dialog, consolidated biometric toggle, encapsulated `PinInputRow`]
+  - `lib/features/profile/widgets/profile_health_card.dart` [NEW - Blood type sheet picker, health notes tag list, organizer share toggle]
+  - `lib/features/profile/widgets/profile_payment_card.dart` [NEW - GCash number display & QR code upload]
+  - `lib/features/profile/widgets/profile_account_card.dart` [NEW - Google account link, notification entry, privacy policy, update check, and sign out]
+  - `lib/features/profile/screens/notification_settings_screen.dart` [NEW - Dedicated 7-category notification preference screen]
+  - `lib/features/profile/profile_screen.dart` [MODIFIED - Refactored monolithic screen from 2,812 lines down to 552 lines as an orchestrator]
+  - `docs/INDEX.md` [MODIFIED - Updated ProfileScreen subcomponents mapping]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED - Recorded milestone IMP-123]
+- **Architectural Rationale**:
+  - **Monolith Elimination (2,812 → 552 lines)**: Decoupled the oversized 2,812-line `ProfileScreen` into 6 dedicated modular widgets and 1 sub-screen (`NotificationSettingsScreen`), restoring maintainability, testability, and fast incremental builds.
+  - **Eliminated Redundancies**:
+    - Removed duplicate Google email badge chip from Hero Header (already displayed in Account Settings).
+    - Removed duplicate User ID / Friend Code row from Personal Info (already prominently accessible via Header chips).
+    - Consolidated separate Fingerprint and optional Face Verification switches into a unified "Biometric Login" switch supporting device hardware biometrics.
+  - **Dedicated Sub-Screen Architecture**: Moved 7 inline notification preference switches into `NotificationSettingsScreen` accessible via a clean row in Account Settings, reducing vertical bloat while providing descriptive subheaders for each alert type.
+  - **Reusability & Code Deduplication**: Replaced redundant inline dialogs with `_showTextEditDialog` for text field modifications, killed inline IIFE lambdas in widget build trees, and established a reusable `ProfileCard` design system.
+- **Verification**:
+  - `flutter analyze lib/features/profile`: 0 issues found.
+  - `flutter analyze`: No issues found! (0 errors, 0 warnings across whole repo).
+
+### `IMP-124` · Explore Screen Supabase Integration & Contextual Travel Recommendations
+- **Date**: September 15, 2026
+- **Target Files**:
+  - `supabase/migrations/027_destinations_seed_and_enhancements.sql` [NEW - Table columns `image_url`, `latitude`, `longitude`, `trip_type`, and 14 authentic Philippine destination seed records]
+  - `lib/core/models/destination_model.dart` [NEW - Strongly-typed `DestinationModel` mapping `public.destinations`]
+  - `lib/core/repositories/destination_repository.dart` [NEW - Supabase remote repository with offline fallback resilience to top PH destinations]
+  - `lib/core/providers/repository_providers.dart` [MODIFIED - Registered `destinationRepositoryProvider`]
+  - `lib/core/providers/explore_provider.dart` [MODIFIED - Migrated to `DestinationRepository`, added `ExploreCategoryNotifier`, personalized distance from user's `homeCity`, proximity tags, and unvisited exploration incentives]
+  - `lib/features/explore/explore_screen.dart` [MODIFIED - Interactive Category Pills, real Supabase destination cards, pull-to-refresh, bookmark toggles, and prefilled Plan Trip navigation into `CreateTripFlow`]
+  - `docs/INDEX.md` [MODIFIED - Registered Explore & Destination domain model and repository]
+  - `docs/MEMORY.md` [MODIFIED - Updated table 16 destinations schema definition]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED - Logged milestone IMP-124]
+- **Architectural Rationale**:
+  - Replaced the brittle Wikipedia geosearch service with authoritative, curated Supabase records from `public.destinations` featuring high-definition photography and coordinate data.
+  - Engineered an intelligent contextual recommendation algorithm that cross-references the traveler's `homeCity` (using `_knownHubs` and Haversine distance) and existing trips in `allTripsProvider` to suggest accessible weekend getaways (<= 220 km) and highlight unvisited destinations.
+  - Connected the destination detail sheet's "Plan Trip with Tara" CTA directly to `CreateTripFlow` via route arguments (`NewTripModel`), automatically prefilling destination name, coordinates, and inferred trip type.
+- **Verification**:
+  - `dart analyze lib/`: 0 errors, 0 warnings across entire codebase.
