@@ -2952,3 +2952,16 @@
   - Connected the destination detail sheet's "Plan Trip with Tara" CTA directly to `CreateTripFlow` via route arguments (`NewTripModel`), automatically prefilling destination name, coordinates, and inferred trip type.
 - **Verification**:
   - `dart analyze lib/`: 0 errors, 0 warnings across entire codebase.
+
+### `IMP-125` · Explore Screen Real Location-Specific Imagery & Documentation Sync
+- **Date**: September 15, 2026
+- **Target Files**:
+  - `supabase/migrations/027_destinations_seed_and_enhancements.sql` [MODIFIED - Replaced generic Unsplash stock photos with location-specific images for all 14 Philippine destinations]
+  - `lib/core/repositories/destination_repository.dart` [MODIFIED - Synced fallback `defaultPhilippineDestinations` image URLs to match migration; fixed trailing corruption from prior edit]
+  - `docs/MEMORY.md` [MODIFIED - Added `destinations` table schema (Table 21, Migration 027), registered `DestinationRepository` function index (§6.10), updated table count to 17]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED - Logged milestone IMP-125]
+- **Architectural Rationale**:
+  - Replaced generic stock photography with verified, location-specific Unsplash images (Boracay White Beach, El Nido lagoons, Coron Kayangan Lake, Siargao Cloud 9, Baguio pine trees, Tagaytay Taal Volcano, Batanes rolling hills, etc.) to ensure visual authenticity matching the user's "real image, no hardcoded mock data" requirement.
+  - Synchronized `docs/MEMORY.md` with the newly created `public.destinations` schema and `DestinationRepository`, completing the mandatory continuous memory synchronization per Rule §5.
+- **Verification**:
+  - `dart analyze lib/core/repositories/destination_repository.dart lib/core/models/destination_model.dart lib/features/explore/explore_screen.dart`: 0 errors, 0 warnings.

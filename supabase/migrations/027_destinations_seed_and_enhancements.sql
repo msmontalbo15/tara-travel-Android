@@ -3,7 +3,8 @@
 -- ═══════════════════════════════════════════════════════════════════════════
 --
 -- Ensures image_url and coordinate columns exist on public.destinations and
--- populates real, curated Philippine travel hubs with high-resolution imagery.
+-- populates real, curated Philippine travel hubs with high-resolution imagery
+-- sourced from location-specific Unsplash photos.
 -- ═══════════════════════════════════════════════════════════════════════════
 
 -- Ensure columns exist
@@ -19,13 +20,21 @@ alter table public.destinations enable row level security;
 drop policy if exists "Anyone can read destinations" on public.destinations;
 create policy "Anyone can read destinations" on public.destinations for select using (true);
 
--- Upsert destinations
+-- ───────────────────────────────────────────────────────────────────────────
+-- Remove any previous seed rows to avoid duplicates on re-run
+-- ───────────────────────────────────────────────────────────────────────────
+delete from public.destinations where country = 'Philippines';
+
+-- ───────────────────────────────────────────────────────────────────────────
+-- Seed 14 curated Philippine destinations with real, location-specific photos
+-- ───────────────────────────────────────────────────────────────────────────
 insert into public.destinations (
   name, country, distance_from_metro, best_mode, avg_cost_range, photo_emoji, tag, description,
   is_trending, is_weekend_getaway, is_recommended, recommended_reason, best_time_to_visit,
   image_url, latitude, longitude, trip_type
 )
 values
+-- ── 1. Boracay ──────────────────────────────────────────────────────────────
 (
   'Boracay',
   'Philippines',
@@ -40,11 +49,12 @@ values
   true,
   'Top-rated beach in Southeast Asia with pristine shores and nightlife.',
   'Nov–May',
-  'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1571979195098-d4b2c758c4a3?auto=format&fit=crop&w=1200&q=80',
   11.9674,
   121.9248,
   'beach_coastal'
 ),
+-- ── 2. El Nido ──────────────────────────────────────────────────────────────
 (
   'El Nido',
   'Philippines',
@@ -59,11 +69,12 @@ values
   true,
   'Must-visit UNESCO biosphere with breathtaking lagoons and island hopping.',
   'Dec–May',
-  'https://images.unsplash.com/photo-1518509562904-e7ef99cdcc86?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1573790387438-4da905039392?auto=format&fit=crop&w=1200&q=80',
   11.1956,
   119.4075,
   'nature_outdoors'
 ),
+-- ── 3. Coron ────────────────────────────────────────────────────────────────
 (
   'Coron',
   'Philippines',
@@ -78,11 +89,12 @@ values
   true,
   'Renowned for crystal clear lakes and unforgettable wreck diving.',
   'Dec–May',
-  'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1555400038-63f5ba517a47?auto=format&fit=crop&w=1200&q=80',
   11.9986,
   120.2043,
   'nature_outdoors'
 ),
+-- ── 4. Siargao ──────────────────────────────────────────────────────────────
 (
   'Siargao',
   'Philippines',
@@ -97,11 +109,12 @@ values
   true,
   'Vibrant surf culture, cafes, and laid-back island vibes.',
   'Jul–Nov (Surf) / Mar–Oct (Sun)',
-  'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1519855079734-7f171f9c2af8?auto=format&fit=crop&w=1200&q=80',
   9.8580,
   126.0460,
   'sports_active'
 ),
+-- ── 5. Baguio City ──────────────────────────────────────────────────────────
 (
   'Baguio City',
   'Philippines',
@@ -116,11 +129,12 @@ values
   true,
   'Refreshing cool weather escape just a scenic expressway drive away.',
   'Nov–Feb',
-  'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1600255821039-db5a236aba40?auto=format&fit=crop&w=1200&q=80',
   16.4023,
   120.5960,
   'staycation'
 ),
+-- ── 6. Tagaytay ─────────────────────────────────────────────────────────────
 (
   'Tagaytay',
   'Philippines',
@@ -135,11 +149,12 @@ values
   true,
   'Quick and cozy road trip escape with magnificent lake ridge dining.',
   'Year-round',
-  'https://images.unsplash.com/photo-1519046904884-53103b34b206?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1580746738099-75a6321b794f?auto=format&fit=crop&w=1200&q=80',
   14.1153,
   120.9621,
   'food_crawl'
 ),
+-- ── 7. Batanes ──────────────────────────────────────────────────────────────
 (
   'Batanes',
   'Philippines',
@@ -154,11 +169,12 @@ values
   true,
   'Unmatched dramatic cliffs, peaceful heritage, and pristine landscapes.',
   'Dec–May',
-  'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1616091093714-c64882e8d212?auto=format&fit=crop&w=1200&q=80',
   20.4485,
   121.9708,
   'sightseeing_tours'
 ),
+-- ── 8. Cebu & Moalboal ─────────────────────────────────────────────────────
 (
   'Cebu & Moalboal',
   'Philippines',
@@ -167,17 +183,18 @@ values
   '₱7,500–₱15,000',
   '🐟',
   'Adventure',
-  'World-famous sardine run just meters off the beach, sea turtles, Kawasan Falls canyoneering, and Magellan’s Cross history.',
+  'World-famous sardine run just meters off the beach, sea turtles, Kawasan Falls canyoneering, and Magellan''s Cross history.',
   true,
   false,
   true,
   'Epic canyoneering waterfalls and rich colonial landmarks.',
   'Dec–May',
-  'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?auto=format&fit=crop&w=1200&q=80',
   10.3157,
   123.8854,
   'adventure_trekking'
 ),
+-- ── 9. Sagada ───────────────────────────────────────────────────────────────
 (
   'Sagada',
   'Philippines',
@@ -192,11 +209,12 @@ values
   true,
   'Peaceful mountain sanctuary with rich Igorot culture and spelunking.',
   'Nov–Feb',
-  'https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1604928141064-207cea6f571f?auto=format&fit=crop&w=1200&q=80',
   17.0833,
   120.9000,
   'backpacking'
 ),
+-- ── 10. La Union (San Juan) ─────────────────────────────────────────────────
 (
   'La Union (San Juan)',
   'Philippines',
@@ -211,11 +229,12 @@ values
   true,
   'Favorite weekend surf spot with creative food concepts and chill music.',
   'Oct–Mar (Surf) / Apr–Jun (Calm)',
-  'https://images.unsplash.com/photo-1473116763249-2faaef81ccda?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1502680390548-bdbac40e7a78?auto=format&fit=crop&w=1200&q=80',
   16.6750,
   120.3394,
   'beach_coastal'
 ),
+-- ── 11. Bohol & Panglao ────────────────────────────────────────────────────
 (
   'Bohol & Panglao',
   'Philippines',
@@ -230,11 +249,12 @@ values
   true,
   'Eclectic wonders from world-famous geodiversity hills to lively beach strips.',
   'Dec–May',
-  'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1570015376692-0be75a0c9d70?auto=format&fit=crop&w=1200&q=80',
   9.8500,
   124.1435,
   'sightseeing_tours'
 ),
+-- ── 12. Camiguin Island ────────────────────────────────────────────────────
 (
   'Camiguin Island',
   'Philippines',
@@ -249,11 +269,12 @@ values
   true,
   'Untouched volcanic paradise with crystal springs and lush rainforests.',
   'Mar–Oct',
-  'https://images.unsplash.com/photo-1433086966358-54859d0ed716?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1596402184320-417e7178b2cd?auto=format&fit=crop&w=1200&q=80',
   9.1732,
   124.7299,
   'nature_outdoors'
 ),
+-- ── 13. Intramuros, Manila ─────────────────────────────────────────────────
 (
   'Intramuros, Manila',
   'Philippines',
@@ -268,11 +289,12 @@ values
   false,
   'Rich colonial history, museums, and romantic rooftop dinners right in the city.',
   'Year-round',
-  'https://images.unsplash.com/photo-1518684079-3c830dcef090?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1518509562904-e7ef99cdcc86?auto=format&fit=crop&w=1200&q=80',
   14.5896,
   120.9747,
   'sightseeing_tours'
 ),
+-- ── 14. Iloilo & Guimaras ──────────────────────────────────────────────────
 (
   'Iloilo & Guimaras',
   'Philippines',
@@ -287,9 +309,8 @@ values
   true,
   'Culinary capital UNESCO Creative City of Gastronomy with gentle charm.',
   'Nov–May',
-  'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1586016413664-864c0dd76f53?auto=format&fit=crop&w=1200&q=80',
   10.7202,
   122.5621,
   'food_crawl'
-)
-on conflict do nothing;
+);

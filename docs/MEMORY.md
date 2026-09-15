@@ -22,7 +22,7 @@
 
 ---
 
-## 2. 🗄️ SUPABASE DATABASE SCHEMAS (16 ACTIVE TABLES)
+## 2. 🗄️ SUPABASE DATABASE SCHEMAS (17 ACTIVE TABLES)
 
 ```sql
 -- 1. USERS
@@ -350,6 +350,30 @@ public.app_versions (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- 21. DESTINATIONS (Migration 027)
+public.destinations (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  country text not null default 'Philippines',
+  distance_from_metro text,
+  best_mode text,
+  avg_cost_range text,
+  photo_emoji text,
+  tag text,
+  description text,
+  is_trending boolean not null default false,
+  is_weekend_getaway boolean not null default false,
+  is_recommended boolean not null default false,
+  recommended_reason text,
+  best_time_to_visit text,
+  image_url text,
+  latitude double precision,
+  longitude double precision,
+  trip_type text default 'sightseeing_tours',
+  created_at timestamptz not null default now()
+);
+-- RLS: public read (anyone can browse destinations)
 ```
 
 ---
@@ -515,7 +539,10 @@ Client Tier               Storage Tier                Transport Tier
 - `Future<void> addPersonalExpense(PersonalExpenseItem expense)` — Inserts solo private purchase into `personal_expenses` (zero group split pollution).
 - `Future<void> deletePersonalExpense(String expenseId)` — Removes solo personal expense.
 
-### 10. Core Infrastructure Services
+### 10. `DestinationRepository` (`lib/core/repositories/destination_repository.dart`)
+- `Future<List<DestinationModel>> getDestinations()` — Fetches all rows from `public.destinations` ordered alphabetically. Falls back to curated `defaultPhilippineDestinations` constant list (14 entries) when offline or table is empty.
+
+### 11. Core Infrastructure Services
 - **`SecureSessionRepository.instance`** (`lib/core/auth/data/secure_session_repository.dart`):
   - `persistSession(Session session)`: Saves access/refresh tokens in Keystore.
   - `restoreSession()`: Recovers Supabase session using refresh token.
