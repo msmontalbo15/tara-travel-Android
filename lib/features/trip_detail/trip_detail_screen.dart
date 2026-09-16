@@ -14,6 +14,7 @@ import '../../core/providers/itinerary_provider.dart';
 import '../../core/models/trip_model.dart';
 import '../../core/models/expense_model.dart';
 import '../../core/models/itinerary_model.dart';
+import '../../core/models/member_model.dart';
 import '../../core/widgets/buttons/app_back_button.dart';
 import '../../core/widgets/share/share_trip_modal.dart';
 import '../../core/widgets/shimmer_loading.dart';
@@ -499,6 +500,8 @@ class _CollapsibleHeroHeader extends ConsumerWidget {
             final currentUserId = ref.watch(currentUserProvider)?.id;
             final isOwner =
                 currentUserId != null && trip.ownerId == currentUserId;
+            final currentMember = ref.watch(currentMemberProvider(trip));
+            final canEditTrip = isOwner || (currentMember?.canManageTripSettings ?? false);
 
             return PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert_rounded, color: Colors.white),
@@ -512,17 +515,18 @@ class _CollapsibleHeroHeader extends ConsumerWidget {
                 if (value == 'leave') _confirmLeaveTrip(context, ref);
               },
               itemBuilder: (_) => [
-                const PopupMenuItem(
-                  value: 'edit',
-                  child: Row(
-                    children: [
-                      Icon(Icons.edit_outlined,
-                          size: 18, color: Colors.white70),
-                      SizedBox(width: 12),
-                      Text('Edit Trip', style: TextStyle(color: Colors.white)),
-                    ],
+                if (canEditTrip)
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit_outlined,
+                            size: 18, color: Colors.white70),
+                        SizedBox(width: 12),
+                        Text('Edit Trip', style: TextStyle(color: Colors.white)),
+                      ],
+                    ),
                   ),
-                ),
                 if (isOwner)
                   PopupMenuItem(
                     value: 'archive',

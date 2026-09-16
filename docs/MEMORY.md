@@ -1286,8 +1286,6 @@ Client Tier               Storage Tier                Transport Tier
 
 ---
 
-*This document is the single source of architectural truth for Tara Travel. Update this file whenever database schemas, RPC functions, core repositories, or system flows are modified.*
-
 ## 32. 🚀 TRIP DETAIL COMMAND CLUSTER: ANNOUNCEMENTS, DEPARTURE ADVISORY & TARA COPILOT (PLANS 20, 11, & 16 / IMP-119)
 
 ### 32.1 Plan 20: Chat Announcements Engine & Trip Detail Command Hub
@@ -1318,3 +1316,39 @@ Client Tier               Storage Tier                Transport Tier
     - `logExpense`: Navigates to budget tracker with pre-populated expense parameters.
 - **Entry Surfaces**:
   - Accessible via the "✨ Tara Copilot" tile in `TripQuickActionsGrid` and the "✨ Ask Tara" glass pill header button in `TripDetailScreen`.
+
+---
+
+## 33. 🛡️ USER ROLE SCOPE & PERMISSIONS MATRIX (IMP-127)
+
+Enforces granular least-privilege permission gating across all feature screens via `MemberRolePermissions` extension on `MemberModel`.
+
+### 33.1 Permission Matrix by Role
+| Capability | Organizer | Treasurer | Navigator | Buyer | Documenter | Member |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Trip Settings** (`canManageTripSettings`) | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Members** (`canManageMembers`) | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Itinerary** (`canManageItinerary`) | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| **Log Group Expenses** (`canLogExpenses`) | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ |
+| **Approve/Reject Expenses** (`canApproveExpenses`) | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **Delete Any Expense** (`canDeleteAnyExpense`) | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **Delete Own Expense** | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ |
+| **Manage Group Packing** (`canManageGroupPacking`) | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Packing Templates / AI** (`canManagePackingTemplates`) | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| **Create Polls** (`canCreatePolls`) | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Post Announcements** (`canPostAnnouncements`) | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Pin Any Message** (`canPinMessages`) | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Manage Convoy** (`canManageConvoy`) | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| **Log Personal Expenses** (`canLogPersonalExpense`) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Manage Own Packing List** (`canManageOwnPackingList`) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Chat & Vote** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+
+### 33.2 Gated Screens & Action Points
+- **Trip Detail (`trip_detail_screen.dart`)**: "Edit Trip" popup menu gated by `canManageTripSettings || isOwner`.
+- **Budget (`budget_screen.dart`, `expense_log.dart`)**: Group expense FAB and "New" button gated by `canLogExpenses`. Approve/reject and delete any gated by `canApproveExpenses` and `canDeleteAnyExpense` (members can delete own).
+- **Packing (`packing_screen.dart`)**: Templates button and AI auto-generation gated by `canManagePackingTemplates`. Item assignment, category deletion, and category addition gated by `canManageGroupPacking`. Members add items to their own list and delete own items.
+- **Chat (`chat_screen.dart`)**: "Create Poll" chips and attachment sheet action gated by `canCreatePolls`. "Post Announcement" in attachment sheet gated by `canPostAnnouncements`. Pinning other messages gated by `canPinMessages` (own message pin always allowed).
+
+---
+
+*This document is the single source of architectural truth for Tara Travel. Update this file whenever database schemas, RPC functions, core repositories, or system flows are modified.*

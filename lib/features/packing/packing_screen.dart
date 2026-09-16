@@ -72,6 +72,10 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
         // Realtime stream listener
         ref.watch(packingRealtimeProvider(trip.id));
 
+        // Role-based permission gating
+        final currentMember = ref.watch(currentMemberProvider(trip));
+        final canManageTemplates = currentMember?.canManagePackingTemplates ?? false;
+
         final packingNotifier =
             ref.read(ref.read(packingProvider(trip.id)).notifier);
         final packing = ref.watch(ref.watch(packingProvider(trip.id)));
@@ -81,7 +85,7 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
         });
 
         // Automatically populate contextual AI suggestions on initial empty suggestion load
-        if (packing.suggestions.isEmpty && packing.showSuggestions) {
+        if (canManageTemplates && packing.suggestions.isEmpty && packing.showSuggestions) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             packingNotifier.generateAiSuggestions(
               destination: trip.destination,
@@ -147,9 +151,10 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
                             ),
                           ),
 
-                          // Template Actions (Save & Load)
-                          GestureDetector(
-                            onTap: () => _showTemplateActionsSheet(
+                          // Template Actions (Save & Load) — gated by canManageTemplates
+                          if (canManageTemplates)
+                            GestureDetector(
+                              onTap: () => _showTemplateActionsSheet(
                               context,
                               trip.id,
                               trip.name,
@@ -411,6 +416,9 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
     List<PackingCategory> filteredCategories,
     String? currentUserId,
   ) {
+    final currentMember = ref.watch(currentMemberProvider(trip));
+    final canManageGroup = currentMember?.canManageGroupPacking ?? false;
+
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(18, 14, 18, 130),
@@ -602,50 +610,71 @@ class _PackingScreenState extends ConsumerState<PackingScreen>
                 key: ValueKey(cat.id),
                 category: cat,
                 members: trip.members,
-                onToggleItem: (itemId) =>
-                    notifier.toggleItem(cat.id, itemId),
+                canManageGroup: canManageGroup,
+                currentUserId: currentMember?.id,
+                onToggleItem: (itemId) {
+                  final item = cat.items.where((i) => i.id == itemId).firstOrNull;
+                  if (item != null) {
+                    final canToggle = canManageGroup ||
+                        item.assignedMemberIds.isEmpty ||
+                        item.assignedMemberIds.contains(currentMember?.id);
+                    if (canToggle) {
+                      notifier.toggleItem(cat.id, itemId);
+                    }
+                  }
+                },
                 onToggleExpand: () => notifier.toggleCategory(cat.id),
-                onAssignMember: (item) => MemberAssignmentSheet.show(
-                  context,
-                  item: item,
-                  members: trip.members,
-                  onSelectMembers: (selected) =>
-                      notifier.assignMembers(cat.id, item.id, selected),
-                ),
+                onAssignMember: canManageGroup
+                    ? (item) => MemberAssignmentSheet.show(
+                          context,
+                          item: item,
+                          members: trip.members,
+                          onSelectMembers: (selected) =>
+                              notifier.assignMembers(cat.id, item.id, selected),
+                        )
+                    : null,
                 onDeleteItem: (itemId) => notifier.removeItem(cat.id, itemId),
-                onDeleteCategory: () => _confirmDeleteCategory(context, notifier, cat),
+                onDeleteCategory: canManageGroup
+                    ? () => _confirmDeleteCategory(context, notifier, cat)
+                    : null,
                 onAddItem: (name, [subCategory]) =>
-                    notifier.addItemToCategory(cat.id, name, subCategory: subCategory),
+                    notifier.addItemToCategory(
+                      cat.id,
+                      name,
+                      subCategory: subCategory,
+                      assignedMember: canManageGroup ? null : currentMember,
+                    ),
                 onUpdateItemSubCategory: (itemId, subCategory) =>
                     notifier.updateItemSubCategory(cat.id, itemId, subCategory),
               )),
 
           const SizedBox(height: 16),
 
-          // ── Add Custom Category Button ─────────────────────────────
-          GestureDetector(
-            onTap: () => _showAddCategoryDialog(
-              context,
-              notifier: notifier,
-              existingCategories: packing.categories,
-            ),
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border.all(
-                    color: AppColors.dividerLight, width: 1.2),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.02),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+          // ── Add Custom Category Button (Organizers only) ─────────────
+          if (canManageGroup)
+            GestureDetector(
+              onTap: () => _showAddCategoryDialog(
+                context,
+                notifier: notifier,
+                existingCategories: packing.categories,
               ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border.all(
+                      color: AppColors.dividerLight, width: 1.2),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.02),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.add_rounded, size: 18, color: AppColors.primary),
                   SizedBox(width: 6),
@@ -1680,11 +1709,13 @@ class _PackingCategoryCard extends StatefulWidget {
   final List<MemberModel> members;
   final void Function(String itemId) onToggleItem;
   final VoidCallback onToggleExpand;
-  final void Function(PackingItem item) onAssignMember;
+  final void Function(PackingItem item)? onAssignMember;
   final void Function(String itemId) onDeleteItem;
-  final VoidCallback onDeleteCategory;
+  final VoidCallback? onDeleteCategory;
   final void Function(String itemName, [String? subCategory]) onAddItem;
   final void Function(String itemId, String? subCategory)? onUpdateItemSubCategory;
+  final bool canManageGroup;
+  final String? currentUserId;
 
   const _PackingCategoryCard({
     super.key,
@@ -1692,11 +1723,13 @@ class _PackingCategoryCard extends StatefulWidget {
     required this.members,
     required this.onToggleItem,
     required this.onToggleExpand,
-    required this.onAssignMember,
+    this.onAssignMember,
     required this.onDeleteItem,
-    required this.onDeleteCategory,
+    this.onDeleteCategory,
     required this.onAddItem,
     this.onUpdateItemSubCategory,
+    this.canManageGroup = true,
+    this.currentUserId,
   });
 
   @override
@@ -2355,19 +2388,21 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
                   ],
 
                   // Delete Category Button
-                  IconButton(
-                    icon: const Icon(
-                      Icons.delete_outline_rounded,
-                      size: 20,
-                      color: AppColors.muted,
+                  if (widget.onDeleteCategory != null) ...[
+                    IconButton(
+                      icon: const Icon(
+                        Icons.delete_outline_rounded,
+                        size: 20,
+                        color: AppColors.muted,
+                      ),
+                      splashRadius: 18,
+                      padding: const EdgeInsets.all(4),
+                      constraints: const BoxConstraints(),
+                      tooltip: 'Delete category',
+                      onPressed: widget.onDeleteCategory,
                     ),
-                    splashRadius: 18,
-                    padding: const EdgeInsets.all(4),
-                    constraints: const BoxConstraints(),
-                    tooltip: 'Delete category',
-                    onPressed: widget.onDeleteCategory,
-                  ),
-                  const SizedBox(width: 4),
+                    const SizedBox(width: 4),
+                  ],
 
                   // Chevron Expand/Collapse
                   AnimatedRotation(
@@ -2529,17 +2564,27 @@ class _PackingCategoryCardState extends State<_PackingCategoryCard> {
                 ),
               )
             else
-              ...displayedItems.map((item) => _PackingItemRow(
-                    item: item,
-                    categoryColor: cat.color,
-                    members: widget.members,
-                    showingInFilteredView: _selectedSubCategory != null,
-                    hasAvailableSubCategories: subCats.isNotEmpty,
-                    onToggle: () => widget.onToggleItem(item.id),
-                    onAssign: () => widget.onAssignMember(item),
-                    onDelete: () => widget.onDeleteItem(item.id),
-                    onEditSubCategory: () => _showEditItemSubCategorySheet(context, item),
-                  )),
+              ...displayedItems.map((item) {
+                final canDeleteItem = widget.canManageGroup ||
+                    (widget.currentUserId != null &&
+                        item.assignedMemberIds.contains(widget.currentUserId));
+                return _PackingItemRow(
+                  item: item,
+                  categoryColor: cat.color,
+                  members: widget.members,
+                  showingInFilteredView: _selectedSubCategory != null,
+                  hasAvailableSubCategories: subCats.isNotEmpty,
+                  onToggle: () => widget.onToggleItem(item.id),
+                  onAssign: widget.onAssignMember != null
+                      ? () => widget.onAssignMember!(item)
+                      : null,
+                  onDelete: canDeleteItem
+                      ? () => widget.onDeleteItem(item.id)
+                      : null,
+                  onEditSubCategory: () =>
+                      _showEditItemSubCategorySheet(context, item),
+                );
+              }),
 
             // Inline Add item bar
             if (_isAdding)
@@ -2704,8 +2749,8 @@ class _PackingItemRow extends StatelessWidget {
   final bool showingInFilteredView;
   final bool hasAvailableSubCategories;
   final VoidCallback onToggle;
-  final VoidCallback onAssign;
-  final VoidCallback onDelete;
+  final VoidCallback? onAssign;
+  final VoidCallback? onDelete;
   final VoidCallback? onEditSubCategory;
 
   const _PackingItemRow({
@@ -2715,8 +2760,8 @@ class _PackingItemRow extends StatelessWidget {
     this.showingInFilteredView = false,
     this.hasAvailableSubCategories = false,
     required this.onToggle,
-    required this.onAssign,
-    required this.onDelete,
+    this.onAssign,
+    this.onDelete,
     this.onEditSubCategory,
   });
 
@@ -2747,8 +2792,10 @@ class _PackingItemRow extends StatelessWidget {
 
     return Dismissible(
       key: ValueKey(item.id),
-      direction: DismissDirection.endToStart,
-      onDismissed: (_) => onDelete(),
+      direction: onDelete != null
+          ? DismissDirection.endToStart
+          : DismissDirection.none,
+      onDismissed: onDelete != null ? (_) => onDelete!() : null,
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
@@ -2930,9 +2977,10 @@ class _PackingItemRow extends StatelessWidget {
             const SizedBox(width: 8),
 
             // Member Assignment Button / Avatar Badge
-            GestureDetector(
-              onTap: onAssign,
-              child: item.isAssigned
+            if (item.isAssigned || onAssign != null)
+              GestureDetector(
+                onTap: onAssign,
+                child: item.isAssigned
                   ? Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 4),

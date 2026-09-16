@@ -268,6 +268,27 @@ extension MemberRolePermissions on MemberModel {
 
   bool get canManageMediaAndJournal => isOrganizer || isDocumenter;
 
+  /// Packing: manage group items (add/delete for everyone, assign to others)
+  bool get canManageGroupPacking => isOrganizer;
+
+  /// Packing: use/save templates & trigger AI suggestions
+  bool get canManagePackingTemplates => isOrganizer || isNavigator;
+
+  /// Chat: create polls
+  bool get canCreatePolls => isOrganizer;
+
+  /// Chat: post announcements
+  bool get canPostAnnouncements => isOrganizer;
+
+  /// Chat: pin/unpin any message (own-message pin is always allowed)
+  bool get canPinMessages => isOrganizer;
+
+  /// Navigation: start/stop convoy tracking
+  bool get canManageConvoy => isOrganizer || isNavigator;
+
+  /// Budget: delete any expense (not just own)
+  bool get canDeleteAnyExpense => isOrganizer || isTreasurer;
+
   bool get canViewTripData => true;
   bool get canManageOwnPackingList => true;
   bool get canLogPersonalExpense => true;

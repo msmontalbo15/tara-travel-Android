@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_responsive.dart';
 import '../../core/models/trip_model.dart';
 import '../../core/models/expense_model.dart';
+import '../../core/models/member_model.dart';
 import '../../core/models/personal_allowance_model.dart';
 import '../../core/providers/realtime_provider.dart';
 import '../../core/providers/repository_providers.dart';
@@ -58,6 +59,10 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
 
         // Live realtime expense updates
         ref.watch(expenseRealtimeProvider(trip.id));
+
+        // Role-based permission gating
+        final currentMember = ref.watch(currentMemberProvider(trip));
+        final canLogGroupExpenses = currentMember?.canLogExpenses ?? false;
 
         final allowanceAsync = ref.watch(personalAllowanceProvider(trip.id));
         final myGroupLiability = ref.watch(myGroupLiabilityProvider(trip.id));
@@ -283,20 +288,23 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
               ),
             ],
           ),
-          floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => _showQuickAddExpenseSheet(trip),
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
-            elevation: 4,
-            icon: const Icon(Icons.add_rounded, size: 20),
-            label: Text(
-              _scopeIndex == 0 ? 'Log Pocket Expense' : 'Log Group Bill',
-              style: const TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 13,
-              ),
-            ),
-          ),
+          // Personal scope: always show FAB. Group scope: gated by canLogExpenses.
+          floatingActionButton: (_scopeIndex == 0 || canLogGroupExpenses)
+              ? FloatingActionButton.extended(
+                  onPressed: () => _showQuickAddExpenseSheet(trip),
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  elevation: 4,
+                  icon: const Icon(Icons.add_rounded, size: 20),
+                  label: Text(
+                    _scopeIndex == 0 ? 'Log Pocket Expense' : 'Log Group Bill',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                  ),
+                )
+              : null,
         );
       },
       loading: () => const BudgetScreenSkeleton(),
@@ -426,6 +434,12 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
     double totalSpent,
     double totalRemaining,
   ) {
+    final currentMember = ref.watch(currentMemberProvider(trip));
+    final canLogGroupExpenses = currentMember?.canLogExpenses ?? false;
+    final canApprove = currentMember?.canApproveExpenses ?? false;
+    final canDeleteAny = currentMember?.canDeleteAnyExpense ?? false;
+    final currentUserId = currentMember?.id;
+
     switch (_activeTripSubTabIndex) {
       case 0:
         return Column(
@@ -451,29 +465,37 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 _sectionTitle('EXPENSES LOG (${trip.expenses.length})'),
-                TextButton.icon(
-                  onPressed: () => _showQuickAddExpenseSheet(trip),
-                  icon: const Icon(Icons.add_rounded, size: 14, color: AppColors.primary),
-                  label: const Text(
-                    'New',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primary,
+                if (canLogGroupExpenses)
+                  TextButton.icon(
+                    onPressed: () => _showQuickAddExpenseSheet(trip),
+                    icon: const Icon(Icons.add_rounded, size: 14, color: AppColors.primary),
+                    label: const Text(
+                      'New',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
             ExpenseLog(
               expenses: trip.expenses,
               members: trip.members,
-              canApprove: true,
-              onStatusUpdate: (expense, status, {rejectionNote}) async {
-                await _handleStatusUpdate(trip, expense, status, note: rejectionNote);
-              },
+              currentUserId: currentUserId,
+              canApprove: canApprove,
+              canDeleteAny: canDeleteAny,
+              onStatusUpdate: canApprove
+                  ? (expense, status, {rejectionNote}) async {
+                      await _handleStatusUpdate(trip, expense, status, note: rejectionNote);
+                    }
+                  : null,
               onDelete: (expense) async {
-                await _handleDeleteExpense(trip, expense.id);
+                // Allow delete if user owns the expense or has canDeleteAnyExpense
+                if (expense.paidById == currentUserId || canDeleteAny) {
+                  await _handleDeleteExpense(trip, expense.id);
+                }
               },
             ),
             const SizedBox(height: 120),

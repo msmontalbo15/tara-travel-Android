@@ -13,6 +13,7 @@ class ExpenseLog extends StatefulWidget {
   final List<MemberModel> members;
   final String? currentUserId;
   final bool canApprove;
+  final bool canDeleteAny;
   final void Function(ExpenseModel expense, ExpenseStatus status, {String? rejectionNote})? onStatusUpdate;
   final void Function(ExpenseModel expense)? onDelete;
 
@@ -22,6 +23,7 @@ class ExpenseLog extends StatefulWidget {
     required this.members,
     this.currentUserId,
     this.canApprove = true,
+    this.canDeleteAny = false,
     this.onStatusUpdate,
     this.onDelete,
   });
@@ -180,6 +182,45 @@ class _ExpenseLogState extends State<ExpenseLog> {
     );
   }
 
+  void _confirmDelete(BuildContext context, ExpenseModel expense) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Delete Expense',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: AppColors.deepEarth,
+          ),
+        ),
+        content: Text(
+          'Are you sure you want to delete "${expense.description}" (₱${CurrencyUtils.formatAmount(expense.amount)})? This action cannot be undone.',
+          style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              widget.onDelete?.call(expense);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final pendingCount = widget.expenses.where((e) => e.status == ExpenseStatus.pending).length;
@@ -311,6 +352,11 @@ class _ExpenseLogState extends State<ExpenseLog> {
 
   Widget _buildExpenseCard(BuildContext context, ExpenseModel expense, MemberModel payer) {
     final hasReceipt = expense.receiptPhotoUrl != null && expense.receiptPhotoUrl!.isNotEmpty;
+    final canDelete = widget.onDelete != null &&
+        (widget.canDeleteAny ||
+            (widget.currentUserId != null &&
+                expense.paidById == widget.currentUserId));
+    final showApproval = expense.isPending && widget.canApprove;
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -456,48 +502,65 @@ class _ExpenseLogState extends State<ExpenseLog> {
             ],
           ),
 
-          // Approval Action Bar (for Pending expenses)
-          if (expense.isPending && widget.canApprove) ...[
+          // Approval & Delete Action Bar
+          if (showApproval || canDelete) ...[
             const SizedBox(height: 10),
             const Divider(color: Color(0xFFF3F4F6), height: 1),
             const SizedBox(height: 8),
             Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                TextButton.icon(
-                  onPressed: () => _promptReject(context, expense),
-                  icon: const Icon(Icons.close_rounded, size: 14, color: Color(0xFFEF4444)),
-                  label: const Text(
-                    'Reject',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFFEF4444),
-                    ),
+                if (canDelete)
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.muted),
+                    splashRadius: 16,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    tooltip: 'Delete expense',
+                    onPressed: () => _confirmDelete(context, expense),
+                  )
+                else
+                  const SizedBox.shrink(),
+                if (showApproval)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextButton.icon(
+                        onPressed: () => _promptReject(context, expense),
+                        icon: const Icon(Icons.close_rounded, size: 14, color: Color(0xFFEF4444)),
+                        label: const Text(
+                          'Reject',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFFEF4444),
+                          ),
+                        ),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton.icon(
+                        onPressed: () => widget.onStatusUpdate?.call(expense, ExpenseStatus.approved),
+                        icon: const Icon(Icons.check_rounded, size: 14),
+                        label: const Text(
+                          'Approve',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF10B981),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                      ),
+                    ],
                   ),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton.icon(
-                  onPressed: () => widget.onStatusUpdate?.call(expense, ExpenseStatus.approved),
-                  icon: const Icon(Icons.check_rounded, size: 14),
-                  label: const Text(
-                    'Approve',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF10B981),
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                ),
               ],
             ),
           ],

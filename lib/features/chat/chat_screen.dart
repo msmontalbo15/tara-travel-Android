@@ -179,13 +179,29 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             hideSurname: profile.hideSurname)
         : 'Traveler';
 
+    final currentMember = ref.read(currentMemberProvider(trip));
+    final isOrganizer = (currentMember?.canManageMembers ?? false) ||
+        (currentMember?.isTripCreator(trip.ownerId) ?? false);
+    final canCreatePolls = currentMember?.canCreatePolls ?? isOrganizer;
+    final canPostAnnouncements = currentMember?.canPostAnnouncements ?? isOrganizer;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (ctx) => ChatAttachmentPickerSheet(
         trip: trip,
-        onCreatePoll: _openCreatePoll,
+        onCreatePoll: canCreatePolls
+            ? _openCreatePoll
+            : () {
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Only the Organizer can create polls.'),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
         onQuickPreset: _sendQuickTravelMessage,
         onShareItineraryStop: (stop, dayNumber) async {
           await ref.read(chatProvider.notifier).sendRichCard(
@@ -262,7 +278,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               );
           _scrollToBottom(force: true);
         },
-        onCreateAnnouncement: _openCreateAnnouncement,
+        onCreateAnnouncement: canPostAnnouncements ? _openCreateAnnouncement : null,
       ),
     );
   }
@@ -780,6 +796,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final currentMember = trip != null ? ref.watch(currentMemberProvider(trip)) : null;
     final isOrganizer = (currentMember?.canManageMembers ?? false) ||
         (currentMember?.isTripCreator(trip?.ownerId ?? '') ?? false);
+    final canCreatePolls = currentMember?.canCreatePolls ?? isOrganizer;
+    final canPinMessages = currentMember?.canPinMessages ?? isOrganizer;
 
     return Scaffold(
       backgroundColor: AppColors.surfaceLight,
@@ -795,7 +813,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             pinnedCount: pinnedMessages.length,
             onTapPinned: () {
               if (pinnedMessages.isNotEmpty) {
-                _showPinnedMessagesModal(pinnedMessages, isOrganizer);
+                _showPinnedMessagesModal(pinnedMessages, canPinMessages);
               }
             },
             onTapInfo: () {
@@ -808,7 +826,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             _PinnedAnnouncementBanner(
               messages: pinnedMessages,
               onDismiss: () => setState(() => _showPinnedDrawer = false),
-              onTapBanner: () => _showPinnedMessagesModal(pinnedMessages, isOrganizer),
+              onTapBanner: () => _showPinnedMessagesModal(pinnedMessages, canPinMessages),
               onUnpin: (msgId) =>
                   ref.read(chatProvider.notifier).togglePin(msgId, false),
             ),
@@ -850,6 +868,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       if (messages.isEmpty && polls.isEmpty) {
                         return _EmptyChat(
                           tripId: tripId,
+                          canCreatePoll: canCreatePolls,
                           onCreatePoll: _openCreatePoll,
                           onQuickStart: _sendQuickTravelMessage,
                         );
@@ -950,7 +969,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                       isConsecutive: isConsecutive,
                                       currentUserId: currentUserId,
                                       onTapActions: () => _showMessageActionsModal(
-                                          msg, isOrganizer, currentUserId),
+                                          msg, canPinMessages, currentUserId),
                                       onToggleReaction: (emoji) =>
                                           ref.read(chatProvider.notifier).toggleReaction(
                                                 messageId: msg.id,
@@ -966,7 +985,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                       isConsecutive: isConsecutive,
                                       currentUserId: currentUserId,
                                       onTapActions: () => _showMessageActionsModal(
-                                          msg, isOrganizer, currentUserId),
+                                          msg, canPinMessages, currentUserId),
                                       onToggleReaction: (emoji) =>
                                           ref.read(chatProvider.notifier).toggleReaction(
                                                 messageId: msg.id,
@@ -1000,6 +1019,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
           // ── Quick Travel Action Chips ────────────────────────────
           _QuickActionChips(
+            canCreatePoll: canCreatePolls,
             onCreatePoll: _openCreatePoll,
             onQuickMessage: _sendQuickTravelMessage,
           ),
@@ -1349,10 +1369,12 @@ class _PinnedAnnouncementBanner extends StatelessWidget {
 // ── Quick Action Chips ─────────────────────────────────────────────────────────
 
 class _QuickActionChips extends StatelessWidget {
+  final bool canCreatePoll;
   final VoidCallback onCreatePoll;
   final ValueChanged<String> onQuickMessage;
 
   const _QuickActionChips({
+    this.canCreatePoll = true,
     required this.onCreatePoll,
     required this.onQuickMessage,
   });
@@ -1367,31 +1389,33 @@ class _QuickActionChips extends StatelessWidget {
         child: Row(
           children: [
             // Create Poll CTA Chip (clean, flat, non-intimidating)
-            GestureDetector(
-              onTap: onCreatePoll,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.how_to_vote_rounded, size: 14, color: Colors.white),
-                    SizedBox(width: 6),
-                    Text(
-                      'Create Poll',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
+            if (canCreatePoll) ...[
+              GestureDetector(
+                onTap: onCreatePoll,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.how_to_vote_rounded, size: 14, color: Colors.white),
+                      SizedBox(width: 6),
+                      Text(
+                        'Create Poll',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 8),
+              const SizedBox(width: 8),
+            ],
 
             // Quick travel presets
             _QuickChip(
@@ -2043,11 +2067,13 @@ class _ScrollToBottomButton extends StatelessWidget {
 
 class _EmptyChat extends StatelessWidget {
   final String? tripId;
+  final bool canCreatePoll;
   final VoidCallback onCreatePoll;
   final ValueChanged<String> onQuickStart;
 
   const _EmptyChat({
     required this.tripId,
+    this.canCreatePoll = true,
     required this.onCreatePoll,
     required this.onQuickStart,
   });
@@ -2129,21 +2155,23 @@ class _EmptyChat extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 18),
-              ElevatedButton.icon(
-                onPressed: onCreatePoll,
-                icon: const Icon(Icons.how_to_vote_rounded, size: 18),
-                label: const Text('Create First Travel Poll'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+              if (canCreatePoll) ...[
+                const SizedBox(height: 18),
+                ElevatedButton.icon(
+                  onPressed: onCreatePoll,
+                  icon: const Icon(Icons.how_to_vote_rounded, size: 18),
+                  label: const Text('Create First Travel Poll'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    elevation: 0,
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  elevation: 0,
                 ),
-              ),
+              ],
             ],
           ],
         ),

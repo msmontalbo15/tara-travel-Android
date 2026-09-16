@@ -2982,3 +2982,20 @@
 - **Verification**:
   - `flutter analyze lib/features/budget`: 0 errors, 0 warnings.
   - `flutter analyze lib`: 0 errors, 0 warnings across the entire codebase.
+
+### `IMP-127` · Intensify User Role Scope & Least-Privilege Limitations
+- **Date**: September 16, 2026
+- **Target Files**:
+  - `lib/core/models/member_model.dart` [MODIFIED - Expanded `MemberRolePermissions` extension with `canManageGroupPacking`, `canManagePackingTemplates`, `canCreatePolls`, `canPostAnnouncements`, `canPinMessages`, `canManageConvoy`, `canDeleteAnyExpense`]
+  - `lib/features/trip_detail/trip_detail_screen.dart` [MODIFIED - Gated "Edit Trip" popup menu item behind `canManageTripSettings || isOwner`]
+  - `lib/features/budget/budget_screen.dart` [MODIFIED - Gated group bill FAB and "New" expense button behind `canLogExpenses`, wired dynamic `canApproveExpenses` and `canDeleteAnyExpense`]
+  - `lib/features/budget/widgets/expense_log.dart` [MODIFIED - Added `canDeleteAny` support and confirmation dialog, allowing only owners or authorized users to delete expenses]
+  - `lib/features/packing/packing_screen.dart` [MODIFIED - Gated templates and AI suggestions behind `canManagePackingTemplates`, gated category addition and deletion behind `canManageGroupPacking`, enforced self-assigned adding for regular members, and per-item toggle/delete checks]
+  - `lib/features/chat/chat_screen.dart` [MODIFIED - Gated "Create Poll" chips and attachment option behind `canCreatePolls`, "Post Announcement" behind `canPostAnnouncements`, and tightened pin/unpin permissions]
+  - `docs/MEMORY.md` [MODIFIED - Added Section 33 with Role Permissions Matrix]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED - Logged milestone IMP-127]
+- **Architectural Rationale**:
+  - Implemented an enforced least-privilege capability matrix across all core pillars to establish distinct functional responsibilities between Organizers, Treasurers, Navigators, Buyers, Documenters, and Members.
+  - Regular members have self-service capabilities (log personal expenses, manage and toggle own packing items, chat, vote in polls) while destructive or administrative actions (edit trip settings, log group bills, approve/reject expenses, delete group items, post announcements, create polls) are restricted to authorized roles.
+- **Verification**:
+  - `flutter analyze`: 0 errors, 0 warnings across the entire project (ran in 6.0s).
