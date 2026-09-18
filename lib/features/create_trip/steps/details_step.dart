@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/friend_model.dart';
 import '../../../core/providers/friend_provider.dart';
+import '../../../core/providers/friend_circle_provider.dart';
 import '../../../core/providers/trip_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/jit_guard.dart';
@@ -539,6 +540,101 @@ class _DetailsStepState extends ConsumerState<DetailsStep> {
               ),
               const SizedBox(height: 12),
               const Divider(height: 1, color: AppColors.cardBorder),
+
+              // ── Travel Circles Quick-Add Carousel ─────────────────
+              Consumer(
+                builder: (context, ref, _) {
+                  final circlesAsync = ref.watch(friendCirclesProvider);
+                  return circlesAsync.maybeWhen(
+                    data: (circles) {
+                      if (circles.isEmpty) return const SizedBox.shrink();
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        color: AppColors.surfaceLight.withValues(alpha: 0.5),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(Icons.groups_rounded, size: 14, color: AppColors.primary),
+                                SizedBox(width: 6),
+                                Text(
+                                  'TRAVEL CIRCLES (1-TAP SQUAD ADD)',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.primary,
+                                    letterSpacing: 0.6,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: circles.map((circle) {
+                                  final memberIds = circle.members.map((m) => m.userId).toSet();
+                                  final selectedCount = widget.trip.travelers
+                                      .where((t) => memberIds.contains(t.id))
+                                      .length;
+                                  final allSelected = selectedCount == circle.members.length && circle.members.isNotEmpty;
+
+                                  return Padding(
+                                    padding: const EdgeInsets.only(right: 8),
+                                    child: ActionChip(
+                                      avatar: Text(circle.emoji),
+                                      label: Text(
+                                        '${circle.name} ($selectedCount/${circle.members.length})',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: allSelected ? Colors.white : AppColors.deepEarth,
+                                        ),
+                                      ),
+                                      backgroundColor: allSelected ? AppColors.primary : Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        side: BorderSide(
+                                          color: allSelected ? AppColors.primary : AppColors.cardBorder,
+                                        ),
+                                      ),
+                                      onPressed: () {
+                                        setState(() {
+                                          if (allSelected) {
+                                            // Remove circle members
+                                            widget.trip.travelers.removeWhere((t) => memberIds.contains(t.id));
+                                          } else {
+                                            // Add missing circle members with deduplication
+                                            for (final cm in circle.members) {
+                                              if (!widget.trip.travelers.any((t) => t.id == cm.userId)) {
+                                                widget.trip.travelers.add(
+                                                  TravelerModel(
+                                                    id: cm.userId,
+                                                    name: cm.name,
+                                                    initials: cm.initials,
+                                                    color: AppColors.primary.toARGB32(),
+                                                    profilePhotoUrl: cm.profilePhotoUrl,
+                                                  ),
+                                                );
+                                              }
+                                            }
+                                          }
+                                        });
+                                      },
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                    orElse: () => const SizedBox.shrink(),
+                  );
+                },
+              ),
 
               // Friends list consumer
               Flexible(

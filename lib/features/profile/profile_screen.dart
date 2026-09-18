@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/providers/profile_provider.dart';
+import '../../core/providers/user_vehicles_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_responsive.dart';
 import '../../core/theme/app_text_styles.dart';
@@ -15,6 +16,7 @@ import 'widgets/profile_health_card.dart';
 import 'widgets/profile_hero_header.dart';
 import 'widgets/profile_payment_card.dart';
 import 'widgets/profile_security_card.dart';
+import 'widgets/user_vehicles_sheet.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -108,6 +110,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           label: 'Contact Number',
                           value: profile.contactNumber ?? 'Add number',
                           onTap: () => _editContactNumber(context, profile),
+                        ),
+                        const ProfileDivider(),
+                        ProfileRow(
+                          icon: Icons.garage_rounded,
+                          label: 'My Garage (Vehicles)',
+                          value: ref.watch(userVehiclesProvider).maybeWhen(
+                                data: (list) => list.isEmpty
+                                    ? 'Add vehicle'
+                                    : '${list.length} ${list.length == 1 ? 'vehicle' : 'vehicles'} registered',
+                                orElse: () => 'Manage garage',
+                              ),
+                          onTap: () => UserVehiclesSheet.show(context),
                         ),
                       ],
                     ),

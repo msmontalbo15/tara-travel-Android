@@ -1255,6 +1255,48 @@ class _LogisticsCard extends StatelessWidget {
               ],
             ),
           ],
+          if (trip.transportMeta != null && trip.transportMeta!.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceLight,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.directions_car_filled_rounded, size: 14, color: AppColors.primary),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      () {
+                        final meta = trip.transportMeta!;
+                        final mode = meta['mode']?.toString() ?? '';
+                        if (mode == 'rental') {
+                          final days = meta['rental_days'] ?? 1;
+                          final driver = meta['has_driver'] == true ? 'with driver' : 'self-drive';
+                          return 'Charter: $days-day van rental ($driver)';
+                        }
+                        if (mode == 'commute') {
+                          final fare = meta['fare_per_pax'];
+                          final hub = meta['transit_hub_name'] ?? 'Transit';
+                          return fare != null ? 'Commute: ₱$fare/pax via $hub' : 'Commute: $hub';
+                        }
+                        final vName = meta['vehicle_name'] ?? 'Personal Vehicle';
+                        final kml = meta['kml'];
+                        return kml != null ? 'Vehicle: $vName ($kml km/L)' : 'Vehicle: $vName';
+                      }(),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

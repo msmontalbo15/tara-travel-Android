@@ -41,8 +41,8 @@
 | **Packing** | `packing_provider.dart` | `packingItemsProvider(tripId)`, `packingCategoryProgressProvider` |
 | **Chat & Polls** | `chat_provider.dart`, `poll_provider.dart` | `chatMessagesProvider(tripId)`, `tripPollsProvider(tripId)`, `tripAnnouncementsProvider(tripId)` |
 | **Weather** | `trip_weather_provider.dart` | `tripWeatherProvider(tripId)`, `destinationWeatherProvider` |
-| **Friends** | `friend_provider.dart` | `friendsListProvider`, `pendingFriendRequestsProvider` |
-| **Profile** | `profile_provider.dart` | `userProfileProvider`, `profileNotifierProvider` |
+| **Friends & Squads** | `friend_provider.dart`, `friend_circle_provider.dart` | `friendsListProvider`, `pendingFriendRequestsProvider`, `friendCirclesProvider` |
+| **Profile & Garage** | `profile_provider.dart`, `user_vehicles_provider.dart` | `userProfileProvider`, `profileNotifierProvider`, `userVehiclesProvider`, `primaryVehicleProvider` |
 | **Activity** | `activity_provider.dart` | `tripActivitiesProvider(tripId)` |
 | **Group Tracking** | `group_tracking_provider.dart` | `liveMembersLocationProvider(tripId)` |
 | **Explore** | `explore_provider.dart` | `exploreProvider`, `exploreCategoryFilterProvider` |
@@ -64,6 +64,8 @@
 | `ChatRepository` | `chat_repository.dart` | Message persistence, poll creation, announcements & vote recording |
 | `ProfileRepository` | `profile_repository.dart` | User profile data, avatars, emergency contacts, MPIN |
 | `FriendRepository` | `friend_repository.dart` | `public.friends` friendship graph & requests |
+| `FriendCircleRepository` | `friend_circle_repository.dart` | Partitioned local secure storage CRUD for squads & barkadas |
+| `UserVehiclesRepository` | `user_vehicles_repository.dart` | Partitioned local secure storage CRUD for personal garage vehicles |
 | `PersonalAllowanceRepository` | `personal_allowance_repository.dart` | Private personal expense tracking |
 | `AuthRepository` | `auth_repository.dart` | Supabase auth integration, sign-in/up, OTP |
 
@@ -80,6 +82,8 @@
 | `ExpenseModel` | `expense_model.dart` | `public.expenses` |
 | `PackingItem` | `packing_model.dart` | `public.packing_items` |
 | `FriendModel` | `friend_model.dart` | `public.friends` |
+| `FriendCircle` / `CircleMember` | `friend_circle_model.dart` | Reusable travel squads & preset roles |
+| `UserVehicle` | `user_vehicle_model.dart` | User personal garage vehicle specs & km/L rating |
 | `TripPollModel` | `trip_poll_model.dart` | `public.trip_polls` & `poll_options` |
 | `WeatherForecast`| `weather_model.dart` | In-memory & cached Open-Meteo payload |
 | `ActivityModel` | `activity_model.dart` | `public.activity_logs` |

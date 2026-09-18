@@ -91,6 +91,9 @@
 | **`IMP-128`** | 2026-09-18 | Profile & Versioning / Release Notes Presentation | Stripped build metadata from UI version labels, added `VersionInfoSheet`, and formatted release notes. |
 | **`IMP-129`** | 2026-09-18 | Notifications & Navigation / Floating Travel Bubble HUD | In-app notification toast system, centralized `NotificationRouter`, and draggable floating travel bubble HUD. |
 | **`IMP-130`** | 2026-09-19 | Navigation & Budget / Hardcoded Data Elimination | Purged hardcoded member IDs, static ETAs/distances, fixed map initial filters, mock battery values, and parameterized budget distribution. |
+| **`IMP-131`** | 2026-09-19 | Transport & Garage / Tri-Modal Land Transport & Garage (Plan 6) | 3 land modes (Private, Commute, Rental), Profile Garage manager, DOE fuel cost calculator & transit hubs. |
+| **`IMP-132`** | 2026-09-19 | Friends & Squads / Travel Circles & Barkada Presets (Plan 7) | Reusable travel squads/circles, 1-tap multi-member addition in trip creation, full CRUD management tab in Friends. |
+| **`IMP-133`** | 2026-09-19 | Auth & Web / Google Sign-In Client ID Assertion Fix | Provided Web client ID to `GoogleSignIn(clientId:)` and `web/index.html` meta tag to resolve web assertion failure. |
 
 
 ---
@@ -3060,5 +3063,66 @@
   - Systematic purge of mock/static values across navigation and budget surfaces to ensure 100% production readiness with authentic Supabase and GPS telemetry.
   - Resolved UI invisibility bugs where companions with names not matching specific initials ('C', 'M', 'L') were suppressed from map views.
   - Ensured convoy alert and group spread warnings react strictly to genuine geospatial distance thresholds rather than static placeholders.
+### `IMP-131` · Plan 6: Tri-Modal Land Transport & Vehicle Garage Fuel Estimator
+- **Date**: September 19, 2026
+- **Associated Plan**: Plan 6 (Tri-Modal Land Transport & Vehicle Garage Fuel Estimator)
+- **Target Files**:
+  - `lib/core/models/user_vehicle_model.dart` [NEW - UserVehicle domain model, VehicleType, FuelType, km/L rating]
+  - `lib/core/models/fuel_price_model.dart` [NEW - Philippine DOE weekly fuel benchmark model]
+  - `lib/core/services/fuel_price_service.dart` [NEW - DOE price cache, liters required, fuel expense, and passenger splitting math]
+  - `lib/core/repositories/user_vehicles_repository.dart` [NEW - Secure storage partitioned garage CRUD]
+  - `lib/core/providers/user_vehicles_provider.dart` [NEW - Riverpod notifier for user vehicles and default primary car]
+  - `lib/core/models/itinerary_model.dart` [MODIFIED - Enhanced TransportDetail with tri-modal metadata, toMap/fromMap serialization]
+  - `lib/features/profile/widgets/user_vehicles_sheet.dart` [NEW - Modal sheet for adding, editing, and deleting vehicles in garage]
+  - `lib/features/profile/profile_screen.dart` [MODIFIED - Added "My Garage (Vehicles)" entry row with active vehicle count]
+  - `lib/features/create_trip/steps/transport_step.dart` [REFACTORED - Finalized 3-way hero selector: Private, Commute, Rental; strictly land hubs; live DOE calculator]
+  - `lib/features/create_trip/create_trip_flow.dart` [MODIFIED - Standardized transport_mode & transport_meta toMap serialization]
+  - `lib/features/create_trip/steps/confirm_step.dart` [MODIFIED - Mode-adaptive transport summary card with garage km/L, transit hub, or van charter share]
+  - `lib/features/trip_detail/trip_detail_screen.dart` [MODIFIED - Enriched _LogisticsCard to present mode-specific trip metadata]
+  - `test/models/user_vehicle_model_test.dart` [NEW - Unit tests for UserVehicle and FuelPriceService calculations]
+  - `docs/ROADMAP.md` [MODIFIED - Marked Plan 6 Complete in summary and TOC]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED - Appended milestone IMP-131]
+- **Architectural Rationale**:
+  - Established a finalized, strictly land-based transport architecture, permanently eliminating air and maritime modes from creation wizards and presets.
+  - Decoupled vehicle configuration into user profile/settings ("My Garage") for instant 1-tap re-use without redundant vehicle input during trip creation.
+  - Integrated Philippine DOE fuel pricing intelligence and Haversine highway distance scaling to provide realistic gas consumption and fair passenger splitting proposals.
 - **Verification**:
-  - `flutter analyze`: 0 issues found across entire codebase (ran in 7.0s).
+  - Validated with `flutter analyze`: 0 errors across all affected files.
+
+### `IMP-132` · Plan 7: Travel Circles (Squads & Barkada Presets) for Multi-Member Trip Creation
+- **Date**: September 19, 2026
+- **Associated Plan**: Plan 7 (Travel Circles / Squads & Barkada Presets)
+- **Target Files**:
+  - `lib/core/models/friend_circle_model.dart` [NEW - FriendCircle and CircleMember domain models with initials formatting, color conversion, serialization]
+  - `lib/core/repositories/friend_circle_repository.dart` [NEW - Per-user partitioned secure storage CRUD for travel circles and roster management]
+  - `lib/core/providers/friend_circle_provider.dart` [NEW - Riverpod AsyncNotifier provider `friendCirclesProvider` managing reactive circle state]
+  - `lib/features/create_trip/steps/details_step.dart` [MODIFIED - Integrated "Travel Circles" horizontal chip bar in friend selector bottom sheet with 1-tap batch companion addition, member count indicator, and smart deduplication]
+  - `lib/features/friends/friends_screen.dart` [MODIFIED - Expanded TabBar to 4 tabs, added dedicated "Circles" tab view with circle list cards, avatar stacks, create circle modal with friend multi-picker, edit modal, and delete confirmation]
+  - `test/models/friend_circle_model_test.dart` [NEW - Unit tests for FriendCircle and CircleMember models covering JSON serialization, initials generation, color parsing, and copyWith]
+  - `docs/ROADMAP.md` [MODIFIED - Marked Plan 7 Complete in summary and section header]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED - Appended milestone IMP-132 and updated index]
+- **Architectural Rationale**:
+  - Eliminates repetitive 1-by-1 friend invites during trip creation by allowing users to save frequent traveling cohorts (Barkada, Family, Trekking squad) as reusable circles.
+  - Followed local partitioned secure storage pattern ensuring offline accessibility without blocking on remote sync.
+  - Preserved strict surname privacy invariant (`MemberModel.formatDisplayName`) and zero-color-hardcoding standard with `AppColors` tokens.
+- **Verification**:
+  - Verified with `flutter analyze`: 0 errors, 0 warnings across all affected files and unit tests.
+
+---
+
+### `IMP-133` · Auth & Web: Google Sign-In Client ID Assertion Fix
+- **Date**: September 19, 2026
+- **Target Files**:
+  - `lib/core/repositories/auth_repository.dart` [MODIFIED - Provided `clientId: kIsWeb ? webClientId : null` to GoogleSignIn initialization]
+  - `web/index.html` [MODIFIED - Added `<meta name="google-signin-client_id">` tag with web client ID]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED - Appended milestone IMP-133 and updated index]
+  - `docs/CHANGELOG.md` [MODIFIED - Recorded IMP-133 entry]
+- **Architectural Rationale**:
+  - `google_sign_in_web` throws an assertion error when `appClientId == null` if `clientId` is not passed to `GoogleSignIn` or declared in `<meta name="google-signin-client_id">`.
+  - While Android uses `serverClientId` (with configuration in `google-services.json`), Web strictly requires the `clientId` parameter or meta tag.
+  - Set both in `auth_repository.dart` using conditional `kIsWeb` check and in `web/index.html` head for complete multi-platform resilience.
+- **Verification**:
+  - Verified with `flutter analyze lib/core/repositories/auth_repository.dart`: 0 issues found.
+
+
+

@@ -7,6 +7,7 @@ import '../../core/models/trip_model.dart';
 import '../../core/models/member_model.dart';
 import '../../core/models/personal_allowance_model.dart';
 import '../../core/models/itinerary_model.dart';
+import '../../core/models/expense_model.dart';
 import '../../core/providers/repository_providers.dart';
 import '../../core/providers/selected_trip_provider.dart';
 import '../../core/providers/trip_provider.dart';
@@ -89,19 +90,8 @@ class _CreateTripFlowState extends ConsumerState<CreateTripFlow> {
 
       // Encode TransportDetail into transport_mode + transport_meta
       final td = _draft.transportDetail;
-      final transportMode = td?.mode.name;
-      final transportMeta = td == null ? null : {
-        'mode': td.mode.name,
-        if (td.vehicleCount != null) 'vehicle_count': td.vehicleCount,
-        if (td.flightNumber != null) 'flight_number': td.flightNumber,
-        if (td.operatorName != null) 'operator_name': td.operatorName,
-        if (td.bookingReference != null) 'booking_reference': td.bookingReference,
-        if (td.pierName != null) 'pier_name': td.pierName,
-        if (td.estimatedDuration.isNotEmpty) 'estimated_duration': td.estimatedDuration,
-        if (td.estimatedCost != null) 'estimated_cost': td.estimatedCost,
-        'split_gas': td.splitGas,
-        if (td.notes != null) 'notes': td.notes,
-      };
+      final transportMode = td?.tripTransportMode ?? td?.mode.name;
+      final transportMeta = td?.toMap();
 
       final trip = TripModel(
         id: tripId,
@@ -150,6 +140,36 @@ class _CreateTripFlowState extends ConsumerState<CreateTripFlow> {
         await packingRepo.seedDefaultItems(tripId);
       } catch (e) {
         debugPrint('[CreateTripFlow] packing seed error: $e');
+      }
+
+      // Auto-insert shared transport expense commitment if enabled
+      if (td != null && td.estimatedCost != null && td.estimatedCost! > 0) {
+        try {
+          final userId = Supabase.instance.client.auth.currentUser?.id;
+          if (userId != null && (td.splitGas || td.tripTransportMode == 'rental' || td.tripTransportMode == 'commute')) {
+            final expenseRepo = ref.read(expenseRepositoryProvider);
+            final expenseDescription = td.tripTransportMode == 'rental'
+                ? 'Van / Car Charter (${td.rentalDays ?? 1} Days)'
+                : td.tripTransportMode == 'commute'
+                    ? 'Transit Fares (${td.transitHubName ?? 'Bus/Transit'})'
+                    : 'Fuel & Tollway Proposal (${td.vehicleName ?? 'Convoy'})';
+
+            await expenseRepo.addExpense(
+              tripId,
+              ExpenseModel(
+                id: const Uuid().v4(),
+                description: expenseDescription,
+                amount: td.estimatedCost!,
+                category: ExpenseCategory.transport,
+                paidById: userId,
+                date: DateTime.now(),
+                status: ExpenseStatus.pending,
+              ),
+            );
+          }
+        } catch (e) {
+          debugPrint('[CreateTripFlow] transport expense auto-seed error: $e');
+        }
       }
 
       // Persist personal allowance if entered by creator

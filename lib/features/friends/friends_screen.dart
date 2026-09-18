@@ -7,7 +7,9 @@ import 'package:share_plus/share_plus.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_responsive.dart';
 import '../../core/models/friend_model.dart';
+import '../../core/models/friend_circle_model.dart';
 import '../../core/providers/friend_provider.dart';
+import '../../core/providers/friend_circle_provider.dart';
 import '../../core/widgets/inputs/app_text_field.dart';
 import '../../core/widgets/shimmer_loading.dart';
 import '../../core/widgets/scanner/qr_scanner_modal.dart';
@@ -35,7 +37,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -62,6 +64,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
     ref.invalidate(friendsProvider);
     ref.invalidate(incomingRequestsProvider);
     ref.invalidate(outgoingRequestsProvider);
+    ref.invalidate(friendCirclesProvider);
   }
 
   // ── My QR Code Modal ───────────────────────────────────────────────────────
@@ -668,6 +671,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                       ],
                     ),
                   ),
+                  const Tab(text: 'Circles'),
                   const Tab(text: 'Find Friends'),
                 ],
               ),
@@ -685,7 +689,10 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                   // Tab 2: Requests (Incoming + Sent)
                   _buildRequestsTab(),
 
-                  // Tab 3: Find Friends (Search + Discovery)
+                  // Tab 3: Circles
+                  _buildCirclesTab(),
+
+                  // Tab 4: Find Friends (Search + Discovery)
                   _buildFindFriendsTab(),
                 ],
               ),
@@ -1139,8 +1146,755 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
       ),
     );
   }
+  // ── TAB 3: CIRCLES ──────────────────────────────────────────────────────────
+  static const _circleEmojis = ['👥', '🏕️', '🏖️', '🏔️', '✈️', '🚗', '🎉', '💼', '🏠', '⚡'];
+  static const _circleColors = ['#D85A30', '#EF9F27', '#3B82F6', '#10B981', '#8B5CF6', '#EC4899'];
 
-  // ── TAB 3: FIND FRIENDS ─────────────────────────────────────────────────────
+  Widget _buildCirclesTab() {
+    final circlesAsync = ref.watch(friendCirclesProvider);
+
+    return circlesAsync.when(
+      data: (circles) {
+        return RefreshIndicator(
+          color: AppColors.primary,
+          onRefresh: () async => ref.invalidate(friendCirclesProvider),
+          child: ListView(
+            padding: EdgeInsets.fromLTRB(20, 8, 20, context.safeBottomPadding(24)),
+            children: [
+              // ── Create Circle Button ──
+              GestureDetector(
+                onTap: () => _showCreateEditCircleSheet(null),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.primary.withValues(alpha: 0.08),
+                        AppColors.amber.withValues(alpha: 0.06),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.25),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.add_circle_outline_rounded, size: 20, color: AppColors.primary),
+                      SizedBox(width: 8),
+                      Text(
+                        'Create Travel Circle',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              if (circles.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 40),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(22),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.groups_rounded, size: 36, color: AppColors.muted),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'No Travel Circles Yet',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Create squads for your barkada, family,\nor hiking crew for 1-tap trip invites!',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                ...circles.map((circle) => _buildCircleCard(circle)),
+            ],
+          ),
+        );
+      },
+      loading: () => const Center(
+        child: Padding(
+          padding: EdgeInsets.only(top: 60),
+          child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2.5),
+        ),
+      ),
+      error: (e, _) => Center(
+        child: Padding(
+          padding: const EdgeInsets.only(top: 60),
+          child: Text('Error loading circles: $e',
+              style: const TextStyle(color: AppColors.red, fontSize: 13)),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCircleCard(FriendCircle circle) {
+    final memberCount = circle.members.length;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.cardBorder),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () => _showCreateEditCircleSheet(circle),
+          onLongPress: () => _showDeleteCircleDialog(circle),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: [
+                // Emoji badge
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: circle.color.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Center(
+                    child: Text(circle.emoji, style: const TextStyle(fontSize: 22)),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Name + member count
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        circle.name,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '$memberCount ${memberCount == 1 ? 'member' : 'members'}',
+                        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+                // Avatar stack
+                if (circle.members.isNotEmpty)
+                  SizedBox(
+                    width: (circle.members.length.clamp(0, 3) * 22.0) + 8,
+                    height: 30,
+                    child: Stack(
+                      children: [
+                        for (int i = 0; i < circle.members.length.clamp(0, 3); i++)
+                          Positioned(
+                            left: i * 18.0,
+                            child: Container(
+                              width: 30,
+                              height: 30,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: circle.color.withValues(alpha: 0.2),
+                                border: Border.all(color: Colors.white, width: 2),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  circle.members[i].initials,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: circle.color,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        if (circle.members.length > 3)
+                          Positioned(
+                            left: 3 * 18.0,
+                            child: Container(
+                              width: 30,
+                              height: 30,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: AppColors.surfaceLight,
+                                border: Border.all(color: Colors.white, width: 2),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '+${circle.members.length - 3}',
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                const SizedBox(width: 4),
+                const Icon(Icons.chevron_right_rounded, size: 20, color: AppColors.muted),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteCircleDialog(FriendCircle circle) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Delete "${circle.name}"?'),
+        content: Text(
+          'This circle and its ${circle.members.length} members will be removed. This cannot be undone.',
+          style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await ref.read(friendCirclesProvider.notifier).removeCircle(circle.id);
+              if (mounted) {
+                AppFeedback.showSuccess(context, '"${circle.name}" deleted');
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Create / Edit Circle Bottom Sheet ──────────────────────────────────────
+  void _showCreateEditCircleSheet(FriendCircle? existing) {
+    final isEdit = existing != null;
+    final nameCtrl = TextEditingController(text: existing?.name ?? '');
+    String selectedEmoji = existing?.emoji ?? '👥';
+    String selectedColor = existing?.colorHex ?? '#D85A30';
+    List<CircleMember> selectedMembers = List.from(existing?.members ?? []);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          return Container(
+            height: MediaQuery.of(ctx).size.height * 0.85,
+            decoration: const BoxDecoration(
+              color: AppColors.surfaceLight,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Column(
+              children: [
+                // Handle bar
+                Container(
+                  margin: const EdgeInsets.only(top: 12),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.muted.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                // Header
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+                  child: Row(
+                    children: [
+                      GestureDetector(
+                        onTap: () => Navigator.pop(ctx),
+                        child: const Icon(Icons.close_rounded, color: AppColors.textSecondary),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          isEdit ? 'Edit Circle' : 'Create Travel Circle',
+                          style: const TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                      ElevatedButton(
+                        onPressed: nameCtrl.text.trim().isEmpty
+                            ? null
+                            : () async {
+                                final circle = FriendCircle(
+                                  id: existing?.id ??
+                                      '${DateTime.now().millisecondsSinceEpoch}_${nameCtrl.text.hashCode.abs()}',
+                                  ownerId: existing?.ownerId ?? '',
+                                  name: nameCtrl.text.trim(),
+                                  emoji: selectedEmoji,
+                                  colorHex: selectedColor,
+                                  members: selectedMembers,
+                                  createdAt: existing?.createdAt ?? DateTime.now(),
+                                );
+                                Navigator.pop(ctx);
+                                await ref
+                                    .read(friendCirclesProvider.notifier)
+                                    .addOrUpdateCircle(circle);
+                                if (mounted) {
+                                  AppFeedback.showSuccess(
+                                    context,
+                                    isEdit
+                                        ? '"${circle.name}" updated!'
+                                        : '"${circle.name}" created! 🎉',
+                                  );
+                                }
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        child: Text(isEdit ? 'Save' : 'Create'),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1, color: AppColors.cardBorder),
+
+                // Content
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                    children: [
+                      // Circle name
+                      AppTextField(
+                        controller: nameCtrl,
+                        hint: 'e.g. College Barkada, Hiking Squad',
+                        label: 'Circle Name',
+                        onChanged: (_) => setSheetState(() {}),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Emoji picker
+                      const Text(
+                        'ICON',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textSecondary,
+                          letterSpacing: 0.6,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _circleEmojis.map((emoji) {
+                          final isSelected = selectedEmoji == emoji;
+                          return GestureDetector(
+                            onTap: () => setSheetState(() => selectedEmoji = emoji),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? AppColors.primary.withValues(alpha: 0.12)
+                                    : Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: isSelected ? AppColors.primary : AppColors.cardBorder,
+                                  width: isSelected ? 2 : 1,
+                                ),
+                              ),
+                              child: Center(
+                                child: Text(emoji, style: const TextStyle(fontSize: 20)),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Color picker
+                      const Text(
+                        'COLOR',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textSecondary,
+                          letterSpacing: 0.6,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 10,
+                        children: _circleColors.map((hex) {
+                          final isSelected = selectedColor == hex;
+                          final colorVal =
+                              Color(int.parse('FF${hex.replaceAll('#', '')}', radix: 16));
+                          return GestureDetector(
+                            onTap: () => setSheetState(() => selectedColor = hex),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: colorVal,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: isSelected ? AppColors.textPrimary : Colors.transparent,
+                                  width: 3,
+                                ),
+                              ),
+                              child: isSelected
+                                  ? const Icon(Icons.check_rounded, color: Colors.white, size: 18)
+                                  : null,
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Members section
+                      Row(
+                        children: [
+                          const Text(
+                            'MEMBERS',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textSecondary,
+                              letterSpacing: 0.6,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '${selectedMembers.length}',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ),
+                          const Spacer(),
+                          GestureDetector(
+                            onTap: () => _showCircleFriendPicker(
+                              selectedMembers,
+                              (updated) => setSheetState(() => selectedMembers = updated),
+                            ),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.person_add_alt_1_rounded,
+                                      size: 14, color: AppColors.primary),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'Add Friends',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+
+                      if (selectedMembers.isEmpty)
+                        Container(
+                          padding: const EdgeInsets.symmetric(vertical: 24),
+                          child: const Center(
+                            child: Text(
+                              'Tap "Add Friends" to pick members for this circle',
+                              style: TextStyle(fontSize: 13, color: AppColors.muted),
+                            ),
+                          ),
+                        )
+                      else
+                        ...selectedMembers.map((member) => Container(
+                              margin: const EdgeInsets.only(bottom: 6),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: AppColors.cardBorder),
+                              ),
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 16,
+                                    backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+                                    backgroundImage: member.profilePhotoUrl != null
+                                        ? NetworkImage(member.profilePhotoUrl!)
+                                        : null,
+                                    child: member.profilePhotoUrl == null
+                                        ? Text(
+                                            member.initials,
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w700,
+                                              color: AppColors.primary,
+                                            ),
+                                          )
+                                        : null,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      member.name,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                  ),
+                                  GestureDetector(
+                                    onTap: () {
+                                      setSheetState(() {
+                                        selectedMembers.removeWhere(
+                                            (m) => m.userId == member.userId);
+                                      });
+                                    },
+                                    child: const Icon(Icons.remove_circle_outline_rounded,
+                                        size: 20, color: AppColors.red),
+                                  ),
+                                ],
+                              ),
+                            )),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // ── Friend picker for circle members ──────────────────────────────────────
+  void _showCircleFriendPicker(
+    List<CircleMember> currentMembers,
+    void Function(List<CircleMember>) onUpdate,
+  ) {
+    final friendsAsync = ref.read(friendsProvider);
+    final friends = friendsAsync.value ?? [];
+    final selectedIds = currentMembers.map((m) => m.userId).toSet();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setPickerState) {
+          return Container(
+            height: MediaQuery.of(ctx).size.height * 0.7,
+            decoration: const BoxDecoration(
+              color: AppColors.surfaceLight,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Column(
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(top: 12),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.muted.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+                  child: Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'Select Friends',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          final updatedMembers = friends
+                              .where((f) => selectedIds.contains(f.id))
+                              .map((f) => CircleMember(
+                                    userId: f.id,
+                                    name: f.name,
+                                    profilePhotoUrl: f.profilePhotoUrl,
+                                  ))
+                              .toList();
+                          onUpdate(updatedMembers);
+                          Navigator.pop(ctx);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10)),
+                        ),
+                        child: Text('Done (${selectedIds.length})'),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1, color: AppColors.cardBorder),
+                Expanded(
+                  child: friends.isEmpty
+                      ? const Center(
+                          child: Text(
+                            'No friends yet. Add friends first!',
+                            style: TextStyle(fontSize: 14, color: AppColors.muted),
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          itemCount: friends.length,
+                          itemBuilder: (ctx, index) {
+                            final friend = friends[index];
+                            final isSelected = selectedIds.contains(friend.id);
+                            return ListTile(
+                              contentPadding:
+                                  const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
+                              leading: CircleAvatar(
+                                radius: 20,
+                                backgroundColor: friend.color,
+                                backgroundImage: friend.profilePhotoUrl != null
+                                    ? NetworkImage(friend.profilePhotoUrl!)
+                                    : null,
+                                child: friend.profilePhotoUrl == null
+                                    ? Text(
+                                        friend.initials,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          color: Colors.white,
+                                          fontSize: 13,
+                                        ),
+                                      )
+                                    : null,
+                              ),
+                              title: Text(
+                                friend.name,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              trailing: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                width: 28,
+                                height: 28,
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? AppColors.primary
+                                      : Colors.transparent,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? AppColors.primary
+                                        : AppColors.cardBorder,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: isSelected
+                                    ? const Icon(Icons.check_rounded,
+                                        size: 16, color: Colors.white)
+                                    : null,
+                              ),
+                              onTap: () {
+                                setPickerState(() {
+                                  if (isSelected) {
+                                    selectedIds.remove(friend.id);
+                                  } else {
+                                    selectedIds.add(friend.id);
+                                  }
+                                });
+                              },
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // ── TAB 4: FIND FRIENDS ─────────────────────────────────────────────────────
   Widget _buildFindFriendsTab() {
     return ListView(
       padding: EdgeInsets.fromLTRB(20, 8, 20, context.safeBottomPadding(24)),

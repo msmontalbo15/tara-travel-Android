@@ -658,7 +658,11 @@ class ConfirmStep extends StatelessWidget {
                       Row(
                         children: [
                           Text(
-                            mode.label,
+                            transport?.tripTransportMode == 'rental'
+                                ? 'Van / Car Rental'
+                                : transport?.tripTransportMode == 'commute'
+                                    ? 'Public Commute'
+                                    : (transport?.vehicleName ?? mode.label),
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
@@ -669,15 +673,15 @@ class ConfirmStep extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF3B82F6).withValues(alpha: 0.18),
+                              color: const Color(0xFFD85A30).withValues(alpha: 0.18),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
-                              mode.category.name.toUpperCase(),
+                              (transport?.tripTransportMode ?? 'LAND').toUpperCase(),
                               style: const TextStyle(
                                 fontSize: 9,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xFF60A5FA),
+                                color: Color(0xFFF0997B),
                               ),
                             ),
                           ),
@@ -685,9 +689,15 @@ class ConfirmStep extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        transport != null && transport.estimatedDuration.isNotEmpty
-                            ? 'Est. Travel Time: ${transport.estimatedDuration}'
-                            : 'Approx. ${mode.averageSpeedKmh.toInt()} km/h average pace',
+                        transport?.tripTransportMode == 'rental'
+                            ? '${transport?.rentalDays ?? 1} days · ${transport?.hasDriver == true ? 'With Driver' : 'Self-Drive'} · ${transport?.totalRentalCost != null ? '₱${transport!.totalRentalCost!.toStringAsFixed(0)}' : 'Charter'}'
+                            : transport?.tripTransportMode == 'commute'
+                                ? '₱${transport?.farePerPax?.toStringAsFixed(0) ?? '0'} per pax · ${transport?.operatorName ?? 'Bus/Transit'}'
+                                : (transport != null && transport.kmPerLiter != null
+                                    ? 'Garage: ${transport.kmPerLiter} km/L · ${transport.fuelType?.toUpperCase() ?? 'GAS'} · Split: ${transport.splitGas ? 'Yes' : 'No'}'
+                                    : (transport != null && transport.estimatedDuration.isNotEmpty
+                                        ? 'Est. Travel Time: ${transport.estimatedDuration}'
+                                        : 'Approx. ${mode.averageSpeedKmh.toInt()} km/h average pace')),
                         style: const TextStyle(
                           fontSize: 12,
                           color: Color(0xFFEF9F27),

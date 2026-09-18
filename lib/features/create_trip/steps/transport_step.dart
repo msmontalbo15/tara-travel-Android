@@ -1,33 +1,86 @@
-import 'package:tara_travel/core/theme/app_text_styles.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/models/itinerary_model.dart';
+import '../../../core/models/user_vehicle_model.dart';
+import '../../../core/providers/user_vehicles_provider.dart';
+import '../../../core/services/fuel_price_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_responsive.dart';
-import '../../../core/models/itinerary_model.dart';
-import '../../../core/widgets/inputs/location_picker.dart';
+import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/currency_utils.dart';
 import '../../../core/widgets/buttons/app_back_button.dart';
+import '../../../core/widgets/inputs/location_picker.dart';
+import '../../profile/widgets/user_vehicles_sheet.dart';
 import '../models/new_trip_model.dart';
 
-class TransportPresetHub {
+enum LandTransportType {
+  private,
+  commute,
+  rental;
+
+  String get label {
+    switch (this) {
+      case LandTransportType.private:
+        return 'Private Vehicle';
+      case LandTransportType.commute:
+        return 'Public Commute';
+      case LandTransportType.rental:
+        return 'Van / Car Rental';
+    }
+  }
+
+  String get subtitle {
+    switch (this) {
+      case LandTransportType.private:
+        return 'Own car, motorcycle, or squad convoy';
+      case LandTransportType.commute:
+        return 'Bus, jeepney, tricycle, or UV Express';
+      case LandTransportType.rental:
+        return 'Van hire, rented car, or chartered coaster';
+    }
+  }
+
+  String get emoji {
+    switch (this) {
+      case LandTransportType.private:
+        return '🚗';
+      case LandTransportType.commute:
+        return '🚌';
+      case LandTransportType.rental:
+        return '🚐';
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case LandTransportType.private:
+        return Icons.directions_car_rounded;
+      case LandTransportType.commute:
+        return Icons.directions_bus_rounded;
+      case LandTransportType.rental:
+        return Icons.airport_shuttle_rounded;
+    }
+  }
+}
+
+class LandTransitHub {
   final String name;
   final String shortLabel;
   final double lat;
   final double lon;
-  final TransportCategory category;
   final String icon;
 
-  const TransportPresetHub({
+  const LandTransitHub({
     required this.name,
     required this.shortLabel,
     required this.lat,
     required this.lon,
-    required this.category,
     required this.icon,
   });
 }
 
-class TransportStep extends StatefulWidget {
+class TransportStep extends ConsumerStatefulWidget {
   final NewTripModel trip;
   final TransportDetail? initial;
   final void Function(TransportDetail detail) onNext;
@@ -42,140 +95,134 @@ class TransportStep extends StatefulWidget {
   });
 
   @override
-  State<TransportStep> createState() => _TransportStepState();
+  ConsumerState<TransportStep> createState() => _TransportStepState();
 }
 
-class _TransportStepState extends State<TransportStep> with SingleTickerProviderStateMixin {
-  TransportMode _selected = TransportMode.car;
-  TransportCategory? _selectedCategoryFilter; // null = All
+class _TransportStepState extends ConsumerState<TransportStep> {
+  LandTransportType _modeType = LandTransportType.private;
+
+  // Mode A: Private Vehicle state
+  UserVehicle? _selectedGarageVehicle;
+  double _customKmPerLiter = 12.0;
+  FuelType _selectedFuelType = FuelType.gasoline;
+  bool _splitGas = true;
+  bool _splitTolls = true;
+  final _tollCostCtrl = TextEditingController();
   int _vehicleCount = 1;
+
+  // Mode B: Commute state
+  String _commuteType = 'bus';
+  final _farePerPaxCtrl = TextEditingController();
+  final _busLineCtrl = TextEditingController();
+
+  // Mode C: Rental state
+  String _rentalType = 'van_hire';
+  final _dailyRateCtrl = TextEditingController(text: '3500');
+  int _rentalDays = 1;
+  bool _hasDriver = true;
+  final _driverFeeCtrl = TextEditingController(text: '500');
+  bool _rentalFuelIncluded = false;
+  bool _rentalTollsIncluded = false;
+
+  // Common fields
   final _departureCtrl = TextEditingController();
-  final _flightCtrl = TextEditingController();
-  final _operatorCtrl = TextEditingController(); // Airline, Shipping Line, Bus Co, etc.
-  final _bookingRefCtrl = TextEditingController(); // PNR / Ticket / Confirmation
-  final _pierCtrl = TextEditingController();
   final _durationCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
-  final _costCtrl = TextEditingController();
-
   double? _departureLat;
   double? _departureLng;
-  bool _splitGas = true;
-  bool _showAdvancedFields = false;
+  double? _calculatedDistanceKm;
 
-  late AnimationController _fadeCtrl;
-  late Animation<double> _fadeAnim;
-
-  // Infinite Carousel controller & state
-  late PageController _pageController;
-  double _currentPage = 5000.0;
-  static const int _virtualItemCount = 10000;
-
-  // Common Philippine transportation modes (excluding 'other' for main selection)
-  static const _allModes = [
-    TransportMode.car,
-    TransportMode.motorcycle,
-    TransportMode.commute,
-    TransportMode.jeepney,
-    TransportMode.tricycle,
-    TransportMode.bus,
-    TransportMode.vanHire,
-    TransportMode.ferry,
-    TransportMode.plane,
-    TransportMode.bike,
-  ];
-
-  // Popular Philippine Transportation Departure Hubs
-  static const List<TransportPresetHub> _presetHubs = [
-    TransportPresetHub(
-      name: 'Ninoy Aquino International Airport (NAIA), Pasay',
-      shortLabel: 'NAIA (MNL)',
-      lat: 14.5086,
-      lon: 121.0194,
-      category: TransportCategory.air,
-      icon: '✈️',
-    ),
-    TransportPresetHub(
-      name: 'Clark International Airport (CRK), Pampanga',
-      shortLabel: 'Clark (CRK)',
-      lat: 15.1859,
-      lon: 120.5596,
-      category: TransportCategory.air,
-      icon: '✈️',
-    ),
-    TransportPresetHub(
-      name: 'Mactan-Cebu International Airport (MCIA), Cebu',
-      shortLabel: 'Cebu (CEB)',
-      lat: 10.3075,
-      lon: 123.9794,
-      category: TransportCategory.air,
-      icon: '✈️',
-    ),
-    TransportPresetHub(
+  // Major Philippine Land Transit Hubs (strictly land-based)
+  static const List<LandTransitHub> _presetLandHubs = [
+    LandTransitHub(
       name: 'Parañaque Integrated Terminal Exchange (PITX)',
       shortLabel: 'PITX Terminal',
       lat: 14.5103,
       lon: 120.9912,
-      category: TransportCategory.land,
       icon: '🚌',
     ),
-    TransportPresetHub(
+    LandTransitHub(
       name: 'Araneta Center Bus Port, Cubao, Quezon City',
       shortLabel: 'Cubao Bus Port',
       lat: 14.6219,
       lon: 121.0544,
-      category: TransportCategory.land,
       icon: '🚌',
     ),
-    TransportPresetHub(
-      name: 'Batangas Port Passenger Terminal, Batangas',
-      shortLabel: 'Batangas Port',
-      lat: 13.7565,
-      lon: 121.0435,
-      category: TransportCategory.sea,
-      icon: '⛴️',
+    LandTransitHub(
+      name: 'Buendia / Gil Puyat Bus Terminal, Pasay',
+      shortLabel: 'Buendia Terminal',
+      lat: 14.5542,
+      lon: 120.9995,
+      icon: '🚌',
     ),
-    TransportPresetHub(
-      name: 'North Harbor Passenger Terminal, Manila',
-      shortLabel: 'Manila North Harbor',
-      lat: 14.6072,
-      lon: 120.9572,
-      category: TransportCategory.sea,
-      icon: '⛴️',
+    LandTransitHub(
+      name: 'Dau Central Bus Terminal, Mabalacat, Pampanga',
+      shortLabel: 'Dau Bus Terminal',
+      lat: 15.1764,
+      lon: 120.5901,
+      icon: '🚌',
     ),
-    TransportPresetHub(
-      name: 'Cebu City Pier 1 Terminal, Cebu',
-      shortLabel: 'Cebu Pier 1',
-      lat: 10.2936,
-      lon: 123.9073,
-      category: TransportCategory.sea,
-      icon: '⛴️',
+    LandTransitHub(
+      name: 'Baguio Grand Terminal, Gov. Pack Road, Baguio City',
+      shortLabel: 'Baguio Grand Terminal',
+      lat: 16.4087,
+      lon: 120.5985,
+      icon: '🚌',
+    ),
+    LandTransitHub(
+      name: 'Cebu South Bus Terminal, N. Bacalso Ave, Cebu City',
+      shortLabel: 'Cebu South Bus Terminal',
+      lat: 10.3015,
+      lon: 123.8932,
+      icon: '🚌',
     ),
   ];
-
-  List<TransportMode> get _filteredModes {
-    if (_selectedCategoryFilter == null) return _allModes;
-    return _allModes.where((m) => m.category == _selectedCategoryFilter).toList();
-  }
 
   @override
   void initState() {
     super.initState();
+    final tripDays = widget.trip.fromDate != null && widget.trip.toDate != null
+        ? widget.trip.toDate!.difference(widget.trip.fromDate!).inDays + 1
+        : 3;
+    _rentalDays = tripDays > 0 ? tripDays : 1;
+
     if (widget.initial != null) {
-      _selected = widget.initial!.mode;
-      _vehicleCount = widget.initial!.vehicleCount ?? 1;
-      _departureCtrl.text = widget.initial!.departurePoint ?? '';
-      _departureLat = widget.initial!.departureLat ?? widget.trip.departureLat;
-      _departureLng = widget.initial!.departureLng ?? widget.trip.departureLng;
-      _flightCtrl.text = widget.initial!.flightNumber ?? '';
-      _operatorCtrl.text = widget.initial!.operatorName ?? '';
-      _bookingRefCtrl.text = widget.initial!.bookingReference ?? '';
-      _pierCtrl.text = widget.initial!.pierName ?? '';
-      _durationCtrl.text = widget.initial!.estimatedDuration;
-      _splitGas = widget.initial!.splitGas;
-      _notesCtrl.text = widget.initial!.notes ?? '';
-      if (widget.initial!.estimatedCost != null && widget.initial!.estimatedCost! > 0) {
-        _costCtrl.text = CurrencyUtils.formatAmount(widget.initial!.estimatedCost!);
+      final init = widget.initial!;
+      _departureCtrl.text = init.departurePoint ?? '';
+      _departureLat = init.departureLat ?? widget.trip.departureLat;
+      _departureLng = init.departureLng ?? widget.trip.departureLng;
+      _durationCtrl.text = init.estimatedDuration;
+      _notesCtrl.text = init.notes ?? '';
+      _splitGas = init.splitGas;
+
+      if (init.tripTransportMode == 'commute' || init.mode == TransportMode.commute || init.mode == TransportMode.bus) {
+        _modeType = LandTransportType.commute;
+        _commuteType = init.commuteType ?? 'bus';
+        if (init.farePerPax != null && init.farePerPax! > 0) {
+          _farePerPaxCtrl.text = init.farePerPax!.toStringAsFixed(0);
+        }
+        _busLineCtrl.text = init.operatorName ?? '';
+      } else if (init.tripTransportMode == 'rental' || init.mode == TransportMode.vanHire) {
+        _modeType = LandTransportType.rental;
+        _rentalType = init.rentalType ?? 'van_hire';
+        if (init.dailyRate != null && init.dailyRate! > 0) {
+          _dailyRateCtrl.text = init.dailyRate!.toStringAsFixed(0);
+        }
+        _rentalDays = init.rentalDays ?? _rentalDays;
+        _hasDriver = init.hasDriver;
+        if (init.driverFeePerDay != null) {
+          _driverFeeCtrl.text = init.driverFeePerDay!.toStringAsFixed(0);
+        }
+        _rentalFuelIncluded = init.fuelIncluded;
+        _rentalTollsIncluded = init.tollsIncluded;
+      } else {
+        _modeType = LandTransportType.private;
+        _customKmPerLiter = init.kmPerLiter ?? 14.0;
+        _splitTolls = init.splitTolls;
+        if (init.estimatedTollCost != null && init.estimatedTollCost! > 0) {
+          _tollCostCtrl.text = init.estimatedTollCost!.toStringAsFixed(0);
+        }
+        _vehicleCount = init.vehicleCount ?? 1;
       }
     } else {
       _departureCtrl.text = widget.trip.departurePoint ?? '';
@@ -183,210 +230,179 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
       _departureLng = widget.trip.departureLng;
     }
 
-    _initCarouselController();
-
-    _fadeCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 250));
-    _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeInOut);
-    _fadeCtrl.forward();
-
-    // Auto-calculate estimate if departure & destination are present
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _recalculateSmartEstimate(autoSetDuration: _durationCtrl.text.isEmpty);
-    });
-  }
-
-  void _initCarouselController() {
-    final modes = _filteredModes;
-    int initialIndex = modes.indexOf(_selected);
-    if (initialIndex < 0) {
-      initialIndex = 0;
-      if (modes.isNotEmpty) {
-        _selected = modes.first;
-      }
-    }
-
-    final initialVirtualIndex = (_virtualItemCount ~/ 2) - ((_virtualItemCount ~/ 2) % (modes.isEmpty ? 1 : modes.length)) + initialIndex;
-    _currentPage = initialVirtualIndex.toDouble();
-    _pageController = PageController(
-      initialPage: initialVirtualIndex,
-      viewportFraction: 0.52,
-    );
-
-    _pageController.addListener(() {
-      if (_pageController.hasClients) {
-        setState(() {
-          _currentPage = _pageController.page ?? _currentPage;
-        });
-      }
+      _recalculateDistanceAndEstimate();
     });
   }
 
   @override
   void dispose() {
-    _pageController.dispose();
-    _fadeCtrl.dispose();
     _departureCtrl.dispose();
-    _flightCtrl.dispose();
-    _operatorCtrl.dispose();
-    _bookingRefCtrl.dispose();
-    _pierCtrl.dispose();
     _durationCtrl.dispose();
     _notesCtrl.dispose();
-    _costCtrl.dispose();
+    _tollCostCtrl.dispose();
+    _farePerPaxCtrl.dispose();
+    _busLineCtrl.dispose();
+    _dailyRateCtrl.dispose();
+    _driverFeeCtrl.dispose();
     super.dispose();
   }
 
-  void _onSelectMode(TransportMode m) {
-    setState(() {
-      _selected = m;
-    });
-    _fadeCtrl.reset();
-    _fadeCtrl.forward();
-    _recalculateSmartEstimate(autoSetDuration: true);
-  }
+  void _recalculateDistanceAndEstimate() {
+    final depLat = _departureLat;
+    final depLng = _departureLng;
+    final destLat = widget.trip.destinationLat;
+    final destLng = widget.trip.destinationLng;
 
-  void _onCategoryFilterChanged(TransportCategory? cat) {
-    setState(() {
-      _selectedCategoryFilter = cat;
-    });
-    _initCarouselController();
-    _fadeCtrl.reset();
-    _fadeCtrl.forward();
-  }
-
-
-
-  void _selectPresetHub(TransportPresetHub hub) {
-    setState(() {
-      _departureCtrl.text = hub.name;
-      _departureLat = hub.lat;
-      _departureLng = hub.lon;
-      widget.trip.departurePoint = hub.name;
-      widget.trip.departureLat = hub.lat;
-      widget.trip.departureLng = hub.lon;
-
-      // Auto-switch mode if compatible
-      if (hub.category == TransportCategory.air && _selected.category != TransportCategory.air) {
-        _selected = TransportMode.plane;
-      } else if (hub.category == TransportCategory.sea && _selected.category != TransportCategory.sea) {
-        _selected = TransportMode.ferry;
-      }
-    });
-    _recalculateSmartEstimate(autoSetDuration: true);
-  }
-
-  // ── Smart Distance & Duration Calculation ──────────────────────────────────
-  double? _calculatedDistanceKm;
-  String? _calculatedEstimatedTime;
-
-  void _recalculateSmartEstimate({bool autoSetDuration = false}) {
-    if (_departureLat == null ||
-        _departureLng == null ||
-        widget.trip.destinationLat == null ||
-        widget.trip.destinationLng == null) {
-      setState(() {
-        _calculatedDistanceKm = null;
-      });
+    if (depLat == null || depLng == null || destLat == null || destLng == null) {
       return;
     }
 
-    final straightDistance = _calculateHaversineDistance(
-      _departureLat!,
-      _departureLng!,
-      widget.trip.destinationLat!,
-      widget.trip.destinationLng!,
-    );
-
-    // Apply typical road/winding path factor (1.35x for land, 1.15x for air/sea)
-    double roadFactor = 1.35;
-    if (_selected == TransportMode.plane) {
-      roadFactor = 1.05;
-    } else if (_selected == TransportMode.ferry) {
-      roadFactor = 1.20;
-    }
-
-    final estimatedDistance = straightDistance * roadFactor;
-    final speed = _selected.averageSpeedKmh;
-    final totalHours = estimatedDistance / speed;
+    final straightDistance = _calculateHaversineDistance(depLat, depLng, destLat, destLng);
+    final estimatedRoadKm = straightDistance * 1.35; // typical winding road factor in PH
+    final speedKmh = _modeType == LandTransportType.commute ? 40.0 : 55.0;
+    final totalHours = estimatedRoadKm / speedKmh;
 
     final hours = totalHours.floor();
     final minutes = ((totalHours - hours) * 60).round();
-
-    String formattedTime;
-    if (hours > 0) {
-      formattedTime = '~${hours}h ${minutes > 0 ? '${minutes}m' : ''}';
-    } else {
-      formattedTime = '~${math.max(15, minutes)}m';
-    }
+    final formattedTime = hours > 0
+        ? '~${hours}h ${minutes > 0 ? '${minutes}m' : ''}'
+        : '~${math.max(15, minutes)}m';
 
     setState(() {
-      _calculatedDistanceKm = estimatedDistance;
-      _calculatedEstimatedTime = formattedTime;
+      _calculatedDistanceKm = estimatedRoadKm;
+      if (_durationCtrl.text.isEmpty || _durationCtrl.text.startsWith('~')) {
+        _durationCtrl.text = formattedTime;
+      }
     });
-
-    if (autoSetDuration && (_durationCtrl.text.isEmpty || _durationCtrl.text.startsWith('~'))) {
-      _durationCtrl.text = formattedTime;
-    }
   }
 
   double _calculateHaversineDistance(double lat1, double lon1, double lat2, double lon2) {
-    const p = 0.017453292519943295; // Math.PI / 180
+    const p = 0.017453292519943295;
     final a = 0.5 -
         math.cos((lat2 - lat1) * p) / 2 +
         math.cos(lat1 * p) * math.cos(lat2 * p) * (1 - math.cos((lon2 - lon1) * p)) / 2;
-    return 12742 * math.asin(math.sqrt(a)); // 2 * R * asin... Earth diameter = 12742 km
+    return 12742 * math.asin(math.sqrt(a));
   }
 
-  void _syncCostToBudget(double cost) {
-    // Find Transportation category in draft budget and pre-fill if 0
-    for (final cat in widget.trip.budgetBreakdown) {
-      if (cat.name.toLowerCase().contains('transport') || cat.name.toLowerCase().contains('flight')) {
-        if (cat.amount == 0 || cat.amount < cost) {
-          cat.amount = cost;
-        }
-        break;
-      }
-    }
+  double _computeEstimatedFuelCost() {
+    final distance = _calculatedDistanceKm ?? 100.0;
+    final kml = _selectedGarageVehicle?.kmPerLiter ?? _customKmPerLiter;
+    final fuelType = _selectedGarageVehicle?.fuelType ?? _selectedFuelType;
+    return FuelPriceService.calculateFuelCost(
+      distanceKm: distance,
+      kmPerLiter: kml > 0 ? kml : 12.0,
+      fuelType: fuelType,
+    );
+  }
+
+  double _computeTotalRentalCost() {
+    final daily = double.tryParse(_dailyRateCtrl.text.replaceAll(',', '')) ?? 3500.0;
+    final driverDaily = _hasDriver
+        ? (double.tryParse(_driverFeeCtrl.text.replaceAll(',', '')) ?? 500.0)
+        : 0.0;
+    final baseRental = (daily * _rentalDays) + (driverDaily * _rentalDays);
+    final fuelAddition = !_rentalFuelIncluded ? _computeEstimatedFuelCost() : 0.0;
+    return baseRental + fuelAddition;
   }
 
   void _submit() {
-    final cleanCost = _costCtrl.text.replaceAll(',', '').trim();
-    final parsedCost = double.tryParse(cleanCost);
+    TransportDetail detail;
 
-    if (parsedCost != null && parsedCost > 0) {
-      _syncCostToBudget(parsedCost);
+    if (_modeType == LandTransportType.private) {
+      final kml = _selectedGarageVehicle?.kmPerLiter ?? _customKmPerLiter;
+      final fuelType = _selectedGarageVehicle?.fuelType ?? _selectedFuelType;
+      final fuelCost = _computeEstimatedFuelCost();
+      final tolls = double.tryParse(_tollCostCtrl.text.replaceAll(',', '')) ?? 0.0;
+      final totalPrivateCost = (fuelCost + tolls) * _vehicleCount;
+
+      detail = TransportDetail(
+        mode: TransportMode.car,
+        tripTransportMode: 'private',
+        vehicleCount: _vehicleCount,
+        departurePoint: _departureCtrl.text.trim().isEmpty ? null : _departureCtrl.text.trim(),
+        departureLat: _departureLat,
+        departureLng: _departureLng,
+        vehicleId: _selectedGarageVehicle?.id,
+        vehicleName: _selectedGarageVehicle?.name ?? 'Personal Vehicle',
+        vehicleType: _selectedGarageVehicle?.type.name ?? 'sedan',
+        fuelType: fuelType.name,
+        kmPerLiter: kml,
+        splitGas: _splitGas,
+        splitTolls: _splitTolls,
+        estimatedTollCost: tolls,
+        estimatedCost: totalPrivateCost > 0 ? totalPrivateCost : null,
+        estimatedDuration: _durationCtrl.text.trim(),
+        notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+      );
+    } else if (_modeType == LandTransportType.commute) {
+      final farePerPax = double.tryParse(_farePerPaxCtrl.text.replaceAll(',', ''));
+      final passengerCount = widget.trip.travelers.isNotEmpty ? widget.trip.travelers.length : 1;
+      final totalFare = farePerPax != null ? farePerPax * passengerCount : null;
+
+      detail = TransportDetail(
+        mode: TransportMode.commute,
+        tripTransportMode: 'commute',
+        commuteType: _commuteType,
+        transitHubName: _departureCtrl.text.trim().isEmpty ? null : _departureCtrl.text.trim(),
+        operatorName: _busLineCtrl.text.trim().isEmpty ? null : _busLineCtrl.text.trim(),
+        departurePoint: _departureCtrl.text.trim().isEmpty ? null : _departureCtrl.text.trim(),
+        departureLat: _departureLat,
+        departureLng: _departureLng,
+        farePerPax: farePerPax,
+        estimatedCost: totalFare,
+        estimatedDuration: _durationCtrl.text.trim(),
+        notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+      );
+    } else {
+      final totalRental = _computeTotalRentalCost();
+      final daily = double.tryParse(_dailyRateCtrl.text.replaceAll(',', '')) ?? 3500.0;
+      final driverDaily = _hasDriver
+          ? (double.tryParse(_driverFeeCtrl.text.replaceAll(',', '')) ?? 500.0)
+          : 0.0;
+
+      detail = TransportDetail(
+        mode: TransportMode.vanHire,
+        tripTransportMode: 'rental',
+        rentalType: _rentalType,
+        dailyRate: daily,
+        rentalDays: _rentalDays,
+        hasDriver: _hasDriver,
+        driverFeePerDay: driverDaily,
+        fuelIncluded: _rentalFuelIncluded,
+        tollsIncluded: _rentalTollsIncluded,
+        totalRentalCost: totalRental,
+        departurePoint: _departureCtrl.text.trim().isEmpty ? null : _departureCtrl.text.trim(),
+        departureLat: _departureLat,
+        departureLng: _departureLng,
+        estimatedCost: totalRental,
+        estimatedDuration: _durationCtrl.text.trim(),
+        notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+      );
     }
 
-    widget.trip.departurePoint = _departureCtrl.text.trim().isEmpty ? null : _departureCtrl.text.trim();
-    widget.trip.departureLat = _departureLat;
-    widget.trip.departureLng = _departureLng;
+    widget.trip.departurePoint = detail.departurePoint;
+    widget.trip.departureLat = detail.departureLat;
+    widget.trip.departureLng = detail.departureLng;
+    widget.trip.transportDetail = detail;
 
-    widget.onNext(TransportDetail(
-      mode: _selected,
-      vehicleCount: _vehicleCount,
-      departurePoint: _departureCtrl.text.trim().isEmpty ? null : _departureCtrl.text.trim(),
-      departureLat: _departureLat,
-      departureLng: _departureLng,
-      flightNumber: _flightCtrl.text.trim().isEmpty ? null : _flightCtrl.text.trim(),
-      operatorName: _operatorCtrl.text.trim().isEmpty ? null : _operatorCtrl.text.trim(),
-      bookingReference: _bookingRefCtrl.text.trim().isEmpty ? null : _bookingRefCtrl.text.trim(),
-      pierName: _pierCtrl.text.trim().isEmpty ? null : _pierCtrl.text.trim(),
-      estimatedDuration: _durationCtrl.text.trim(),
-      estimatedCost: parsedCost,
-      splitGas: _splitGas,
-      notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
-    ));
+    widget.onNext(detail);
   }
 
   @override
   Widget build(BuildContext context) {
+    final defaultGarageVehicle = ref.watch(defaultUserVehicleProvider);
+    if (_selectedGarageVehicle == null && defaultGarageVehicle != null) {
+      _selectedGarageVehicle = defaultGarageVehicle;
+    }
+
     return Scaffold(
       backgroundColor: AppColors.deepEarth,
       body: Column(
         children: [
           // ── Header ──────────────────────────────────────────────
           Container(
-            padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
+            padding: const EdgeInsets.fromLTRB(20, 52, 20, 20),
             decoration: const BoxDecoration(
               gradient: LinearGradient(
                 colors: [Color(0xFF1A0A04), AppColors.deepEarth],
@@ -394,99 +410,105 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
                 end: Alignment.bottomCenter,
               ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                Row(
-                  children: [
-                    AppBackButton(
-                      variant: AppBackButtonVariant.glass,
-                      onPressed: widget.onBack,
-                    ),
-                    const SizedBox(width: 16),
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Step 2 of 4', style: TextStyle( fontSize: 12, color: Colors.white54)),
-                          Text('Transport Mode', style: TextStyle(fontFamily: AppTextStyles.fontHeading, fontSize: 22, fontWeight: FontWeight.w700, color: Colors.white)),
-                        ],
-                      ),
-                    ),
-                    // Progress bar
-                    Container(
-                      width: 60,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                      child: FractionallySizedBox(
-                        alignment: Alignment.centerLeft,
-                        widthFactor: 0.5,
-                        child: Container(
-                          decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(2)),
+                AppBackButton(
+                  variant: AppBackButtonVariant.glass,
+                  onPressed: widget.onBack,
+                ),
+                const SizedBox(width: 14),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Step 2 of 4', style: TextStyle(fontSize: 12, color: Colors.white54)),
+                      Text(
+                        'Land Transportation',
+                        style: TextStyle(
+                          fontFamily: AppTextStyles.fontHeading,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
+                  ),
+                  child: const Text(
+                    '🇵🇭 PH Routes',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white),
+                  ),
                 ),
               ],
             ),
           ),
 
-          // ── Body ────────────────────────────────────────────────
+          // ── Scrollable Body ─────────────────────────────────────
           Expanded(
             child: Container(
               decoration: const BoxDecoration(
                 color: AppColors.surfaceLight,
-                borderRadius: BorderRadius.only(topLeft: Radius.circular(32), topRight: Radius.circular(32)),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(28),
+                  topRight: Radius.circular(28),
+                ),
               ),
               child: SingleChildScrollView(
                 padding: EdgeInsets.fromLTRB(20, 20, 20, context.safeBottomPadding(24)),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Category Filter Pills
-                    _buildCategoryFilterRow(),
-                    const SizedBox(height: 14),
+                    // Tri-Modal Hero Selector
+                    const Text(
+                      'Choose Land Travel Mode',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    _buildTriModalSelector(),
 
-                    // Infinite Loop Animated Carousel Card
-                    _buildInfiniteCarousel(),
+                    const SizedBox(height: 18),
 
-                    const SizedBox(height: 20),
+                    // Route Distance & Travel Time Header
+                    _buildRouteEstimateBar(),
 
-                    // Route Summary & Distance Preview Card
-                    _buildRoutePreviewCard(),
+                    const SizedBox(height: 18),
 
-                    const SizedBox(height: 20),
-
-                    // Dynamic Sub-fields & Form
-                    FadeTransition(
-                      opacity: _fadeAnim,
-                      child: _buildSubFields(),
+                    // Mode-Specific Forms
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 250),
+                      child: _buildSelectedModeSubform(),
                     ),
 
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 24),
 
                     // Next Button
                     SizedBox(
                       width: double.infinity,
-                      height: 54,
+                      height: 52,
                       child: ElevatedButton(
                         onPressed: _submit,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
-                          elevation: 0,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         ),
                         child: const Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              'Continue to Budget',
-                              style: TextStyle( fontSize: 16, fontWeight: FontWeight.w600),
+                              'Continue to Budget & Expenses',
+                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
                             ),
                             SizedBox(width: 8),
                             Icon(Icons.arrow_forward_rounded, size: 18),
@@ -494,7 +516,6 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
                   ],
                 ),
               ),
@@ -505,183 +526,181 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
     );
   }
 
-  Widget _buildCategoryFilterRow() {
-    final categories = [
-      (null, '✨ All Modes'),
-      (TransportCategory.land, '🚗 Land'),
-      (TransportCategory.air, '✈️ Flights'),
-      (TransportCategory.sea, '⛴️ Sea Ferry'),
-      (TransportCategory.eco, '🚲 Eco / Bike'),
-    ];
-
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: categories.map((cat) {
-          final isSelected = _selectedCategoryFilter == cat.$1;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: ChoiceChip(
-              label: Text(
-                cat.$2,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  color: isSelected ? Colors.white : AppColors.deepEarth,
-                ),
+  // ── 1. Tri-Modal Hero Card Selector ────────────────────────────────────────
+  Widget _buildTriModalSelector() {
+    return Column(
+      children: LandTransportType.values.map((type) {
+        final isSelected = _modeType == type;
+        return GestureDetector(
+          onTap: () {
+            setState(() {
+              _modeType = type;
+              _recalculateDistanceAndEstimate();
+            });
+          },
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: isSelected ? AppColors.sand : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isSelected ? AppColors.primary : AppColors.cardBorder,
+                width: isSelected ? 1.8 : 1.0,
               ),
-              selected: isSelected,
-              onSelected: (_) => _onCategoryFilterChanged(cat.$1),
-              selectedColor: AppColors.primary,
-              backgroundColor: Colors.white,
-              elevation: isSelected ? 2 : 0,
-              pressElevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
-                side: BorderSide(
-                  color: isSelected ? AppColors.primary : AppColors.cardBorder,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isSelected ? 0.06 : 0.02),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
                 ),
-              ),
+              ],
             ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildInfiniteCarousel() {
-    final modes = _filteredModes;
-    if (modes.isEmpty) {
-      return const SizedBox(
-        height: 140,
-        child: Center(
-          child: Text('No transportation modes found in this category',
-              style: TextStyle( color: AppColors.muted)),
-        ),
-      );
-    }
-
-    return SizedBox(
-      height: 155,
-      child: PageView.builder(
-        controller: _pageController,
-        itemCount: _virtualItemCount,
-        onPageChanged: (index) {
-          final m = modes[index % modes.length];
-          if (_selected != m) {
-            _onSelectMode(m);
-          }
-        },
-        itemBuilder: (context, index) {
-          final m = modes[index % modes.length];
-          final isSelected = _selected == m;
-
-          double pageDelta = (index - _currentPage).abs();
-          double scale = (1.0 - (pageDelta * 0.15)).clamp(0.85, 1.0);
-          double opacity = (1.0 - (pageDelta * 0.35)).clamp(0.6, 1.0);
-
-          return Transform.scale(
-            scale: scale,
-            child: Opacity(
-              opacity: opacity,
-              child: GestureDetector(
-                onTap: () {
-                  _pageController.animateToPage(
-                    index,
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeOutCubic,
-                  );
-                  _onSelectMode(m);
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-                  padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
-                    color: isSelected ? AppColors.chipBackground : Colors.white,
-                    borderRadius: BorderRadius.circular(22),
-                    border: Border.all(
-                      color: isSelected ? AppColors.primary : AppColors.dividerLight,
-                      width: isSelected ? 2.5 : 1,
-                    ),
-                    boxShadow: isSelected
-                        ? [
-                            BoxShadow(
-                              color: AppColors.primary.withValues(alpha: 0.25),
-                              blurRadius: 14,
-                              offset: const Offset(0, 4),
-                            )
-                          ]
-                        : [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.04),
-                              blurRadius: 6,
-                            )
-                          ],
+                    color: isSelected ? AppColors.primary : AppColors.surfaceLight,
+                    borderRadius: BorderRadius.circular(12),
                   ),
+                  child: Center(
+                    child: Text(
+                      type.emoji,
+                      style: const TextStyle(fontSize: 22),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        m.emoji,
-                        style: TextStyle(fontSize: isSelected ? 38 : 30),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        m.label,
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        type.label,
                         style: TextStyle(
-                          fontSize: isSelected ? 13 : 11,
-                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                          color: isSelected ? AppColors.primary : AppColors.deepEarth,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: isSelected ? AppColors.primary : AppColors.textPrimary,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: isSelected ? AppColors.primary.withValues(alpha: 0.15) : AppColors.surfaceLight,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '~${m.averageSpeedKmh.round()} km/h',
-                          style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w600,
-                            color: isSelected ? AppColors.primary : AppColors.warmMuted,
-                          ),
+                      const SizedBox(height: 2),
+                      Text(
+                        type.subtitle,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
                         ),
                       ),
                     ],
                   ),
                 ),
+                Container(
+                  width: 22,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isSelected ? AppColors.primary : Colors.black26,
+                      width: 2,
+                    ),
+                  ),
+                  child: isSelected
+                      ? Center(
+                          child: Container(
+                            width: 12,
+                            height: 12,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        )
+                      : null,
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  // ── 2. Route & Distance Estimate Bar ───────────────────────────────────────
+  Widget _buildRouteEstimateBar() {
+    final dist = _calculatedDistanceKm;
+    final dur = _durationCtrl.text;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2C1A14),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.alt_route_rounded, size: 18, color: AppColors.primaryLight),
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'ESTIMATED HIGHWAY ROUTE',
+                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: Colors.white54, letterSpacing: 0.5),
+                  ),
+                  Text(
+                    dist != null ? '${dist.toStringAsFixed(0)} km highway drive' : 'Distance calculating...',
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          if (dur.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                dur,
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
               ),
             ),
-          );
-        },
+        ],
       ),
     );
   }
 
-  Widget _buildRoutePreviewCard() {
-    final destination = widget.trip.destination.isNotEmpty ? widget.trip.destination : 'Destination';
-    final departure = _departureCtrl.text.isNotEmpty ? _departureCtrl.text : 'Select departure point';
+  // ── 3. Adaptive Sub-Forms ──────────────────────────────────────────────────
+  Widget _buildSelectedModeSubform() {
+    switch (_modeType) {
+      case LandTransportType.private:
+        return _buildPrivateModeForm();
+      case LandTransportType.commute:
+        return _buildCommuteModeForm();
+      case LandTransportType.rental:
+        return _buildRentalModeForm();
+    }
+  }
+
+  // ── Mode A: Private Vehicle Sub-form ───────────────────────────────────────
+  Widget _buildPrivateModeForm() {
+    final vehiclesAsync = ref.watch(userVehiclesProvider);
+    final fuelCost = _computeEstimatedFuelCost();
 
     return Container(
+      key: const ValueKey('private_form'),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E100A),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: AppColors.cardBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -689,531 +708,280 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Row(
-                children: [
-                  Icon(Icons.route_rounded, size: 16, color: Color(0xFFD85A30)),
-                  SizedBox(width: 6),
-                  Text(
-                    'ROUTE & ESTIMATE',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFFD85A30),
-                      letterSpacing: 0.8,
-                    ),
-                  ),
-                ],
+              const Text(
+                'Vehicle & Fuel Spec',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
               ),
-              if (_calculatedDistanceKm != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD85A30).withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    '${_calculatedDistanceKm!.toStringAsFixed(0)} km est.',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
+              TextButton.icon(
+                onPressed: () => UserVehiclesSheet.show(context),
+                icon: const Icon(Icons.garage_rounded, size: 16),
+                label: const Text('Manage Garage', style: TextStyle(fontSize: 12)),
+              ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
 
-          // Route Visual Timeline
+          // Garage quick-select dropdown
+          vehiclesAsync.maybeWhen(
+            data: (vehicles) {
+              if (vehicles.isEmpty) {
+                return Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceLight,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.cardBorder),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info_outline, size: 18, color: AppColors.primary),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Text(
+                          'No vehicles in garage. Using standard 14 km/L gasoline benchmark.',
+                          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => UserVehiclesSheet.show(context),
+                        child: const Text('Add Vehicle', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return DropdownButtonFormField<UserVehicle>(
+                initialValue: _selectedGarageVehicle ?? vehicles.first,
+                items: vehicles.map((v) {
+                  return DropdownMenuItem(
+                    value: v,
+                    child: Text('${v.type.emoji} ${v.name} (${v.kmPerLiter} km/L)'),
+                  );
+                }).toList(),
+                onChanged: (v) {
+                  if (v != null) {
+                    setState(() {
+                      _selectedGarageVehicle = v;
+                      _customKmPerLiter = v.kmPerLiter;
+                      _selectedFuelType = v.fuelType;
+                    });
+                  }
+                },
+                decoration: InputDecoration(
+                  labelText: 'Select Garage Vehicle',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                ),
+              );
+            },
+            orElse: () => const SizedBox.shrink(),
+          ),
+
+          const SizedBox(height: 14),
+
+          // Live Fuel Intelligence Card
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.sand,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              children: [
+                const Text('⛽', style: TextStyle(fontSize: 24)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Weekly DOE Fuel Intelligence',
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.primary),
+                      ),
+                      Text(
+                        'Est. Fuel Needed: ~${fuelCost > 0 ? CurrencyUtils.formatAmount(fuelCost) : '₱0.00'} (${_calculatedDistanceKm != null ? FuelPriceService.calculateLitersNeeded(_calculatedDistanceKm!, _selectedGarageVehicle?.kmPerLiter ?? _customKmPerLiter).toStringAsFixed(1) : '0'} L)',
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.deepEarth),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          // Departure Point Picker
+          _buildDepartureField('Meet-up / Departure Point'),
+
+          const SizedBox(height: 14),
+
+          // Convoy vehicle count
           Row(
             children: [
-              // Left Icons Column
-              Column(
-                children: [
-                  Container(
-                    width: 10,
-                    height: 10,
-                    decoration: const BoxDecoration(
-                      color: AppColors.primary,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  Container(
-                    width: 2,
-                    height: 28,
-                    color: Colors.white24,
-                  ),
-                  const Icon(Icons.location_on_rounded, size: 14, color: Color(0xFFEA4335)),
-                ],
-              ),
-              const SizedBox(width: 12),
-
-              // Labels Column
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      departure,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: _departureCtrl.text.isNotEmpty ? Colors.white : Colors.white54,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    Text(
-                      destination,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
+                    const Text('Convoy Vehicles', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.remove_circle_outline),
+                          onPressed: _vehicleCount > 1
+                              ? () => setState(() => _vehicleCount--)
+                              : null,
+                        ),
+                        Text('$_vehicleCount ${_vehicleCount == 1 ? 'vehicle' : 'vehicles'}',
+                            style: const TextStyle(fontWeight: FontWeight.w700)),
+                        IconButton(
+                          icon: const Icon(Icons.add_circle_outline),
+                          onPressed: () => setState(() => _vehicleCount++),
+                        ),
+                      ],
                     ),
                   ],
+                ),
+              ),
+              Expanded(
+                child: TextField(
+                  controller: _tollCostCtrl,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(
+                    labelText: 'Est. Tollways (RFID)',
+                    prefixText: '₱ ',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  ),
                 ),
               ),
             ],
           ),
 
-          if (_calculatedEstimatedTime != null) ...[
-            const SizedBox(height: 12),
-            const Divider(height: 1, color: Color(0xFF331B13)),
-            const SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.timer_outlined, size: 14, color: Colors.white60),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Smart travel estimate via ${_selected.label}:',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: Colors.white70,
-                      ),
-                    ),
-                  ],
-                ),
-                Text(
-                  _calculatedEstimatedTime!,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFFEF9F27),
-                  ),
-                ),
-              ],
-            ),
-          ],
+          const SizedBox(height: 10),
+
+          // Split Gas Switch
+          SwitchListTile.adaptive(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Split Gas & Tolls with Travelers', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+            subtitle: const Text('Generates itemized proposal in group expenses tab', style: TextStyle(fontSize: 12)),
+            value: _splitGas,
+            onChanged: (v) => setState(() => _splitGas = v),
+            activeThumbColor: AppColors.primary,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildSubFields() {
+  // ── Mode B: Commute Sub-form ───────────────────────────────────────────────
+  Widget _buildCommuteModeForm() {
+    final fare = double.tryParse(_farePerPaxCtrl.text.replaceAll(',', '')) ?? 0.0;
+    final pax = widget.trip.travelers.isNotEmpty ? widget.trip.travelers.length : 1;
+    final totalFare = fare * pax;
+
     return Container(
-      padding: const EdgeInsets.all(20),
+      key: const ValueKey('commute_form'),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.cardBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Text(_selected.emoji, style: const TextStyle(fontSize: 20)),
-                  const SizedBox(width: 8),
-                  Text(
-                    '${_selected.label} Details',
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.deepEarth,
-                    ),
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  _selected.category.name.toUpperCase(),
-                  style: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primary,
-                  ),
-                ),
-              ),
-            ],
+          const Text(
+            'Public Transit Details',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
 
-          // Departure Hub / Point
-          _buildDepartureField('Departure Point', 'Tap pin on map or enter location…', _departureCtrl),
-
-          // Preset Quick Hubs Chips (Commuters only)
-          if (_selected == TransportMode.commute) ...[
-            const SizedBox(height: 10),
-            _buildPresetHubsList(),
-          ],
-
-          const SizedBox(height: 14),
-
-          // Mode-Specific Fields
-          if (_selected == TransportMode.plane) ...[
-            _buildTextField(
-              label: 'Airline / Operator',
-              hint: 'e.g. Philippine Airlines, Cebu Pacific, AirAsia',
-              ctrl: _operatorCtrl,
-              prefixIcon: Icons.flight_takeoff_rounded,
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildTextField(
-                    label: 'Flight Number',
-                    hint: 'e.g. PR 2814, 5J 561',
-                    ctrl: _flightCtrl,
-                    prefixIcon: Icons.tag_rounded,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _buildTextField(
-                    label: 'Terminal / Gate',
-                    hint: 'e.g. NAIA T2',
-                    ctrl: _pierCtrl,
-                    prefixIcon: Icons.meeting_room_rounded,
-                  ),
-                ),
-              ],
-            ),
-          ],
-
-          if (_selected == TransportMode.ferry) ...[
-            _buildTextField(
-              label: 'Shipping Line / Fastcraft',
-              hint: 'e.g. 2GO Travel, OceanJet, Montenegro Lines',
-              ctrl: _operatorCtrl,
-              prefixIcon: Icons.directions_boat_rounded,
-            ),
-            const SizedBox(height: 12),
-            _buildTextField(
-              label: 'Port / Pier Name',
-              hint: 'e.g. Batangas Port Pier 1, Caticlan Jetty Port',
-              ctrl: _pierCtrl,
-              prefixIcon: Icons.anchor_rounded,
-            ),
-          ],
-
-          if (_selected == TransportMode.bus) ...[
-            _buildTextField(
-              label: 'Bus Line / Company',
-              hint: 'e.g. Victory Liner, Genesis, DLTB, JoyBus',
-              ctrl: _operatorCtrl,
-              prefixIcon: Icons.directions_bus_rounded,
-            ),
-            const SizedBox(height: 12),
-            _buildTextField(
-              label: 'Terminal / Station',
-              hint: 'e.g. Cubao Terminal, PITX Gate 3',
-              ctrl: _pierCtrl,
-              prefixIcon: Icons.storefront_rounded,
-            ),
-          ],
-
-          if (_selected == TransportMode.car ||
-              _selected == TransportMode.vanHire ||
-              _selected == TransportMode.motorcycle) ...[
-            _buildVehicleCountStepper(),
-            const SizedBox(height: 12),
-            _buildGasSplitToggle(),
-          ],
-
-          const SizedBox(height: 12),
-
-          // Duration & Transport Cost Rows
-          Row(
-            children: [
-              Expanded(
-                child: _buildTextField(
-                  label: 'Travel Duration',
-                  hint: 'e.g. ~4h 30m',
-                  ctrl: _durationCtrl,
-                  prefixIcon: Icons.schedule_rounded,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _buildCostField(
-                  label: _selected == TransportMode.plane || _selected == TransportMode.bus || _selected == TransportMode.ferry
-                      ? 'Fare / Ticket'
-                      : 'Est. Fuel / Fare',
-                  ctrl: _costCtrl,
-                ),
-              ),
-            ],
+          // Land Transit Hub Presets
+          const Text(
+            'Philippine Land Transit Hubs (Tap to set departure):',
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
           ),
-
-          // Advanced optional toggle
-          const SizedBox(height: 14),
-          InkWell(
-            onTap: () => setState(() => _showAdvancedFields = !_showAdvancedFields),
-            borderRadius: BorderRadius.circular(8),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(
-                children: [
-                  Icon(
-                    _showAdvancedFields ? Icons.expand_less_rounded : Icons.expand_more_rounded,
-                    size: 18,
-                    color: AppColors.primary,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    _showAdvancedFields ? 'Hide additional info' : 'Add booking reference & notes',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          if (_showAdvancedFields) ...[
-            const SizedBox(height: 12),
-            _buildTextField(
-              label: 'Booking Ref / PNR / Plate Number',
-              hint: 'e.g. PNR: 7Q89KM, Plate: NBD 1234',
-              ctrl: _bookingRefCtrl,
-              prefixIcon: Icons.confirmation_number_outlined,
-            ),
-            const SizedBox(height: 12),
-            _buildTextField(
-              label: 'Transport Notes',
-              hint: 'e.g. Baggage allowance 20kg, Meetup at 5:00 AM',
-              ctrl: _notesCtrl,
-              prefixIcon: Icons.edit_note_rounded,
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPresetHubsList() {
-    final relevantHubs = _presetHubs.where((h) {
-      if (_selected.category == TransportCategory.air) return h.category == TransportCategory.air;
-      if (_selected.category == TransportCategory.sea) return h.category == TransportCategory.sea;
-      return h.category == TransportCategory.land;
-    }).toList();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Quick Philippine Hubs',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: AppColors.warmMuted,
-          ),
-        ),
-        const SizedBox(height: 6),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: relevantHubs.map((hub) {
-              final isPicked = _departureCtrl.text == hub.name;
-              return Padding(
-                padding: const EdgeInsets.only(right: 6),
-                child: ActionChip(
-                  label: Text('${hub.icon} ${hub.shortLabel}'),
-                  labelStyle: TextStyle(
-                    fontSize: 11,
-                    fontWeight: isPicked ? FontWeight.w700 : FontWeight.w500,
-                    color: isPicked ? AppColors.primary : AppColors.deepEarth,
-                  ),
-                  backgroundColor: isPicked ? AppColors.sand : const Color(0xFFF9FAFB),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(
-                      color: isPicked ? AppColors.primary : const Color(0xFFE5E7EB),
-                    ),
-                  ),
-                  onPressed: () => _selectPresetHub(hub),
-                ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: _presetLandHubs.map((hub) {
+              return ActionChip(
+                label: Text(hub.shortLabel, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                avatar: Text(hub.icon),
+                backgroundColor: AppColors.surfaceLight,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                onPressed: () {
+                  setState(() {
+                    _departureCtrl.text = hub.name;
+                    _departureLat = hub.lat;
+                    _departureLng = hub.lon;
+                    _recalculateDistanceAndEstimate();
+                  });
+                },
               );
             }).toList(),
           ),
-        ),
-      ],
-    );
-  }
 
-  Widget _buildDepartureField(String label, String hint, TextEditingController ctrl) {
-    return LocationPicker(
-      label: label,
-      hint: hint,
-      initialValue: ctrl.text.isNotEmpty ? ctrl.text : null,
-      initialLat: _departureLat,
-      initialLon: _departureLng,
-      onLocationSelected: (loc) {
-        if (loc != null) {
-          ctrl.text = loc.displayName;
-          _departureLat = loc.lat;
-          _departureLng = loc.lon;
-          widget.trip.departurePoint = loc.displayName;
-          widget.trip.departureLat = loc.lat;
-          widget.trip.departureLng = loc.lon;
-        } else {
-          ctrl.clear();
-          _departureLat = null;
-          _departureLng = null;
-          widget.trip.departurePoint = null;
-          widget.trip.departureLat = null;
-          widget.trip.departureLng = null;
-        }
-        _recalculateSmartEstimate(autoSetDuration: true);
-      },
-    );
-  }
+          const SizedBox(height: 14),
 
-  Widget _buildTextField({
-    required String label,
-    required String hint,
-    required TextEditingController ctrl,
-    IconData? prefixIcon,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle( fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.muted),
-        ),
-        const SizedBox(height: 6),
-        TextField(
-          controller: ctrl,
-          style: const TextStyle( fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.deepEarth),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: const TextStyle( fontSize: 12, color: AppColors.muted),
-            filled: true,
-            fillColor: AppColors.surfaceLight,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-            prefixIcon: prefixIcon != null ? Icon(prefixIcon, color: AppColors.primary, size: 18) : null,
-          ),
-        ),
-      ],
-    );
-  }
+          // Departure Field
+          _buildDepartureField('Bus Terminal / Departure Point'),
 
-  Widget _buildCostField({
-    required String label,
-    required TextEditingController ctrl,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle( fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.muted),
-        ),
-        const SizedBox(height: 6),
-        TextField(
-          controller: ctrl,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          style: const TextStyle( fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.deepEarth),
-          decoration: InputDecoration(
-            hintText: '0.00',
-            hintStyle: const TextStyle( fontSize: 13, color: AppColors.muted),
-            prefixIcon: const Padding(
-              padding: EdgeInsets.only(left: 12, right: 6),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                widthFactor: 1.0,
-                child: Text(
-                  '₱',
-                  style: TextStyle( fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.primary),
-                ),
-              ),
-            ),
-            filled: true,
-            fillColor: AppColors.surfaceLight,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-          ),
-        ),
-      ],
-    );
-  }
+          const SizedBox(height: 14),
 
-  Widget _buildVehicleCountStepper() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        children: [
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Number of Vehicles',
-                  style: TextStyle( fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.deepEarth),
-                ),
-                Text(
-                  'Carpooling / Convoy fleet',
-                  style: TextStyle( fontSize: 10, color: AppColors.warmMuted),
-                ),
-              ],
+          // Bus Line / Operator
+          TextField(
+            controller: _busLineCtrl,
+            decoration: InputDecoration(
+              labelText: 'Bus Line / Operator (Optional)',
+              hintText: 'e.g. Victory Liner, Genesis JoyBus, UV Express',
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             ),
           ),
+
+          const SizedBox(height: 14),
+
+          // Fare Per Pax
           Row(
             children: [
-              _stepperBtn(Icons.remove_rounded, () {
-                if (_vehicleCount > 1) setState(() => _vehicleCount--);
-              }),
-              Container(
-                width: 34,
-                height: 34,
-                alignment: Alignment.center,
-                child: Text(
-                  '$_vehicleCount',
-                  style: const TextStyle( fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.deepEarth),
+              Expanded(
+                child: TextField(
+                  controller: _farePerPaxCtrl,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(
+                    labelText: 'Fare / Ticket Per Pax',
+                    prefixText: '₱ ',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  ),
+                  onChanged: (_) => setState(() {}),
                 ),
               ),
-              _stepperBtn(Icons.add_rounded, () => setState(() => _vehicleCount++)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.sand,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('GROUP COMMITMENT ($pax pax)', style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: AppColors.primary)),
+                      Text(
+                        CurrencyUtils.formatAmount(totalFare),
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.deepEarth),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ],
@@ -1221,54 +989,178 @@ class _TransportStepState extends State<TransportStep> with SingleTickerProvider
     );
   }
 
-  Widget _stepperBtn(IconData icon, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 30,
-        height: 30,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0xFFE5E7EB)),
-        ),
-        child: Icon(icon, size: 16, color: AppColors.primary),
-      ),
-    );
-  }
+  // ── Mode C: Rental Sub-form ────────────────────────────────────────────────
+  Widget _buildRentalModeForm() {
+    final totalRental = _computeTotalRentalCost();
+    final memberCount = widget.trip.travelers.isNotEmpty ? widget.trip.travelers.length : 1;
+    final perMemberShare = totalRental / memberCount;
 
-  Widget _buildGasSplitToggle() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      key: const ValueKey('rental_form'),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(14),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.cardBorder),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Split Gas & Tolls',
-                  style: TextStyle( fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.deepEarth),
+          const Text(
+            'Chartered Van / Car Rental Pricing',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+          ),
+          const SizedBox(height: 12),
+
+          // Daily Rate & Days Counter
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _dailyRateCtrl,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(
+                    labelText: 'Daily Rental Rate',
+                    prefixText: '₱ ',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  ),
+                  onChanged: (_) => setState(() {}),
                 ),
-                Text(
-                  'Include in group expense split',
-                  style: TextStyle( fontSize: 10, color: AppColors.warmMuted),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Rental Duration', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.remove_circle_outline),
+                          onPressed: _rentalDays > 1 ? () => setState(() => _rentalDays--) : null,
+                        ),
+                        Text('$_rentalDays ${_rentalDays == 1 ? 'day' : 'days'}', style: const TextStyle(fontWeight: FontWeight.w700)),
+                        IconButton(
+                          icon: const Icon(Icons.add_circle_outline),
+                          onPressed: () => setState(() => _rentalDays++),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          // Driver Inclusion Switch
+          SwitchListTile.adaptive(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Driver Included in Charter', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+            subtitle: const Text('Includes driver daily meal & per diem', style: TextStyle(fontSize: 12)),
+            value: _hasDriver,
+            onChanged: (v) => setState(() => _hasDriver = v),
+            activeThumbColor: AppColors.primary,
+          ),
+
+          if (_hasDriver) ...[
+            TextField(
+              controller: _driverFeeCtrl,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(
+                labelText: 'Driver Daily Allowance / Meals',
+                prefixText: '₱ ',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+            const SizedBox(height: 12),
+          ],
+
+          // Fuel Policy Toggle
+          SwitchListTile.adaptive(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Fuel Included in Rental Package', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+            subtitle: Text(
+              _rentalFuelIncluded
+                  ? 'Rental agency covers gas'
+                  : 'Group splits pump fuel (~${CurrencyUtils.formatAmount(_computeEstimatedFuelCost())})',
+              style: const TextStyle(fontSize: 12),
+            ),
+            value: _rentalFuelIncluded,
+            onChanged: (v) => setState(() => _rentalFuelIncluded = v),
+            activeThumbColor: AppColors.primary,
+          ),
+
+          const SizedBox(height: 10),
+
+          // Total Rental Shared Pool Card
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppColors.sand,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('TOTAL RENTAL COMMITMENT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.primary)),
+                    Text(
+                      CurrencyUtils.formatAmount(totalRental),
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.deepEarth),
+                    ),
+                  ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text('PER MEMBER ($memberCount)', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
+                    Text(
+                      CurrencyUtils.formatAmount(perMemberShare),
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.primary),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-          Switch.adaptive(
-            value: _splitGas,
-            onChanged: (v) => setState(() => _splitGas = v),
-            activeThumbColor: AppColors.primary,
-            activeTrackColor: AppColors.primary.withValues(alpha: 0.4),
-          ),
         ],
       ),
+    );
+  }
+
+  // ── Departure Field Input ──────────────────────────────────────────────────
+  Widget _buildDepartureField(String label) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+        const SizedBox(height: 6),
+        LocationPicker(
+          label: label,
+          hint: 'Tap pin or type meet-up location...',
+          initialValue: _departureCtrl.text,
+          initialLat: _departureLat,
+          initialLon: _departureLng,
+          onLocationSelected: (result) {
+            if (result != null) {
+              setState(() {
+                _departureCtrl.text = result.displayName;
+                _departureLat = result.lat;
+                _departureLng = result.lon;
+                _recalculateDistanceAndEstimate();
+              });
+            }
+          },
+        ),
+      ],
     );
   }
 }

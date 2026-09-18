@@ -332,6 +332,31 @@ class TransportDetail {
   final bool splitGas;
   final String? notes;
 
+  // ── Plan 6 Tri-Modal Land Transport Extensions ─────────────────────────
+  final String? tripTransportMode; // 'private' | 'commute' | 'rental'
+  // Mode A: Private specs
+  final String? vehicleId;
+  final String? vehicleName;
+  final String? vehicleType;
+  final String? fuelType;
+  final double? kmPerLiter;
+  final bool splitTolls;
+  final double? estimatedTollCost;
+  // Mode B: Commute specs
+  final String? commuteType; // 'bus' | 'jeepney' | 'tricycle' | 'uv_express'
+  final String? transitHubName;
+  final double? farePerPax;
+  final String? dropOffPoint;
+  // Mode C: Rental specs
+  final String? rentalType; // 'van_hire' | 'car_rental' | 'coaster'
+  final double? dailyRate;
+  final int? rentalDays;
+  final bool hasDriver;
+  final double? driverFeePerDay;
+  final bool fuelIncluded;
+  final bool tollsIncluded;
+  final double? totalRentalCost;
+
   const TransportDetail({
     required this.mode,
     this.vehicleCount,
@@ -347,7 +372,109 @@ class TransportDetail {
     this.estimatedCost,
     this.splitGas = false,
     this.notes,
+    this.tripTransportMode,
+    this.vehicleId,
+    this.vehicleName,
+    this.vehicleType,
+    this.fuelType,
+    this.kmPerLiter,
+    this.splitTolls = false,
+    this.estimatedTollCost,
+    this.commuteType,
+    this.transitHubName,
+    this.farePerPax,
+    this.dropOffPoint,
+    this.rentalType,
+    this.dailyRate,
+    this.rentalDays,
+    this.hasDriver = true,
+    this.driverFeePerDay,
+    this.fuelIncluded = false,
+    this.tollsIncluded = false,
+    this.totalRentalCost,
   });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'mode': tripTransportMode ?? mode.name,
+      'legacy_mode': mode.name,
+      if (vehicleCount != null) 'vehicle_count': vehicleCount,
+      if (departurePoint != null) 'departure_point': departurePoint,
+      if (departureLat != null) 'departure_lat': departureLat,
+      if (departureLng != null) 'departure_lng': departureLng,
+      if (operatorName != null) 'operator_name': operatorName,
+      if (bookingReference != null) 'booking_reference': bookingReference,
+      'estimated_duration': estimatedDuration,
+      if (gasCostShare != null) 'gas_cost_share': gasCostShare,
+      if (estimatedCost != null) 'estimated_cost': estimatedCost,
+      'split_gas': splitGas,
+      if (notes != null) 'notes': notes,
+      if (vehicleId != null) 'vehicle_id': vehicleId,
+      if (vehicleName != null) 'vehicle_name': vehicleName,
+      if (vehicleType != null) 'vehicle_type': vehicleType,
+      if (fuelType != null) 'fuel_type': fuelType,
+      if (kmPerLiter != null) 'kml': kmPerLiter,
+      'split_tolls': splitTolls,
+      if (estimatedTollCost != null) 'estimated_toll_cost': estimatedTollCost,
+      if (commuteType != null) 'commute_type': commuteType,
+      if (transitHubName != null) 'transit_hub_name': transitHubName,
+      if (farePerPax != null) 'fare_per_pax': farePerPax,
+      if (dropOffPoint != null) 'drop_off_point': dropOffPoint,
+      if (rentalType != null) 'rental_type': rentalType,
+      if (dailyRate != null) 'daily_rate': dailyRate,
+      if (rentalDays != null) 'rental_days': rentalDays,
+      'has_driver': hasDriver,
+      if (driverFeePerDay != null) 'driver_fee_per_day': driverFeePerDay,
+      'fuel_included': fuelIncluded,
+      'tolls_included': tollsIncluded,
+      if (totalRentalCost != null) 'total_rental_cost': totalRentalCost,
+    };
+  }
+
+  factory TransportDetail.fromMap(Map<String, dynamic> map) {
+    final modeStr = map['legacy_mode'] ?? map['mode'] ?? 'car';
+    final parsedMode = TransportMode.values.firstWhere(
+      (m) => m.name == modeStr,
+      orElse: () => TransportMode.car,
+    );
+
+    return TransportDetail(
+      mode: parsedMode,
+      vehicleCount: (map['vehicle_count'] as num?)?.toInt(),
+      departurePoint: map['departure_point'] as String?,
+      departureLat: (map['departure_lat'] as num?)?.toDouble(),
+      departureLng: (map['departure_lng'] as num?)?.toDouble(),
+      flightNumber: map['flight_number'] as String?,
+      pierName: map['pier_name'] as String?,
+      operatorName: map['operator_name'] as String?,
+      bookingReference: map['booking_reference'] as String?,
+      estimatedDuration: map['estimated_duration'] as String? ?? '',
+      gasCostShare: (map['gas_cost_share'] as num?)?.toDouble(),
+      estimatedCost: (map['estimated_cost'] as num?)?.toDouble(),
+      splitGas: map['split_gas'] as bool? ?? false,
+      notes: map['notes'] as String?,
+      tripTransportMode: map['mode'] as String?,
+      vehicleId: map['vehicle_id'] as String?,
+      vehicleName: map['vehicle_name'] as String?,
+      vehicleType: map['vehicle_type'] as String?,
+      fuelType: map['fuel_type'] as String?,
+      kmPerLiter: (map['kml'] as num?)?.toDouble(),
+      splitTolls: map['split_tolls'] as bool? ?? false,
+      estimatedTollCost: (map['estimated_toll_cost'] as num?)?.toDouble(),
+      commuteType: map['commute_type'] as String?,
+      transitHubName: map['transit_hub_name'] as String?,
+      farePerPax: (map['fare_per_pax'] as num?)?.toDouble(),
+      dropOffPoint: map['drop_off_point'] as String?,
+      rentalType: map['rental_type'] as String?,
+      dailyRate: (map['daily_rate'] as num?)?.toDouble(),
+      rentalDays: (map['rental_days'] as num?)?.toInt(),
+      hasDriver: map['has_driver'] as bool? ?? true,
+      driverFeePerDay: (map['driver_fee_per_day'] as num?)?.toDouble(),
+      fuelIncluded: map['fuel_included'] as bool? ?? false,
+      tollsIncluded: map['tolls_included'] as bool? ?? false,
+      totalRentalCost: (map['total_rental_cost'] as num?)?.toDouble(),
+    );
+  }
 }
 
 class ItineraryDay {

@@ -18,7 +18,7 @@ This document serves as our compiled repository master plan, organized hierarchi
 | # | Plan / Feature | Status | Key Focus |
 |---|---|---|---|
 | **5** | [Google Maps & Pin Location Integration](#completed-plans-summary) | 🟢 **Complete** | Paste GMap link, auto-fill itinerary, pin-drop flying, zero-cost resolution |
-| **6** | [Tri-Modal Land Transport (Private, Commute, Rental) & Vehicle Garage Fuel Estimator](#plan-6-tri-modal-land-transport-private-commute-rental--vehicle-garage-fuel-estimator) | 🟡 **Drafted / Queued** | Finalized 3 land modes (Private, Commute, Rental; strictly no sea/plane), user garage, live fuel prices & rental splitting |
+| **6** | [Tri-Modal Land Transport (Private, Commute, Rental) & Vehicle Garage Fuel Estimator](#plan-6-tri-modal-land-transport-private-commute-rental--vehicle-garage-fuel-estimator) | 🟢 **Complete** | Finalized 3 land modes (Private, Commute, Rental; strictly no sea/plane), user garage, live fuel prices & rental splitting |
 | **7** | [Travel Circles (Squads & Barkada Presets) for Multi-Member Trip Creation](#plan-7-travel-circles-squads-barkada-presets-for-multi-member-trip-creation) | 🟡 **Drafted / Queued** | Friend circles/squad presets, 1-tap batch addition, smart co-traveler suggestions & deduplication |
 | **8** | [Real-Time Live Weather Forecast & Severe Condition Alerts Engine](#plan-8-real-time-live-weather-forecast-severe-condition-alerts-engine) | 🟢 **Complete** | Open-Meteo API integration, offline caching, itinerary day-strip weather & severe storm alerts |
 | **9** | [Dual-Lens Budget & Expense Hub (Personal Pocket Tracker + Group Trip Summary)](#plan-9-dual-lens-budget-expense-hub-personal-pocket-tracker-group-trip-summary) | 🟡 **Drafted / Queued** | Private personal expenses, "My True Trip Cost", cash/GCash tracking & daily burn pace meter |
@@ -31,12 +31,14 @@ This document serves as our compiled repository master plan, organized hierarchi
 | # | Plan / Feature | Status | Key Focus |
 |---|---|---|---|
 | **13** | [Trip Detail Screen: Ongoing Command Center, HUD & Quick Action Hub](#plan-13-trip-detail-screen-ongoing-command-center-hud-quick-action-hub) | 🟢 **Complete** | Active Quick Stop HUD, persistent bottom bar, telemetry, officers, announcements & weather |
-| **14** | [Day Map Intelligent Route Optimization & Arrival Geofence](#plan-14-day-map-intelligent-route-optimization-best-way-routing) | 🟡 **Drafted / Queued** | Street-network routing, best order optimization, arrival geofence pop-up & notification |
+| **14** | [Day Map Intelligent Route Optimization, OSRM Road Snapping & Offline Map Tile Cache](#plan-14-day-map-intelligent-route-optimization-osrm-road-snapping--offline-map-tile-cache) | 🟡 **Drafted / Queued** | Street-network OSRM routing, offline tile caching, best order optimization, arrival geofence |
 | **15** | [Comprehensive Mobile Notifications Architecture (Push, In-App Banners & Deep-Link Routing)](#plan-15-comprehensive-mobile-notifications-architecture-push-in-app-banners-deep-link-routing) | 🟢 **Complete** | In-app Dynamic Island banners, background Heads-Up floating alerts, local alarms, FCM push & deep routing |
 | **16** | [Gemini Embedded AI Travel Copilot & Assistant](#plan-16-gemini-embedded-ai-travel-copilot-assistant) | 🟢 **Complete** | Natural language trip planner, smart itinerary recommendations, budget optimization & packing generator |
 | **17** | [Supabase & Middleware App Versioning & OTA Updates](#plan-17-supabase-middleware-app-versioning-ota-updates) | 🟡 **Drafted / Queued** | Version gatekeeper, Shorebird OTA code push, Supabase storage APK download & force/soft update dialogs |
 | **18** | [Tara Laravel Middleware & SuperAdmin Dashboard (Universal Links, CMS & Ops)](#plan-18-tara-laravel-middleware-superadmin-dashboard-universal-links-cms-ops) | 🟡 **Drafted / Queued** | Web-to-app deep linking gateway, Filament v3 CMS, trip templates, feedback helpdesk & remote config |
 | **19** | [Universal Responsive Layout Engine & Zero-Overflow Architecture](#plan-19-universal-responsive-layout-engine--zero-overflow-architecture) | 🟢 **Complete** | Breakpoints, clamped text scaler, safe padding/insets, zero hardcoded MediaQuery dimensions |
+| **21** | [Unified Firebase & Supabase Cloud Ecosystem (Remote FCM, Crashlytics & Real-Time Sync)](#plan-21-unified-firebase--supabase-cloud-ecosystem-remote-fcm-crashlytics--real-time-sync) | 🟡 **Drafted / Queued** | Dual-cloud architecture: Supabase backend/RLS/storage + Firebase device-wake push (FCM), Crashlytics & telemetry |
+| **22** | [Advanced Convoy Telemetry, Formation Radar & Geofenced Rendezvous](#plan-22-advanced-convoy-telemetry-formation-radar--geofenced-rendezvous) | 🟡 **Drafted / Queued** | Lead/tail pace radar, individual stop ETAs, auto-arrival geofencing, midpoint gathering & background PiP HUD |
 
 ### 📱 Screen-by-Screen & Batching Index
 - [Screen-by-Screen Feature Matrix & Implementation Clusters](#-screen-by-screen-feature-matrix--implementation-clusters)
@@ -54,6 +56,8 @@ This document serves as our compiled repository master plan, organized hierarchi
 | **Plan 3** | Offline Read-Only Guard & Action Freezing | IMP-083 | ✅ Complete | Offline write locks, visual badges, and stale sync error prevention. |
 | **Plan 4** | Cloud-Native Avatar Storage & CDN Cache Architecture | IMP-082 | ✅ Complete | Supabase Storage avatars bucket, ProfileRepository upload, and MemberAvatarCircle. |
 | **Plan 5** | Google Maps Link Resolver & Pin Location Integration | IMP-117 | ✅ Complete | Zero-cost GMap URL resolver, Nominatim reverse geocode, instant camera fly, and itinerary auto-fill. |
+| **Plan 6** | Tri-Modal Land Transport & Garage Fuel Estimator | IMP-131 | ✅ Complete | 3 land modes (Private, Commute, Rental), Profile Garage manager, DOE fuel cost calculator & transit hubs. |
+| **Plan 7** | Travel Circles (Squads & Barkada Presets) | IMP-132 | ✅ Complete | Reusable travel squads/circles, 1-tap multi-member addition in trip creation, full CRUD management tab. |
 | **Plan 8** | Real-Time Live Weather Forecast & Severe Alerts | IMP-088 | ✅ Complete | Open-Meteo API integration, offline cache, DayStrip weather & storm alerts. |
 | **Plan 12** | Floating Travel Bubble & Overlay HUD | IMP-129 | ✅ Complete | In-app draggable edge-snapping bubble, mini-HUD card, and quick expense logging. |
 | **Plan 13** | Trip Detail Screen: Ongoing Command Center & HUD | IMP-089 | ✅ Complete | Quick Stop HUD, persistent bottom dock, destination weather, officers. |
@@ -277,7 +281,7 @@ Establish a finalized, strictly land-based **Tri-Modal Transport Architecture** 
 ---
 
 
-## Plan 7: Travel Circles (Squads & Barkada Presets) for Multi-Member Trip Creation
+## Plan 7: Travel Circles (Squads & Barkada Presets) for Multi-Member Trip Creation `[COMPLETE — IMP-132]`
 
 *(Originally proposed as IDEA-009)*
 
@@ -522,36 +526,44 @@ Allow travelers, drivers, and convoy riders to minimize Tara Travel into a dragg
 ---
 
 
-## Plan 14: Day Map Intelligent Route Optimization & Best-Way Routing
+## Plan 14: Day Map Intelligent Route Optimization, OSRM Road Snapping & Offline Map Tile Cache
 
 ### Goal
-Upgrade the Day Map from drawing simple linear/straight-line connections between itinerary stops to calculating and rendering the **best realistic path (street-level route navigation / road network polyline)** and optionally calculating the **most optimal sequence (Traveling Salesperson / Route Optimizer)**.
+Upgrade all map surfaces (Day Map, Live Navigation Map, and Itinerary stops) from drawing simple linear/straight-line connections to calculating and rendering **true road-snapped driving paths (OSRM street-level polylines)**, providing **offline map tile caching** for zero-signal Philippine provincial/island routes, adding **geocoding debounce safeguards**, and optimizing stop sequences (**TSP Route Optimizer**).
 
 ### Core Capabilities
-1. **Actual Road Network Routing (Polyline Following Actual Streets)**:
-   - Instead of naive direct point-to-point lines (`Polyline([stopA, stopB])`), fetch turn-by-turn road geometries (e.g., via OpenStreetMap / OSRM routing engine or Mapbox Directions API).
-   - Display real curves, highways, bridges, and walking/driving roads between consecutive stops on the Day Map.
-2. **"Find Best Way" Intelligent Reordering (Optional TSP / Route Reorder)**:
+1. **OSRM Turn-by-Turn Road Snapping (`OsrmRoutingService`)**:
+   - Replaces straight direct lines with actual street-network driving polylines via the free, public OpenStreetMap OSRM routing engine (`https://router.project-osrm.org/route/v1/driving/{coords}?overview=full&geometries=geojson`).
+   - Calculates realistic turn-by-turn road curves across highways, bridges, and mountain passes for both `LiveMapTab` and `ItineraryMap`.
+   - Returns real distance (km) and estimated driving travel duration (minutes) dynamically.
+2. **Offline & Remote Island Map Tile Caching (`MapTileConfig` & Cache Interceptor)**:
+   - Wraps `FlutterMap` tile layer with local disk tile caching (`dio_cache_interceptor` / `flutter_map_cache`).
+   - Traveler routes, loaded map regions, and stop areas remain viewable even when mobile data drops to zero in remote destinations (e.g., Sagada, Batanes, Siargao).
+3. **Philippine Geocoding Safeguards & Debounce Engine**:
+   - Enforces a minimum 400ms debounce buffer on all address inputs to strictly adhere to OpenStreetMap Nominatim's 1 req/sec policy and avoid HTTP 429 rate limits.
+   - Combines with the existing 32-slot LRU memory cache and local persistent disk cache for instant repeat place suggestions.
+4. **"Find Best Way" Intelligent Reordering (Optional TSP / Route Reorder)**:
    - Provide an "Optimize Day Route" action that computes the shortest travel distance/time among all day stops.
    - Prevents zigzagging across town by suggesting an optimized visit sequence.
    - Respects user-pinned fixed-time commitments (e.g., hotel check-ins, tour reservations) while reordering flexible stops in between.
-3. **Travel Duration & Distance Estimates**:
-   - Display distance (km) and estimated travel duration between stops along route segments.
-   - Dynamic transport mode toggle (Driving, Walking, Transit) per leg where applicable.
-4. **Offline Caching & Fallback**:
-   - Cache route polylines locally so previously loaded day routes render instantly offline.
-   - Gracefully fallback to straight-line dashed connector if no network is available and no route is cached.
-5. **Automatic Arrival Pin Pop-up & Geofence Notification**:
+5. **Mapbox Public Token Security & Origin Locking**:
+   - Lock down Mapbox access token usage to the app's package identity (`ph.taratravel.app`) in the Mapbox console to prevent unauthorized third-party quota drainage.
+6. **Automatic Arrival Pin Pop-up & Geofence Notification**:
    - **In-App Proximity Pop-up**: When the traveler's live GPS enters the target stop's radius (~50–100m geofence), trigger an arrival card / pin pop-up celebrating arrival: *"You have arrived at [Location Name]!"* with a 1-tap "Mark as Visited / Arrived" button.
    - **Local Push Notification**: If the app is in the background or device is locked, deliver an actionable local notification: *"Arrived at [Stop Name]? Tap to mark as completed."*
    - **Auto Status Progression**: Marking as arrived automatically updates the stop's status to `completed` in Supabase and progresses active routing to the next upcoming stop on the Day Map.
 
 ### Impacted Files & Architecture
-- `lib/core/services/route_optimization_service.dart` *(NEW)*
-- `lib/core/services/geofence_arrival_service.dart` *(NEW)*
-- `lib/features/itinerary/widgets/day_map_view.dart` *(MODIFY)*
+- `lib/core/services/osrm_routing_service.dart` *(NEW — free public OSRM road geometry & ETA fetcher)*
+- `lib/core/constants/map_tile_config.dart` *(MODIFY — integrate disk caching layer for offline tiles)*
+- `lib/core/services/philippine_geocoding_service.dart` *(MODIFY — debounce guard & persistent search cache)*
+- `lib/core/services/route_optimization_service.dart` *(NEW — TSP sequence optimizer)*
+- `lib/core/services/geofence_arrival_service.dart` *(NEW — stop proximity detection)*
+- `lib/features/navigation/widgets/live_map_tab.dart` *(MODIFY — replace straight-line routePoints with OSRM road polyline)*
+- `lib/features/itinerary/widgets/itinerary_map.dart` *(MODIFY — render road-snapped route segments)*
 - `lib/features/itinerary/widgets/arrival_dialog.dart` *(NEW)*
 - `lib/features/itinerary/providers/itinerary_provider.dart` *(MODIFY)*
+- `test/services/osrm_routing_service_test.dart` *(NEW)*
 - `test/services/route_optimization_service_test.dart` *(NEW)*
 - `test/services/geofence_arrival_service_test.dart` *(NEW)*
 
@@ -725,6 +737,130 @@ Provide a streamlined, high-visibility communication bridge between Group Chat a
 
 ---
 
+
+## Plan 21: Unified Firebase & Supabase Cloud Ecosystem (Remote FCM, Crashlytics & Real-Time Sync)
+
+### Goal
+Establish a high-performance, cost-effective dual-cloud bridge between **Supabase** and **Firebase**. Keep Supabase as the authoritative relational database, RLS security boundary, asset storage, and in-app WebSocket engine, while leveraging Firebase at the mobile device edge for remote wake-up push notifications (**Firebase Cloud Messaging / FCM**), uncaught native/Flutter error forensics (**Crashlytics**), and edge performance tracking.
+
+### Architecture & Division of Responsibilities
+
+```mermaid
+flowchart TD
+    subgraph Client ["Tara Travel Flutter App"]
+        FCM_Client["Firebase Messaging (FCM Listener)"]
+        Crashlytics_Client["Firebase Crashlytics & Telemetry"]
+        Router["NotificationRouter (Deep-Link Engine)"]
+        Overlay["InAppNotificationOverlay (Dynamic Island)"]
+        Supa_Client["supabase_flutter (Auth & Repositories)"]
+    end
+
+    subgraph FirebaseCloud ["Firebase (Edge & Device Layer)"]
+        FCM["FCM Push Gateway"]
+        CrashReport["Crashlytics Dashboard"]
+    end
+
+    subgraph SupaCloud ["Supabase (Core Backend & DB)"]
+        Postgres["PostgreSQL + RLS (Trips, Chat, Expenses)"]
+        Storage["Storage Buckets (Avatars, Receipts)"]
+        EdgeFn["Supabase Edge Functions / DB Webhooks"]
+    end
+
+    Supa_Client <--> Postgres
+    Supa_Client <--> Storage
+    Postgres -- "DB Webhook on Insert" --> EdgeFn
+    EdgeFn -- "Send Wakeup Payload" --> FCM
+    FCM --> FCM_Client
+    FCM_Client -- "Foreground Event" --> Overlay
+    FCM_Client -- "Background / Tap Action" --> Router
+    Crashlytics_Client --> CrashReport
+```
+
+### Core Capabilities
+
+1. **Remote Device Wake-up via FCM (Completing Plan 15)**:
+   - When the user's phone is locked or Tara Travel is terminated, Supabase WebSockets are dormant.
+   - FCM delivers high-priority remote data packets that wake Android, rendering high-priority heads-up banners over external navigation apps (Google Maps, Waze).
+   - In-app foreground messages route cleanly through the existing `InAppNotificationOverlay` without duplicate OS system trays.
+   - Background and cold-start notification taps pass standardized JSON payloads directly to `NotificationRouter.navigate(...)`.
+
+2. **FCM Token Device Registration & Privacy**:
+   - `fcm_token` column added to `public.profiles` or partitioned `public.user_devices` table.
+   - Tokens auto-refresh on startup and invalidate on session sign-out, respecting user privacy and multi-device sessions.
+
+3. **Field Telemetry & Crashlytics Integration**:
+   - Captures unhandled asynchronous Dart zone exceptions and native Android crashes during offline navigation, map rendering, and camera QR scanning.
+   - Logs non-fatal errors with custom diagnostic keys (`trip_id`, `connectivity_status`, `is_overlay_active`) to isolate edge-case crashes across varied OEM Android devices.
+
+4. **Database Event Relaying (Supabase Edge Function / Webhook)**:
+   - Supabase PostgreSQL triggers or Edge Functions respond to critical table events:
+     - `trip_chat`: New message / announcement posted $\to$ notify non-active co-travelers.
+     - `expenses`: New pending expense or settlement $\to$ notify affected member.
+     - `activity_logs`: Emergency / convoy SOS broadcast $\to$ trigger urgent alarm.
+
+### Impacted Files & Architecture
+- `pubspec.yaml` *(MODIFY — add `firebase_core`, `firebase_messaging`, `firebase_crashlytics`)*
+- `android/app/build.gradle` & `android/build.gradle` *(MODIFY — apply Google Services gradle plugin)*
+- `lib/main.dart` *(MODIFY — initialize Firebase and wire Crashlytics fatal error catcher)*
+- `lib/core/services/fcm_service.dart` *(NEW — token sync, foreground listener, and background handler)*
+- `lib/core/repositories/profile_repository.dart` *(MODIFY — sync device FCM tokens to `public.profiles`)*
+- `lib/core/services/notification_router.dart` *(MODIFY — bind FCM payload unpacker into deep router)*
+- `supabase/functions/push-relay/index.ts` *(NEW — Supabase Edge Function to dispatch FCM messages via Firebase Admin SDK)*
+- `test/services/fcm_service_test.dart` *(NEW — token registration and message routing tests)*
+
+---
+
+---
+
+
+## Plan 22: Advanced Convoy Telemetry, Formation Radar & Geofenced Rendezvous
+
+### Goal
+Deepen Tara Travel's real-time location sharing into an intelligent, cooperative convoy and safety radar. Bridge live telemetry with active itinerary milestones, automated geofencing check-ins, formation pace tracking (lead/tail stragglers), mid-journey rendezvous routing, and seamless background PiP navigation overlays.
+
+### Core Capabilities
+
+1. **Convoy Formation Radar & Straggler Detection**:
+   - Computes progress vector along the active route to automatically classify convoy roles:
+     - 🚗 **Convoy Lead**: Foremost traveler setting the pace.
+     - 🚙 **Mid-Pack**: Travelers safely clustered within the convoy corridor.
+     - ⚠️ **Convoy Tail / Straggler**: Travelers separated by >2.0 km or falling behind due to traffic/breakdowns.
+   - Proactive formation prompts: Automatically triggers an in-app banner to the Convoy Lead (*"Juan is 2.5 km behind — suggest a quick pit stop?"*).
+
+2. **Per-Companion Stop ETAs & Distance to Next Waypoint**:
+   - Replaces raw relative distances with real-time ETA and remaining distance toward the **current active itinerary stop** for every companion (e.g., *"Juan: 14 min away (9.2 km)"*, *"Maria: 4 min away (2.1 km)"*).
+   - Renders a live "Arrival Board" widget directly inside the Navigation HUD and `StopDetailSheet`.
+
+3. **Automated Geofenced Stop Arrival & Departure**:
+   - **Arrival Geofence**: Entering a 150m radius of the scheduled itinerary stop automatically updates companion status to **`Arrived`** and logs an entry in `activity_logs`.
+   - **Departure Geofence**: Automatically detects when the lead vehicle or >50% of the group departs the stop radius (>200m at >15 km/h), prompting stragglers and notifying co-travelers (*"Convoy rolled out from Stop 2"*).
+
+4. **"Meet Halfway" Rendezvous & Direct Companion Routing**:
+   - **Midpoint Gatherer**: When group members split up across an island, city, or festival, a single tap on **"Meet Halfway"** computes the geographical centroid and finds the closest shared stop, coffee shop, or parking hub.
+   - **Direct Vector & Polyline**: Tapping any companion on the live map renders a dynamic dashed route directly to their location with real-time distance and estimated intercept time.
+
+5. **Floating Travel Bubble Convoy Radar ([Integrating Plan 12](file:///d:/Spencer/Downloads/tara_travel/docs/ROADMAP.md#L27))**:
+   - Pipes live convoy telemetry into `FloatingBubbleService`:
+     - Shows an on-screen mini-radar overlay while travelers run external navigation apps (Google Maps, Waze).
+     - Miniature distance meter to the nearest companion and instant 1-tap SOS beacon triggers.
+
+6. **Battery-Adaptive Background Keep-Alive**:
+   - Android Foreground Service integration with sticky persistent notification (*"Sharing location with Baguio Roadtrip convoy • 5 active"*).
+   - Dynamically drops GPS polling frequency when stationary or inside hotel geofences, ramping up to 5s intervals only when moving >20 km/h.
+
+### Impacted Files & Architecture
+- `lib/core/services/location_broadcast_service.dart` *(MODIFY — add stop ETA calculation, convoy pace vectoring & geofence listeners)*
+- `lib/features/navigation/models/navigation_models.dart` *(MODIFY — extend `NavMember` with `etaToStop`, `convoyRole: lead | mid | tail`, and `distanceToStopKm`)*
+- `lib/features/navigation/providers/navigation_provider.dart` *(MODIFY — integrate convoy formation state & auto geofence evaluator)*
+- `lib/features/navigation/widgets/convoy_radar_card.dart` *(NEW — formation radar UI showing lead/tail visualizer and stop arrival board)*
+- `lib/features/navigation/widgets/meet_halfway_sheet.dart` *(NEW — centroid rendezvous calculator and venue suggester)*
+- `lib/core/services/floating_bubble_service.dart` *(MODIFY — feed nearest companion distance into PiP overlay HUD)*
+- `test/services/convoy_telemetry_test.dart` *(NEW — unit test formation ranking, straggler triggers & arrival geofencing)*
+
+---
+
+---
+
 ## 📱 Screen-by-Screen Feature Matrix & Implementation Clusters
 
 This matrix aggregates all active roadmap plans that share identical screens/surfaces, identifying the **level of changes needed** (Low, Medium, High, Extreme) to enable efficient multi-feature batching.
@@ -735,13 +871,14 @@ This matrix aggregates all active roadmap plans that share identical screens/sur
 | :--- | :--- | :--- | :---: | :--- |
 | **Trip Detail Command Center** | `lib/features/trip_detail/trip_detail_screen.dart` | **Plan 20** (Announcements)<br>**Plan 11** (Meet-up Advisory)<br>**Plan 16** (Copilot Action)<br>**Plan 12** (Floating HUD Bubble)<br>**Plan 10** (Optional Map Mode)<br>**Plan 6** (Transport Summary)<br>**Plan 15** (Deep-Link Arguments) | **High** *(Multiple Components)* | • Mount `TripAnnouncementsCard` below weather/HUD with priority tinting.<br>• Mount `SmartDepartureAdvisoryCard` for wheels-up countdown & headcount.<br>• Add `[✨ Tara Copilot]` and `[Pop out Bubble]` actions to quick actions.<br>• Condition map actions based on `is_map_enabled`.<br>• Adapt `TransportSummaryCard` for Private/Commute/Rental.<br>• Accept `initialTabIndex` & `highlightItemId` routing arguments. |
 | **Trip Creation Wizard** | `lib/features/create_trip/create_trip_flow.dart` | **Plan 6** (Tri-Modal Transport)<br>**Plan 7** (Travel Circles)<br>**Plan 10** (Optional Map Mode)<br>**Plan 11** (Stop 0 Meet-up) | **High** | • Refactor `TransportStep` into 3-mode selector (Private/Commute/Rental).<br>• Add Friend Circle batch chips in `DetailsStep` friends picker.<br>• Add toggle for Optional Map / Adventure / Multi-point mode in `DetailsStep`.<br>• Auto-provision Day 1 Stop 0 (`Meet-up & Assembly`) from departure coordinates upon trip submission. |
-| **Itinerary & Day Map** | `lib/features/itinerary/itinerary_screen.dart`<br>`lib/features/itinerary/widgets/day_map_view.dart` | **Plan 14** (Route Optimization & Geofence)<br>**Plan 10** (Optional Map Mode)<br>**Plan 16** (AI Stop Addition) | **High** | • Integrate street-level road polyline routing (OSRM/Mapbox) into `DayMapView`.<br>• Add "Optimize Day Route" (TSP reordering) action.<br>• Proximity geofence trigger with `ArrivalDialog` celebrating arrival.<br>• Adapt `ItineraryBottomDock` buttons to "Adventure Compass / Timeline" when map is disabled.<br>• Support multi-point waypoints in `ItineraryMapSheet`. |
+| **Itinerary & Day Map** | `lib/features/itinerary/itinerary_screen.dart`<br>`lib/features/itinerary/widgets/day_map_view.dart` | **Plan 14** (OSRM Routing, Tile Cache & Geofence)<br>**Plan 10** (Optional Map Mode)<br>**Plan 16** (AI Stop Addition) | **High** | • Integrate street-level road polyline routing via public OSRM into `DayMapView` & `ItineraryMap`.<br>• Local disk map tile caching for zero-signal offline exploration.<br>• Add "Optimize Day Route" (TSP reordering) action.<br>• Proximity geofence trigger with `ArrivalDialog` celebrating arrival.<br>• Adapt `ItineraryBottomDock` buttons to "Adventure Compass / Timeline" when map is disabled.<br>• Support multi-point waypoints in `ItineraryMapSheet`. |
 | **Budget & Expense Hub** | `lib/features/budget/budget_screen.dart`<br>`lib/features/expenses/widgets/add_expense_form.dart` | **Plan 9** (Dual-Lens Budget & Pocket)<br>**Plan 15** (Expense Deep Links) | **High** | • Add segmented toggle: `My Personal Pocket` vs `Group Finances`.<br>• Mount `PersonalPocketCard` & `DailyPaceGauge` speedometer.<br>• In `AddExpenseForm`, add `is_personal` toggle and `payment_method` chips (`cash`, `gcash`, `maya`).<br>• Auto-scroll/highlight specific expense cards when opened via push notification. |
 | **Group Chat Hub** | `lib/features/chat/chat_screen.dart`<br>`lib/features/chat/widgets/chat_attachment_picker_sheet.dart` | **Plan 20** (Announcements Engine) | **Medium** | • Add "📢 Trip Announcement" item in `ChatAttachmentPickerSheet`.<br>• Add compose announcement modal with priority selection.<br>• Pinned announcement top drawer with counter.<br>• Styled announcement bubble cards with deep-link anchors. |
 | **Friends & Squads** | `lib/features/friends/friends_screen.dart` | **Plan 7** (Travel Circles) | **High** | • Add "Circles" tab to friends management.<br>• Circle CRUD sheets with name, emoji, and default roles.<br>• Shareable `circle_invite_code` onboarding flow. |
 | **User Profile & Garage** | `lib/features/profile/profile_screen.dart` | **Plan 6** (User Garage & Vehicles)<br>**Plan 7** (Circles Shortcut) | **Medium** | • Add "My Vehicles / Garage" entry tile launching `UserVehiclesSheet`.<br>• Vehicle CRUD (model, fuel type, km/L efficiency rating).<br>• Quick navigation entry to manage Travel Circles. |
 | **Notifications Center** | `lib/features/notifications/notifications_screen.dart` | **Plan 15** (Mobile Notifications) | **Medium** | • Make notification list tiles interactive with category-tinted icons.<br>• Wire tap actions to `NotificationRouter` for deep-link screen navigation. |
-| **System Overlay & Background** | Global App Services & Android Manifest | **Plan 12** (Floating Bubble Overlay)<br>**Plan 15** (Local/Push Notifications)<br>**Plan 16** (Gemini AI Service Core)<br>**Plan 18** (Laravel Middleware) | **High to Extreme** | • Android `SYSTEM_ALERT_WINDOW` & `FOREGROUND_SERVICE` for PiP bubble.<br>• Local timed notification channels & top slide-down `InAppNotificationOverlay`.<br>• Edge Function `tara-copilot` & client fallback.<br>• External Laravel 11 + Filament v3 backend for `/join/{code}` deep links. |
+| **Live Navigation & Convoy Radar** | `lib/features/navigation/live_navigation_screen.dart`<br>`lib/features/navigation/widgets/live_map_tab.dart` | **Plan 22** (Convoy Telemetry & Formation Radar)<br>**Plan 12** (Floating Bubble Bridge) | **High** | • Mount `ConvoyRadarCard` with lead/tail formation tracker & straggler alerts.<br>• Real-time per-companion ETAs to active itinerary stop.<br>• Automated 150m arrival & departure geofencing triggers.<br>• Add `[Meet Halfway]` rendezvous centroid calculator.<br>• Pipe companion proximity to `FloatingBubbleService` PiP HUD. |
+| **System Overlay & Background** | Global App Services & Android Manifest | **Plan 12** (Floating Bubble Overlay)<br>**Plan 15** (Local/Push Notifications)<br>**Plan 16** (Gemini AI Service Core)<br>**Plan 18** (Laravel Middleware)<br>**Plan 22** (Foreground Service Keep-Alive) | **High to Extreme** | • Android `SYSTEM_ALERT_WINDOW` & `FOREGROUND_SERVICE` for PiP bubble & persistent convoy GPS.<br>• Local timed notification channels & top slide-down `InAppNotificationOverlay`.<br>• Edge Function `tara-copilot` & client fallback.<br>• External Laravel 11 + Filament v3 backend for `/join/{code}` deep links. |
 
 ---
 
@@ -777,4 +914,8 @@ When scheduling implementation sprints, bundle features by screen to avoid touch
 3. **Map & Itinerary Optimization Cluster**:
    - **Bundle**: **Plan 10** (Map Modes) + **Plan 14** (Street Navigation & Geofence) on [`lib/features/itinerary/widgets/day_map_view.dart`](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/widgets/day_map_view.dart) and [`lib/features/itinerary/itinerary_screen.dart`](file:///d:/Spencer/Downloads/tara_travel/lib/features/itinerary/itinerary_screen.dart).
    - **Rationale**: `DayMapView` and `ItineraryBottomDock` undergo architectural changes for routing geometries and alternative timeline modes; modifying them concurrently prevents conflicting layout constraints.
+ 
+ 4. **Live Convoy & Telemetry Radar Cluster**:
+    - **Bundle**: **Plan 22** (Convoy Telemetry & Formation Radar) + **Plan 12** (Floating Bubble HUD) on [`lib/features/navigation/live_navigation_screen.dart`](file:///d:/Spencer/Downloads/tara_travel/lib/features/navigation/live_navigation_screen.dart) and [`lib/core/services/location_broadcast_service.dart`](file:///d:/Spencer/Downloads/tara_travel/lib/core/services/location_broadcast_service.dart).
+    - **Rationale**: Couples live broadcast telemetry with the floating PiP overlay and formation pacing in one synchronized sprint, minimizing battery impact and streamlining geolocation callbacks.
 
