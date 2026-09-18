@@ -1,11 +1,42 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/currency_utils.dart';
+
+class DistributionCategory {
+  final String label;
+  final double amount;
+  final Color color;
+
+  const DistributionCategory({
+    required this.label,
+    required this.amount,
+    required this.color,
+  });
+}
 
 class DistributionCard extends StatelessWidget {
-  const DistributionCard({super.key});
+  final double? totalSpent;
+  final List<DistributionCategory>? categories;
+
+  const DistributionCard({
+    super.key,
+    this.totalSpent,
+    this.categories,
+  });
+
+  static const List<DistributionCategory> _defaultCategories = [
+    DistributionCategory(label: 'Accommodation', amount: 17885, color: Color(0xFF007AFF)),
+    DistributionCategory(label: 'Food', amount: 9125, color: AppColors.amber),
+    DistributionCategory(label: 'Transport', amount: 4745, color: AppColors.primary),
+    DistributionCategory(label: 'Activities', amount: 4745, color: Color(0xFF34C759)),
+  ];
 
   @override
   Widget build(BuildContext context) {
+    final activeCategories = categories ?? _defaultCategories;
+    final total = totalSpent ?? activeCategories.fold<double>(0.0, (sum, c) => sum + c.amount);
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -22,17 +53,14 @@ class DistributionCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // SVG implementation placeholder using a custom painter or stack
-          _buildPieChart(),
+          _buildPieChart(total, activeCategories),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
-              children: [
-                _buildLegendRow('Accommodation', '49%', const Color(0xFF007AFF)),
-                _buildLegendRow('Food', '25%', AppColors.amber),
-                _buildLegendRow('Transport', '13%', AppColors.primary),
-                _buildLegendRow('Activities', '13%', const Color(0xFF34C759)),
-              ],
+              children: activeCategories.map((c) {
+                final pct = total > 0 ? ((c.amount / total) * 100).round() : 0;
+                return _buildLegendRow(c.label, '$pct%', c.color);
+              }).toList(),
             ),
           ),
         ],
@@ -40,25 +68,26 @@ class DistributionCard extends StatelessWidget {
     );
   }
 
-  Widget _buildPieChart() {
+  Widget _buildPieChart(double total, List<DistributionCategory> cats) {
+    final ratios = cats.map((c) => total > 0 ? c.amount / total : 0.0).toList();
+    final colors = cats.map((c) => c.color).toList();
+
     return SizedBox(
       width: 110,
       height: 110,
       child: Stack(
         children: [
-          // Using a simple Stack with overlapping CircularProgressIndicators for a "ring chart" effect
-          // In a real app, a custom painter or a chart library would be used
           CustomPaint(
             size: const Size(110, 110),
-            painter: _DistributionRingPainter(),
+            painter: _DistributionRingPainter(ratios: ratios, colors: colors),
           ),
           Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  '₱36,500',
-                  style: TextStyle(
+                Text(
+                  CurrencyUtils.formatCurrency(total),
+                  style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     color: AppColors.deepEarth,
@@ -115,48 +144,40 @@ class DistributionCard extends StatelessWidget {
 }
 
 class _DistributionRingPainter extends CustomPainter {
+  final List<double> ratios;
+  final List<Color> colors;
+
+  _DistributionRingPainter({required this.ratios, required this.colors});
+
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2 - 9;
     const strokeWidth = 18.0;
 
-    final paintAccom = Paint()
-      ..color = const Color(0xFF007AFF)
-      ..strokeWidth = strokeWidth
-      ..style = PaintingStyle.stroke;
+    double currentAngle = -math.pi / 2; // -90 degrees in radians
+    for (int i = 0; i < ratios.length && i < colors.length; i++) {
+      final sweepAngle = 2 * math.pi * ratios[i];
+      if (sweepAngle <= 0) continue;
 
-    final paintFood = Paint()
-      ..color = const Color(0xFFEF9F27)
-      ..strokeWidth = strokeWidth
-      ..style = PaintingStyle.stroke;
+      final paint = Paint()
+        ..color = colors[i]
+        ..strokeWidth = strokeWidth
+        ..style = PaintingStyle.stroke;
 
-    final paintTrans = Paint()
-      ..color = const Color(0xFFD85A30)
-      ..strokeWidth = strokeWidth
-      ..style = PaintingStyle.stroke;
-
-    final paintAct = Paint()
-      ..color = const Color(0xFF34C759)
-      ..strokeWidth = strokeWidth
-      ..style = PaintingStyle.stroke;
-
-    // Based on HTML arc ratios
-    const startScale = -1.5708; // -90 degrees in radians
-    
-    // Accom: 49%
-    canvas.drawArc(Rect.fromCircle(center: center, radius: radius), startScale, 3.14159 * 2 * 0.49, false, paintAccom);
-    
-    // Food: 25%
-    canvas.drawArc(Rect.fromCircle(center: center, radius: radius), startScale + (3.14159 * 2 * 0.49), 3.14159 * 2 * 0.25, false, paintFood);
-    
-    // Transport: 13%
-    canvas.drawArc(Rect.fromCircle(center: center, radius: radius), startScale + (3.14159 * 2 * 0.74), 3.14159 * 2 * 0.13, false, paintTrans);
-    
-    // Activities: 13%
-    canvas.drawArc(Rect.fromCircle(center: center, radius: radius), startScale + (3.14159 * 2 * 0.87), 3.14159 * 2 * 0.13, false, paintAct);
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius),
+        currentAngle,
+        sweepAngle,
+        false,
+        paint,
+      );
+      currentAngle += sweepAngle;
+    }
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _DistributionRingPainter oldDelegate) {
+    return oldDelegate.ratios != ratios || oldDelegate.colors != colors;
+  }
 }

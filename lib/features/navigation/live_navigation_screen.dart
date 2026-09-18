@@ -13,6 +13,7 @@ import 'widgets/proximity_alert_tab.dart';
 import 'widgets/arrived_tab.dart';
 import 'widgets/privacy_control_sheet.dart';
 import 'widgets/sos_emergency_modal.dart';
+import '../../core/services/floating_bubble_service.dart';
 
 /// Entry point for the Live Navigation feature.
 /// Can be pushed via Navigator.push or embedded inside a tab shell.
@@ -199,6 +200,33 @@ class _NavHeader extends ConsumerWidget {
                     ],
                   ),
                 ),
+                // Pop out Bubble button
+                IconButton(
+                  tooltip: 'Pop out Convoy Bubble',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  icon: Icon(
+                    Icons.bubble_chart_rounded,
+                    color: isDark ? AppColors.primaryLight : AppColors.primary,
+                    size: 20,
+                  ),
+                  onPressed: () {
+                    HapticFeedback.lightImpact().catchError((_) {});
+                    final bubble = ref.read(floatingBubbleProvider);
+                    if (bubble.isVisible) {
+                      ref.read(floatingBubbleProvider.notifier).hideBubble();
+                    } else {
+                      ref.read(floatingBubbleProvider.notifier).showBubble(
+                        nextStopName: nav.destination.name,
+                        nextStopEta: _phaseLabel(nav),
+                        nextStopDistanceKm: nav.distanceKm,
+                        closestCompanionName: nav.companions.isNotEmpty ? nav.companions.first.name : null,
+                        closestCompanionDistanceKm: nav.companions.isNotEmpty ? nav.companions.first.distanceKm : null,
+                      );
+                    }
+                  },
+                ),
+                const SizedBox(width: 4),
                 // SOS Panic Button
                 _SosPanicButton(isDark: isDark),
                 const SizedBox(width: 8),

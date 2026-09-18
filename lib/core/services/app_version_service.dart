@@ -64,6 +64,9 @@ class SemanticVersion implements Comparable<SemanticVersion> {
   @override
   int get hashCode => Object.hash(major, minor, patch, build);
 
+  /// Clean version string formatted for user interfaces (e.g. `1.0.1` without `+build`).
+  String get displayVersion => '$major.$minor.$patch';
+
   @override
   String toString() => build > 0 ? '$major.$minor.$patch+$build' : '$major.$minor.$patch';
 }
@@ -163,6 +166,10 @@ class AppVersionService {
   /// Default baseline version corresponding to `pubspec.yaml` or injected via `--dart-define=APP_VERSION=...`.
   static const String currentAppVersionString =
       String.fromEnvironment('APP_VERSION', defaultValue: '1.0.1+1');
+
+  /// Formatted current version without build metadata for user-facing surfaces (e.g. `1.0.1`).
+  static String get currentAppDisplayVersion =>
+      SemanticVersion.parse(currentAppVersionString).displayVersion;
 
   AppVersionService({SupabaseClient? supabaseClient})
       : _supabase = supabaseClient ?? Supabase.instance.client;

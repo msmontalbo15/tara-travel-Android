@@ -33,33 +33,44 @@ class LiveMapView extends StatelessWidget {
             ),
 
           // ── Member Pins ──────────────────────────────────────
-          ...state.members.map((member) {
-            // Mock positions based on HTML logic
-            double top = 0;
-            double left = 0;
-            
-            if (member.isMe) {
-              top = isMiniMap ? 110 : 440;
-              left = isMiniMap ? 138 : 152;
-            } else if (member.initials == 'C') {
-              top = isMiniMap ? 76 : 310;
-              left = isMiniMap ? 176 : 220;
-            } else if (member.initials == 'M') {
-              top = isMiniMap ? 96 : 375;
-              left = isMiniMap ? 52 : 82;
-            } else if (member.initials == 'L') {
-              top = isMiniMap ? 56 : 258;
-              left = isMiniMap ? 70 : 52;
-            } else {
-              return const SizedBox.shrink();
-            }
+          ...() {
+            final companions = state.members.where((m) => !m.isMe).toList();
+            return state.members.map((member) {
+              double top = 0;
+              double left = 0;
 
-            return Positioned(
-              top: top,
-              left: left,
-              child: _MemberPin(member: member, isMiniMap: isMiniMap),
-            );
-          }),
+              if (member.isMe) {
+                top = isMiniMap ? 110 : 440;
+                left = isMiniMap ? 138 : 152;
+              } else {
+                final idx = companions.indexOf(member);
+                final positions = isMiniMap
+                    ? const [
+                        Offset(176, 76),
+                        Offset(52, 96),
+                        Offset(70, 56),
+                        Offset(120, 60),
+                        Offset(200, 100),
+                      ]
+                    : const [
+                        Offset(220, 310),
+                        Offset(82, 375),
+                        Offset(52, 258),
+                        Offset(140, 200),
+                        Offset(260, 390),
+                      ];
+                final pos = positions[idx % positions.length];
+                top = pos.dy;
+                left = pos.dx;
+              }
+
+              return Positioned(
+                top: top,
+                left: left,
+                child: _MemberPin(member: member, isMiniMap: isMiniMap),
+              );
+            });
+          }(),
 
           // ── Scale Indicator ──────────────────────────────────
           if (!isMiniMap)

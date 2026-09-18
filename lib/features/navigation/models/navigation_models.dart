@@ -206,8 +206,8 @@ class NavigationState {
     this.isCheckedIn = false,
     required this.destination,
     this.currentTurn,
-    this.nextItineraryLabel = 'Sunset at White Beach',
-    this.nextItineraryTime = '5:30 PM',
+    this.nextItineraryLabel = 'No upcoming stop',
+    this.nextItineraryTime = '--',
     this.groupSpreadKm = 2.1,
     this.activeMemberRoute,
     this.meetHalfwayPoint,
@@ -232,6 +232,7 @@ class NavigationState {
       ? (activeMemberRoute!.distanceKm?.abs() ?? destination.distanceKm)
       : destination.distanceKm;
   int get durationMin => destination.durationMin;
+  List<NavMember> get companions => members.where((m) => !m.isMe).toList();
   bool get isGhostActive => privacyMode == LocationPrivacyMode.ghost ||
       (ghostUntil != null && ghostUntil!.isAfter(DateTime.now()));
 

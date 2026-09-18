@@ -11,6 +11,7 @@ import '../../../core/widgets/npc_privacy_policy_sheet.dart';
 import '../../../core/widgets/versioning/force_update_screen.dart';
 import '../../../core/widgets/versioning/maintenance_mode_screen.dart';
 import '../../../core/widgets/versioning/soft_update_sheet.dart';
+import '../../../core/widgets/versioning/version_info_sheet.dart';
 import '../screens/notification_settings_screen.dart';
 import 'profile_card.dart';
 
@@ -54,16 +55,12 @@ class _ProfileAccountCardState extends ConsumerState<ProfileAccountCard> {
       } else if (result.isSoftUpdate) {
         AppFeedback.showSuccess(
           context,
-          'New update available (v${result.remoteConfig?.latestVersion})! Tap Update to install.',
+          'New update available (v${result.remoteConfig?.latestVersion.displayVersion})! Tap Update to install.',
           title: 'Update Ready 🚀',
         );
         SoftUpdateSheet.show(context, result);
       } else {
-        AppFeedback.showSuccess(
-          context,
-          'You\'re on the latest version of Tara Travel (v${result.currentVersion}) ✨',
-          title: 'Up to Date',
-        );
+        VersionInfoSheet.show(context, result);
       }
     } catch (e) {
       if (mounted) {
@@ -643,8 +640,8 @@ class _ProfileAccountCardState extends ConsumerState<ProfileAccountCard> {
                           const SizedBox(height: 2),
                           Text(
                             hasUpdate
-                                ? 'v${latestVersion ?? 'New'} available • Tap to update'
-                                : 'v${AppVersionService.currentAppVersionString} • Tap to check for updates',
+                                ? 'v${latestVersion?.displayVersion ?? 'New'} available • Tap to update'
+                                : 'v${AppVersionService.currentAppDisplayVersion} • Tap to view details',
                             style: TextStyle(
                               fontSize: 12,
                               color: hasUpdate ? AppColors.primary : AppColors.textSecondary,

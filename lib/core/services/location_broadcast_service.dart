@@ -531,7 +531,7 @@ class LocationBroadcastService {
           longitude: lng,
           heading: heading,
           altitude: altitude,
-          batteryLevel: 85,
+          batteryLevel: (row['battery_level'] as num?)?.toInt(),
           mapPosition: const Offset(0.5, 0.5),
         );
 

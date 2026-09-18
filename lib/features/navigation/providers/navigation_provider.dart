@@ -41,7 +41,6 @@ class NavigationNotifier extends Notifier<NavigationState> {
       speedKmh: (lastGps?.speed ?? 0.0) * 3.6,
       distanceLabel: 'On track',
       distanceKm: 0.0,
-      batteryLevel: 94,
       latitude: lastGps?.latitude ?? 14.5995, // Default Manila center if GPS initializing
       longitude: lastGps?.longitude ?? 120.9842,
       heading: lastGps?.heading ?? 0.0,
@@ -64,7 +63,6 @@ class NavigationNotifier extends Notifier<NavigationState> {
           status: m.isOnline ? MemberStatus.enRoute : MemberStatus.offline,
           role: roleLabel,
           isMe: false,
-          batteryLevel: 85,
           mapPosition: const Offset(0.5, 0.5),
           photoUrl: m.profilePhotoUrl,
         ));
@@ -132,6 +130,7 @@ class NavigationNotifier extends Notifier<NavigationState> {
     });
 
     final allInitialMembers = [me, ...companions];
+    final initialSpread = _calculateGroupSpread(allInitialMembers);
 
     return NavigationState(
       members: allInitialMembers,
@@ -139,7 +138,7 @@ class NavigationNotifier extends Notifier<NavigationState> {
       currentTurn: turn,
       isNavigating: true,
       isGroupViewOn: true,
-      groupSpreadKm: 3.8,
+      groupSpreadKm: initialSpread,
       convoyAlerts: const [],
     );
   }
@@ -224,7 +223,32 @@ class NavigationNotifier extends Notifier<NavigationState> {
     state = state.copyWith(
       members: updatedMembers,
       destination: updatedDest,
+      groupSpreadKm: _calculateGroupSpread(updatedMembers),
     );
+  }
+
+  static double _calculateGroupSpread(List<NavMember> members) {
+    final valid = members
+        .where((m) =>
+            m.latitude != null &&
+            m.longitude != null &&
+            m.status != MemberStatus.offline)
+        .toList();
+    if (valid.length < 2) return 0.0;
+    double maxKm = 0.0;
+    for (int i = 0; i < valid.length; i++) {
+      for (int j = i + 1; j < valid.length; j++) {
+        final d = Geolocator.distanceBetween(
+              valid[i].latitude!,
+              valid[i].longitude!,
+              valid[j].latitude!,
+              valid[j].longitude!,
+            ) /
+            1000.0;
+        if (d > maxKm) maxKm = d;
+      }
+    }
+    return maxKm;
   }
 
   void _mergePeerMembers(Map<String, NavMember> peers) {
@@ -270,6 +294,7 @@ class NavigationNotifier extends Notifier<NavigationState> {
     state = state.copyWith(
       convoyAlerts: alerts,
       nearbyFoundMembers: foundNearby,
+      groupSpreadKm: _calculateGroupSpread(members),
     );
   }
 
@@ -316,10 +341,12 @@ class NavigationNotifier extends Notifier<NavigationState> {
     state = state.copyWith(
       clearActiveMemberRoute: true,
       clearMeetHalfwayPoint: true,
-      currentTurn: const TurnInstruction(
-        distanceLabel: 'In 300 m',
-        instruction: 'Turn right at White Beach Access Road',
-        kmLeft: 4.8,
+      currentTurn: TurnInstruction(
+        distanceLabel: state.destination.distanceKm < 1.0
+            ? 'In ${(state.destination.distanceKm * 1000).toInt()} m'
+            : 'In ${state.destination.distanceKm.toStringAsFixed(1)} km',
+        instruction: 'Resume route toward ${state.destination.name}',
+        kmLeft: state.destination.distanceKm,
       ),
     );
   }

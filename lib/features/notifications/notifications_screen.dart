@@ -8,6 +8,7 @@ import '../../core/providers/profile_provider.dart';
 import '../../core/widgets/buttons/app_back_button.dart';
 import 'package:intl/intl.dart';
 import 'models/notification_model.dart';
+import '../../core/services/notification_router.dart';
 
 class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
@@ -390,6 +391,34 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                           if (!item.isRead && originalIndex != -1) {
                             _markAsRead(originalIndex);
                           }
+                          // Deep link navigation
+                          NotificationTargetScreen target;
+                          switch (item.category) {
+                            case NotificationCategory.expense:
+                            case NotificationCategory.payment:
+                              target = NotificationTargetScreen.expenses;
+                              break;
+                            case NotificationCategory.message:
+                              target = NotificationTargetScreen.chat;
+                              break;
+                            case NotificationCategory.proximity:
+                              target = NotificationTargetScreen.itinerary;
+                              break;
+                            case NotificationCategory.packing:
+                              target = NotificationTargetScreen.packing;
+                              break;
+                            case NotificationCategory.weather:
+                              target = NotificationTargetScreen.itinerary;
+                              break;
+                          }
+
+                          NotificationRouter.instance.navigateTo(
+                            NotificationPayload(
+                              tripId: item.tripId,
+                              targetScreen: target,
+                              targetItemId: item.targetItemId,
+                            ),
+                          );
                         },
                         child: Container(
                           padding: const EdgeInsets.all(16),

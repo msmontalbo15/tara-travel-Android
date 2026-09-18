@@ -1351,4 +1351,28 @@ Enforces granular least-privilege permission gating across all feature screens v
 
 ---
 
+## 34. 🔔 NOTIFICATIONS ARCHITECTURE & FLOATING TRAVEL BUBBLE (IMP-129)
+
+Integrates a dual-tier notification framework (Plan 15) and floating convoy mini-HUD (Plan 12) across the application.
+
+### 34.1 Global Notification Router (`NotificationRouter`)
+- **Centralized Navigator Binding**: Uses `NotificationRouter.navigatorKey` registered on `MaterialApp` for headless or deep-linked navigations.
+- **Payload Schema (`NotificationPayload`)**: Supports `targetScreen` (`itinerary`, `expenses`, `packing`, `chat`, `navigation`, `detail`, `notifications`), `tripId`, `targetItemId`, and custom arbitrary parameters.
+- **Screen-Aware Duplicate Suppression**: Observes current route via `RouteObserver<PageRoute<dynamic>>` to avoid redundant pushes when the user is already on the target screen.
+
+### 34.2 In-App Dynamic Island HUD (`InAppNotificationManager` & `InAppNotificationOverlay`)
+- **Overlay Stack**: Rendered via `InAppNotificationOverlay` in `MaterialApp.builder` to display over all active views.
+- **FIFO Queue & Priority**: `InAppNotificationManager` prioritizes urgent notifications (`isUrgent`) ahead of routine updates and auto-dismisses after 4.5s (or 7.0s for urgent items).
+- **Interactive Gestures**: Swipe-up to dismiss, tap to trigger haptic feedback and route to the corresponding screen.
+
+### 34.3 In-App Floating Travel Bubble HUD (`FloatingBubbleService` & `InAppFloatingBubbleContainer`)
+- **Bubble State & Physics**: Draggable circular badge with magnetic edge snapping to screen borders.
+- **Expanded Mini-HUD (`_MiniHudCard`)**:
+  - Displays next stop name, ETA countdown, and distance.
+  - Companion distance telemetry radar (closest tail).
+  - Quick action shortcuts to "Log Toll/Gas" (`expenses`) and "Open Map" (`navigation`).
+- **Surface Triggers**: Accessible via "Pop out Convoy Bubble" in `LiveNavigationScreen` header and "Pop out Bubble" in `TripDetailScreen` popup menu.
+
+---
+
 *This document is the single source of architectural truth for Tara Travel. Update this file whenever database schemas, RPC functions, core repositories, or system flows are modified.*

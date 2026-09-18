@@ -6,12 +6,16 @@ import '../models/navigation_models.dart';
 import '../providers/navigation_provider.dart';
 import 'shared/mock_map_painter.dart';
 
+String _fmtDist(double km) =>
+    km < 1.0 ? '${(km * 1000).toInt()} m' : '${km.toStringAsFixed(1)} km';
+
 class ProximityAlertTab extends ConsumerWidget {
   const ProximityAlertTab({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final nav = ref.watch(navigationProvider);
+    final me = nav.members.firstWhere((m) => m.isMe, orElse: () => nav.members.first);
 
     return Column(
       children: [
@@ -75,8 +79,8 @@ class ProximityAlertTab extends ConsumerWidget {
                               Border.all(color: Colors.white, width: 3),
                         ),
                         alignment: Alignment.center,
-                        child: const Text('S',
-                            style: TextStyle(
+                        child: Text(me.initials,
+                            style: const TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
                                 color: Colors.white)),
@@ -99,9 +103,9 @@ class ProximityAlertTab extends ConsumerWidget {
                       color: Colors.black.withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: const Text(
-                      '300 m away',
-                      style: TextStyle(
+                    child: Text(
+                      '${_fmtDist(nav.destination.distanceKm)} away',
+                      style: const TextStyle(
                           fontSize: 9,
                           fontWeight: FontWeight.w600,
                           color: Colors.white),
@@ -171,7 +175,7 @@ class ProximityAlertTab extends ConsumerWidget {
                                   letterSpacing: -0.3),
                             ),
                             Text(
-                               '300 m from ${nav.destination.name}',
+                               '${_fmtDist(nav.destination.distanceKm)} from ${nav.destination.name}',
                               style: const TextStyle(
                                   fontSize: 12,
                                   color: Color(0xFF8E8E93)),
@@ -186,9 +190,9 @@ class ProximityAlertTab extends ConsumerWidget {
                           color: const Color(0xFFEAF3DE),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Text(
-                          '2 min',
-                          style: TextStyle(
+                        child: Text(
+                          nav.destination.eta,
+                          style: const TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
                               color: Color(0xFF3B6D11)),
@@ -225,7 +229,7 @@ class ProximityAlertTab extends ConsumerWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                           'Station 1, White Beach · Confirmation #${nav.destination.confirmationCode}',
+                           '${nav.destination.address} · Confirmation #${nav.destination.confirmationCode}',
                           style: const TextStyle(
                               fontSize: 12,
                               color: Color(0xFF8E8E93)),
@@ -237,12 +241,6 @@ class ProximityAlertTab extends ConsumerWidget {
                                 label: 'Hotel',
                                 bg: Color(0xFFDBEAFE),
                                 fg: Color(0xFF185FA5)),
-                            SizedBox(width: 6),
-                             _InfoChip(
-                               label: '₱28,000 · Spencer paid',
-                               bg: AppColors.sand,
-                               fg: AppColors.darkAccent,
-                             ),
                           ],
                         ),
                       ],

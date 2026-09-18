@@ -24,15 +24,15 @@ This document serves as our compiled repository master plan, organized hierarchi
 | **9** | [Dual-Lens Budget & Expense Hub (Personal Pocket Tracker + Group Trip Summary)](#plan-9-dual-lens-budget-expense-hub-personal-pocket-tracker-group-trip-summary) | 🟡 **Drafted / Queued** | Private personal expenses, "My True Trip Cost", cash/GCash tracking & daily burn pace meter |
 | **10** | [Flexible & Optional Trip Map: Adventure, Multi-Point & Off-Grid Mode](#plan-10-flexible-optional-trip-map-adventure-multi-point-off-grid-mode) | 🟡 **Drafted / Queued** | Optional map tracking, multi-point waypoints, adventure trail roaming, battery-saving mapless mode |
 | **11** | [Meet-up Assembly, Smart Countdown & Automatic Departure Detection](#plan-11-meet-up-assembly-smart-countdown-automatic-departure-detection) | 🟢 **Complete** | Day 1 Stop 0 auto-insertion, meet-up grace period, GPS distance countdown & auto departure |
-| **12** | [Floating Travel Bubble & System Overlay HUD (PiP / Chathead Mode)](#plan-12-floating-travel-bubble-system-overlay-hud-pip-chathead-mode) | 🟡 **Drafted / Queued** | System-wide floating bubble overlay, live convoy/next stop glance, quick expense note & PiP |
+| **12** | [Floating Travel Bubble & System Overlay HUD (PiP / Chathead Mode)](#plan-12-floating-travel-bubble-system-overlay-hud-pip-chathead-mode) | 🟢 **Complete** | In-app floating bubble + opt-in `SYSTEM_ALERT_WINDOW` convoy overlay, live radar & quick expense logging |
 | **20** | [Chat Announcements Engine & Trip Detail Command Hub](#plan-20-chat-announcements-engine--trip-detail-command-hub) | 🟢 **Complete** | Pinned announcements, priority tinting (Urgent vs Notice), live banner on Trip Detail & chat deep-linking |
-
+ 
 ### 🔴 Tier 3: Major Architecture & Platform (End-to-End Systems, AI & Middleware)
 | # | Plan / Feature | Status | Key Focus |
 |---|---|---|---|
 | **13** | [Trip Detail Screen: Ongoing Command Center, HUD & Quick Action Hub](#plan-13-trip-detail-screen-ongoing-command-center-hud-quick-action-hub) | 🟢 **Complete** | Active Quick Stop HUD, persistent bottom bar, telemetry, officers, announcements & weather |
 | **14** | [Day Map Intelligent Route Optimization & Arrival Geofence](#plan-14-day-map-intelligent-route-optimization-best-way-routing) | 🟡 **Drafted / Queued** | Street-network routing, best order optimization, arrival geofence pop-up & notification |
-| **15** | [Comprehensive Mobile Notifications Architecture (Push, In-App Banners & Deep-Link Routing)](#plan-15-comprehensive-mobile-notifications-architecture-push-in-app-banners-deep-link-routing) | 🟡 **Drafted / Queued** | Local scheduled alerts, FCM push, Island in-app banners, swipe dismissal & contextual tap routing |
+| **15** | [Comprehensive Mobile Notifications Architecture (Push, In-App Banners & Deep-Link Routing)](#plan-15-comprehensive-mobile-notifications-architecture-push-in-app-banners-deep-link-routing) | 🟢 **Complete** | In-app Dynamic Island banners, background Heads-Up floating alerts, local alarms, FCM push & deep routing |
 | **16** | [Gemini Embedded AI Travel Copilot & Assistant](#plan-16-gemini-embedded-ai-travel-copilot-assistant) | 🟢 **Complete** | Natural language trip planner, smart itinerary recommendations, budget optimization & packing generator |
 | **17** | [Supabase & Middleware App Versioning & OTA Updates](#plan-17-supabase-middleware-app-versioning-ota-updates) | 🟡 **Drafted / Queued** | Version gatekeeper, Shorebird OTA code push, Supabase storage APK download & force/soft update dialogs |
 | **18** | [Tara Laravel Middleware & SuperAdmin Dashboard (Universal Links, CMS & Ops)](#plan-18-tara-laravel-middleware-superadmin-dashboard-universal-links-cms-ops) | 🟡 **Drafted / Queued** | Web-to-app deep linking gateway, Filament v3 CMS, trip templates, feedback helpdesk & remote config |
@@ -45,19 +45,21 @@ This document serves as our compiled repository master plan, organized hierarchi
 ---
 
 
-## ðŸŸ¢ Completed Plans Summary
+## 🟢 Completed Plans Summary
 
 | Plan | Title | Milestone | Status | Key Deliverable |
 | :--- | :--- | :--- | :--- | :--- |
-| **Plan 1** | Role-Aware Trip Exit ("Leave" vs "Delete") | IMP-081 | âœ… Complete | Member leave vs owner delete with role validation & UI guards. |
-| **Plan 2** | Invite Code Privacy & Safe Area Clearance | IMP-082 | âœ… Complete | Masked codes (******), auto-hide timer, safe area gesture clearance. |
-| **Plan 3** | Offline Read-Only Guard & Action Freezing | IMP-083 | âœ… Complete | Offline write locks, visual badges, and stale sync error prevention. |
-| **Plan 4** | Cloud-Native Avatar Storage & CDN Cache Architecture | IMP-082 | âœ… Complete | Supabase Storage avatars bucket, ProfileRepository upload, and MemberAvatarCircle. |
-| **Plan 5** | Google Maps Link Resolver & Pin Location Integration | IMP-117 | âœ… Complete | Zero-cost GMap URL resolver, Nominatim reverse geocode, instant camera fly, and itinerary auto-fill. |
-| **Plan 8** | Real-Time Live Weather Forecast & Severe Alerts | IMP-088 | âœ… Complete | Open-Meteo API integration, offline cache, DayStrip weather & storm alerts. |
-| **Plan 13** | Trip Detail Screen: Ongoing Command Center & HUD | IMP-089 | âœ… Complete | Quick Stop HUD, persistent bottom dock, destination weather, officers. |
-| **Plan 17** | Supabase App Versioning & OTA Updates | IMP-094 | âœ… Complete | 3-tier update modals, Remote Config, automated CI/CD release pipeline. |
-| **Plan 19** | Universal Responsive Layout Engine | IMP-091 | âœ… Complete | Breakpoints, clamped text scaler, safe padding/insets, zero-overflow. |
+| **Plan 1** | Role-Aware Trip Exit ("Leave" vs "Delete") | IMP-081 | ✅ Complete | Member leave vs owner delete with role validation & UI guards. |
+| **Plan 2** | Invite Code Privacy & Safe Area Clearance | IMP-082 | ✅ Complete | Masked codes (******), auto-hide timer, safe area gesture clearance. |
+| **Plan 3** | Offline Read-Only Guard & Action Freezing | IMP-083 | ✅ Complete | Offline write locks, visual badges, and stale sync error prevention. |
+| **Plan 4** | Cloud-Native Avatar Storage & CDN Cache Architecture | IMP-082 | ✅ Complete | Supabase Storage avatars bucket, ProfileRepository upload, and MemberAvatarCircle. |
+| **Plan 5** | Google Maps Link Resolver & Pin Location Integration | IMP-117 | ✅ Complete | Zero-cost GMap URL resolver, Nominatim reverse geocode, instant camera fly, and itinerary auto-fill. |
+| **Plan 8** | Real-Time Live Weather Forecast & Severe Alerts | IMP-088 | ✅ Complete | Open-Meteo API integration, offline cache, DayStrip weather & storm alerts. |
+| **Plan 12** | Floating Travel Bubble & Overlay HUD | IMP-129 | ✅ Complete | In-app draggable edge-snapping bubble, mini-HUD card, and quick expense logging. |
+| **Plan 13** | Trip Detail Screen: Ongoing Command Center & HUD | IMP-089 | ✅ Complete | Quick Stop HUD, persistent bottom dock, destination weather, officers. |
+| **Plan 15** | Comprehensive Mobile Notifications Architecture | IMP-129 | ✅ Complete | In-App Dynamic Island toasts, duplicate suppression, and NotificationRouter deep links. |
+| **Plan 17** | Supabase App Versioning & OTA Updates | IMP-094 | ✅ Complete | 3-tier update modals, Remote Config, automated CI/CD release pipeline. |
+| **Plan 19** | Universal Responsive Layout Engine | IMP-091 | ✅ Complete | Breakpoints, clamped text scaler, safe padding/insets, zero-overflow. |
 
 *Full architectural specifications and schemas for completed plans are preserved in docs/MEMORY.md and docs/IMPLEMENTATION_MEMORY.md.*
 
@@ -482,28 +484,34 @@ Automatically insert the trip's specified **Meet-up Point / Departure Point** as
 ## Plan 12: Floating Travel Bubble & System Overlay HUD (PiP / Chathead Mode)
 
 ### Goal
-Allow travelers, drivers, and convoy riders to minimize Tara Travel into a draggable **Floating App Overlay Bubble** (similar to Facebook Messenger chatheads or Google Maps navigation PiP/bubbles). The bubble hovers over other apps (such as Waze, Google Maps, Spotify, or Camera) to provide instant 1-tap access to live trip stats, next stop ETA, convoy companion distances, SOS alerts, and quick expense logging without switching apps.
+Allow travelers, drivers, and convoy riders to minimize Tara Travel into a draggable **Floating App Overlay Bubble** (similar to Facebook Messenger chatheads or Google Maps navigation PiP/bubbles). The bubble hovers over external apps (such as Waze, Google Maps, Spotify, or Camera) or within Tara Travel itself, providing instant 1-tap access to live trip stats, next stop ETA, convoy companion distances, SOS alerts, and quick expense logging without switching apps.
 
 ### Core Capabilities
-1. **Draggable Floating Bubble (System-Wide Overlay / PiP)**:
-   - Floating circular badge with Tara Travel logo / dynamic active status icon (car, pin, or ETA).
-   - Drags smoothly across screen edges with magnetic snap-to-edge docking and flick-to-dismiss target at the bottom.
-   - Built with Android `SYSTEM_ALERT_WINDOW` permission or native Android Picture-in-Picture (PiP) / `flutter_overlay_window`.
-2. **Compact Travel HUD Mini-Window (Tap to Expand)**:
+1. **Dual Overlay Modes (In-App vs System-Wide)**:
+   - **Mode A: In-App Draggable Floating Bubble (Zero Special Permissions)**:
+     - Built directly into the Flutter widget tree (`OverlayEntry` in `MaterialApp.builder`).
+     - Floats over Itinerary, Chat, and Budget screens so travelers can roam different sections while keeping live convoy telemetry and next stop pinned.
+   - **Mode B: System-Wide Overlay HUD (`SYSTEM_ALERT_WINDOW` & ForegroundService)**:
+     - Opt-in background mode activated from `LiveNavigationScreen` or `TripDetailScreen` via *"Pop out Convoy Bubble"*.
+     - Prompts traveler with clear educational dialog before checking `Settings.canDrawOverlays(context)`.
+     - Hovers persistently on top of third-party apps like Google Maps and Waze during road trips.
+2. **Draggable Bubble & Magnetic Physics**:
+   - 56×56 circular badge with Tara Travel icon and dynamic status badge (e.g. speed, convoy distance, or vehicle icon).
+   - Drags smoothly with magnetic snap-to-edge docking (left or right screen margin).
+   - Bottom center flick-to-dismiss target (semi-transparent ⓧ target area).
+3. **Compact Travel HUD Mini-Window (Tap to Expand)**:
    - Tapping the bubble expands a lightweight semi-transparent floating card over whatever app the user is currently using:
-     - **Next Stop & ETA**: Destination name, remaining distance, and ETA clock.
-     - **Convoy Radar**: Real-time distance to the closest squad member / tail car.
+     - **Next Stop & ETA**: Destination name, remaining distance (km), and ETA clock.
+     - **Convoy Radar**: Real-time distance to the closest squad member / tail vehicle.
      - **Quick Expense Log**: 1-tap button to quickly input a toll fee or gas expense without leaving navigation.
      - **Full App Restore**: Single tap to maximize Tara Travel back to full screen.
-3. **In-App Floating Bubble Mode (Zero Extra Permissions Required)**:
-   - In addition to system-wide overlay, provides a lightweight in-app floating bubble that floats over the Itinerary and Chat screens, so users can roam different tabs while keeping their Live Navigation / Convoy HUD pinned.
 4. **Android Background Safety & Play Store Compliance**:
    - Complies with Android battery and foreground service guidelines by running via a designated `ForegroundService` with persistent low-priority status bar notification (*"Tara Travel Convoy Active — Tap to open bubble"*).
-   - Graceful permission check flow: checks for `Settings.canDrawOverlays(context)` with an intuitive onboarding explanation dialog (*"Enable Overlay to view trip stats over Waze & Google Maps"*).
+   - Automatically shuts down overlay service when the trip ends, user arrives at destination, or manually dismisses the bubble.
 
 ### Impacted Files & Architecture
-- `android/app/src/main/AndroidManifest.xml` *(MODIFY — add `SYSTEM_ALERT_WINDOW` and `FOREGROUND_SERVICE`)*
-- `pubspec.yaml` *(MODIFY — add `flutter_overlay_window` or native platform channel)*
+- `android/app/src/main/AndroidManifest.xml` *(MODIFY — add `SYSTEM_ALERT_WINDOW` and `FOREGROUND_SERVICE` permissions & service declaration)*
+- `pubspec.yaml` *(MODIFY — add `flutter_overlay_window`)*
 - `lib/core/services/floating_bubble_service.dart` *(NEW — overlay lifecycle management, state synchronization, and permission handling)*
 - `lib/features/navigation/widgets/floating_travel_bubble.dart` *(NEW — draggable in-app and system-overlay UI card)*
 - `lib/features/trip_detail/widgets/trip_detail_quick_actions.dart` *(MODIFY — add "Pop out Bubble" trigger)*
@@ -555,19 +563,31 @@ Upgrade the Day Map from drawing simple linear/straight-line connections between
 ## Plan 15: Comprehensive Mobile Notifications Architecture (Push, In-App Banners & Deep-Link Routing)
 
 ### Goal
-Deliver a unified, multi-tier notification and in-app event system for Tara Travel. Integrates **Local Timed Alarms**, **Remote Push Notifications (FCM)**, sleek **Dynamic In-App Island Banners**, and **Contextual Deep-Link Routing** so travelers never miss trip updates and can act on alerts with a single tap.
+Deliver a unified, multi-tier notification and in-app event system for Tara Travel. Combines **Dynamic In-App Island Banners (when app is open)**, **High-Priority Android Heads-Up Notifications (floating over other apps when app is closed)**, **Local Timed Alarms**, **Remote Push Notifications (FCM)**, and **Contextual Deep-Link Routing** so travelers never miss critical trip updates and can act on alerts with a single tap.
 
 ### Core Capabilities
-1. **Hybrid Architecture (Local Offline + Cloud Push)**:
-   - **Local Timed Notifications**: Schedules offline alarms for departure wheels-up (2h & 30m before meet-up), daily 7:00 AM itinerary summaries, and packing reminders.
-   - **Remote Push (FCM / Realtime)**: Pings for trip invites, co-traveler expense logs, convoy SOS alarms, and unread chat messages.
-   - **Android 13+ Notification Channels**: Configures `tara_travel_critical` (heads-up, custom SOS alarm tone), `tara_travel_updates` (stop arrivals), and `tara_travel_social` (chat pings).
-2. **Dynamic Island / Top Slide-Down In-App Banners**:
-   - Modern frosted-glass pill banner sliding smoothly from behind the status bar when new events arrive while using the app.
-   - Includes category-tinted avatars, progress timers, and swipe-up to dismiss.
-   - Suppresses duplicate OS notifications if the user is already actively viewing that exact screen.
-3. **Interactive Quick Actions & Deep-Link Routing**:
-   - Notifications contain entity metadata: `trip_id`, `target_screen` (`expenses`, `itinerary`, `chat`, `packing`, `members`), and `target_item_id`.
+1. **Background Floating Banners (Android High-Priority Heads-Up Alerts)**:
+   - When Tara Travel is **closed or minimized**, critical alerts float down from the top of the device screen over external apps (Google Maps, Waze, YouTube, or Home Screen) for 4–5 seconds.
+   - Configured via Android `NotificationChannel` with `Importance.max` and `Priority.high`.
+   - Actionable buttons embedded directly in the floating banner (`[Check In]`, `[Open Chat]`, `[View Stop]`).
+   - Requires **only standard `POST_NOTIFICATIONS` permission** (100% Google Play Store compliant, zero battery/RAM penalty).
+2. **Dynamic Island / Top Slide-Down In-App Banners (When App is Open)**:
+   - Modern frosted-glass pill banner sliding smoothly from behind the status bar inside `MaterialApp.builder` when new events arrive while actively browsing Tara Travel.
+   - Category-tinted avatars (Coral `#D85A30` for announcements/SOS, Amber `#EF9F27` for geofence arrivals, Green for expenses).
+   - Gesture dismiss (swipe up to dismiss immediately) and 4-second auto-dismiss progress bar.
+   - **Screen-Aware Duplicate Suppression**: Suppresses in-app floating banner if user is already actively viewing the exact screen of the event (e.g. no chat banner if currently in `ChatScreen`).
+3. **Local Timed Alarms & Hybrid Sync**:
+   - Schedules offline alarms for departure wheels-up (2h & 30m before meet-up), daily 7:00 AM itinerary summaries, and packing reminders.
+   - Remote pings for trip invites, co-traveler expense logs, convoy SOS alarms, and unread chat messages.
+4. **Contextual Deep-Link Routing (`NotificationRouter`)**:
+   - Standardized payload format:
+     ```json
+     {
+       "trip_id": "uuid",
+       "target_screen": "expenses | itinerary | chat | packing | members",
+       "target_item_id": "optional_item_uuid"
+     }
+     ```
    - **Tap Routing**:
      - Expense logged → opens `TripDetailScreen` Expenses tab or `ExpenseDetailModal`.
      - Stop arrival / geofence → opens `ItineraryScreen` focused on the stop with 1-tap `[Check In]`.

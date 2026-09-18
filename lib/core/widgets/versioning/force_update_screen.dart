@@ -49,10 +49,16 @@ class _ForceUpdateScreenState extends State<ForceUpdateScreen> {
   @override
   Widget build(BuildContext context) {
     final remote = widget.checkResult.remoteConfig;
-    final latestVer = remote?.latestVersion.toString() ?? 'Latest';
-    final currentVer = widget.checkResult.currentVersion.toString();
-    final releaseNotes = remote?.releaseNotes ??
+    final latestVer = remote?.latestVersion.displayVersion ?? 'Latest';
+    final currentVer = widget.checkResult.currentVersion.displayVersion;
+    final rawNotes = remote?.releaseNotes ??
         'A critical update is required to keep Tara Travel running securely with new platform features and database migrations.';
+    final notesList = rawNotes
+        .split('\n')
+        .map((l) => l.trim())
+        .where((l) => l.isNotEmpty)
+        .map((l) => l.replaceFirst(RegExp(r'^[-*•]\s*'), ''))
+        .toList();
 
     return PopScope(
       canPop: false,
@@ -176,14 +182,34 @@ class _ForceUpdateScreenState extends State<ForceUpdateScreen> {
                           ],
                         ),
                         const SizedBox(height: 8),
-                        Text(
-                          releaseNotes,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
-                            height: 1.4,
-                          ),
-                        ),
+                        ...notesList.map((item) => Padding(
+                              padding: const EdgeInsets.only(bottom: 6),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    margin: const EdgeInsets.only(top: 5),
+                                    width: 5,
+                                    height: 5,
+                                    decoration: const BoxDecoration(
+                                      color: AppColors.primary,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      item,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.textSecondary,
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )),
                       ],
                     ),
                   ),

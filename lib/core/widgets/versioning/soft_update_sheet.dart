@@ -59,9 +59,15 @@ class _SoftUpdateSheetState extends State<SoftUpdateSheet> {
   @override
   Widget build(BuildContext context) {
     final remote = widget.checkResult.remoteConfig;
-    final latestVer = remote?.latestVersion.toString() ?? 'Latest';
-    final releaseNotes = remote?.releaseNotes ??
+    final latestVer = remote?.latestVersion.displayVersion ?? 'Latest';
+    final rawNotes = remote?.releaseNotes ??
         'Check out the latest features, improved itinerary planning, and performance boosts.';
+    final notesList = rawNotes
+        .split('\n')
+        .map((l) => l.trim())
+        .where((l) => l.isNotEmpty)
+        .map((l) => l.replaceFirst(RegExp(r'^[-*•]\s*'), ''))
+        .toList();
 
     return Container(
       decoration: const BoxDecoration(
@@ -156,15 +162,35 @@ class _SoftUpdateSheetState extends State<SoftUpdateSheet> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  releaseNotes,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                    height: 1.4,
-                  ),
-                ),
+                const SizedBox(height: 8),
+                ...notesList.map((item) => Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            margin: const EdgeInsets.only(top: 5),
+                            width: 5,
+                            height: 5,
+                            decoration: const BoxDecoration(
+                              color: AppColors.primary,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              item,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                                height: 1.4,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )),
               ],
             ),
           ),

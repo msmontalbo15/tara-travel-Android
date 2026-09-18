@@ -5,6 +5,15 @@ import '../../../core/theme/app_responsive.dart';
 import '../models/navigation_models.dart';
 import '../providers/navigation_provider.dart';
 
+String _relativeTime(DateTime? time) {
+  if (time == null) return 'Just now';
+  final diff = DateTime.now().difference(time);
+  if (diff.inMinutes < 1) return 'Just now';
+  if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
+  if (diff.inHours < 24) return '${diff.inHours}h ago';
+  return '${diff.inDays}d ago';
+}
+
 class ArrivedTab extends ConsumerWidget {
   const ArrivedTab({super.key});
 
@@ -24,7 +33,7 @@ class ArrivedTab extends ConsumerWidget {
           if (nav.members.length > 1) ...[
             _MessageNotification(
               member: nav.members[1],
-              timeLabel: '2 min ago',
+              timeLabel: _relativeTime(nav.members[1].lastPingTime),
               message: 'Checked in successfully.',
             ),
             const SizedBox(height: 8),
@@ -32,7 +41,7 @@ class ArrivedTab extends ConsumerWidget {
           if (nav.members.length > 2) ...[
             _MessageNotification(
               member: nav.members[2],
-              timeLabel: '5 min ago',
+              timeLabel: _relativeTime(nav.members[2].lastPingTime),
               message: 'On the way to destination.',
               subtitle: nav.members[2].role,
             ),
@@ -294,11 +303,10 @@ class _ArrivalRow extends StatelessWidget {
     if (isOffline) {
       statusText = 'Offline';
       statusColor = const Color(0xFF8E8E93);
-    } else if (member.isMe || member.id == 'spencer') {
-      statusText = 'Arrived · 4:18 PM';
-      statusColor = const Color(0xFF34A853);
-    } else if (member.id == 'lia') {
-      statusText = 'Arrived · 4:12 PM';
+    } else if (member.isMe || member.status == MemberStatus.arrived) {
+      statusText = member.arrivedAt != null
+          ? 'Arrived · ${member.arrivedAt}'
+          : 'Arrived';
       statusColor = const Color(0xFF34A853);
     } else if (isEnRoute) {
       statusText = 'En route · ${member.eta ?? ""}';

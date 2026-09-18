@@ -30,9 +30,9 @@ class GroupTrackerTab extends ConsumerWidget {
           const SizedBox(height: 12),
 
           // ── Section label ───────────────────────────────────
-          const Text(
-            'MEMBERS · 4 TRAVELERS',
-            style: TextStyle(
+          Text(
+            'MEMBERS · ${nav.members.length} TRAVELERS',
+            style: const TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w600,
               color: Color(0xFF8E8E93),
@@ -70,7 +70,8 @@ class GroupTrackerTab extends ConsumerWidget {
           const SizedBox(height: 8),
 
           // ── Group spread warning ─────────────────────────────
-          _GroupSpreadBanner(spreadKm: nav.groupSpreadKm),
+          if (nav.groupSpreadKm > 1.5 && nav.members.length > 1 && nav.convoyAlerts.isEmpty)
+            _GroupSpreadBanner(spreadKm: nav.groupSpreadKm, members: nav.members),
         ],
       ),
     );
@@ -323,7 +324,7 @@ class _MemberRow extends ConsumerWidget {
                     _EtaChip(
                       label: 'ETA ${member.eta!}',
                       isLate: member.status == MemberStatus.offline ||
-                          member.id == 'carlo',
+                          (member.distanceKm != null && member.distanceKm! < 0),
                     ),
                   if (!member.isMe) ...[
                     const Spacer(),
@@ -495,10 +496,19 @@ class _EtaChip extends StatelessWidget {
 // ── Group spread warning banner ───────────────────────────────────
 class _GroupSpreadBanner extends StatelessWidget {
   final double spreadKm;
-  const _GroupSpreadBanner({required this.spreadKm});
+  final List<NavMember> members;
+  const _GroupSpreadBanner({required this.spreadKm, required this.members});
 
   @override
   Widget build(BuildContext context) {
+    final companions = members.where((m) => !m.isMe).toList();
+    final trailing = companions.isNotEmpty
+        ? (companions..sort((a, b) => (a.distanceKm ?? 0).compareTo(b.distanceKm ?? 0))).first
+        : null;
+    final trailingText = trailing != null
+        ? '${trailing.name} is trailing behind'
+        : 'Convoy is stretched across ${spreadKm.toStringAsFixed(1)} km';
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
@@ -520,9 +530,9 @@ class _GroupSpreadBanner extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                       color: Color(0xFFA32D2D)),
                 ),
-                const Text(
-                  'Carlo is falling behind · 6 min gap',
-                  style: TextStyle(
+                Text(
+                  trailingText,
+                  style: const TextStyle(
                       fontSize: 10,
                       color: Color(0xFFA32D2D)),
                 ),

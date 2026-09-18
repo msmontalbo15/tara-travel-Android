@@ -26,6 +26,9 @@ import 'features/friends/friends_screen.dart';
 import 'core/widgets/auth_gate.dart';
 import 'core/auth/data/secure_session_repository.dart';
 import 'core/security/three_layer_encryption_service.dart';
+import 'core/services/notification_router.dart';
+import 'core/widgets/notifications/in_app_notification_overlay.dart';
+import 'features/navigation/widgets/in_app_floating_bubble.dart';
 
 
 void main() async {
@@ -85,10 +88,21 @@ class TaraApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return AuthGate(
       child: MaterialApp(
+        navigatorKey: NotificationRouter.instance.navigatorKey,
+        navigatorObservers: [
+          _AppRouteObserver(),
+        ],
         title: 'Tara Travel',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
-        builder: AppResponsive.clampedTextScaleBuilder,
+        builder: (context, child) {
+          final scaledChild = AppResponsive.clampedTextScaleBuilder(context, child);
+          return InAppNotificationOverlay(
+            child: InAppFloatingBubbleContainer(
+              child: scaledChild,
+            ),
+          );
+        },
         initialRoute: '/',
         routes: {
           '/':             (context) => SplashScreen(
@@ -123,5 +137,25 @@ class TaraApp extends StatelessWidget {
         },
       ),
     );
+  }
+}
+
+class _AppRouteObserver extends NavigatorObserver {
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    super.didPush(route, previousRoute);
+    NotificationRouter.instance.onRouteChange(route.settings.name);
+  }
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    super.didPop(route, previousRoute);
+    NotificationRouter.instance.onRouteChange(previousRoute?.settings.name);
+  }
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
+    super.didReplace(newRoute: newRoute, oldRoute: oldRoute);
+    NotificationRouter.instance.onRouteChange(newRoute?.settings.name);
   }
 }

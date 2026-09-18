@@ -14,6 +14,9 @@ class NotificationItem {
   final String message;
   final DateTime timestamp;
   final bool isRead;
+  final String? tripId;
+  final String? targetScreen;
+  final String? targetItemId;
 
   NotificationItem({
     required this.id,
@@ -22,6 +25,9 @@ class NotificationItem {
     required this.message,
     required this.timestamp,
     this.isRead = false,
+    this.tripId,
+    this.targetScreen,
+    this.targetItemId,
   });
 
   NotificationItem copyWith({
@@ -31,6 +37,9 @@ class NotificationItem {
     String? message,
     DateTime? timestamp,
     bool? isRead,
+    String? tripId,
+    String? targetScreen,
+    String? targetItemId,
   }) {
     return NotificationItem(
       id: id ?? this.id,
@@ -39,6 +48,9 @@ class NotificationItem {
       message: message ?? this.message,
       timestamp: timestamp ?? this.timestamp,
       isRead: isRead ?? this.isRead,
+      tripId: tripId ?? this.tripId,
+      targetScreen: targetScreen ?? this.targetScreen,
+      targetItemId: targetItemId ?? this.targetItemId,
     );
   }
 
@@ -77,6 +89,9 @@ class NotificationItem {
       message: row['body']?.toString() ?? '',
       timestamp: DateTime.tryParse('${row['created_at']}') ?? DateTime.now(),
       isRead: row['read'] == true,
+      tripId: row['trip_id']?.toString(),
+      targetScreen: row['target_screen']?.toString() ?? (row['data'] is Map ? (row['data'] as Map)['target_screen']?.toString() : null),
+      targetItemId: row['target_item_id']?.toString() ?? (row['data'] is Map ? (row['data'] as Map)['target_item_id']?.toString() : null),
     );
   }
 }

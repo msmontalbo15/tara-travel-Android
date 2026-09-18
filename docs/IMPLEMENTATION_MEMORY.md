@@ -88,6 +88,9 @@
 | **`IMP-122`** | 2026-09-15 | Home / Trip Hero vs Trip Card Separation & Overflow Hardening | Separated high-level summary on NextTripCard from granular itinerary stats on TripCard, and protected stats with FittedBox. |
 | **`IMP-123`** | 2026-09-15 | Profile / Modular Optimization & Sub-Screens | Refactored 2,812-line ProfileScreen into 6 dedicated modular widgets and NotificationSettingsScreen. |
 | **`IMP-124`** | 2026-09-15 | Explore / Supabase Integration & Contextual Travel Recommendations | Connected Explore screen to Supabase `public.destinations`, added category pills, proximity calculation, and prefilled Plan Trip flow. |
+| **`IMP-128`** | 2026-09-18 | Profile & Versioning / Release Notes Presentation | Stripped build metadata from UI version labels, added `VersionInfoSheet`, and formatted release notes. |
+| **`IMP-129`** | 2026-09-18 | Notifications & Navigation / Floating Travel Bubble HUD | In-app notification toast system, centralized `NotificationRouter`, and draggable floating travel bubble HUD. |
+| **`IMP-130`** | 2026-09-19 | Navigation & Budget / Hardcoded Data Elimination | Purged hardcoded member IDs, static ETAs/distances, fixed map initial filters, mock battery values, and parameterized budget distribution. |
 
 
 ---
@@ -2999,3 +3002,63 @@
   - Regular members have self-service capabilities (log personal expenses, manage and toggle own packing items, chat, vote in polls) while destructive or administrative actions (edit trip settings, log group bills, approve/reject expenses, delete group items, post announcements, create polls) are restricted to authorized roles.
 - **Verification**:
   - `flutter analyze`: 0 errors, 0 warnings across the entire project (ran in 6.0s).
+
+### `IMP-128` · Version Display Polish & Structured Release Notes Presentation
+- **Date**: September 18, 2026
+- **Target Files**:
+  - `lib/core/services/app_version_service.dart` [MODIFIED - Added `displayVersion` getter on `SemanticVersion` to strip `+build` numbers for UI, and `currentAppDisplayVersion` on `AppVersionService`]
+  - `lib/core/widgets/versioning/version_info_sheet.dart` [NEW - Created modal bottom sheet showing app version badge, up-to-date indicator, and structured bulleted highlights from remote `release_notes`]
+  - `lib/core/widgets/versioning/soft_update_sheet.dart` [MODIFIED - Replaced unformatted text with parsed bullet-point lists with brand theme bullets and displayVersion]
+  - `lib/core/widgets/versioning/force_update_screen.dart` [MODIFIED - Rendered parsed bullet items for release notes and switched to displayVersion]
+  - `lib/features/profile/widgets/profile_account_card.dart` [MODIFIED - Display cleaned version `v1.0.1 • Tap to view details` and open `VersionInfoSheet` on tap when up to date]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED - Logged milestone IMP-128]
+- **Architectural Rationale**:
+  - Raw `+build` metadata (e.g. `1.0.1+1`) was exposed to end users, creating confusing technical version strings in the profile card and update dialogs.
+  - Multi-line `release_notes` from Supabase `public.app_versions` were rendered as plain raw strings without hierarchy. Now, they are parsed and formatted into clear, bulleted highlights matching brand design tokens.
+  - Added `VersionInfoSheet` so users who are already up-to-date can tap their version card and review recent release highlights and changelogs.
+- **Verification**:
+  - `flutter analyze`: 0 errors, 0 warnings.
+
+### `IMP-129` · Mobile Notifications Architecture & Floating Travel Bubble HUD
+- **Date**: September 18, 2026
+- **Associated Plans**: Plan 12 (Floating Travel Bubble HUD) & Plan 15 (Comprehensive Mobile Notifications Architecture)
+- **Target Files**:
+  - `lib/core/services/notification_router.dart` [NEW - Centralized route coordinator for notification payloads and screen deep links]
+  - `lib/core/services/in_app_notification_manager.dart` [NEW - FIFO queue, duplicate suppression, and auto-dismiss manager]
+  - `lib/core/widgets/notifications/in_app_notification_overlay.dart` [NEW - Global Dynamic Island frosted toast pill in MaterialApp.builder]
+  - `lib/core/services/floating_bubble_service.dart` [NEW - Floating bubble telemetry state, edge snapping, and HUD visibility manager]
+  - `lib/features/navigation/widgets/in_app_floating_bubble.dart` [NEW - Draggable edge-snapping circular bubble with expandable Mini-HUD]
+  - `lib/main.dart` [MODIFIED - Attached navigatorKey, RouteTrackingObserver, and wrapped builder with InAppNotificationOverlay & InAppFloatingBubbleContainer]
+  - `lib/features/notifications/models/notification_model.dart` [MODIFIED - Added tripId, targetScreen, and targetItemId routing fields]
+  - `lib/features/notifications/notifications_screen.dart` [MODIFIED - Wired tile taps to NotificationRouter deep-link navigation]
+  - `lib/features/navigation/live_navigation_screen.dart` [MODIFIED - Added "Pop out Convoy Bubble" button in header]
+  - `lib/features/trip_detail/trip_detail_screen.dart` [MODIFIED - Added "Pop out Bubble" to popup menu]
+  - `docs/ROADMAP.md` [MODIFIED - Marked Plan 12 and Plan 15 Complete in summary and TOC]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED - Logged milestone IMP-129]
+- **Architectural Rationale**:
+  - Replaced ad-hoc notification handling with a unified, dual-tier event and routing system:
+    1. **In-App Dynamic Island HUD**: Slides smoothly behind the status bar inside `MaterialApp.builder` with swipe-up dismissal, auto-dismiss countdown, and screen-aware duplicate suppression so active screens (e.g. Chat) aren't redundantly alerted.
+    2. **NotificationRouter**: Decoupled notification payloads from specific widgets, translating coordinates (`trip_id`, `target_screen`, `target_item_id`) to directly open and highlight items across Itinerary, Expenses, Chat, and Packing.
+    3. **Floating Travel Bubble Mini-HUD**: Draggable circular badge with magnetic edge snapping to left or right screen margins. Tapping expands a mini-HUD card showing next destination, ETA, companion distance radar, and 1-tap quick expense logging.
+- **Verification**:
+  - Created unit tests: `test/services/notification_router_test.dart`, `test/services/in_app_notification_manager_test.dart`, and `test/services/floating_bubble_service_test.dart`.
+  - Analyzed and verified all modified and new files.
+
+### `IMP-130` · Project-Wide Hardcoded Data Elimination & Dynamic Navigation Telemetry
+- **Date**: September 19, 2026
+- **Target Files**:
+  - `lib/features/navigation/widgets/arrived_tab.dart` [MODIFIED - Removed fake member ID checks ('spencer', 'lia') and hardcoded arrival timestamps; wired dynamic member arrival status and relative ping times]
+  - `lib/features/navigation/widgets/group_tracker_tab.dart` [MODIFIED - Replaced hardcoded traveler count, removed 'carlo' late flag, made GroupSpreadBanner dynamic with trailing member detection]
+  - `lib/features/navigation/widgets/proximity_alert_tab.dart` [MODIFIED - Replaced hardcoded avatar initial 'S', static 300m/2min ETA, static address, and removed fake '₱28,000 Spencer paid' expense chip]
+  - `lib/features/navigation/widgets/nav_panels.dart` [MODIFIED - Replaced static 300m/2min distance/ETA strings with dynamic state formatters and removed fake expense tag]
+  - `lib/features/navigation/widgets/nav_map_view.dart` [MODIFIED - Eliminated hardcoded initial filters ('C', 'M', 'L') that hid group members; added index-based companion map layout]
+  - `lib/features/navigation/providers/navigation_provider.dart` [MODIFIED - Removed mock battery levels 94/85; added dynamic _calculateGroupSpread computed on GPS and peer updates]
+  - `lib/core/services/location_broadcast_service.dart` [MODIFIED - Parse battery_level from database row instead of hardcoding 85]
+  - `lib/features/budget/widgets/distribution_card.dart` [MODIFIED - Parameterized totalSpent and category distributions using CurrencyUtils and dynamic sweep angles]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED - Appended milestone IMP-130]
+- **Architectural Rationale**:
+  - Systematic purge of mock/static values across navigation and budget surfaces to ensure 100% production readiness with authentic Supabase and GPS telemetry.
+  - Resolved UI invisibility bugs where companions with names not matching specific initials ('C', 'M', 'L') were suppressed from map views.
+  - Ensured convoy alert and group spread warnings react strictly to genuine geospatial distance thresholds rather than static placeholders.
+- **Verification**:
+  - `flutter analyze`: 0 issues found across entire codebase (ran in 7.0s).

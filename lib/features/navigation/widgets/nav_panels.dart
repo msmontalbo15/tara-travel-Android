@@ -4,6 +4,9 @@ import '../../../core/theme/app_responsive.dart';
 import '../models/navigation_models.dart';
 import 'nav_map_view.dart';
 
+String _fmtDist(double km) =>
+    km < 1.0 ? '${(km * 1000).toInt()} m' : '${km.toStringAsFixed(1)} km';
+
 // ── INSTRUCTION PANEL ─────────────────────────────────────────────
 class InstructionPanel extends StatelessWidget {
   final TurnInstruction turn;
@@ -313,14 +316,14 @@ class ProximityPanel extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text('Almost there!', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: -0.3)),
-                    Text('300 m from ${state.destination.name}', style: const TextStyle(fontSize: 12, color: Color(0xFF8E8E93))),
+                    Text('${_fmtDist(state.destination.distanceKm)} from ${state.destination.name}', style: const TextStyle(fontSize: 12, color: Color(0xFF8E8E93))),
                   ],
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(color: const Color(0xFFEAF3DE), borderRadius: BorderRadius.circular(10)),
-                child: const Text('2 min', style: TextStyle(color: Color(0xFF3B6D11), fontSize: 13, fontWeight: FontWeight.bold)),
+                child: Text(state.destination.eta, style: const TextStyle(color: Color(0xFF3B6D11), fontSize: 13, fontWeight: FontWeight.bold)),
               ),
             ],
           ),
@@ -339,8 +342,6 @@ class ProximityPanel extends StatelessWidget {
                 Row(
                   children: [
                     _miniTag('Hotel', const Color(0xFFE6F1FB), const Color(0xFF185FA5)),
-                    const SizedBox(width: 6),
-                    _miniTag('₱28,000 · Spencer paid', const Color(0xFFFAECE7), const Color(0xFF993C1D)),
                   ],
                 ),
               ],
