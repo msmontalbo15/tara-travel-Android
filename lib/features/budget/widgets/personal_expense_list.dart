@@ -229,7 +229,6 @@ class PersonalExpenseList extends ConsumerWidget {
 
   Widget _buildExpenseRow(
       BuildContext context, WidgetRef ref, PersonalExpenseItem item) {
-    final isCash = item.paymentMode == PaymentMode.cash;
     final accent = _getCategoryAccent(item.category);
     final dateStr = DateFormat('MMM d, h:mm a').format(item.date);
 
@@ -325,32 +324,24 @@ class PersonalExpenseList extends ConsumerWidget {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: isCash
-                                  ? const Color(0xFF10B981).withValues(alpha: 0.08)
-                                  : const Color(0xFF3B82F6).withValues(alpha: 0.08),
+                              color: item.paymentMode.color.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
-                                  isCash
-                                      ? Icons.payments_outlined
-                                      : Icons.credit_card_rounded,
-                                  size: 9,
-                                  color: isCash
-                                      ? const Color(0xFF047857)
-                                      : const Color(0xFF1D4ED8),
+                                  item.paymentMode.icon,
+                                  size: 9.5,
+                                  color: item.paymentMode.color,
                                 ),
                                 const SizedBox(width: 3),
                                 Text(
-                                  isCash ? 'Cash' : 'Digital',
+                                  item.paymentMode.shortLabel,
                                   style: TextStyle(
                                     fontSize: 9,
                                     fontWeight: FontWeight.w700,
-                                    color: isCash
-                                        ? const Color(0xFF047857)
-                                        : const Color(0xFF1D4ED8),
+                                    color: item.paymentMode.color,
                                   ),
                                 ),
                               ],

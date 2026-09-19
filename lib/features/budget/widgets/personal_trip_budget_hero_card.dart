@@ -431,7 +431,12 @@ class _PersonalTripBudgetHeroCardState extends State<PersonalTripBudgetHeroCard>
               _summaryDivider(),
               _summaryItem('Group Share', '₱${CurrencyUtils.formatAmount(widget.myGroupLiability)}', const Color(0xFFEF9F27)),
               _summaryDivider(),
-              _summaryItem('Trip Total', '₱${CurrencyUtils.formatAmount(widget.tripTotalSpent)}', Colors.white70),
+              _summaryItem(
+                'True Trip Cost',
+                '₱${CurrencyUtils.formatAmount(effectiveSpent)}',
+                const Color(0xFF34D399),
+                tooltip: 'Pocket + Group Share',
+              ),
             ],
           ),
         ),
@@ -439,28 +444,31 @@ class _PersonalTripBudgetHeroCardState extends State<PersonalTripBudgetHeroCard>
     );
   }
 
-  Widget _summaryItem(String label, String value, Color color) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 9.5,
-            color: Colors.white.withValues(alpha: 0.5),
-            fontWeight: FontWeight.w500,
+  Widget _summaryItem(String label, String value, Color color, {String? tooltip}) {
+    return Tooltip(
+      message: tooltip ?? label,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 9.5,
+              color: Colors.white.withValues(alpha: 0.5),
+              fontWeight: FontWeight.w500,
+            ),
           ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 11.5,
-            fontWeight: FontWeight.w700,
-            color: color,
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

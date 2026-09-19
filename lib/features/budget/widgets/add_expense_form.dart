@@ -165,6 +165,63 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
     }
   }
 
+  Widget _buildQuickTag({
+    required String emoji,
+    required String label,
+    required ExpenseCategory category,
+    required PaymentMode paymentMode,
+    required String description,
+  }) {
+    final isSelected = _category == category &&
+        _descCtrl.text.trim() == description &&
+        (!_isPersonal || _paymentMode == paymentMode);
+
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _descCtrl.text = description;
+          _category = category;
+          if (_isPersonal) {
+            _paymentMode = paymentMode;
+          }
+          if (_descError != null) _descError = null;
+        });
+      },
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primary.withValues(alpha: 0.15)
+              : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.primary
+                : const Color(0xFFE5E7EB),
+            width: isSelected ? 1.4 : 1.0,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 12)),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                color: isSelected ? AppColors.primary : AppColors.deepEarth,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _submit() {
     if (!_validate()) return;
 
@@ -314,84 +371,112 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
                   color: AppColors.deepEarth,
                 ),
               ),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => setState(() => _paymentMode = PaymentMode.cash),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        decoration: BoxDecoration(
-                          color: _paymentMode == PaymentMode.cash
-                              ? const Color(0xFF10B981).withValues(alpha: 0.15)
-                              : const Color(0xFFF9FAFB),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: _paymentMode == PaymentMode.cash
-                                ? const Color(0xFF10B981)
-                                : const Color(0xFFE5E7EB),
-                            width: 1.5,
-                          ),
-                        ),
-                        child: const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.money_rounded, size: 16, color: Color(0xFF047857)),
-                            SizedBox(width: 6),
-                            Text(
-                              'Cash on Hand',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF047857),
-                              ),
-                            ),
-                          ],
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: PaymentMode.values.map((mode) {
+                  final active = _paymentMode == mode;
+                  return InkWell(
+                    onTap: () => setState(() => _paymentMode = mode),
+                    borderRadius: BorderRadius.circular(10),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: active
+                            ? mode.color.withValues(alpha: 0.14)
+                            : const Color(0xFFF9FAFB),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: active ? mode.color : const Color(0xFFE5E7EB),
+                          width: active ? 1.5 : 1.0,
                         ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => setState(() => _paymentMode = PaymentMode.digital),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        decoration: BoxDecoration(
-                          color: _paymentMode == PaymentMode.digital
-                              ? const Color(0xFF3B82F6).withValues(alpha: 0.15)
-                              : const Color(0xFFF9FAFB),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: _paymentMode == PaymentMode.digital
-                                ? const Color(0xFF3B82F6)
-                                : const Color(0xFFE5E7EB),
-                            width: 1.5,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            mode.icon,
+                            size: 15,
+                            color: active ? mode.color : const Color(0xFF6B7280),
                           ),
-                        ),
-                        child: const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.credit_card_rounded, size: 16, color: Color(0xFF1D4ED8)),
-                            SizedBox(width: 6),
-                            Text(
-                              'GCash / Card',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF1D4ED8),
-                              ),
+                          const SizedBox(width: 6),
+                          Text(
+                            mode.label,
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                              color: active ? mode.color : const Color(0xFF374151),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                ],
+                  );
+                }).toList(),
               ),
               const SizedBox(height: 14),
             ],
+
+            // ── Philippine Travel Quick Tags ─────────────────────────
+            const Text(
+              'Quick Categories (Philippine Travel)',
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF6B7280),
+              ),
+            ),
+            const SizedBox(height: 6),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              child: Row(
+                children: [
+                  _buildQuickTag(
+                    emoji: '🛵',
+                    label: 'Tricycle / Jeepney',
+                    category: ExpenseCategory.transport,
+                    paymentMode: PaymentMode.cash,
+                    description: 'Tricycle / Jeepney fare',
+                  ),
+                  const SizedBox(width: 6),
+                  _buildQuickTag(
+                    emoji: '🥭',
+                    label: 'Pasalubong & Souvenirs',
+                    category: ExpenseCategory.custom,
+                    paymentMode: PaymentMode.ewallet,
+                    description: 'Pasalubong & Souvenirs',
+                  ),
+                  const SizedBox(width: 6),
+                  _buildQuickTag(
+                    emoji: '🌿',
+                    label: 'Environmental / Eco Fee',
+                    category: ExpenseCategory.activities,
+                    paymentMode: PaymentMode.cash,
+                    description: 'Island Environmental Fee',
+                  ),
+                  const SizedBox(width: 6),
+                  _buildQuickTag(
+                    emoji: '🍢',
+                    label: 'Street Food & Snacks',
+                    category: ExpenseCategory.food,
+                    paymentMode: PaymentMode.cash,
+                    description: 'Street Food & Snacks',
+                  ),
+                  const SizedBox(width: 6),
+                  _buildQuickTag(
+                    emoji: '🤝',
+                    label: 'Tour Guide Tip',
+                    category: ExpenseCategory.activities,
+                    paymentMode: PaymentMode.cash,
+                    description: 'Tour Guide Tip',
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
 
             // ── Amount (hero input) ────────────────────────────────
             AppNumericField(

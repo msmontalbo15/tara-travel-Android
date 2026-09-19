@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Semantic Version representation and comparator (Major.Minor.Patch+Build).
@@ -263,4 +264,20 @@ final appVersionServiceProvider = Provider<AppVersionService>((ref) {
 final appVersionCheckProvider = FutureProvider<VersionCheckResult>((ref) async {
   final service = ref.watch(appVersionServiceProvider);
   return service.checkVersionStatus();
+});
+
+/// Runtime app version string read from the platform's native PackageInfo.
+///
+/// Always returns the version declared in `pubspec.yaml` (e.g. `1.0.1+1`)
+/// without requiring `--dart-define`. Falls back to [AppVersionService.currentAppVersionString]
+/// on error.
+final runtimeAppVersionProvider = FutureProvider<String>((ref) async {
+  try {
+    final info = await PackageInfo.fromPlatform();
+    final build = info.buildNumber.isNotEmpty ? '+${info.buildNumber}' : '';
+    return '${info.version}$build';
+  } catch (e) {
+    debugPrint('[runtimeAppVersionProvider] Fallback to compile-time constant: $e');
+    return AppVersionService.currentAppVersionString;
+  }
 });

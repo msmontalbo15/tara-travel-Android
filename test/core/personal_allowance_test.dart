@@ -39,7 +39,7 @@ void main() {
           description: 'Souvenir shirts',
           amount: 1200.0,
           category: ExpenseCategory.custom,
-          paymentMode: PaymentMode.digital,
+          paymentMode: PaymentMode.ewallet,
           date: DateTime.now(),
           createdAt: DateTime.now(),
         ),

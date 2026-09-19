@@ -1,10 +1,68 @@
 import 'dart:math';
+import 'package:flutter/material.dart';
 import 'expense_model.dart';
 
 /// Payment method used for personal tracking
 enum PaymentMode {
   cash,
-  digital,
+  ewallet,
+  maribank,
+  card;
+
+  bool get isCash => this == PaymentMode.cash;
+  bool get isDigital => this != PaymentMode.cash;
+
+  String get label {
+    switch (this) {
+      case PaymentMode.cash:
+        return 'Cash on Hand';
+      case PaymentMode.ewallet:
+        return 'E-Wallet (GCash / Maya)';
+      case PaymentMode.maribank:
+        return 'MariBank';
+      case PaymentMode.card:
+        return 'Debit / Credit Card';
+    }
+  }
+
+  String get shortLabel {
+    switch (this) {
+      case PaymentMode.cash:
+        return 'Cash';
+      case PaymentMode.ewallet:
+        return 'E-Wallet';
+      case PaymentMode.maribank:
+        return 'MariBank';
+      case PaymentMode.card:
+        return 'Card';
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case PaymentMode.cash:
+        return Icons.money_rounded;
+      case PaymentMode.ewallet:
+        return Icons.account_balance_wallet_rounded;
+      case PaymentMode.maribank:
+        return Icons.account_balance_rounded;
+      case PaymentMode.card:
+        return Icons.credit_card_rounded;
+    }
+  }
+
+  Color get color {
+    switch (this) {
+      case PaymentMode.cash:
+        return const Color(0xFF10B981); // Emerald
+      case PaymentMode.ewallet:
+        return const Color(0xFF007DFE); // Blue (GCash/Maya)
+      case PaymentMode.maribank:
+        return const Color(0xFFFF6600); // MariBank Orange
+      case PaymentMode.card:
+        return const Color(0xFF6366F1); // Indigo
+    }
+  }
 }
 
 /// Represents a private personal expense logged exclusively by this user.
@@ -41,9 +99,23 @@ class PersonalExpenseItem {
     );
 
     final paymentModeRaw = (map['payment_mode'] ?? 'cash').toString().toLowerCase();
-    final parsedPaymentMode = paymentModeRaw == 'digital'
-        ? PaymentMode.digital
-        : PaymentMode.cash;
+    PaymentMode parsedPaymentMode;
+    switch (paymentModeRaw) {
+      case 'ewallet':
+      case 'digital':
+        parsedPaymentMode = PaymentMode.ewallet;
+        break;
+      case 'maribank':
+        parsedPaymentMode = PaymentMode.maribank;
+        break;
+      case 'card':
+        parsedPaymentMode = PaymentMode.card;
+        break;
+      case 'cash':
+      default:
+        parsedPaymentMode = PaymentMode.cash;
+        break;
+    }
 
     return PersonalExpenseItem(
       id: '${map['id']}',
@@ -103,14 +175,32 @@ class PersonalAllowanceModel {
   double get totalPersonalSpent =>
       expenses.fold(0.0, (acc, e) => acc + e.amount);
 
+  /// True Trip Cost: Personal solo spending + user's estimated share of group expenses
+  double trueTripCost(double myGroupLiability) => totalPersonalSpent + myGroupLiability;
+
   /// Spent using physical cash
   double get cashSpent => expenses
-      .where((e) => e.paymentMode == PaymentMode.cash)
+      .where((e) => e.paymentMode.isCash)
       .fold(0.0, (acc, e) => acc + e.amount);
 
-  /// Spent using GCash / Maya / Card
+  /// Spent using non-cash digital methods (E-Wallet, MariBank, Card)
   double get digitalSpent => expenses
-      .where((e) => e.paymentMode == PaymentMode.digital)
+      .where((e) => e.paymentMode.isDigital)
+      .fold(0.0, (acc, e) => acc + e.amount);
+
+  /// Spent using E-Wallets (GCash / Maya)
+  double get ewalletSpent => expenses
+      .where((e) => e.paymentMode == PaymentMode.ewallet)
+      .fold(0.0, (acc, e) => acc + e.amount);
+
+  /// Spent using MariBank
+  double get maribankSpent => expenses
+      .where((e) => e.paymentMode == PaymentMode.maribank)
+      .fold(0.0, (acc, e) => acc + e.amount);
+
+  /// Spent using Debit / Credit Card
+  double get cardSpent => expenses
+      .where((e) => e.paymentMode == PaymentMode.card)
       .fold(0.0, (acc, e) => acc + e.amount);
 
   /// Net cash on hand remaining after cash personal expenses

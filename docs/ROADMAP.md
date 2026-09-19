@@ -19,13 +19,14 @@ This document serves as our compiled repository master plan, organized hierarchi
 |---|---|---|---|
 | **5** | [Google Maps & Pin Location Integration](#completed-plans-summary) | 🟢 **Complete** | Paste GMap link, auto-fill itinerary, pin-drop flying, zero-cost resolution |
 | **6** | [Tri-Modal Land Transport (Private, Commute, Rental) & Vehicle Garage Fuel Estimator](#plan-6-tri-modal-land-transport-private-commute-rental--vehicle-garage-fuel-estimator) | 🟢 **Complete** | Finalized 3 land modes (Private, Commute, Rental; strictly no sea/plane), user garage, live fuel prices & rental splitting |
-| **7** | [Travel Circles (Squads & Barkada Presets) for Multi-Member Trip Creation](#plan-7-travel-circles-squads-barkada-presets-for-multi-member-trip-creation) | 🟡 **Drafted / Queued** | Friend circles/squad presets, 1-tap batch addition, smart co-traveler suggestions & deduplication |
+| **7** | [Travel Circles (Squads & Barkada Presets) for Multi-Member Trip Creation](#plan-7-travel-circles-squads-barkada-presets-for-multi-member-trip-creation) | 🟢 **Complete** | Reusable travel squads/circles, 1-tap batch addition, smart co-traveler suggestions & deduplication (IMP-132) |
 | **8** | [Real-Time Live Weather Forecast & Severe Condition Alerts Engine](#plan-8-real-time-live-weather-forecast-severe-condition-alerts-engine) | 🟢 **Complete** | Open-Meteo API integration, offline caching, itinerary day-strip weather & severe storm alerts |
-| **9** | [Dual-Lens Budget & Expense Hub (Personal Pocket Tracker + Group Trip Summary)](#plan-9-dual-lens-budget-expense-hub-personal-pocket-tracker-group-trip-summary) | 🟡 **Drafted / Queued** | Private personal expenses, "My True Trip Cost", cash/GCash tracking & daily burn pace meter |
+| **9** | [Dual-Lens Budget & Expense Hub (Personal Pocket Tracker + Group Trip Summary)](#plan-9-dual-lens-budget-expense-hub-personal-pocket-tracker-group-trip-summary) | 🟢 **Complete** | Private personal expenses, True Trip Cost, multi-channel payment tags (Cash, E-Wallet, MariBank, Card) & daily burn pace meter (IMP-134) |
 | **10** | [Flexible & Optional Trip Map: Adventure, Multi-Point & Off-Grid Mode](#plan-10-flexible-optional-trip-map-adventure-multi-point-off-grid-mode) | 🟡 **Drafted / Queued** | Optional map tracking, multi-point waypoints, adventure trail roaming, battery-saving mapless mode |
 | **11** | [Meet-up Assembly, Smart Countdown & Automatic Departure Detection](#plan-11-meet-up-assembly-smart-countdown-automatic-departure-detection) | 🟢 **Complete** | Day 1 Stop 0 auto-insertion, meet-up grace period, GPS distance countdown & auto departure |
 | **12** | [Floating Travel Bubble & System Overlay HUD (PiP / Chathead Mode)](#plan-12-floating-travel-bubble-system-overlay-hud-pip-chathead-mode) | 🟢 **Complete** | In-app floating bubble + opt-in `SYSTEM_ALERT_WINDOW` convoy overlay, live radar & quick expense logging |
 | **20** | [Chat Announcements Engine & Trip Detail Command Hub](#plan-20-chat-announcements-engine--trip-detail-command-hub) | 🟢 **Complete** | Pinned announcements, priority tinting (Urgent vs Notice), live banner on Trip Detail & chat deep-linking |
+| **23** | [GCash Number OTP Verification & Verified QR Upload](#plan-23-gcash-number-otp-verification--verified-qr-upload) | 🟡 **Drafted / Queued** | Firebase Phone Auth OTP for GCash number ownership, verified QR upload gated behind OTP, tamper-proof payment profile |
  
 ### 🔴 Tier 3: Major Architecture & Platform (End-to-End Systems, AI & Middleware)
 | # | Plan / Feature | Status | Key Focus |
@@ -59,6 +60,7 @@ This document serves as our compiled repository master plan, organized hierarchi
 | **Plan 6** | Tri-Modal Land Transport & Garage Fuel Estimator | IMP-131 | ✅ Complete | 3 land modes (Private, Commute, Rental), Profile Garage manager, DOE fuel cost calculator & transit hubs. |
 | **Plan 7** | Travel Circles (Squads & Barkada Presets) | IMP-132 | ✅ Complete | Reusable travel squads/circles, 1-tap multi-member addition in trip creation, full CRUD management tab. |
 | **Plan 8** | Real-Time Live Weather Forecast & Severe Alerts | IMP-088 | ✅ Complete | Open-Meteo API integration, offline cache, DayStrip weather & storm alerts. |
+| **Plan 9** | Dual-Lens Budget & Expense Hub | IMP-134 | ✅ Complete | Private personal expenses, True Trip Cost, multi-channel payment tags (Cash, E-Wallet, MariBank, Card), daily pacing gauge. |
 | **Plan 12** | Floating Travel Bubble & Overlay HUD | IMP-129 | ✅ Complete | In-app draggable edge-snapping bubble, mini-HUD card, and quick expense logging. |
 | **Plan 13** | Trip Detail Screen: Ongoing Command Center & HUD | IMP-089 | ✅ Complete | Quick Stop HUD, persistent bottom dock, destination weather, officers. |
 | **Plan 15** | Comprehensive Mobile Notifications Architecture | IMP-129 | ✅ Complete | In-App Dynamic Island toasts, duplicate suppression, and NotificationRouter deep links. |
@@ -69,7 +71,7 @@ This document serves as our compiled repository master plan, organized hierarchi
 
 ---
 
-## ðŸŸ¡ Active Implementation Plans
+## 🟡 Active Implementation Plans
 
 ## Plan 5: Google Maps Link Resolver & Pin Location Applicable
 
@@ -344,7 +346,7 @@ CREATE TABLE public.friend_circle_members (
 ---
 
 
-## Plan 9: Dual-Lens Budget & Expense Hub (Personal Pocket Tracker + Group Trip Summary)
+## Plan 9: Dual-Lens Budget & Expense Hub (Personal Pocket Tracker + Group Trip Summary) `[COMPLETE — IMP-134]`
 
 *(Originally proposed as IDEA-012)*
 
@@ -861,6 +863,105 @@ Deepen Tara Travel's real-time location sharing into an intelligent, cooperative
 
 ---
 
+
+## Plan 23: GCash Number OTP Verification & Verified QR Upload
+
+### Goal
+Harden Tara Travel's GCash payment profile by enforcing **phone number ownership verification via Firebase Phone Auth OTP** before the number is saved and before a GCash QR code image can be uploaded. Additionally, **auto-decode, cross-validate, and regenerate** uploaded QR code screenshots into clean, brand-consistent renders. Guarantees that the GCash number entered by the user and the QR code attached to their profile belong to the **same verified phone number**, eliminating mismatched, fraudulent, or typo-ridden payment credentials across group expense settlements.
+
+Architecturally, the OTP and QR pipeline is built on a **provider-agnostic `EWalletVerificationService` interface** so the same flow extends to Maya/PayMaya (or future Philippine e-wallets) without rewriting core logic.
+
+### Problem Statement
+Currently, users can freely type any 11-digit Philippine mobile number as their GCash number and upload any QR code image — with zero verification that the number belongs to them or that the QR matches the entered number. This creates settlement trust issues:
+- **Wrong number**: A traveler fat-fingers `0917` instead of `0918` — co-travelers send money to the wrong account.
+- **Mismatched QR**: A user uploads a QR code belonging to a different GCash account than the number they entered.
+- **Fraudulent profiles**: Bad actors intentionally set someone else's GCash number to redirect group expense payouts.
+
+### Core Capabilities
+
+1. **Firebase Phone Auth OTP Verification Flow**:
+   - When a user taps **"Edit GCash Number"** on `ProfilePaymentCard`, a dedicated `GcashOtpVerificationSheet` bottom sheet opens instead of the current raw text editor.
+   - **Step 1 — Number Input**: User enters their 11-digit Philippine mobile number (`09XX XXX XXXX`). Input is validated for PH format before proceeding.
+   - **Step 2 — OTP Sent**: Firebase Phone Auth sends a 6-digit SMS OTP to the entered number. A 60-second countdown timer is shown with a **"Resend Code"** button that activates after the timer expires.
+   - **Step 3 — OTP Verification**: User enters the 6-digit code. On successful verification, the number is marked as **verified** and persisted to the profile.
+   - **Error Handling**: Invalid code → shake animation + red error text. Expired code → prompt to resend. Rate limiting via Firebase's built-in abuse protection.
+
+2. **Verified Number Gating for QR Upload**:
+   - The **"Upload GCash QR Code"** action on `ProfilePaymentCard` is **disabled and visually locked** (greyed out with a lock icon + tooltip: *"Verify your GCash number first"*) until the user has a verified GCash number.
+   - After OTP verification succeeds, the QR upload button unlocks and the user can attach their GCash QR code image.
+   - If the user later changes their GCash number (triggering a new OTP cycle), the **existing QR is automatically cleared** to prevent stale QR–number mismatch, requiring a fresh QR upload after re-verification.
+
+3. **Verified Badge & Trust Indicators**:
+   - A green **✓ Verified** badge is displayed next to the GCash number on `ProfilePaymentCard` and in the `MembersScreen` member detail sheet.
+   - Co-travelers see the verification badge when viewing a member's GCash info in the expense settlement flow, building trust before sending money.
+   - Unverified numbers display an amber **⚠ Unverified** indicator with a prompt to verify.
+
+4. **Profile Data Model Extension**:
+   - Add `gcash_verified` (`bool`, default `false`), `gcash_verified_at` (`timestamptz`, nullable), and `payment_provider` (`text`, default `'gcash'`) columns to `public.profiles`.
+   - `payment_provider` enum values: `gcash` | `maya`. Determines which QR payload parser, badge icon, and brand tint to apply throughout the UI.
+   - On successful OTP verification: set `gcash_verified = true`, `gcash_verified_at = now()`.
+   - On number change: reset `gcash_verified = false`, `gcash_verified_at = null`, clear `gcash_qr_url`.
+   - On provider switch (e.g. GCash → Maya): reset all verification state and QR — user must re-verify under the new provider.
+
+5. **Firebase Integration (Leveraging Plan 21)**:
+   - Uses `firebase_auth` package (already planned in Plan 21) for `PhoneAuthProvider`.
+   - Does **not** replace Supabase Auth as the primary auth provider. Firebase Phone Auth is used **solely** for GCash number verification — the Firebase credential is used transiently to confirm ownership and is not linked to the user's main session.
+   - Auto-verification on Android: Firebase can auto-read the SMS on some devices, instantly completing verification without manual code entry.
+
+6. **Smart QR Auto-Crop, Cross-Validation & Clean Regeneration**:
+   - **Decode on Upload**: When the user selects a QR screenshot from their gallery, `google_mlkit_barcode_scanning` (or `mobile_scanner`) immediately scans the image to detect and decode the embedded QR code — extracting the raw GCash payment link/URI payload.
+   - **Auto-Crop**: The barcode detector returns the QR bounding box coordinates. The image is auto-cropped to isolate just the QR region, stripping away status bars, GCash app chrome, navigation buttons, and surrounding whitespace.
+   - **Cross-Validation Against Verified Number**: The decoded QR payload is parsed to extract the embedded phone number. If it **does not match** the OTP-verified GCash number on the profile, the upload is **rejected** with a clear error: *"This QR belongs to a different GCash number (0917•••1234). Please upload the QR for your verified number (0918•••5678)."* This is the strongest anti-mismatch safeguard.
+   - **Clean Regeneration**: Instead of storing the raw cropped screenshot, the decoded QR data is fed into `qr_flutter` to **regenerate a pristine QR code** with brand-consistent styling:
+     - Tara Travel coral (`#D85A30`) data modules on warm white (`#F7F4F0`) background.
+     - Rounded square eye pattern matching the app's 12px border radius design language.
+     - Consistent 300×300 px canvas at high error correction (Level H) for reliable scanning.
+   - **Stored Artifact**: The regenerated QR is rendered to a PNG via `RenderRepaintBoundary`, compressed, and uploaded to the existing Supabase `avatars` bucket path (`gcash_qr/{userId}.png`), replacing the old raw screenshot.
+   - **Fallback**: If QR detection fails (blurry image, corrupted file), a toast prompts the user to retake or upload a clearer screenshot — the upload is not silently accepted with a bad image.
+
+7. **Multi-Wallet Abstraction (Future-Proofing for Maya/PayMaya)**:
+   - **`EWalletVerificationService` Abstract Interface**: Defines the contract for any Philippine e-wallet OTP + QR pipeline:
+     - `sendOtp(String phoneNumber)` → triggers Firebase Phone Auth SMS.
+     - `verifyOtp(String verificationId, String code)` → confirms ownership.
+     - `decodeQrPayload(String rawQrData)` → extracts the embedded phone number from the provider-specific QR URI format.
+     - `validateQrMatchesVerifiedNumber(String decodedNumber, String verifiedNumber)` → cross-check.
+   - **`GcashVerificationService`**: Concrete implementation. Parses GCash QR URI format (e.g. `https://qrph.gcash.com/...?phone=09XXXXXXXXX`).
+   - **`MayaVerificationService`** *(future)*: Same Firebase Phone Auth OTP flow — only `decodeQrPayload` differs to handle Maya's QR URI scheme.
+   - Both GCash and Maya use PH mobile numbers (`+63 9XX`), so the entire Firebase Phone Auth OTP pipeline is **100% shared** — zero duplication when Maya is added.
+   - **Provider Selector UI**: `ProfilePaymentCard` gets a segmented toggle (`GCash` | `Maya`) above the number input. Switching providers resets verification state and QR, requiring fresh OTP under the new provider.
+   - **Provider-Aware Branding**: Badge tint and QR regeneration colors adapt per provider — GCash blue (`#007DFE`) for GCash-branded QRs, Maya green (`#2FB86E`) for Maya-branded QRs.
+
+### Impacted Files & Architecture
+- `pubspec.yaml` *(MODIFY — ensure `firebase_auth` and `google_mlkit_barcode_scanning` dependencies are present)*
+- `lib/core/providers/profile_provider.dart` *(MODIFY — add `gcashVerified`, `gcashVerifiedAt`, `paymentProvider` fields to `ProfileState`, update `copyWith`, `toJson`, `fromJson`)*
+- `lib/core/repositories/profile_repository.dart` *(MODIFY — persist `gcash_verified`, `gcash_verified_at`, `payment_provider` columns, reset on number/provider change)*
+- `lib/core/models/member_model.dart` *(MODIFY — add `gcashVerified` and `paymentProvider` fields for co-traveler trust badge rendering)*
+- `lib/core/models/payment_provider.dart` *(NEW — `PaymentProvider` enum: `gcash`, `maya` with display name, brand color, and icon getters)*
+- `lib/core/services/ewallet_verification_service.dart` *(NEW — abstract interface defining `sendOtp`, `verifyOtp`, `decodeQrPayload`, `validateQrMatchesVerifiedNumber`)*
+- `lib/core/services/gcash_verification_service.dart` *(NEW — concrete `EWalletVerificationService` for GCash, wraps Firebase Phone Auth OTP + GCash QR URI parser)*
+- `lib/core/services/gcash_qr_processor.dart` *(NEW — decodes uploaded QR image via ML Kit, extracts payload, delegates to `EWalletVerificationService.decodeQrPayload` for cross-validation, regenerates clean branded QR via `qr_flutter`, and renders to PNG)*
+- `lib/features/profile/widgets/gcash_otp_verification_sheet.dart` *(NEW — multi-step bottom sheet: provider selector → number input → OTP code entry → success confirmation)*
+- `lib/features/profile/widgets/profile_payment_card.dart` *(MODIFY — add provider segmented toggle, gate QR upload behind verified state, wire QR processor pipeline, show verified/unverified badge with provider-aware branding)*
+- `lib/features/profile/profile_screen.dart` *(MODIFY — replace `_editGcash` raw text dialog with OTP verification sheet launcher)*
+- `lib/features/members/members_screen.dart` *(MODIFY — render provider-aware verified badge next to member e-wallet number in detail sheet)*
+- `supabase/migrations/YYYYMMDD_add_gcash_verification.sql` *(NEW — add `gcash_verified`, `gcash_verified_at`, `payment_provider` columns to `profiles`)*
+- `test/services/gcash_verification_service_test.dart` *(NEW — mock Firebase Phone Auth verification flow, QR payload parsing, and edge cases)*
+- `test/services/gcash_qr_processor_test.dart` *(NEW — mock QR decode, cross-validation rejection, and clean regeneration output)*
+
+### Prerequisites
+- **Plan 21** (Unified Firebase & Supabase Cloud Ecosystem) must be implemented first — provides `firebase_core` initialization, `firebase_auth` dependency, and the dual-cloud bootstrap in `main.dart`.
+
+### Verification Plan
+- **Unit Tests**: Mock `FirebaseAuth.verifyPhoneNumber` to validate OTP send → verify → profile state mutation. Mock ML Kit barcode scanner to validate decode → cross-validate → regenerate pipeline. Test `PaymentProvider` enum serialization round-trip.
+- **Integration Test**: Manual end-to-end test with a real PH phone number on a physical Android device. Upload real GCash QR screenshots (clean, cropped, blurry, wrong-number) to verify the full pipeline.
+- **Edge Cases**: Expired OTP, invalid code, rate limit exceeded, number change mid-verification, auto-retriever timeout, unreadable/blurry QR image, QR belonging to a different number, corrupted image file, non-QR image upload, provider switch mid-flow, Maya QR uploaded with GCash provider selected.
+
+---
+
+---
+
+
+
 ## 📱 Screen-by-Screen Feature Matrix & Implementation Clusters
 
 This matrix aggregates all active roadmap plans that share identical screens/surfaces, identifying the **level of changes needed** (Low, Medium, High, Extreme) to enable efficient multi-feature batching.
@@ -875,7 +976,7 @@ This matrix aggregates all active roadmap plans that share identical screens/sur
 | **Budget & Expense Hub** | `lib/features/budget/budget_screen.dart`<br>`lib/features/expenses/widgets/add_expense_form.dart` | **Plan 9** (Dual-Lens Budget & Pocket)<br>**Plan 15** (Expense Deep Links) | **High** | • Add segmented toggle: `My Personal Pocket` vs `Group Finances`.<br>• Mount `PersonalPocketCard` & `DailyPaceGauge` speedometer.<br>• In `AddExpenseForm`, add `is_personal` toggle and `payment_method` chips (`cash`, `gcash`, `maya`).<br>• Auto-scroll/highlight specific expense cards when opened via push notification. |
 | **Group Chat Hub** | `lib/features/chat/chat_screen.dart`<br>`lib/features/chat/widgets/chat_attachment_picker_sheet.dart` | **Plan 20** (Announcements Engine) | **Medium** | • Add "📢 Trip Announcement" item in `ChatAttachmentPickerSheet`.<br>• Add compose announcement modal with priority selection.<br>• Pinned announcement top drawer with counter.<br>• Styled announcement bubble cards with deep-link anchors. |
 | **Friends & Squads** | `lib/features/friends/friends_screen.dart` | **Plan 7** (Travel Circles) | **High** | • Add "Circles" tab to friends management.<br>• Circle CRUD sheets with name, emoji, and default roles.<br>• Shareable `circle_invite_code` onboarding flow. |
-| **User Profile & Garage** | `lib/features/profile/profile_screen.dart` | **Plan 6** (User Garage & Vehicles)<br>**Plan 7** (Circles Shortcut) | **Medium** | • Add "My Vehicles / Garage" entry tile launching `UserVehiclesSheet`.<br>• Vehicle CRUD (model, fuel type, km/L efficiency rating).<br>• Quick navigation entry to manage Travel Circles. |
+| **User Profile & Garage** | `lib/features/profile/profile_screen.dart` | **Plan 6** (User Garage & Vehicles)<br>**Plan 7** (Circles Shortcut)<br>**Plan 23** (GCash OTP Verification) | **High** | • Add "My Vehicles / Garage" entry tile launching `UserVehiclesSheet`.<br>• Vehicle CRUD (model, fuel type, km/L efficiency rating).<br>• Quick navigation entry to manage Travel Circles.<br>• Replace raw GCash text editor with `GcashOtpVerificationSheet` (Firebase Phone Auth OTP flow).<br>• Gate QR upload behind verified number, show ✓ Verified / ⚠ Unverified badge on `ProfilePaymentCard`. |
 | **Notifications Center** | `lib/features/notifications/notifications_screen.dart` | **Plan 15** (Mobile Notifications) | **Medium** | • Make notification list tiles interactive with category-tinted icons.<br>• Wire tap actions to `NotificationRouter` for deep-link screen navigation. |
 | **Live Navigation & Convoy Radar** | `lib/features/navigation/live_navigation_screen.dart`<br>`lib/features/navigation/widgets/live_map_tab.dart` | **Plan 22** (Convoy Telemetry & Formation Radar)<br>**Plan 12** (Floating Bubble Bridge) | **High** | • Mount `ConvoyRadarCard` with lead/tail formation tracker & straggler alerts.<br>• Real-time per-companion ETAs to active itinerary stop.<br>• Automated 150m arrival & departure geofencing triggers.<br>• Add `[Meet Halfway]` rendezvous centroid calculator.<br>• Pipe companion proximity to `FloatingBubbleService` PiP HUD. |
 | **System Overlay & Background** | Global App Services & Android Manifest | **Plan 12** (Floating Bubble Overlay)<br>**Plan 15** (Local/Push Notifications)<br>**Plan 16** (Gemini AI Service Core)<br>**Plan 18** (Laravel Middleware)<br>**Plan 22** (Foreground Service Keep-Alive) | **High to Extreme** | • Android `SYSTEM_ALERT_WINDOW` & `FOREGROUND_SERVICE` for PiP bubble & persistent convoy GPS.<br>• Local timed notification channels & top slide-down `InAppNotificationOverlay`.<br>• Edge Function `tara-copilot` & client fallback.<br>• External Laravel 11 + Filament v3 backend for `/join/{code}` deep links. |
@@ -918,4 +1019,18 @@ When scheduling implementation sprints, bundle features by screen to avoid touch
  4. **Live Convoy & Telemetry Radar Cluster**:
     - **Bundle**: **Plan 22** (Convoy Telemetry & Formation Radar) + **Plan 12** (Floating Bubble HUD) on [`lib/features/navigation/live_navigation_screen.dart`](file:///d:/Spencer/Downloads/tara_travel/lib/features/navigation/live_navigation_screen.dart) and [`lib/core/services/location_broadcast_service.dart`](file:///d:/Spencer/Downloads/tara_travel/lib/core/services/location_broadcast_service.dart).
     - **Rationale**: Couples live broadcast telemetry with the floating PiP overlay and formation pacing in one synchronized sprint, minimizing battery impact and streamlining geolocation callbacks.
+
+ 5. **Profile Payment Trust & Firebase Bootstrap Cluster**:
+    - **Bundle**: **Plan 21** (Firebase & Supabase Cloud Ecosystem) + **Plan 23** (GCash OTP Verification & QR) + **Plan 9** (Dual-Lens Budget — GCash settlement chips) on [`lib/features/profile/profile_screen.dart`](file:///d:/Spencer/Downloads/tara_travel/lib/features/profile/profile_screen.dart), [`lib/features/profile/widgets/profile_payment_card.dart`](file:///d:/Spencer/Downloads/tara_travel/lib/features/profile/widgets/profile_payment_card.dart), and [`lib/core/services/gcash_otp_service.dart`](file:///d:/Spencer/Downloads/tara_travel/lib/core/services/gcash_otp_service.dart).
+    - **Rationale**: Plan 23 has a **hard dependency on Plan 21** — Firebase Phone Auth requires `firebase_core` and `firebase_auth` which Plan 21 bootstraps. Implement Plan 21's Firebase initialization first, then Plan 23 layers OTP verification on top. Plan 9's GCash payment method chips in the expense form benefit from the verified badge trust signals, so batching all three ensures the payment profile, verification, and expense settlement flows are cohesive.
+    - **Shared Technical Dependencies**:
+      - `lib/core/services/gcash_otp_service.dart` *(NEW — Firebase Phone Auth OTP wrapper)*
+      - `lib/core/services/gcash_qr_processor.dart` *(NEW — ML Kit decode → cross-validate → regenerate pipeline)*
+      - `lib/core/services/fcm_service.dart` *(NEW from Plan 21 — FCM token registration & push listener)*
+      - `lib/core/providers/profile_provider.dart` *(MODIFY — `gcashVerified`, `gcashVerifiedAt` fields)*
+      - `lib/core/repositories/profile_repository.dart` *(MODIFY — verification columns & QR storage sync)*
+    - **Future-Proofing — Abstract for Maya/PayMaya**:
+      - Design `gcash_otp_service.dart` as a thin specialization of a generic `EWalletVerificationService` interface. GCash and Maya both use Philippine mobile numbers, so the Firebase Phone Auth OTP flow is identical — only the QR payload parsing differs. When Maya support is needed, subclass the same interface without rewriting the OTP or QR pipeline.
+      - Add a `payment_provider` enum (`gcash | maya`) to the profile model so the verification badge and QR storage path are provider-aware from day one.
+
 

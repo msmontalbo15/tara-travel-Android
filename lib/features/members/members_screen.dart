@@ -892,10 +892,22 @@ class _RoleEditorSheetState extends ConsumerState<_RoleEditorSheet> {
       onChanged: (v) {
         setState(() {
           if (v == true) {
-            _selectedRoles.add(role);
+            if (role == MemberRole.member) {
+              // Checking "member" demotes — clear all specialized roles
+              _selectedRoles
+                ..clear()
+                ..add(MemberRole.member);
+            } else {
+              // Checking a specialized role — remove fallback "member"
+              _selectedRoles
+                ..remove(MemberRole.member)
+                ..add(role);
+            }
           } else {
-            if (_selectedRoles.length > 1) {
-              _selectedRoles.remove(role);
+            _selectedRoles.remove(role);
+            // If nothing left, fall back to "member"
+            if (_selectedRoles.isEmpty) {
+              _selectedRoles.add(MemberRole.member);
             }
           }
         });
@@ -1193,10 +1205,19 @@ class _BatchRoleEditorSheetState extends ConsumerState<_BatchRoleEditorSheet> {
               onChanged: (v) {
                 setState(() {
                   if (v == true) {
-                    _selectedRoles.add(role);
+                    if (role == MemberRole.member) {
+                      _selectedRoles
+                        ..clear()
+                        ..add(MemberRole.member);
+                    } else {
+                      _selectedRoles
+                        ..remove(MemberRole.member)
+                        ..add(role);
+                    }
                   } else {
-                    if (_selectedRoles.length > 1) {
-                      _selectedRoles.remove(role);
+                    _selectedRoles.remove(role);
+                    if (_selectedRoles.isEmpty) {
+                      _selectedRoles.add(MemberRole.member);
                     }
                   }
                 });

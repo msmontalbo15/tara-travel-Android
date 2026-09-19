@@ -667,14 +667,24 @@ class _ChooseModeStepState extends ConsumerState<ChooseModeStep>
                                   border: Border.all(
                                       color: Colors.black.withValues(alpha: 0.08)),
                                 ),
-                                child: const Text(
-                                  'Release Version: ${AppVersionService.currentAppVersionString}',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.muted,
-                                    fontFamily: 'monospace',
-                                  ),
+                                child: Consumer(
+                                  builder: (context, ref, _) {
+                                    final versionAsync = ref.watch(runtimeAppVersionProvider);
+                                    final label = versionAsync.when(
+                                      data: (v) => 'Release Version: $v',
+                                      loading: () => 'Release Version: ...',
+                                      error: (_, __) => 'Release Version: ${AppVersionService.currentAppVersionString}',
+                                    );
+                                    return Text(
+                                      label,
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.muted,
+                                        fontFamily: 'monospace',
+                                      ),
+                                    );
+                                  },
                                 ),
                               ),
                             ],

@@ -420,7 +420,7 @@ class CashVsDigitalCard extends ConsumerWidget {
                             ),
                             const SizedBox(width: 6),
                             const Text(
-                              'GCash / Card',
+                              'E-Wallet / Bank',
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w600,
@@ -444,7 +444,7 @@ class CashVsDigitalCard extends ConsumerWidget {
                         ),
                         const SizedBox(height: 4),
                         const Text(
-                          'Digital payments',
+                          'E-Wallet · MariBank · Card',
                           style: TextStyle(
                             fontSize: 9,
                             color: Color(0xFF2563EB),

@@ -94,6 +94,7 @@
 | **`IMP-131`** | 2026-09-19 | Transport & Garage / Tri-Modal Land Transport & Garage (Plan 6) | 3 land modes (Private, Commute, Rental), Profile Garage manager, DOE fuel cost calculator & transit hubs. |
 | **`IMP-132`** | 2026-09-19 | Friends & Squads / Travel Circles & Barkada Presets (Plan 7) | Reusable travel squads/circles, 1-tap multi-member addition in trip creation, full CRUD management tab in Friends. |
 | **`IMP-133`** | 2026-09-19 | Auth & Web / Google Sign-In Client ID Assertion Fix | Provided Web client ID to `GoogleSignIn(clientId:)` and `web/index.html` meta tag to resolve web assertion failure. |
+| **`IMP-134`** | 2026-09-20 | Budget & Expenses / Dual-Lens Budget & Expense Hub (Plan 9) | Multi-channel payment tags (Cash, E-Wallet GCash/Maya, MariBank, Card), Philippine travel quick tags, True Trip Cost calculation, and daily pacing gauge polish. |
 
 
 ---
@@ -3122,7 +3123,26 @@
   - While Android uses `serverClientId` (with configuration in `google-services.json`), Web strictly requires the `clientId` parameter or meta tag.
   - Set both in `auth_repository.dart` using conditional `kIsWeb` check and in `web/index.html` head for complete multi-platform resilience.
 - **Verification**:
-  - Verified with `flutter analyze lib/core/repositories/auth_repository.dart`: 0 issues found.
+### `IMP-134` · Plan 9: Dual-Lens Budget & Expense Hub (Personal Pocket Tracker + Group Trip Summary)
+- **Date**: September 20, 2026
+- **Associated Plan**: Plan 9 (Dual-Lens Budget & Expense Hub)
+- **Target Files**:
+  - `lib/core/models/personal_allowance_model.dart` [MODIFIED - Expanded `PaymentMode` to discrete Philippine payment channels: `cash`, `ewallet` (GCash/Maya), `maribank`, and `card` with backwards-compatible `digital` parsing; added `trueTripCost`, `ewalletSpent`, `maribankSpent`, `cardSpent` computed getters]
+  - `lib/features/budget/widgets/add_expense_form.dart` [MODIFIED - Upgraded personal payment method selector to 4 distinct channel chips (Cash, E-Wallet, MariBank, Card); added Philippine Travel Quick Tags strip (Tricycle/Jeepney, Pasalubong, Eco Fee, Street Food, Guide Tip) with one-tap prefill]
+  - `lib/features/budget/widgets/personal_trip_budget_hero_card.dart` [MODIFIED - Added True Trip Cost pill in summary breakdown row highlighting `Pocket Spent + Group Share = True Trip Cost`]
+  - `lib/features/budget/widgets/cash_vs_digital_card.dart` [MODIFIED - Updated digital tile title and sub-labels to reflect E-Wallet, MariBank, and Card breakdown]
+  - `lib/features/budget/widgets/personal_expense_list.dart` [MODIFIED - Updated expense row badges with channel-specific icons, brand tints, and short labels]
+  - `lib/features/budget/budget_screen.dart` [MODIFIED - Refined scope buttons to explicitly state `👤 My Personal Pocket` vs `👥 Group Trip Finances`]
+  - `test/models/personal_allowance_model_test.dart` [NEW - Unit tests for PaymentMode serialization, backwards compatibility, and True Trip Cost computation]
+  - `docs/ROADMAP.md` [MODIFIED - Marked Plan 9 Complete in summary table, completed index, and section header]
+  - `docs/MEMORY.md` [MODIFIED - Added `trip_personal_allowances` and `personal_expenses` table definitions to Section 10]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED - Appended milestone IMP-134 and updated index]
+- **Architectural Rationale**:
+  - Segregates private out-of-pocket spending from shared group liabilities, preventing personal expenditures from distorting group financial summaries while keeping track of true out-of-pocket trip expenses.
+  - Leveraged existing `personal_expenses` and `trip_personal_allowances` tables (Migration 023) with zero new migrations required.
+  - Consolidated GCash/Maya into a single unified E-Wallet category and introduced MariBank alongside Cash and Card per user preferences.
+- **Verification**:
+  - Verified with `flutter analyze`: 0 errors, 0 warnings across all files.
 
 
 

@@ -178,6 +178,32 @@ public.expenses (
   updated_at timestamptz default now()
 );
 
+-- 10A. TRIP PERSONAL ALLOWANCES (Plan 9 — Dual-Lens Personal Budget)
+public.trip_personal_allowances (
+  id uuid primary key default gen_random_uuid(),
+  trip_id uuid not null references public.trips(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  total_allowance numeric(12,2) not null default 0.00,
+  emergency_buffer_percent numeric(4,2) not null default 0.10,
+  cash_on_hand numeric(12,2) not null default 0.00,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (trip_id, user_id)
+);
+
+-- 10B. PERSONAL EXPENSES (Plan 9 — Private Solo Spending & Multi-Channel Payment)
+public.personal_expenses (
+  id uuid primary key default gen_random_uuid(),
+  trip_id uuid not null references public.trips(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  description text not null,
+  amount numeric(12,2) not null,
+  category text not null default 'custom',
+  payment_mode text not null default 'cash', -- 'cash', 'ewallet' (GCash/Maya), 'maribank', 'card', fallback 'digital'
+  date timestamptz not null default now(),
+  created_at timestamptz not null default now()
+);
+
 -- 11. SETTLEMENTS
 public.settlements (
   id uuid primary key default gen_random_uuid(),

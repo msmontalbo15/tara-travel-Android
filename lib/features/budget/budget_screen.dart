@@ -168,7 +168,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                       ),
                       const SizedBox(height: 14),
 
-                      // ── Scope Switcher: Budget (Personal + Summary) vs Trip Expenses (Classic Group Fund) ──
+                      // ── Scope Switcher: My Personal Pocket vs Group Trip Finances ──
                       Container(
                         padding: const EdgeInsets.all(3),
                         decoration: BoxDecoration(
@@ -180,8 +180,8 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                         ),
                         child: Row(
                           children: [
-                            _buildScopeBtn(0, '👤 Budget (Personal & Summary)'),
-                            _buildScopeBtn(1, '👥 Trip Expenses (Group)'),
+                            _buildScopeBtn(0, '👤 My Personal Pocket'),
+                            _buildScopeBtn(1, '👥 Group Trip Finances'),
                           ],
                         ),
                       ),
