@@ -97,7 +97,7 @@ public.trips (
   departure_lat double precision,
   departure_lng double precision,
   departure_map_url text,
-  destination_details jsonb,
+  destination_details jsonb,               -- JSONB: {map_enabled: bool, journey_mode: 'standard'|'adventure'|'multi_point', hubs: string[]}
   transport_mode text,
   transport_meta jsonb,
   created_at timestamptz default now(),
@@ -671,6 +671,18 @@ Client Tier               Storage Tier                Transport Tier
 - **Philippine Travel Hub Resolution**: $O(1)$ coordinate lookup for top destination centers (Boracay, El Nido, Siargao, Baguio, Cebu, Coron, Bohol, Batanes, etc.) with automatic Open-Meteo geocoding fallback.
 - **Local In-Memory Cache (3-Hour TTL)**: Minimizes network roundtrips and provides seamless offline fallback when travelers are in remote island/mountain regions.
 - **Riverpod Architecture**: `weatherServiceProvider`, `tripWeatherProvider(tripId)` (forecast array), and `tripCurrentWeatherProvider(tripId)` (live telemetry).
+
+### 9. Flexible & Optional Trip Map: Adventure, Multi-Point & Off-Grid Mode (Plan 10 / IMP-135)
+- **Zero Mandatory Coordinates**: Trips no longer require fixed coordinates or mandatory map pins. Trips can be created and managed without geocoding or showing broken map placeholders.
+- **Three Journey Modes (`JourneyMode` enum in `trip_model.dart`)**:
+  - `standard`: Interactive map, live route line, and turn-by-turn navigation.
+  - `adventure`: Off-grid trail tracking, compass bearing heading (`AdventureCompassSheet`), waypoint milestones, and battery/data-saving mapless mode.
+  - `multiPoint`: Multi-Hub sequencing across multiple destinations/islands with interactive Route Strip (`_MultiHubRouteStrip`) and multi-hub destination chips.
+- **Adaptive Floating Dock (`ItineraryBottomDock`)**:
+  - Automatically switches Hero CTA: `[ 🧭 Live Nav ]` (Standard) vs `[ 🧭 Adventure Compass ]` (Adventure) vs `[ 📋 Timeline View ]` (Map-disabled).
+  - Secondary action gracefully toggles between `[ 🗺️ Day Map ]` and `[ 🗺️ Enable Map ]` / `[ ℹ️ Off-Grid ]`.
+- **Safe Persistence**: Stored within `destination_details` JSONB (`map_enabled`, `journey_mode`, `hubs`) without requiring database migrations.
+- **Editable in Trip Settings**: `EditTripSheet` provides instant toggle between map modes, journey styles, and multi-hub tag editing.
 
 ---
 
@@ -1401,4 +1413,45 @@ Integrates a dual-tier notification framework (Plan 15) and floating convoy mini
 
 ---
 
+## 35. 🧭 FLEXIBLE TRIP MAP & ADVENTURE OFF-GRID SUITE (PLAN 10 / IMP-135)
+
+Decouples rigid coordinate and map requirements, introducing first-class support for off-grid adventure roaming, sequential multi-point road trips, and battery-saving mapless travel.
+
+### 35.1 Domain Models & JSONB Persistence
+- **`JourneyMode` Enum (`trip_model.dart`)**:
+  - `JourneyMode.standard`: Full interactive map, live route line, and GPS navigation.
+  - `JourneyMode.adventure`: Off-grid trail tracking, heading/compass bearings, waypoint milestones.
+  - `JourneyMode.multiPoint`: Sequenced multi-hub road/island trips connecting multiple major destinations.
+- **`TripModel` Computed Getters**:
+  - `isMapEnabled`: Defaults to `true`; checks `destination_details['map_enabled']`.
+  - `journeyMode`: Parsed from `destination_details['journey_mode']` with `JourneyMode.standard` fallback.
+  - `destinationHubs`: Extracted from `destination_details['hubs']` as `List<String>`.
+  - `isAdventureMode`, `isMultiPointMode`: Quick booleans for responsive UI checks.
+- **Zero-Migration Storage**: All map toggles and hub lists persist in the existing `trips.destination_details` JSONB column.
+
+### 35.2 Adaptive UI & Floating Dock Architecture
+- **`ItineraryBottomDock` Dynamic Hero Action**:
+  - **Standard**: `[ 🧭 Live Nav ]` (solid coral gradient) -> Opens live navigation.
+  - **Adventure**: `[ 🧭 Adventure Compass ]` (adventure emerald gradient) -> Opens `AdventureCompassSheet`.
+  - **Map-Disabled**: `[ 📋 Timeline View ]` -> Focuses chronological stop checklist.
+- **Adaptive Secondary Action**:
+  - Standard/Enabled: `[ 🗺️ Day Map ]` (frosted pill) -> Opens `ItineraryMapSheet`.
+  - Map-Disabled: `[ 🗺️ Enable Map ]` -> Opens modal prompt to re-enable map tracking or view stops on map.
+- **`AdventureCompassSheet`**:
+  - Live GPS heading radar with rotating north needle and bearing degrees (`342° NNW`).
+  - Next stop distance, target coordinate indicator, and battery-saver off-grid status.
+  - Direct 1-tap external GPS launcher (`geo:`, Google Maps) for offline waypoint navigation.
+- **`_MultiHubRouteStrip` (`itinerary_screen.dart`)**:
+  - Horizontal scrolling destination breadcrumb bar indicating progress across sequential journey hubs.
+  - Highlighted active hub chip with arrow dividers (`Tagaytay → Nasugbu → Batangas City`).
+- **Trip Detail Hub & Quick Actions**:
+  - Adventure pill badge (`🏔️ Adventure Mode`) displayed on hero banner.
+  - Multi-hub route banner displaying complete destination sequence.
+  - Quick action map button intelligently switches to Compass when adventure mode is active or shows disabled feedback.
+- **`EditTripSheet` Integration**:
+  - Interactive "Map & Journey Style" section allowing organizers to toggle map tracking, switch between Standard / Adventure / Multi-Hub styles, and manage sequential hub tags on existing trips.
+
+---
+
 *This document is the single source of architectural truth for Tara Travel. Update this file whenever database schemas, RPC functions, core repositories, or system flows are modified.*
+

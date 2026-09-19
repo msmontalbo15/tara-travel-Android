@@ -770,6 +770,107 @@ class _CollapsibleHeroHeader extends ConsumerWidget {
                             ),
                           ],
                         ),
+
+                        // ── Journey Mode Pill (Adventure / Off-Grid indicator) ──
+                        if (trip.isAdventureMode || !trip.isMapEnabled) ...[
+                          const SizedBox(height: 5),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: trip.isAdventureMode
+                                      ? const Color(0xFFEF6C00).withValues(alpha: 0.25)
+                                      : Colors.white.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: trip.isAdventureMode
+                                        ? const Color(0xFFEF6C00).withValues(alpha: 0.5)
+                                        : Colors.white.withValues(alpha: 0.25),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      trip.isAdventureMode
+                                          ? Icons.explore_rounded
+                                          : Icons.layers_clear_rounded,
+                                      size: 11,
+                                      color: trip.isAdventureMode
+                                          ? const Color(0xFFFFB74D)
+                                          : Colors.white70,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      trip.isAdventureMode
+                                          ? 'Off-Grid Adventure'
+                                          : 'Mapless Mode',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        color: trip.isAdventureMode
+                                            ? const Color(0xFFFFB74D)
+                                            : Colors.white70,
+                                        letterSpacing: 0.2,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+
+                        // ── Multi-Hub Route Strip ───────────────────────────
+                        if (trip.isMultiPointMode && trip.destinationHubs.isNotEmpty) ...[
+                          const SizedBox(height: 5),
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: trip.destinationHubs.asMap().entries.map((e) {
+                                final isLast = e.key == trip.destinationHubs.length - 1;
+                                return Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 7,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primary.withValues(alpha: 0.2),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: AppColors.primary.withValues(alpha: 0.35),
+                                          width: 0.8,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        e.value,
+                                        style: const TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.primaryLight,
+                                        ),
+                                      ),
+                                    ),
+                                    if (!isLast) ...[
+                                      const SizedBox(width: 3),
+                                      Icon(
+                                        Icons.arrow_forward_rounded,
+                                        size: 10,
+                                        color: Colors.white.withValues(alpha: 0.5),
+                                      ),
+                                      const SizedBox(width: 3),
+                                    ],
+                                  ],
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                        ],
+
                         const SizedBox(height: 4),
                         Text(
                           () {

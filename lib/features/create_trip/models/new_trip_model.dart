@@ -20,6 +20,9 @@ class NewTripModel {
   double? departureLat;
   double? departureLng;
   String? departureMapUrl;
+  bool isMapEnabled;
+  String journeyMode; // 'standard', 'adventure', 'multi_point'
+  List<String> destinationHubs;
 
   NewTripModel({
     this.tripName = '',
@@ -41,7 +44,11 @@ class NewTripModel {
     this.departureLat,
     this.departureLng,
     this.departureMapUrl,
+    this.isMapEnabled = true,
+    this.journeyMode = 'standard',
+    List<String>? destinationHubs,
   })  : travelers = travelers ?? [],
+        destinationHubs = destinationHubs ?? [],
         budgetBreakdown = budgetBreakdown ??
             [
               BudgetCategory(name: 'Accommodation', amount: 0, color: 0xFFD85A30, icon: '🏨'),
@@ -49,6 +56,14 @@ class NewTripModel {
               BudgetCategory(name: 'Activities & Tours', amount: 0, color: 0xFF10B981, icon: '🏝️'),
               BudgetCategory(name: 'Transportation', amount: 0, color: 0xFF3B82F6, icon: '🚐'),
             ];
+
+  Map<String, dynamic> buildDestinationDetails() {
+    return {
+      'is_map_enabled': isMapEnabled,
+      'journey_mode': journeyMode,
+      if (destinationHubs.isNotEmpty) 'hubs': destinationHubs,
+    };
+  }
 }
 
 class TravelerModel {

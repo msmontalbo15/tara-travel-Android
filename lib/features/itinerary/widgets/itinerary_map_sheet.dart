@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/itinerary_model.dart';
 import '../../../core/providers/group_tracking_provider.dart';
+import '../../../core/providers/trip_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_responsive.dart';
 import 'itinerary_map.dart';
@@ -37,6 +38,8 @@ class ItineraryMapSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final ridersAsync = ref.watch(groupRidersProvider(tripId));
     final riders = ridersAsync.value;
+    final trip = ref.watch(activeTripProvider).value;
+    final isOffGrid = trip != null && (!trip.isMapEnabled || trip.isAdventureMode);
 
     return Container(
       height: context.sheetMaxHeight(0.82),
@@ -54,16 +57,16 @@ class ItineraryMapSheet extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
             child: Row(
               children: [
-                const Text(
-                  'Day Map & Live Tracker',
-                  style: TextStyle(
+                Text(
+                  isOffGrid ? 'Day Waypoints & Off-Grid Trail' : 'Day Map & Live Tracker',
+                  style: const TextStyle(
                     fontFamily: AppTextStyles.fontHeading,
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
                   ),
                 ),
-                if (riders != null && riders.isNotEmpty) ...[
+                if (riders != null && riders.isNotEmpty && !isOffGrid) ...[
                   const SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -117,7 +120,11 @@ class ItineraryMapSheet extends ConsumerWidget {
                 color: const Color(0xFF1E3A2B),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: ItineraryMap(day: day, riders: riders),
+              child: ItineraryMap(
+                day: day,
+                riders: riders,
+                isOffGridMode: isOffGrid,
+              ),
             ),
           ),
           const SizedBox(height: 12),

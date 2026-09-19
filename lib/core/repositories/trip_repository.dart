@@ -171,6 +171,7 @@ class TripRepository {
       if (trip.departurePoint != null) 'departure_point': trip.departurePoint,
       if (trip.departureLat != null) 'departure_lat': trip.departureLat,
       if (trip.departureLng != null) 'departure_lng': trip.departureLng,
+      if (trip.destinationDetails != null) 'destination_details': trip.destinationDetails,
       if (trip.transportMode != null) 'transport_mode': trip.transportMode,
       if (trip.transportMeta != null) 'transport_meta': trip.transportMeta,
     };

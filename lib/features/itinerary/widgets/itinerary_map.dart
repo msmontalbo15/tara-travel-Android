@@ -23,10 +23,14 @@ class ItineraryMap extends StatefulWidget {
   /// Optional map of memberId → [RiderLocation] for live group tracking.
   final Map<String, RiderLocation>? riders;
 
+  /// When true, renders an Off-Grid Trail & Milestones visualizer instead of tile fetching.
+  final bool isOffGridMode;
+
   const ItineraryMap({
     super.key,
     required this.day,
     this.riders,
+    this.isOffGridMode = false,
   });
 
   @override
@@ -102,30 +106,137 @@ class _ItineraryMapState extends State<ItineraryMap> {
   Widget build(BuildContext context) {
     final stopsWithLoc = _stopsWithLocation;
 
-    if (stopsWithLoc.isEmpty) {
-      return Center(
+    if (widget.isOffGridMode || stopsWithLoc.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color(0xFF14241B),
+          borderRadius: BorderRadius.circular(20),
+        ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.map_rounded, size: 48, color: Colors.white24),
-            const SizedBox(height: 12),
-            Text(
-              '${widget.day.stops.length} stops for Day ${widget.day.dayNumber}',
-              style: const TextStyle(
-                fontFamily: AppTextStyles.fontHeading,
-                fontSize: 16,
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: AppColors.greenBright.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.explore_rounded, color: AppColors.greenBright, size: 16),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  widget.isOffGridMode ? 'Off-Grid Adventure Trail' : 'Waypoint Sequence',
+                  style: const TextStyle(
+                    fontFamily: AppTextStyles.fontHeading,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '${widget.day.stops.length} Milestones',
+                    style: const TextStyle(fontSize: 10, color: Colors.white70, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 6),
-            const Text(
-              'Route map loads when location data is available.\nEdit stops to add locations.',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.white54,
-              ),
-              textAlign: TextAlign.center,
+            const SizedBox(height: 12),
+            Expanded(
+              child: widget.day.stops.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'No milestones logged for this day yet.',
+                        style: TextStyle(color: Colors.white54, fontSize: 12),
+                      ),
+                    )
+                  : ListView.builder(
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: widget.day.stops.length,
+                      itemBuilder: (ctx, i) {
+                        final s = widget.day.stops[i];
+                        final isLast = i == widget.day.stops.length - 1;
+                        final color = _stopColor(s.type);
+
+                        return IntrinsicHeight(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Node rail
+                              SizedBox(
+                                width: 24,
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      width: 18,
+                                      height: 18,
+                                      decoration: BoxDecoration(
+                                        color: s.isCompleted ? AppColors.greenBright : color,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Center(
+                                        child: s.isCompleted
+                                            ? const Icon(Icons.check, size: 10, color: Colors.white)
+                                            : Text(
+                                                '${i + 1}',
+                                                style: const TextStyle(fontSize: 9, color: Colors.white, fontWeight: FontWeight.bold),
+                                              ),
+                                      ),
+                                    ),
+                                    if (!isLast)
+                                      Expanded(
+                                        child: Container(
+                                          width: 1.5,
+                                          color: Colors.white.withValues(alpha: 0.15),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Container(
+                                  margin: EdgeInsets.only(bottom: isLast ? 0 : 10),
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.05),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        s.title,
+                                        style: TextStyle(
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white,
+                                          decoration: s.isCompleted ? TextDecoration.lineThrough : null,
+                                        ),
+                                      ),
+                                      if (s.location != null)
+                                        Text(
+                                          '📍 ${s.location}',
+                                          style: const TextStyle(fontSize: 10.5, color: Colors.white60),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
             ),
           ],
         ),

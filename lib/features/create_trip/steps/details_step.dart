@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/friend_model.dart';
 import '../../../core/providers/friend_provider.dart';
@@ -35,25 +36,26 @@ class DetailsStep extends ConsumerStatefulWidget {
 class _DetailsStepState extends ConsumerState<DetailsStep> {
   late TextEditingController _nameController;
   late TextEditingController _destController;
+  late TextEditingController _hubController;
   final _formKey = GlobalKey<FormState>();
 
   String? _nameError;
   String? _destError;
   String? _dateError;
 
-
-
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.trip.tripName);
     _destController = TextEditingController(text: widget.trip.destination);
+    _hubController = TextEditingController();
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _destController.dispose();
+    _hubController.dispose();
     super.dispose();
   }
 
@@ -308,9 +310,22 @@ class _DetailsStepState extends ConsumerState<DetailsStep> {
                         onTypeSelected: (option) {
                           setState(() {
                             widget.trip.tripType = option.id;
+                            // Smart default inference for journey mode based on tripType
+                            final norm = option.id.toLowerCase();
+                            if (norm.contains('hike') || norm.contains('camp') || norm.contains('adventure') || norm.contains('nature')) {
+                              widget.trip.journeyMode = 'adventure';
+                            } else if (norm.contains('roadtrip') || norm.contains('rides')) {
+                              if (widget.trip.journeyMode == 'standard') {
+                                widget.trip.journeyMode = 'multi_point';
+                              }
+                            }
                           });
                         },
                       ),
+                      const SizedBox(height: 22),
+
+                      // ── Journey Style & Optional Map Settings ───────────
+                      _buildJourneyStyleCard(),
                       const SizedBox(height: 22),
 
                       // Travelers
@@ -354,6 +369,293 @@ class _DetailsStepState extends ConsumerState<DetailsStep> {
                     ),
                   ),
                 ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildJourneyStyleCard() {
+    final mode = widget.trip.journeyMode;
+    final isMapEnabled = widget.trip.isMapEnabled;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: AppColors.cardBorder,
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.explore_outlined, color: AppColors.primary, size: 16),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Journey Style & Navigation Mode',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.deepEarth,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Select how your group navigates. Trips do not require fixed destination pins.',
+            style: TextStyle(fontSize: 12, color: AppColors.muted, height: 1.3),
+          ),
+          const SizedBox(height: 14),
+
+          // 3 Mode Selection Cards
+          Row(
+            children: [
+              _journeyModeOption(
+                modeKey: 'standard',
+                title: 'Standard',
+                icon: Icons.map_rounded,
+                isSelected: mode == 'standard',
+              ),
+              const SizedBox(width: 8),
+              _journeyModeOption(
+                modeKey: 'adventure',
+                title: 'Adventure',
+                icon: Icons.explore_rounded,
+                isSelected: mode == 'adventure',
+              ),
+              const SizedBox(width: 8),
+              _journeyModeOption(
+                modeKey: 'multi_point',
+                title: 'Multi-Hub',
+                icon: Icons.alt_route_rounded,
+                isSelected: mode == 'multi_point',
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          // Informative Mode Description Banner
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.cardBorder.withValues(alpha: 0.8)),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  mode == 'adventure'
+                      ? Icons.terrain_rounded
+                      : mode == 'multi_point'
+                          ? Icons.hub_rounded
+                          : Icons.navigation_rounded,
+                  size: 16,
+                  color: AppColors.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    mode == 'adventure'
+                        ? 'Off-Grid & Battery Saver: Compass bearings, waypoint checklists, zero mandatory map tiles.'
+                        : mode == 'multi_point'
+                            ? 'Multi-Destination: Sequential stops connecting multiple towns, islands or provinces.'
+                            : 'Standard: Interactive road map, driving navigation and GPS pin snapping.',
+                    style: const TextStyle(fontSize: 11.5, color: AppColors.deepEarth, height: 1.3),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Sequential Hubs Editor for Multi-Point
+          if (mode == 'multi_point') ...[
+            const SizedBox(height: 12),
+            const Text(
+              'Sequential Route Hubs (Optional)',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: AppColors.deepEarth,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                ...widget.trip.destinationHubs.asMap().entries.map((entry) {
+                  final idx = entry.key;
+                  final hub = entry.value;
+                  return Chip(
+                    backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                    side: const BorderSide(color: AppColors.primary, width: 0.8),
+                    label: Text(
+                      '${idx + 1}. $hub',
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    onDeleted: () {
+                      setState(() {
+                        widget.trip.destinationHubs.removeAt(idx);
+                      });
+                    },
+                    deleteIconColor: AppColors.primary,
+                    visualDensity: VisualDensity.compact,
+                  );
+                }),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 38,
+                    child: TextField(
+                      controller: _hubController,
+                      decoration: InputDecoration(
+                        hintText: 'Add stop/town (e.g. Tagaytay)',
+                        hintStyle: const TextStyle(fontSize: 12, color: AppColors.muted),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: AppColors.cardBorder),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: AppColors.primary, width: 1.2),
+                        ),
+                      ),
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                FilledButton.tonal(
+                  onPressed: () {
+                    final text = _hubController.text.trim();
+                    if (text.isNotEmpty) {
+                      setState(() {
+                        widget.trip.destinationHubs.add(text);
+                        _hubController.clear();
+                      });
+                    }
+                  },
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    visualDensity: VisualDensity.compact,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  child: const Text('Add Hub', style: TextStyle(fontSize: 12)),
+                ),
+              ],
+            ),
+          ],
+
+          const Divider(height: 24, color: AppColors.cardBorder),
+
+          // Map Tracking Toggle
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            value: isMapEnabled,
+            onChanged: (val) {
+              setState(() {
+                widget.trip.isMapEnabled = val;
+              });
+            },
+            title: const Text(
+              'Enable Map Tracking & Live Nav',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.deepEarth,
+              ),
+            ),
+            subtitle: Text(
+              isMapEnabled
+                  ? 'Active map visualizer & road turn-by-turn routing.'
+                  : 'Mapless / Off-grid mode: Saves mobile data and battery life.',
+              style: const TextStyle(fontSize: 11, color: AppColors.muted),
+            ),
+            activeTrackColor: AppColors.primary,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _journeyModeOption({
+    required String modeKey,
+    required String title,
+    required IconData icon,
+    required bool isSelected,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          setState(() {
+            widget.trip.journeyMode = modeKey;
+          });
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.primary : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected ? AppColors.primary : AppColors.cardBorder,
+              width: 1.2,
+            ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.3),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                color: isSelected ? Colors.white : AppColors.deepEarth,
+                size: 20,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                  color: isSelected ? Colors.white : AppColors.deepEarth,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),

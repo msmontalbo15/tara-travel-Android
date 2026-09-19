@@ -95,7 +95,7 @@
 | **`IMP-132`** | 2026-09-19 | Friends & Squads / Travel Circles & Barkada Presets (Plan 7) | Reusable travel squads/circles, 1-tap multi-member addition in trip creation, full CRUD management tab in Friends. |
 | **`IMP-133`** | 2026-09-19 | Auth & Web / Google Sign-In Client ID Assertion Fix | Provided Web client ID to `GoogleSignIn(clientId:)` and `web/index.html` meta tag to resolve web assertion failure. |
 | **`IMP-134`** | 2026-09-20 | Budget & Expenses / Dual-Lens Budget & Expense Hub (Plan 9) | Multi-channel payment tags (Cash, E-Wallet GCash/Maya, MariBank, Card), Philippine travel quick tags, True Trip Cost calculation, and daily pacing gauge polish. |
-
+| **`IMP-135`** | 2026-09-20 | Trips & Maps / Flexible & Optional Trip Map: Adventure, Multi-Point & Off-Grid (Plan 10) | Decoupled rigid map requirements, added JourneyMode enum (Standard, Adventure, Multi-Point), Adventure Compass HUD, Multi-Hub route strip, zero-migration destination_details JSONB persistence, and dynamic bottom dock actions. |
 
 ---
 
@@ -3144,5 +3144,31 @@
 - **Verification**:
   - Verified with `flutter analyze`: 0 errors, 0 warnings across all files.
 
+---
 
-
+### `IMP-135` · Plan 10: Flexible & Optional Trip Map: Adventure, Multi-Point & Off-Grid Mode
+- **Date**: September 20, 2026
+- **Associated Plan**: Plan 10 (Flexible & Optional Trip Map: Adventure, Multi-Point & Off-Grid Mode)
+- **Target Files**:
+  - `lib/core/models/trip_model.dart` [MODIFIED - Added `JourneyMode` enum (`standard`, `adventure`, `multiPoint`) with UI titles, descriptions, and icons; added `isMapEnabled`, `journeyMode`, `isAdventureMode`, `isMultiPointMode`, and `destinationHubs` computed getters; updated `toSupabaseInsert()`, `toMap()`, and `fromMap()` to reliably serialize/deserialize `destination_details`]
+  - `lib/features/create_trip/models/new_trip_model.dart` [MODIFIED - Added `isMapEnabled`, `journeyMode`, and `destinationHubs` fields + `buildDestinationDetails()` helper method]
+  - `lib/features/create_trip/steps/details_step.dart` [MODIFIED - Added "Journey Style & Map Settings" card with Map Tracking Switch, 3-mode Journey Selector chips, and interactive Multi-Hub sequential stop adder/remover]
+  - `lib/features/create_trip/create_trip_flow.dart` [MODIFIED - Passed `destinationDetails: newTrip.buildDestinationDetails()` into `TripRepository.createTrip`]
+  - `lib/features/itinerary/widgets/itinerary_bottom_dock.dart` [MODIFIED - Adapted hero CTA dynamically based on `isMapEnabled` and `isAdventureMode`: `[ 🧭 Live Nav ]` (Standard), `[ 🧭 Adventure Compass ]` (Adventure), and `[ 📋 Timeline View ]` (Map off); adapted secondary action `[ 🗺️ Day Map ]` to gracefully show map enable prompt when map is toggled off]
+  - `lib/features/itinerary/widgets/adventure_compass_sheet.dart` [NEW - Built off-grid adventure compass with live GPS bearing degrees, rotating radar needle, target waypoint distance, battery-saving mode, and 1-tap external GPS launcher]
+  - `lib/features/itinerary/widgets/itinerary_map_sheet.dart` [MODIFIED - Added off-grid adventure banner, graceful empty-coordinate handling, and multi-hub destination support]
+  - `lib/features/itinerary/widgets/itinerary_map.dart` [MODIFIED - Added graceful fallback when stops have no coordinates or map tracking is disabled]
+  - `lib/features/itinerary/itinerary_screen.dart` [MODIFIED - Added interactive `_MultiHubRouteStrip` horizontal breadcrumb bar and wired dynamic compass modal trigger]
+  - `lib/features/trip_detail/trip_detail_screen.dart` [MODIFIED - Added `🏔️ Adventure Mode` pill badge, `Multi-Hub Route` sequence banner, and dynamic compass/map quick-action handling]
+  - `lib/features/trip_detail/widgets/edit_trip_sheet.dart` [MODIFIED - Added interactive "Map & Journey Style" settings section allowing trip organizers to toggle map tracking, switch journey styles, and add/remove multi-hub tags on existing trips]
+  - `test/models/trip_journey_mode_test.dart` [NEW - Comprehensive unit tests for `JourneyMode`, `TripModel` getters, JSON serialization, and `NewTripModel.buildDestinationDetails()`]
+  - `docs/ROADMAP.md` [MODIFIED - Marked Plan 10 Complete in summary table and section header]
+  - `docs/MEMORY.md` [MODIFIED - Updated `trips.destination_details` schema documentation, added Section 8.9 and Section 35]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED - Appended milestone IMP-135 and updated index]
+- **Architectural Rationale**:
+  - Decouples the application from rigid coordinate requirements, allowing relaxed gatherings, staycations, off-grid hikes, camping, and multi-island hops to operate seamlessly without broken placeholders or battery drain.
+  - Conforms to Ground-Truth Schema and AI Hallucination Blacklist: strictly avoids forbidden columns (`destination_lat`, `destination_lng`) by persisting map configuration cleanly inside `destination_details` JSONB.
+  - Zero database migration required: existing Supabase schemas natively accommodate the feature.
+  - Provides a specialized HUD (`AdventureCompassSheet`) for off-grid navigation when conventional road turns are irrelevant.
+- **Verification**:
+  - `flutter analyze` completed cleanly with 0 issues across all 12 modified and created files.

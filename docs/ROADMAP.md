@@ -22,7 +22,7 @@ This document serves as our compiled repository master plan, organized hierarchi
 | **7** | [Travel Circles (Squads & Barkada Presets) for Multi-Member Trip Creation](#plan-7-travel-circles-squads-barkada-presets-for-multi-member-trip-creation) | 🟢 **Complete** | Reusable travel squads/circles, 1-tap batch addition, smart co-traveler suggestions & deduplication (IMP-132) |
 | **8** | [Real-Time Live Weather Forecast & Severe Condition Alerts Engine](#plan-8-real-time-live-weather-forecast-severe-condition-alerts-engine) | 🟢 **Complete** | Open-Meteo API integration, offline caching, itinerary day-strip weather & severe storm alerts |
 | **9** | [Dual-Lens Budget & Expense Hub (Personal Pocket Tracker + Group Trip Summary)](#plan-9-dual-lens-budget-expense-hub-personal-pocket-tracker-group-trip-summary) | 🟢 **Complete** | Private personal expenses, True Trip Cost, multi-channel payment tags (Cash, E-Wallet, MariBank, Card) & daily burn pace meter (IMP-134) |
-| **10** | [Flexible & Optional Trip Map: Adventure, Multi-Point & Off-Grid Mode](#plan-10-flexible-optional-trip-map-adventure-multi-point-off-grid-mode) | 🟡 **Drafted / Queued** | Optional map tracking, multi-point waypoints, adventure trail roaming, battery-saving mapless mode |
+| **10** | [Flexible & Optional Trip Map: Adventure, Multi-Point & Off-Grid Mode](#plan-10-flexible-optional-trip-map-adventure-multi-point-off-grid-mode) | 🟢 **Complete** | Optional map tracking, multi-point waypoints, adventure trail roaming, battery-saving mapless mode (IMP-135) |
 | **11** | [Meet-up Assembly, Smart Countdown & Automatic Departure Detection](#plan-11-meet-up-assembly-smart-countdown-automatic-departure-detection) | 🟢 **Complete** | Day 1 Stop 0 auto-insertion, meet-up grace period, GPS distance countdown & auto departure |
 | **12** | [Floating Travel Bubble & System Overlay HUD (PiP / Chathead Mode)](#plan-12-floating-travel-bubble-system-overlay-hud-pip-chathead-mode) | 🟢 **Complete** | In-app floating bubble + opt-in `SYSTEM_ALERT_WINDOW` convoy overlay, live radar & quick expense logging |
 | **20** | [Chat Announcements Engine & Trip Detail Command Hub](#plan-20-chat-announcements-engine--trip-detail-command-hub) | 🟢 **Complete** | Pinned announcements, priority tinting (Urgent vs Notice), live banner on Trip Detail & chat deep-linking |
@@ -401,7 +401,7 @@ USING (
 ---
 
 
-## Plan 10: Flexible & Optional Trip Map: Adventure, Multi-Point & Off-Grid Mode
+## Plan 10: Flexible & Optional Trip Map: Adventure, Multi-Point & Off-Grid Mode `[COMPLETE — IMP-135]`
 
 ### Goal
 Decouple rigid map requirements so trips can be created and managed without requiring a fixed destination coordinate or mandatory map pins. Tailor the experience for **Adventure Trips** (spontaneous roaming, hikes, off-roading, camping) and **Multi-Point Journeys** (road trips hopping across multiple provinces, islands, or stops) without getting locked into a single fixed point on the map.

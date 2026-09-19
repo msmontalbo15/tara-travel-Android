@@ -499,6 +499,56 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                         ),
+                                        if (trip.isAdventureMode || !trip.isMapEnabled) ...[
+                                          const SizedBox(height: 3),
+                                          Row(
+                                            children: [
+                                              Icon(
+                                                trip.isAdventureMode ? Icons.explore_rounded : Icons.map_outlined,
+                                                size: 11,
+                                                color: trip.isAdventureMode ? const Color(0xFFEF6C00) : Colors.white60,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                trip.isAdventureMode ? 'Off-Grid Adventure' : 'Mapless Mode',
+                                                style: TextStyle(
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: trip.isAdventureMode ? const Color(0xFFEF6C00) : Colors.white60,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                        if (trip.isMultiPointMode && trip.destinationHubs.isNotEmpty) ...[
+                                          const SizedBox(height: 4),
+                                          SingleChildScrollView(
+                                            scrollDirection: Axis.horizontal,
+                                            child: Row(
+                                              children: trip.destinationHubs.asMap().entries.map((e) {
+                                                final isLast = e.key == trip.destinationHubs.length - 1;
+                                                return Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Text(
+                                                      e.value,
+                                                      style: const TextStyle(
+                                                        fontSize: 11,
+                                                        fontWeight: FontWeight.w700,
+                                                        color: AppColors.primary,
+                                                      ),
+                                                    ),
+                                                    if (!isLast) ...[
+                                                      const SizedBox(width: 4),
+                                                      const Icon(Icons.arrow_forward_rounded, size: 10, color: Colors.white54),
+                                                      const SizedBox(width: 4),
+                                                    ],
+                                                  ],
+                                                );
+                                              }).toList(),
+                                            ),
+                                          ),
+                                        ],
                                       ],
                                     ),
                                   ),
@@ -652,6 +702,15 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                     currentDay: currentDay,
                     tripId: trip.id,
                     canManage: canManageItinerary,
+                    isMapEnabled: trip.isMapEnabled,
+                    journeyMode: trip.journeyMode,
+                    onTimelineTap: () {
+                      setState(() {
+                        _viewMode = _viewMode == _StopViewMode.timeline
+                            ? _StopViewMode.list
+                            : _StopViewMode.timeline;
+                      });
+                    },
                     onAddStop: () => _openAddForm(
                       context,
                       activeDay,

@@ -3,6 +3,45 @@ import '../constants/trip_types.dart';
 import 'member_model.dart';
 import 'expense_model.dart';
 
+enum JourneyMode {
+  standard,
+  adventure,
+  multiPoint;
+
+  String get label {
+    switch (this) {
+      case JourneyMode.standard:
+        return 'Standard Map';
+      case JourneyMode.adventure:
+        return 'Adventure & Off-Grid';
+      case JourneyMode.multiPoint:
+        return 'Multi-Hub Route';
+    }
+  }
+
+  String get subtitle {
+    switch (this) {
+      case JourneyMode.standard:
+        return 'Interactive map, live route line & street navigation';
+      case JourneyMode.adventure:
+        return 'Trail waypoints, compass bearing & battery-saver mode';
+      case JourneyMode.multiPoint:
+        return 'Sequenced hops across multiple destinations & islands';
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case JourneyMode.standard:
+        return Icons.map_rounded;
+      case JourneyMode.adventure:
+        return Icons.explore_rounded;
+      case JourneyMode.multiPoint:
+        return Icons.alt_route_rounded;
+    }
+  }
+}
+
 enum TripStatus {
   draft,
   planning,
@@ -109,6 +148,36 @@ class TripModel {
   bool get isPlanning => status == TripStatus.planning;
   bool get isOngoing => status == TripStatus.ongoing;
   bool get isCompleted => status == TripStatus.completed;
+
+  /// Whether map tracking and interactive map layers are enabled for this trip
+  bool get isMapEnabled => destinationDetails?['is_map_enabled'] ?? true;
+
+  /// Active journey mode (Standard Map, Adventure / Off-Grid, Multi-Hub)
+  JourneyMode get journeyMode {
+    final raw = destinationDetails?['journey_mode']?.toString().toLowerCase();
+    if (raw == 'adventure') return JourneyMode.adventure;
+    if (raw == 'multipoint' || raw == 'multi_point') return JourneyMode.multiPoint;
+    if (raw == 'standard') return JourneyMode.standard;
+
+    // Smart default inference from tripType if not explicitly chosen
+    final normType = tripType.toLowerCase();
+    if (normType.contains('hike') || normType.contains('camp') || normType.contains('adventure') || normType.contains('nature')) {
+      return JourneyMode.adventure;
+    }
+    return JourneyMode.standard;
+  }
+
+  bool get isAdventureMode => journeyMode == JourneyMode.adventure;
+  bool get isMultiPointMode => journeyMode == JourneyMode.multiPoint;
+
+  /// Sequential destination hubs for multi-point journeys
+  List<String> get destinationHubs {
+    final raw = destinationDetails?['hubs'];
+    if (raw is List) {
+      return raw.map((e) => e.toString().trim()).where((s) => s.isNotEmpty).toList();
+    }
+    return const [];
+  }
 
   /// Returns true if essential trip details (destination, budget, or valid dates) are missing/unspecified
   bool get isIncomplete =>
@@ -273,6 +342,7 @@ class TripModel {
       if (departurePoint != null) 'departure_point': departurePoint,
       if (departureLat != null) 'departure_lat': departureLat,
       if (departureLng != null) 'departure_lng': departureLng,
+      if (destinationDetails != null) 'destination_details': destinationDetails,
       // Transport detail — written to existing transport_mode + transport_meta columns
       if (transportMode != null) 'transport_mode': transportMode,
       if (transportMeta != null) 'transport_meta': transportMeta,

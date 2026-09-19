@@ -44,6 +44,8 @@ class _EditTripSheetState extends ConsumerState<EditTripSheet> {
   late DateTime _fromDate;
   late DateTime _toDate;
   late String _selectedTripType;
+  late bool _isMapEnabled;
+  late String _journeyMode;
   bool _isSaving = false;
 
   String? _nameError;
@@ -62,6 +64,8 @@ class _EditTripSheetState extends ConsumerState<EditTripSheet> {
     _fromDate = t.fromDate;
     _toDate = t.toDate;
     _selectedTripType = t.tripType.toLowerCase();
+    _isMapEnabled = t.isMapEnabled;
+    _journeyMode = t.journeyMode.name == 'multiPoint' ? 'multi_point' : t.journeyMode.name;
   }
 
   @override
@@ -129,6 +133,14 @@ class _EditTripSheetState extends ConsumerState<EditTripSheet> {
 
     try {
       final budget = double.tryParse(_budgetController.text.trim()) ?? 0.0;
+
+      // Merge journey mode settings into existing destinationDetails
+      final existingDetails = Map<String, dynamic>.from(
+        widget.trip.destinationDetails ?? <String, dynamic>{},
+      );
+      existingDetails['is_map_enabled'] = _isMapEnabled;
+      existingDetails['journey_mode'] = _journeyMode;
+
       final updatedTrip = widget.trip.copyWith(
         name: _nameController.text.trim(),
         destination: _destController.text.trim(),
@@ -136,6 +148,7 @@ class _EditTripSheetState extends ConsumerState<EditTripSheet> {
         toDate: _toDate,
         tripType: _selectedTripType,
         totalBudget: budget,
+        destinationDetails: existingDetails,
       );
 
       await ref.read(tripRepositoryProvider).updateTrip(updatedTrip);
@@ -401,6 +414,10 @@ class _EditTripSheetState extends ConsumerState<EditTripSheet> {
                           });
                         },
                       ),
+                      const SizedBox(height: 22),
+
+                      // 6. Map & Navigation Mode Settings (Plan 10)
+                      _buildMapNavigationCard(),
                       const SizedBox(height: 24),
                     ],
                   ),
@@ -448,5 +465,161 @@ class _EditTripSheetState extends ConsumerState<EditTripSheet> {
       ),
     );
   }
-}
+  Widget _buildMapNavigationCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.cardBorder, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.explore_outlined, color: AppColors.primary, size: 16),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Map & Navigation Mode',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.deepEarth,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
 
+          // Journey Mode Chips
+          Row(
+            children: [
+              _modeChip('standard', 'Standard', Icons.map_rounded),
+              const SizedBox(width: 8),
+              _modeChip('adventure', 'Adventure', Icons.explore_rounded),
+              const SizedBox(width: 8),
+              _modeChip('multi_point', 'Multi-Hub', Icons.alt_route_rounded),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          // Description Banner
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.cardBorder.withValues(alpha: 0.8)),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  _journeyMode == 'adventure'
+                      ? Icons.terrain_rounded
+                      : _journeyMode == 'multi_point'
+                          ? Icons.hub_rounded
+                          : Icons.navigation_rounded,
+                  size: 16,
+                  color: AppColors.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _journeyMode == 'adventure'
+                        ? 'Off-Grid & Battery Saver: Compass bearings, waypoint checklists, zero map tiles.'
+                        : _journeyMode == 'multi_point'
+                            ? 'Multi-Destination: Sequential stops connecting multiple towns or islands.'
+                            : 'Standard: Interactive road map, driving navigation and GPS pin snapping.',
+                    style: const TextStyle(fontSize: 11.5, color: AppColors.deepEarth, height: 1.3),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const Divider(height: 24, color: AppColors.cardBorder),
+
+          // Map Tracking Toggle
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            value: _isMapEnabled,
+            onChanged: (val) => setState(() => _isMapEnabled = val),
+            title: const Text(
+              'Enable Map Tracking & Live Nav',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.deepEarth,
+              ),
+            ),
+            subtitle: Text(
+              _isMapEnabled
+                  ? 'Active map visualizer & road turn-by-turn routing.'
+                  : 'Mapless / Off-grid mode: Saves mobile data and battery life.',
+              style: const TextStyle(fontSize: 11, color: AppColors.muted),
+            ),
+            activeTrackColor: AppColors.primary,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _modeChip(String modeKey, String title, IconData icon) {
+    final isSelected = _journeyMode == modeKey;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          setState(() => _journeyMode = modeKey);
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.primary : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected ? AppColors.primary : AppColors.cardBorder,
+              width: 1.2,
+            ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.3),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: isSelected ? Colors.white : AppColors.deepEarth, size: 20),
+              const SizedBox(height: 4),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                  color: isSelected ? Colors.white : AppColors.deepEarth,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
