@@ -76,6 +76,8 @@ class _SmartDepartureAdvisoryCardState extends ConsumerState<SmartDepartureAdvis
     );
 
     final currentUserId = ref.watch(currentUserProvider)?.id ?? '';
+    final isOrganizer = trip.ownerId == currentUserId ||
+        trip.members.any((m) => m.id == currentUserId && m.isOrganizer);
     final hasUserCheckedIn = meetUpStop != null && meetUpStop.checkedInMembers.containsKey(currentUserId);
 
     Color statusColor;
@@ -302,6 +304,7 @@ class _SmartDepartureAdvisoryCardState extends ConsumerState<SmartDepartureAdvis
                                 meetUpStop.id,
                                 currentUserId,
                               );
+                              ref.invalidate(itineraryStopsProvider(trip.id));
                             }
                           } catch (e) {
                             debugPrint('[SmartDepartureAdvisoryCard] check-in error: $e');
@@ -321,6 +324,46 @@ class _SmartDepartureAdvisoryCardState extends ConsumerState<SmartDepartureAdvis
               ),
             ],
           ),
+
+          if (isOrganizer && !advisory.isDeparted && meetUpStop != null) ...[
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: TextButton.icon(
+                onPressed: () async {
+                  if (meetUpStop == null) return;
+                  final stopId = meetUpStop.id;
+                  try {
+                    final subProvider = ref.read(itineraryProvider(trip.id));
+                    final itineraryState = ref.read(subProvider).asData?.value;
+                    if (itineraryState != null) {
+                      await ref.read(subProvider.notifier).toggleStopVisited(
+                        itineraryState.activeDay,
+                        stopId,
+                        currentUserId,
+                      );
+                      ref.invalidate(itineraryStopsProvider(trip.id));
+                    }
+                  } catch (e) {
+                    debugPrint('[SmartDepartureAdvisoryCard] roll-out error: $e');
+                  }
+                },
+                icon: const Icon(Icons.rocket_launch_rounded, size: 14, color: AppColors.primary),
+                label: const Text(
+                  'Depart Now / Rolling Out (Organizer Action)',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary,
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

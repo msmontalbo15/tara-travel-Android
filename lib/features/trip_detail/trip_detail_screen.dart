@@ -29,6 +29,7 @@ import 'widgets/edit_trip_sheet.dart';
 import 'widgets/destination_weather_widget.dart';
 import 'widgets/ongoing_trip_hud.dart';
 import 'widgets/planning_recommendations_card.dart';
+import 'widgets/smart_departure_advisory_card.dart';
 
 import 'widgets/trip_detail_bottom_bar.dart';
 import '../../core/services/floating_bubble_service.dart';
@@ -264,11 +265,17 @@ class _TripDashboardState extends ConsumerState<_TripDashboard> {
                       const SizedBox(height: 12),
                     ],
 
-                    // 3. Logistics & Departure Card (if defined)
+                    // 3. Meet-up Assembly & Smart Departure Advisory (Plan 11)
                     if ((trip.departurePoint != null &&
                             trip.departurePoint!.trim().isNotEmpty) ||
-                        (trip.transportMode != null &&
-                            trip.transportMode!.trim().isNotEmpty)) ...[
+                        (nextStop != null &&
+                            (nextStop.title.toLowerCase().contains('meet-up') ||
+                             nextStop.title.toLowerCase().contains('departure') ||
+                             nextStop.title.toLowerCase().contains('assembly')))) ...[
+                      SmartDepartureAdvisoryCard(trip: trip),
+                      const SizedBox(height: 12),
+                    ] else if (trip.transportMode != null &&
+                        trip.transportMode!.trim().isNotEmpty) ...[
                       _LogisticsCard(trip: trip),
                       const SizedBox(height: 12),
                     ],

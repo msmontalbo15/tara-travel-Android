@@ -1335,13 +1335,31 @@ Client Tier               Storage Tier                Transport Tier
   - Features real-time priority badge, relative time ago indicator, author name, collapsible state for acknowledged notices, and a full announcement history bottom modal.
   - Includes 1-tap "Open in Chat →" button with smooth navigation and deep-linking to the chat conversation.
 
-### 32.2 Plan 11: Meet-up Assembly, Smart Countdown & Departure Detection
+### 32.2 Plan 11: Meet-up Assembly, Smart Countdown & Departure Detection `[IMP-136]`
 - **Day 1 Stop 0 Auto-Provisioning & Sync**:
-  - Newly created trips in `CreateTripFlow` or updated departure points in `TripRepository` automatically seed Day 1 Stop 0 ("Meet-up & Assembly") at scheduled start date.
-  - Stop 0 coordinates, departure point name, and maps URL stay strictly in sync with `trips(departure_point, departure_lat, departure_lng, departure_map_url)`.
+  - `CreateTripFlow._seedInitialItinerary()` provisions Day 1 Stop 0 ("Meet-up & Assembly: {departure}") with coordinates and assembly time parsed from `TransportDetail.departureTime`.
+  - `TripRepository.updateTrip()` syncs Stop 0 title, address, lat/lng, and `time_start` whenever the departure point changes; auto-inserts Stop 0 if Day 1 has no stops.
+  - Title-matching uses `transport` type OR title containing `meet-up`/`assembly`/`departure` for resilient identification.
 - **Departure Advisory Engine (`DepartureAdvisoryService`)**:
-  - Calculates real-time countdown to assembly time, wheels-up departure time, configurable grace period (default 15m), and traveler readiness states (`ahead`, `onTime`, `delayed`, `departed`).
-  - `SmartDepartureAdvisoryCard` renders above HUD with interactive progress gauge, assembly location preview, and direct Google Maps navigation handoff.
+  - 5-state machine: `onTime` (>60m), `approachingGracePeriod` (0–60m), `withinGracePeriod` (past assembly, before wheels-up), `delayed` (past wheels-up), `departed` (stop completed or GPS speed >5.5 m/s + >300m geofence exit).
+  - Wheels-Up = Assembly Time + Grace Period (`transport_meta.grace_period_minutes`, default 15).
+  - GPS distance via Haversine formula from `LocationTrackingService.lastSnapshot`.
+- **`SmartDepartureAdvisoryCard`** (mounted on `TripDetailScreen`):
+  - Replaces static `_LogisticsCard` when departure point is configured.
+  - Real-time countdown gauge, status badge (ON TIME / ASSEMBLY SOON / GRACE PERIOD / DELAYED / DEPARTED), companion headcount ratio (`arrivedCount/totalCount`).
+  - 1-tap "I'm Here" check-in via `toggleStopVisited()` with `itineraryStopsProvider` invalidation for instant headcount updates.
+  - 1-tap "Navigate" launching Google Maps/Waze to departure coordinates via `NavigateRouteButton.launchDirectionsUrl()`.
+  - Organizer-only "Depart Now / Rolling Out" manual override trigger.
+  - 30-second auto-refresh ticker for countdown display.
+- **`EditTripSheet` Meet-up & Assembly Logistics Section**:
+  - `LocationPicker` for departure / meet-up point with lat/lng.
+  - `TimeOfDay` assembly time picker persisted to `transport_meta.departure_time`.
+  - 4-tier grace period buffer chips (`0m`, `15m`, `30m`, `45m`) persisted to `transport_meta.grace_period_minutes`.
+  - Read-only wheels-up deadline preview computed as Assembly Time + Grace Period.
+- **`TransportDetail` Model Extensions**:
+  - `departureTime` (String?, 'HH:mm' format) and `gracePeriodMinutes` (int?) with full `toMap()`/`fromMap()` serialization.
+- **`MemberModel.isOrganizer`**: `bool get isOrganizer => roles.contains(MemberRole.organizer)` convenience getter.
+- **Zero Migration**: All new metadata stored in existing `trips.transport_meta` JSONB.
 
 ### 32.3 Plan 16: Tara Copilot Generative Travel Assistant
 - **Dual-Path Resilient Execution (`GeminiAiService`)**:
@@ -1450,6 +1468,54 @@ Decouples rigid coordinate and map requirements, introducing first-class support
   - Quick action map button intelligently switches to Compass when adventure mode is active or shows disabled feedback.
 - **`EditTripSheet` Integration**:
   - Interactive "Map & Journey Style" section allowing organizers to toggle map tracking, switch between Standard / Adventure / Multi-Hub styles, and manage sequential hub tags on existing trips.
+
+---
+
+## 36. Plan 14: Day Map Intelligent Route Optimization, OSRM Road Snapping & Offline Map Tile Cache
+
+### 36.1 OSRM Routing Engine (`OsrmRoutingService`)
+- **Location**: `lib/core/services/osrm_routing_service.dart`
+- **Provider URL**: `https://router.project-osrm.org` (public OpenStreetMap routing service, no API key required).
+- **Core Methods**:
+  - `getRoute(List<LatLng> waypoints, {CancelToken? cancelToken}) -> Future<OsrmRouteResult>`: Returns street-level decoded polyline geometry, per-leg distances/durations, total distance in km, and travel time in minutes.
+  - `getTable(List<LatLng> points, {CancelToken? cancelToken}) -> Future<OsrmTableResult?>`: Queries `/table/v1/driving/` for pairwise NxN driving distances and durations for TSP optimization.
+- **Resilience & Fallback Architecture**:
+  - LRU memory cache (64 entries) keyed by high-precision coordinate string hashes.
+  - Automatic 500ms internal request debouncing to prevent server rate limiting.
+  - Graceful straight-line fallback (`isStraightLineFallback = true`) with Haversine distance and 45 km/h driving speed estimations when network is offline or times out.
+
+### 36.2 Offline Map Tile Caching & Cache Provider (`MapTileConfig`)
+- **Location**: `lib/core/constants/map_tile_config.dart`
+- **Class**: `CachedTileProvider extends TileProvider`
+- **Implementation**:
+  - Wraps FlutterMap tile loading using `CachedNetworkImageProvider` to automatically persist fetched Mapbox and CartoDB raster tiles to device disk storage.
+  - Provides a 7-day TTL cache policy and LRU eviction budget.
+  - Maps loaded during online planning remain fully renderable and interactive in remote Philippine destinations with zero cellular reception.
+  - Provides `MapTileConfig.buildOfflineCacheBadge()` overlay pill indicating offline/cached map mode.
+
+### 36.3 Philippine Geocoding Hardening (`PhilippineGeocodingService`)
+- **Location**: `lib/core/services/philippine_geocoding_service.dart`
+- **Protection**:
+  - Minimum 400ms request debounce guard ensuring compliance with Nominatim's 1 req/sec usage policy.
+  - Exponential backoff retry loop (1s -> 2s -> 4s) on HTTP 429 rate limit responses.
+  - Expanded 64-slot LRU memory cache for fast repeat searches.
+
+### 36.4 TSP Route Sequence Optimizer ("Find Best Way")
+- **Location**: `lib/core/services/route_optimization_service.dart`
+- **Algorithm**:
+  - Nearest-neighbor construction heuristic combined with 2-opt path uncrossing improvement passes.
+  - Uses OSRM Table API distance matrix with automatic Haversine matrix fallback.
+  - **Pinned Stop Constraints**: Preserves user-pinned fixed-time commitments (hotel check-in, scheduled dinner) at exact sequential indices while optimizing flexible attraction stops in between.
+  - Exposes `OptimizationResult` detailing original distance, optimized distance, distance saved in km, and percentage saved.
+- **UI Surface**: `OptimizeRouteModal` (`lib/features/itinerary/widgets/optimize_route_modal.dart`) invoked from `ItineraryMapSheet` and day actions, previewing sequence comparison and applying batch reorder via `ItineraryNotifier.setDayStops()`.
+
+### 36.5 Geofence Proximity & Auto-Arrival Detection
+- **Location**: `lib/core/services/geofence_arrival_service.dart`
+- **Detection**:
+  - Automatically monitors live user coordinates via `LocationTrackingService.instance.snapshotStream`.
+  - Fires `arrivalStream` when user is within 100 meters (Haversine perimeter) of an upcoming uncompleted stop.
+  - 30-minute stop cooldown and session visited set prevent duplicate triggers.
+  - Provides `_ArrivalCelebrationDialog` celebration card modal with 1-tap "Mark Visited" confirmation.
 
 ---
 

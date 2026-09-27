@@ -96,6 +96,7 @@
 | **`IMP-133`** | 2026-09-19 | Auth & Web / Google Sign-In Client ID Assertion Fix | Provided Web client ID to `GoogleSignIn(clientId:)` and `web/index.html` meta tag to resolve web assertion failure. |
 | **`IMP-134`** | 2026-09-20 | Budget & Expenses / Dual-Lens Budget & Expense Hub (Plan 9) | Multi-channel payment tags (Cash, E-Wallet GCash/Maya, MariBank, Card), Philippine travel quick tags, True Trip Cost calculation, and daily pacing gauge polish. |
 | **`IMP-135`** | 2026-09-20 | Trips & Maps / Flexible & Optional Trip Map: Adventure, Multi-Point & Off-Grid (Plan 10) | Decoupled rigid map requirements, added JourneyMode enum (Standard, Adventure, Multi-Point), Adventure Compass HUD, Multi-Hub route strip, zero-migration destination_details JSONB persistence, and dynamic bottom dock actions. |
+| **`IMP-136`** | 2026-09-27 | Meet-up & Logistics / Meet-up Assembly, Smart Countdown & Departure Detection (Plan 11) | Auto-provisioned Day 1 Stop 0 ("Meet-up & Assembly"), transportMeta grace period & assembly time sync, mounted SmartDepartureAdvisoryCard with live countdown gauge and headcount roster on TripDetailScreen, and added meet-up editor to EditTripSheet. |
 
 ---
 
@@ -3172,3 +3173,59 @@
   - Provides a specialized HUD (`AdventureCompassSheet`) for off-grid navigation when conventional road turns are irrelevant.
 - **Verification**:
   - `flutter analyze` completed cleanly with 0 issues across all 12 modified and created files.
+
+---
+
+### `IMP-136` · Plan 11: Meet-up Assembly, Smart Countdown & Automatic Departure Detection
+- **Date**: September 27, 2026
+- **Associated Plan**: Plan 11 (Meet-up Assembly, Smart Countdown & Automatic Departure Detection)
+- **Target Files**:
+  - `lib/core/models/itinerary_model.dart` [MODIFIED - Added `departureTime` and `gracePeriodMinutes` to `TransportDetail` with complete `toMap()` and `fromMap()` serialization]
+  - `lib/core/models/member_model.dart` [MODIFIED - Added `bool get isOrganizer` helper for clean role permission checks]
+  - `lib/core/repositories/trip_repository.dart` [MODIFIED - Enhanced `updateTrip()` to automatically synchronize Day 1 Stop 0 (`Meet-up & Assembly`) coordinates, location name, and `time_start`, with auto-insert fallback if Day 1 has no initial stops]
+  - `lib/features/create_trip/create_trip_flow.dart` [MODIFIED - Hardened `_seedInitialItinerary()` to use creator's specified `departureTime` for Stop 0 assembly schedule]
+  - `lib/features/trip_detail/widgets/edit_trip_sheet.dart` [MODIFIED - Added Section 7 "Meet-up & Assembly Logistics" with `LocationPicker`, `TimeOfDay` assembly clock picker, 4-tier grace period buffer chips (`0m`, `15m`, `30m`, `45m`), and wheels-up deadline preview]
+  - `lib/features/trip_detail/trip_detail_screen.dart` [MODIFIED - Mounted `SmartDepartureAdvisoryCard` as the authoritative departure command widget, gracefully falling back to `_LogisticsCard` when no departure point is defined]
+  - `lib/features/trip_detail/widgets/smart_departure_advisory_card.dart` [MODIFIED - Connected organizer "Roll Out / Depart Now" trigger, added `ref.invalidate(itineraryStopsProvider)` on check-in for instant attendance ratio reactivity, and hardened null-safety inside closures]
+  - `lib/core/services/departure_advisory_service.dart` [VERIFIED - Comprehensive countdown calculations, grace period deadline logic, companion attendance ratios, and geofence/speed departure triggers]
+  - `test/features/itinerary/meetup_stop_auto_creation_test.dart` [NEW - Comprehensive unit tests for `TransportDetail` serialization, `DepartureAdvisoryService` state transitions, and `TripModel.copyWith()` departure persistence]
+  - `docs/ROADMAP.md` [MODIFIED - Marked Plan 11 complete `[COMPLETE — IMP-136]`]
+  - `docs/MEMORY.md` [MODIFIED - Updated schemas, function indexes, and architectural memory for Plan 11]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED - Appended milestone IMP-136 and updated index]
+- **Architectural Rationale**:
+  - Converts static meet-up text into an active, collaborative pre-trip command hub that guides travelers from pre-trip assembly all the way through hard wheels-up departure.
+  - Zero database schema migrations required: stores assembly time and grace period cleanly inside existing `trips.transport_meta` (`departure_time`, `grace_period_minutes`), fully compliant with Ground-Truth Schema and anti-hallucination rules.
+  - Guarantees Day 1 itinerary routes and Day Map polylines anchor at the true assembly point (Stop 0) rather than an arbitrary intermediate stop.
+- **Verification**:
+  - `flutter analyze` completed cleanly with 0 issues across all 8 modified and created files.
+
+---
+
+### `IMP-137` · Plan 14: Day Map Intelligent Route Optimization, OSRM Road Snapping & Offline Map Tile Cache
+- **Date**: September 27, 2026
+- **Associated Plan**: Plan 14 (Day Map Intelligent Route Optimization, OSRM Road Snapping & Offline Map Tile Cache)
+- **Target Files**:
+  - `lib/core/services/osrm_routing_service.dart` [NEW - Public OpenStreetMap OSRM driving engine integration with GeoJSON decoding, per-leg breakdown, LRU memory cache, 500ms debounce guard, Table API, and graceful straight-line fallback]
+  - `lib/core/services/route_optimization_service.dart` [NEW - TSP stop sequence optimizer using nearest-neighbor heuristic + 2-opt improvement, OSRM Table API distance matrix, and pinned stop constraint preservation]
+  - `lib/core/services/geofence_arrival_service.dart` [NEW - Proximity detection engine monitoring GPS coordinates against active stops, 100m arrival radius, cooldown throttle, and `_ArrivalCelebrationDialog` celebration card modal]
+  - `lib/core/constants/map_tile_config.dart` [MODIFIED - Integrated `CachedTileProvider` powered by `CachedNetworkImageProvider` with 7-day disk persistence, plus `buildOfflineCacheBadge` status indicator widget]
+  - `lib/core/services/philippine_geocoding_service.dart` [MODIFIED - Enforced 400ms request debounce guard for Nominatim compliance, HTTP 429 exponential backoff retry loop, and expanded 64-slot LRU memory cache]
+  - `lib/core/providers/itinerary_provider.dart` [MODIFIED - Added `setDayStops(dayIndex, newStops)` mutation for single-batch stop reordering following TSP optimization]
+  - `lib/features/itinerary/widgets/itinerary_map.dart` [MODIFIED - Replaced straight-line polyline with OSRM road geometry, ambient glow stroke, and floating route metrics overlay chip (km + minutes)]
+  - `lib/features/navigation/widgets/live_map_tab.dart` [MODIFIED - Integrated dynamic OSRM road driving polyline between current user location and active navigation destination]
+  - `lib/features/itinerary/widgets/optimize_route_modal.dart` [NEW - Modal sheet displaying TSP route savings comparison (original vs optimized km, % saved) and 1-tap reordering application]
+  - `lib/features/itinerary/widgets/itinerary_map_sheet.dart` [MODIFIED - Added "Optimize" action button alongside NavigateRouteButton for days with 3+ localized stops]
+  - `test/services/osrm_routing_service_test.dart` [NEW - Unit tests for OSRM caching, multi-leg distance calculations, and fallback behavior]
+  - `test/services/route_optimization_service_test.dart` [NEW - Unit tests for TSP distance minimization, 2-opt reordering, and pinned stop constraint stability]
+  - `test/services/geofence_arrival_service_test.dart` [NEW - Unit tests for 100m proximity breach, cooldown throttle, visited suppression, and reset logic]
+  - `test/all_tests.dart` [MODIFIED - Registered all 3 new Plan 14 test suites in unified runner]
+  - `docs/ROADMAP.md` [MODIFIED - Marked Plan 14 complete `[COMPLETE — IMP-137]` and updated summary table]
+  - `docs/MEMORY.md` [MODIFIED - Added Section 36 detailing OSRM routing engine, tile cache provider, geocoding debounce, TSP optimizer, and geofence arrival detection]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED - Appended milestone IMP-137]
+- **Architectural Rationale**:
+  - Replaces unrealistic straight point-to-point lines across water or mountains with actual road-snapped driving geometry, drastically improving navigational utility.
+  - Zero external paid APIs or subscription keys: uses free public OpenStreetMap OSRM routing and Nominatim with strict rate limiting and client-side disk caching.
+  - Guarantees itinerary stops can be rearranged into an optimal driving loop with 1 tap while strictly keeping fixed reservations (hotel check-in, scheduled dinners) pinned.
+  - Provides offline map persistence so travelers in zero-signal Philippine provincial/island destinations can continue viewing tiles and tracking waypoints.
+- **Verification**:
+  - `flutter analyze` completed cleanly with 0 issues across the entire project (ran in 10.3s).

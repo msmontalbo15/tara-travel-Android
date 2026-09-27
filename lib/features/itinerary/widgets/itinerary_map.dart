@@ -6,6 +6,7 @@ import 'package:latlong2/latlong.dart' hide Path;
 import '../../../core/constants/map_tile_config.dart';
 import '../../../core/models/itinerary_model.dart';
 import '../../../core/services/group_ride_sync_service.dart';
+import '../../../core/services/osrm_routing_service.dart';
 import '../../../core/theme/app_colors.dart';
 
 /// Renders an itinerary day's stops and live group riders on an OpenStreetMap
@@ -39,12 +40,19 @@ class ItineraryMap extends StatefulWidget {
 
 class _ItineraryMapState extends State<ItineraryMap> {
   final MapController _mapController = MapController();
+  List<LatLng>? _roadGeometry;
+  double? _totalDistanceKm;
+  double? _totalDurationMin;
+  bool _isRoadSnapped = false;
 
   @override
   void initState() {
     super.initState();
     // Fit bounds after first frame so controller is attached
-    WidgetsBinding.instance.addPostFrameCallback((_) => _fitBounds());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fitBounds();
+      _fetchRoadGeometry();
+    });
   }
 
   @override
@@ -52,6 +60,36 @@ class _ItineraryMapState extends State<ItineraryMap> {
     super.didUpdateWidget(oldWidget);
     if (widget.day != oldWidget.day) {
       _fitBounds();
+      _fetchRoadGeometry();
+    }
+  }
+
+  void _fetchRoadGeometry() async {
+    final points = _routePoints;
+    if (points.length < 2) {
+      if (mounted) {
+        setState(() {
+          _roadGeometry = null;
+          _totalDistanceKm = null;
+          _totalDurationMin = null;
+          _isRoadSnapped = false;
+        });
+      }
+      return;
+    }
+
+    try {
+      final result = await OsrmRoutingService.instance.getRoute(points);
+      if (mounted) {
+        setState(() {
+          _roadGeometry = result.geometry;
+          _totalDistanceKm = result.totalDistanceKm;
+          _totalDurationMin = result.totalDurationMin;
+          _isRoadSnapped = !result.isStraightLineFallback;
+        });
+      }
+    } catch (_) {
+      // Graceful fallback
     }
   }
 
@@ -244,95 +282,167 @@ class _ItineraryMapState extends State<ItineraryMap> {
     }
 
     final routePoints = _routePoints;
+    final displayPoints = _roadGeometry ?? routePoints;
     final initialCenter = routePoints.first;
 
-    return FlutterMap(
-      mapController: _mapController,
-      options: MapOptions(
-        initialCenter: initialCenter,
-        initialZoom: 12,
-        interactionOptions: const InteractionOptions(
-          flags: InteractiveFlag.all,
-        ),
-      ),
+    return Stack(
       children: [
-        // ── Map Tile Layer (Mapbox Streets / CartoDB Voyager) ─────────
-        MapTileConfig.buildTileLayer(),
-
-        // ── Route Polyline ──────────────────────────────────────────
-        if (routePoints.length > 1)
-          PolylineLayer(
-            polylines: [
-              Polyline(
-                points: routePoints,
-                color: AppColors.primary.withValues(alpha: 0.85),
-                strokeWidth: 4,
-                pattern: StrokePattern.dashed(segments: const [10, 8]),
-              ),
-            ],
+        FlutterMap(
+          mapController: _mapController,
+          options: MapOptions(
+            initialCenter: initialCenter,
+            initialZoom: 12,
+            interactionOptions: const InteractionOptions(
+              flags: InteractiveFlag.all,
+            ),
           ),
+          children: [
+            // ── Map Tile Layer (Mapbox Streets / CartoDB Voyager with Disk Cache)
+            MapTileConfig.buildTileLayer(),
 
-        // ── Stop Markers (custom Flutter widgets) ───────────────────
-        MarkerLayer(
-          markers: List.generate(stopsWithLoc.length, (i) {
-            final stop = stopsWithLoc[i];
-            final color = _stopColor(stop.type);
-            return Marker(
-              point: LatLng(stop.lat!, stop.lng!),
-              width: 36,
-              height: 46,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: color,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2.5),
-                      boxShadow: [
-                        BoxShadow(
-                          color: color.withValues(alpha: 0.4),
-                          blurRadius: 6,
-                          spreadRadius: 1,
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Text(
-                        '${i + 1}',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
+            // ── Route Polyline (Road-snapped OSRM with direct fallback) ────
+            if (displayPoints.length > 1)
+              PolylineLayer(
+                polylines: [
+                  // Ambient glow stroke
+                  Polyline(
+                    points: displayPoints,
+                    color: AppColors.primary.withValues(alpha: 0.25),
+                    strokeWidth: 8,
+                    strokeCap: StrokeCap.round,
+                    strokeJoin: StrokeJoin.round,
                   ),
-                  // Pin tail
-                  CustomPaint(
-                    size: const Size(10, 8),
-                    painter: _PinTailPainter(color),
+                  // Sharp inner route stroke
+                  Polyline(
+                    points: displayPoints,
+                    color: AppColors.primary,
+                    strokeWidth: 4,
+                    strokeCap: StrokeCap.round,
+                    strokeJoin: StrokeJoin.round,
+                    pattern: _isRoadSnapped
+                        ? const StrokePattern.solid()
+                        : StrokePattern.dashed(segments: const [10, 8]),
                   ),
                 ],
               ),
-            );
-          }),
+
+            // ── Stop Markers (custom Flutter widgets) ───────────────────
+            MarkerLayer(
+              markers: List.generate(stopsWithLoc.length, (i) {
+                final stop = stopsWithLoc[i];
+                final color = _stopColor(stop.type);
+                return Marker(
+                  point: LatLng(stop.lat!, stop.lng!),
+                  width: 36,
+                  height: 46,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: color,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2.5),
+                          boxShadow: [
+                            BoxShadow(
+                              color: color.withValues(alpha: 0.4),
+                              blurRadius: 6,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${i + 1}',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Pin tail
+                      CustomPaint(
+                        size: const Size(10, 8),
+                        painter: _PinTailPainter(color),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ),
+
+            // ── Live Rider Markers ──────────────────────────────────────
+            if (widget.riders != null && widget.riders!.isNotEmpty)
+              MarkerLayer(
+                markers: widget.riders!.values.map((rider) {
+                  return Marker(
+                    point: LatLng(rider.lat, rider.lng),
+                    width: 44,
+                    height: 56,
+                    child: _RiderMarker(rider: rider),
+                  );
+                }).toList(),
+              ),
+          ],
         ),
 
-        // ── Live Rider Markers ──────────────────────────────────────
-        if (widget.riders != null && widget.riders!.isNotEmpty)
-          MarkerLayer(
-            markers: widget.riders!.values.map((rider) {
-              return Marker(
-                point: LatLng(rider.lat, rider.lng),
-                width: 44,
-                height: 56,
-                child: _RiderMarker(rider: rider),
-              );
-            }).toList(),
+        // ── Road Route Metrics & Offline Badge Overlay ──────────────
+        Positioned(
+          top: 12,
+          left: 12,
+          right: 12,
+          child: Row(
+            children: [
+              if (_totalDistanceKm != null && _totalDistanceKm! > 0)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xE61E293B),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.4),
+                    ),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 4,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _isRoadSnapped ? Icons.directions_car_rounded : Icons.straighten_rounded,
+                        size: 14,
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '${_totalDistanceKm!.toStringAsFixed(1)} km • ${_totalDurationMin!.toStringAsFixed(0)} min',
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              const Spacer(),
+              if (!_isRoadSnapped && _routePoints.length > 1)
+                MapTileConfig.buildOfflineCacheBadge(
+                  isOffline: true,
+                  lastCachedLabel: 'Direct Path',
+                ),
+            ],
           ),
+        ),
       ],
     );
   }

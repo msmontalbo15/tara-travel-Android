@@ -332,6 +332,10 @@ class TransportDetail {
   final bool splitGas;
   final String? notes;
 
+  // ── Plan 11 Departure & Assembly Advisory Extensions ───────────────────
+  final String? departureTime; // 'HH:mm' format e.g. '05:30'
+  final int? gracePeriodMinutes; // buffer minutes before hard wheels-up (default 15)
+
   // ── Plan 6 Tri-Modal Land Transport Extensions ─────────────────────────
   final String? tripTransportMode; // 'private' | 'commute' | 'rental'
   // Mode A: Private specs
@@ -392,6 +396,8 @@ class TransportDetail {
     this.fuelIncluded = false,
     this.tollsIncluded = false,
     this.totalRentalCost,
+    this.departureTime,
+    this.gracePeriodMinutes,
   });
 
   Map<String, dynamic> toMap() {
@@ -428,6 +434,8 @@ class TransportDetail {
       'fuel_included': fuelIncluded,
       'tolls_included': tollsIncluded,
       if (totalRentalCost != null) 'total_rental_cost': totalRentalCost,
+      if (departureTime != null) 'departure_time': departureTime,
+      if (gracePeriodMinutes != null) 'grace_period_minutes': gracePeriodMinutes,
     };
   }
 
@@ -473,6 +481,8 @@ class TransportDetail {
       fuelIncluded: map['fuel_included'] as bool? ?? false,
       tollsIncluded: map['tolls_included'] as bool? ?? false,
       totalRentalCost: (map['total_rental_cost'] as num?)?.toDouble(),
+      departureTime: map['departure_time'] as String?,
+      gracePeriodMinutes: (map['grace_period_minutes'] as num?)?.toInt(),
     );
   }
 }

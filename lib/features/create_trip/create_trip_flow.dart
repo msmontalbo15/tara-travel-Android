@@ -309,8 +309,20 @@ class _CreateTripFlowState extends ConsumerState<CreateTripFlow> {
       final depLat = _draft.transportDetail?.departureLat ?? _draft.departureLat;
       final depLng = _draft.transportDetail?.departureLng ?? _draft.departureLng;
 
-      // 1. Day 1 Stop 0: Meet-up & Assembly Point
+      // 1. Day 1 Stop 0: Meet-up & Assembly Point (Plan 11)
       if (departure != null && departure.trim().isNotEmpty) {
+        TimeOfDay assemblyTime = const TimeOfDay(hour: 6, minute: 0);
+        final depTimeStr = _draft.transportDetail?.departureTime;
+        if (depTimeStr != null && depTimeStr.contains(':')) {
+          final parts = depTimeStr.split(':');
+          if (parts.length >= 2) {
+            assemblyTime = TimeOfDay(
+              hour: int.tryParse(parts[0]) ?? 6,
+              minute: int.tryParse(parts[1]) ?? 0,
+            );
+          }
+        }
+
         seedStops.add(
           ItineraryStop(
             id: const Uuid().v4(),
@@ -320,7 +332,7 @@ class _CreateTripFlowState extends ConsumerState<CreateTripFlow> {
             location: departure.trim(),
             lat: depLat,
             lng: depLng,
-            startTime: const TimeOfDay(hour: 6, minute: 0),
+            startTime: assemblyTime,
             transportMode: _draft.transportDetail?.mode,
           ),
         );

@@ -8,6 +8,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_responsive.dart';
 import 'itinerary_map.dart';
 import 'navigate_route_button.dart';
+import 'optimize_route_modal.dart';
 
 /// Modal bottom sheet displaying the interactive day map, real-time companion rider pins,
 /// and full-day route navigation button.
@@ -197,16 +198,49 @@ class ItineraryMapSheet extends ConsumerWidget {
               ),
             ),
 
-          const SizedBox(height: 12),
-
-          // Route Navigate CTA
+          // Action Buttons: Optimize & Navigate
           if (day.stops.isNotEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: NavigateRouteButton(
-                stops: day.stops,
-                transport: day.transport,
-                dayNumber: day.dayNumber,
+              child: Row(
+                children: [
+                  if (day.stops.where((s) => s.lat != null && s.lng != null).length >= 3) ...[
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        OptimizeRouteModal.show(
+                          context,
+                          day: day,
+                          dayIndex: day.dayNumber - 1,
+                          tripId: tripId,
+                        );
+                      },
+                      icon: const Icon(Icons.auto_awesome_rounded, size: 16, color: AppColors.primary),
+                      label: const Text(
+                        'Optimize',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: AppColors.primary.withValues(alpha: 0.5)),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                  ],
+                  Expanded(
+                    child: NavigateRouteButton(
+                      stops: day.stops,
+                      transport: day.transport,
+                      dayNumber: day.dayNumber,
+                    ),
+                  ),
+                ],
               ),
             ),
           const SizedBox(height: 20),

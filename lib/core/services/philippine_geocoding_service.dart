@@ -57,16 +57,61 @@ class PhilippineGeocodingService {
   static const String _viewbox = '116.9298,4.5872,126.6053,21.1221';
   static const String _countryCode = 'ph';
 
-  // ── LRU Cache (32 entries) ──────────────────────────────────────────────
+  // ── LRU Cache (64 entries) ──────────────────────────────────────────────
   final LinkedHashMap<String, List<GeocodingResult>> _cache =
       LinkedHashMap<String, List<GeocodingResult>>();
-  static const int _maxCacheSize = 32;
+  static const int _maxCacheSize = 64;
 
   void _cacheSet(String key, List<GeocodingResult> value) {
     if (_cache.length >= _maxCacheSize) {
       _cache.remove(_cache.keys.first);
     }
     _cache[key] = value;
+  }
+
+  // ── Debounce & Rate Limiting (Nominatim 1 req/sec policy) ───────────────
+  static const Duration _minInterval = Duration(milliseconds: 400);
+  DateTime _lastRequestTime = DateTime.fromMillisecondsSinceEpoch(0);
+
+  Future<void> _enforceRateLimit() async {
+    final now = DateTime.now();
+    final elapsed = now.difference(_lastRequestTime);
+    if (elapsed < _minInterval) {
+      await Future.delayed(_minInterval - elapsed);
+    }
+    _lastRequestTime = DateTime.now();
+  }
+
+  /// Executes [request] with automatic exponential backoff for HTTP 429 rate limits.
+  Future<Response<T>?> _executeWithBackoff<T>(
+    Future<Response<T>> Function() request, {
+    int maxRetries = 2,
+    CancelToken? cancelToken,
+  }) async {
+    int attempt = 0;
+    Duration backoff = const Duration(seconds: 1);
+
+    while (true) {
+      if (cancelToken?.isCancelled ?? false) return null;
+      await _enforceRateLimit();
+
+      try {
+        return await request();
+      } on DioException catch (e) {
+        if (CancelToken.isCancel(e)) return null;
+
+        if (e.response?.statusCode == 429 && attempt < maxRetries) {
+          attempt++;
+          debugPrint(
+            '[PhilippineGeocoding] HTTP 429 received. Backing off ${backoff.inSeconds}s (attempt $attempt/$maxRetries)',
+          );
+          await Future.delayed(backoff);
+          backoff *= 2; // Exponential: 1s -> 2s -> 4s
+          continue;
+        }
+        rethrow;
+      }
+    }
   }
 
   // ── Forward Search ─────────────────────────────────────────────────────
@@ -85,21 +130,24 @@ class PhilippineGeocodingService {
     if (_cache.containsKey(cacheKey)) return _cache[cacheKey]!;
 
     try {
-      final response = await _dio.get(
-        'https://nominatim.openstreetmap.org/search',
-        queryParameters: {
-          'q': trimmed,
-          'format': 'json',
-          'limit': limit,
-          'addressdetails': 1,
-          'countrycodes': _countryCode,
-          'viewbox': _viewbox,
-          'bounded': 1,
-        },
+      final response = await _executeWithBackoff(
+        () => _dio.get(
+          'https://nominatim.openstreetmap.org/search',
+          queryParameters: {
+            'q': trimmed,
+            'format': 'json',
+            'limit': limit,
+            'addressdetails': 1,
+            'countrycodes': _countryCode,
+            'viewbox': _viewbox,
+            'bounded': 1,
+          },
+          cancelToken: cancelToken,
+        ),
         cancelToken: cancelToken,
       );
 
-      if (response.statusCode == 200 && response.data is List) {
+      if (response != null && response.statusCode == 200 && response.data is List) {
         final results = (response.data as List)
             .map(_parseNominatimResult)
             .toList();
@@ -109,6 +157,8 @@ class PhilippineGeocodingService {
     } on DioException catch (e) {
       if (CancelToken.isCancel(e)) return const [];
       debugPrint('[PhilippineGeocoding] search error: $e');
+    } catch (e) {
+      debugPrint('[PhilippineGeocoding] unexpected search error: $e');
     }
     return const [];
   }
@@ -127,19 +177,22 @@ class PhilippineGeocodingService {
     }
 
     try {
-      final response = await _dio.get(
-        'https://nominatim.openstreetmap.org/reverse',
-        queryParameters: {
-          'lat': lat,
-          'lon': lon,
-          'format': 'json',
-          'addressdetails': 1,
-          'zoom': 18,
-        },
+      final response = await _executeWithBackoff(
+        () => _dio.get(
+          'https://nominatim.openstreetmap.org/reverse',
+          queryParameters: {
+            'lat': lat,
+            'lon': lon,
+            'format': 'json',
+            'addressdetails': 1,
+            'zoom': 18,
+          },
+          cancelToken: cancelToken,
+        ),
         cancelToken: cancelToken,
       );
 
-      if (response.statusCode == 200 && response.data is Map) {
+      if (response != null && response.statusCode == 200 && response.data is Map) {
         final result = _parseNominatimResult(response.data);
         _cacheSet(cacheKey, [result]);
         return result;
@@ -147,6 +200,8 @@ class PhilippineGeocodingService {
     } on DioException catch (e) {
       if (CancelToken.isCancel(e)) return null;
       debugPrint('[PhilippineGeocoding] reverse error: $e');
+    } catch (e) {
+      debugPrint('[PhilippineGeocoding] unexpected reverse error: $e');
     }
     return null;
   }

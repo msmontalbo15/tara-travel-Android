@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/map_tile_config.dart';
+import '../../../core/services/osrm_routing_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../models/navigation_models.dart';
 import '../providers/navigation_provider.dart';
@@ -24,6 +25,8 @@ class LiveMapTab extends ConsumerStatefulWidget {
 class _LiveMapTabState extends ConsumerState<LiveMapTab> {
   final MapController _mapController = MapController();
   bool _didFitInitialBounds = false;
+  List<LatLng>? _roadRoutePoints;
+  String? _lastRouteKey;
 
   @override
   void initState() {
@@ -76,6 +79,22 @@ class _LiveMapTabState extends ConsumerState<LiveMapTab> {
     );
   }
 
+  void _updateRoadRoute(LatLng start, LatLng dest) async {
+    final key =
+        '${start.latitude.toStringAsFixed(4)},${start.longitude.toStringAsFixed(4)}->${dest.latitude.toStringAsFixed(4)},${dest.longitude.toStringAsFixed(4)}';
+    if (_lastRouteKey == key) return;
+    _lastRouteKey = key;
+
+    try {
+      final res = await OsrmRoutingService.instance.getRoute([start, dest]);
+      if (mounted) {
+        setState(() {
+          _roadRoutePoints = res.geometry;
+        });
+      }
+    } catch (_) {}
+  }
+
   @override
   Widget build(BuildContext context) {
     final nav = ref.watch(navigationProvider);
@@ -106,18 +125,20 @@ class _LiveMapTabState extends ConsumerState<LiveMapTab> {
       nav.destination.longitude ?? (myLatLng.longitude + 0.015),
     );
 
-    // Dynamic route points for polyline
-    final List<LatLng> routePoints = [myLatLng];
+    final LatLng targetPoint;
     if (nav.activeMemberRoute != null &&
         nav.activeMemberRoute!.latitude != null &&
         nav.activeMemberRoute!.longitude != null) {
-      routePoints.add(LatLng(
+      targetPoint = LatLng(
         nav.activeMemberRoute!.latitude!,
         nav.activeMemberRoute!.longitude!,
-      ));
+      );
     } else {
-      routePoints.add(destLatLng);
+      targetPoint = destLatLng;
     }
+
+    _updateRoadRoute(myLatLng, targetPoint);
+    final displayRoute = _roadRoutePoints ?? [myLatLng, targetPoint];
 
     if (!_didFitInitialBounds && nav.members.isNotEmpty) {
       _didFitInitialBounds = true;
@@ -149,13 +170,13 @@ class _LiveMapTabState extends ConsumerState<LiveMapTab> {
                   // ── Map Tile Layer (Mapbox Streets / CartoDB Voyager) ──
                   MapTileConfig.buildTileLayer(),
 
-                  // ── Live Routing Polyline ───────────────────────────
-                  if (routePoints.length > 1)
+                  // ── Live Routing Polyline (OSRM road-snapped) ───────
+                  if (displayRoute.length > 1)
                     PolylineLayer(
                       polylines: [
                         // Ambient glow stroke
                         Polyline(
-                          points: routePoints,
+                          points: displayRoute,
                           color: AppColors.primary.withValues(alpha: 0.35),
                           strokeWidth: 9,
                           strokeCap: StrokeCap.round,
@@ -163,7 +184,7 @@ class _LiveMapTabState extends ConsumerState<LiveMapTab> {
                         ),
                         // Sharp inner route line
                         Polyline(
-                          points: routePoints,
+                          points: displayRoute,
                           color: AppColors.primary,
                           strokeWidth: 4.5,
                           strokeCap: StrokeCap.round,

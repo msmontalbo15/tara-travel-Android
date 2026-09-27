@@ -46,6 +46,11 @@ class _EditTripSheetState extends ConsumerState<EditTripSheet> {
   late String _selectedTripType;
   late bool _isMapEnabled;
   late String _journeyMode;
+  late TextEditingController _departureController;
+  double? _departureLat;
+  double? _departureLng;
+  late TimeOfDay _assemblyTime;
+  late int _gracePeriodMinutes;
   bool _isSaving = false;
 
   String? _nameError;
@@ -66,6 +71,22 @@ class _EditTripSheetState extends ConsumerState<EditTripSheet> {
     _selectedTripType = t.tripType.toLowerCase();
     _isMapEnabled = t.isMapEnabled;
     _journeyMode = t.journeyMode.name == 'multiPoint' ? 'multi_point' : t.journeyMode.name;
+    _departureController = TextEditingController(text: t.departurePoint ?? '');
+    _departureLat = t.departureLat;
+    _departureLng = t.departureLng;
+
+    TimeOfDay initialAssemblyTime = const TimeOfDay(hour: 6, minute: 0);
+    if (t.transportMeta != null && t.transportMeta!['departure_time'] != null) {
+      final parts = t.transportMeta!['departure_time'].toString().split(':');
+      if (parts.length >= 2) {
+        initialAssemblyTime = TimeOfDay(
+          hour: int.tryParse(parts[0]) ?? 6,
+          minute: int.tryParse(parts[1]) ?? 0,
+        );
+      }
+    }
+    _assemblyTime = initialAssemblyTime;
+    _gracePeriodMinutes = (t.transportMeta?['grace_period_minutes'] as num?)?.toInt() ?? 15;
   }
 
   @override
@@ -73,6 +94,7 @@ class _EditTripSheetState extends ConsumerState<EditTripSheet> {
     _nameController.dispose();
     _destController.dispose();
     _budgetController.dispose();
+    _departureController.dispose();
     super.dispose();
   }
 
@@ -141,6 +163,14 @@ class _EditTripSheetState extends ConsumerState<EditTripSheet> {
       existingDetails['is_map_enabled'] = _isMapEnabled;
       existingDetails['journey_mode'] = _journeyMode;
 
+      final existingMeta = Map<String, dynamic>.from(
+        widget.trip.transportMeta ?? <String, dynamic>{},
+      );
+      final h = _assemblyTime.hour.toString().padLeft(2, '0');
+      final m = _assemblyTime.minute.toString().padLeft(2, '0');
+      existingMeta['departure_time'] = '$h:$m';
+      existingMeta['grace_period_minutes'] = _gracePeriodMinutes;
+
       final updatedTrip = widget.trip.copyWith(
         name: _nameController.text.trim(),
         destination: _destController.text.trim(),
@@ -149,6 +179,12 @@ class _EditTripSheetState extends ConsumerState<EditTripSheet> {
         tripType: _selectedTripType,
         totalBudget: budget,
         destinationDetails: existingDetails,
+        departurePoint: _departureController.text.trim().isNotEmpty
+            ? _departureController.text.trim()
+            : null,
+        departureLat: _departureLat,
+        departureLng: _departureLng,
+        transportMeta: existingMeta,
       );
 
       await ref.read(tripRepositoryProvider).updateTrip(updatedTrip);
@@ -418,6 +454,10 @@ class _EditTripSheetState extends ConsumerState<EditTripSheet> {
 
                       // 6. Map & Navigation Mode Settings (Plan 10)
                       _buildMapNavigationCard(),
+                      const SizedBox(height: 22),
+
+                      // 7. Meet-up & Departure Advisory (Plan 11)
+                      _buildDepartureSection(),
                       const SizedBox(height: 24),
                     ],
                   ),
@@ -619,6 +659,250 @@ class _EditTripSheetState extends ConsumerState<EditTripSheet> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  // ── Plan 11 Meet-up & Assembly Section ─────────────────────────────────────
+  Widget _buildDepartureSection() {
+    final period = _assemblyTime.period == DayPeriod.am ? 'AM' : 'PM';
+    final h = _assemblyTime.hourOfPeriod == 0 ? 12 : _assemblyTime.hourOfPeriod;
+    final m = _assemblyTime.minute.toString().padLeft(2, '0');
+    final formattedAssemblyTime = '$h:$m $period';
+
+    // Calculate wheels-up time
+    final assemblyDt = DateTime(2026, 1, 1, _assemblyTime.hour, _assemblyTime.minute);
+    final wheelsUpDt = assemblyDt.add(Duration(minutes: _gracePeriodMinutes));
+    final wheelsUpTod = TimeOfDay.fromDateTime(wheelsUpDt);
+    final wh = wheelsUpTod.hourOfPeriod == 0 ? 12 : wheelsUpTod.hourOfPeriod;
+    final wm = wheelsUpTod.minute.toString().padLeft(2, '0');
+    final wperiod = wheelsUpTod.period == DayPeriod.am ? 'AM' : 'PM';
+    final formattedWheelsUp = '$wh:$wm $wperiod';
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.cardBorder.withValues(alpha: 0.8)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.near_me_rounded,
+                  size: 16,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Meet-up & Assembly Logistics',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.deepEarth,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  'PLAN 11',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF10B981),
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Sets Day 1 Stop 0, countdown advisory, and grace period buffer before wheels-up departure.',
+            style: TextStyle(fontSize: 11.5, color: AppColors.muted, height: 1.3),
+          ),
+          const SizedBox(height: 14),
+
+          // Departure Point Location Picker
+          LocationPicker(
+            label: 'Meet-up / Departure Point',
+            hint: 'Search assembly point (e.g. Shell SLEX, NAIA T3)...',
+            initialValue: _departureController.text.isNotEmpty ? _departureController.text : null,
+            onLocationSelected: (loc) {
+              if (loc != null) {
+                _departureController.text = loc.displayName;
+                _departureLat = loc.lat;
+                _departureLng = loc.lon;
+              } else {
+                _departureController.clear();
+                _departureLat = null;
+                _departureLng = null;
+              }
+              setState(() {});
+            },
+          ),
+          const SizedBox(height: 14),
+
+          // Assembly Time Picker
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Assembly Time',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.deepEarth,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    GestureDetector(
+                      onTap: () async {
+                        final picked = await showTimePicker(
+                          context: context,
+                          initialTime: _assemblyTime,
+                        );
+                        if (picked != null) {
+                          setState(() => _assemblyTime = picked);
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.cardBorder),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.access_time_rounded, size: 16, color: AppColors.primary),
+                            const SizedBox(width: 8),
+                            Text(
+                              formattedAssemblyTime,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.deepEarth,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Wheels-Up Deadline',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.deepEarth,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.departure_board_rounded, size: 16, color: AppColors.primary),
+                          const SizedBox(width: 8),
+                          Text(
+                            formattedWheelsUp,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // Grace Period Buffer Chips
+          const Text(
+            'Grace Period Buffer',
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
+              color: AppColors.deepEarth,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [0, 15, 30, 45].map((mins) {
+              final isSelected = _gracePeriodMinutes == mins;
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  child: GestureDetector(
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      setState(() => _gracePeriodMinutes = mins);
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isSelected ? AppColors.primary : Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: isSelected ? AppColors.primary : AppColors.cardBorder,
+                          width: 1.2,
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          mins == 0 ? 'None' : '${mins}m',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: isSelected ? Colors.white : AppColors.deepEarth,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
       ),
     );
   }

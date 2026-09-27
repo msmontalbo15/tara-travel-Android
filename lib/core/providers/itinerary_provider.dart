@@ -107,6 +107,21 @@ class ItineraryNotifier extends AsyncNotifier<ItineraryState> {
     await repo.saveItineraryDay(_tripId, updatedDay);
   }
 
+  /// Sets the complete list of stops for a day in a single batch (e.g. after TSP route optimization).
+  Future<void> setDayStops(int dayIndex, List<ItineraryStop> newStops) async {
+    final currentState = state.value;
+    if (currentState == null) return;
+
+    final repo = ref.read(itineraryRepositoryProvider);
+    final day = currentState.days[dayIndex];
+    final updatedDay = day.copyWith(stops: newStops);
+    final updatedDays = List<ItineraryDay>.from(currentState.days);
+    updatedDays[dayIndex] = updatedDay;
+
+    state = AsyncData(currentState.copyWith(days: updatedDays));
+    await repo.saveItineraryDay(_tripId, updatedDay);
+  }
+
   // ── Feature 2: Update a full stop ─────────────────────────────────
 
   Future<void> updateStop(int dayIndex, ItineraryStop updated) async {

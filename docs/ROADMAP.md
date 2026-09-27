@@ -32,7 +32,7 @@ This document serves as our compiled repository master plan, organized hierarchi
 | # | Plan / Feature | Status | Key Focus |
 |---|---|---|---|
 | **13** | [Trip Detail Screen: Ongoing Command Center, HUD & Quick Action Hub](#plan-13-trip-detail-screen-ongoing-command-center-hud-quick-action-hub) | 🟢 **Complete** | Active Quick Stop HUD, persistent bottom bar, telemetry, officers, announcements & weather |
-| **14** | [Day Map Intelligent Route Optimization, OSRM Road Snapping & Offline Map Tile Cache](#plan-14-day-map-intelligent-route-optimization-osrm-road-snapping--offline-map-tile-cache) | 🟡 **Drafted / Queued** | Street-network OSRM routing, offline tile caching, best order optimization, arrival geofence |
+| **14** | [Day Map Intelligent Route Optimization, OSRM Road Snapping & Offline Map Tile Cache](#plan-14-day-map-intelligent-route-optimization-osrm-road-snapping--offline-map-tile-cache) | 🟢 **Complete** | Street-network OSRM routing, offline tile caching, best order optimization, arrival geofence |
 | **15** | [Comprehensive Mobile Notifications Architecture (Push, In-App Banners & Deep-Link Routing)](#plan-15-comprehensive-mobile-notifications-architecture-push-in-app-banners-deep-link-routing) | 🟢 **Complete** | In-app Dynamic Island banners, background Heads-Up floating alerts, local alarms, FCM push & deep routing |
 | **16** | [Gemini Embedded AI Travel Copilot & Assistant](#plan-16-gemini-embedded-ai-travel-copilot-assistant) | 🟢 **Complete** | Natural language trip planner, smart itinerary recommendations, budget optimization & packing generator |
 | **17** | [Supabase & Middleware App Versioning & OTA Updates](#plan-17-supabase-middleware-app-versioning-ota-updates) | 🟡 **Drafted / Queued** | Version gatekeeper, Shorebird OTA code push, Supabase storage APK download & force/soft update dialogs |
@@ -61,9 +61,13 @@ This document serves as our compiled repository master plan, organized hierarchi
 | **Plan 7** | Travel Circles (Squads & Barkada Presets) | IMP-132 | ✅ Complete | Reusable travel squads/circles, 1-tap multi-member addition in trip creation, full CRUD management tab. |
 | **Plan 8** | Real-Time Live Weather Forecast & Severe Alerts | IMP-088 | ✅ Complete | Open-Meteo API integration, offline cache, DayStrip weather & storm alerts. |
 | **Plan 9** | Dual-Lens Budget & Expense Hub | IMP-134 | ✅ Complete | Private personal expenses, True Trip Cost, multi-channel payment tags (Cash, E-Wallet, MariBank, Card), daily pacing gauge. |
+| **Plan 10** | Flexible & Optional Trip Map: Adventure, Multi-Point & Off-Grid Mode | IMP-135 | ✅ Complete | Optional map tracking, multi-point waypoints, adventure trail roaming, battery-saving mapless mode. |
+| **Plan 11** | Meet-up Assembly, Smart Countdown & Departure Detection | IMP-136 | ✅ Complete | Day 1 Stop 0 auto-insertion, meet-up grace period, GPS distance countdown & auto departure. |
 | **Plan 12** | Floating Travel Bubble & Overlay HUD | IMP-129 | ✅ Complete | In-app draggable edge-snapping bubble, mini-HUD card, and quick expense logging. |
 | **Plan 13** | Trip Detail Screen: Ongoing Command Center & HUD | IMP-089 | ✅ Complete | Quick Stop HUD, persistent bottom dock, destination weather, officers. |
+| **Plan 14** | Day Map OSRM Route Optimization & Offline Tile Cache | IMP-137 | ✅ Complete | OSRM road polylines, 7-day disk tile cache, TSP route optimizer with pinned stops, and 100m geofence arrival alerts. |
 | **Plan 15** | Comprehensive Mobile Notifications Architecture | IMP-129 | ✅ Complete | In-App Dynamic Island toasts, duplicate suppression, and NotificationRouter deep links. |
+| **Plan 16** | Gemini Embedded AI Travel Copilot & Assistant | IMP-127 | ✅ Complete | Conversational trip planner, smart itinerary recommendations, budget optimization & packing generator. |
 | **Plan 17** | Supabase App Versioning & OTA Updates | IMP-094 | ✅ Complete | 3-tier update modals, Remote Config, automated CI/CD release pipeline. |
 | **Plan 19** | Universal Responsive Layout Engine | IMP-091 | ✅ Complete | Breakpoints, clamped text scaler, safe padding/insets, zero-overflow. |
 
@@ -437,7 +441,7 @@ Decouple rigid map requirements so trips can be created and managed without requ
 ---
 
 
-## Plan 11: Meet-up Assembly, Smart Countdown & Automatic Departure Detection
+## Plan 11: Meet-up Assembly, Smart Countdown & Automatic Departure Detection `[COMPLETE — IMP-136]`
 
 ### Goal
 Automatically insert the trip's specified **Meet-up Point / Departure Point** as the initial itinerary stop (**Day 1, Stop 0: "Meet-up & Assembly"**) and power it with real-time countdowns, customizable grace periods, smart preparation advisories, and automatic departure detection without requiring manual user input.
@@ -528,7 +532,7 @@ Allow travelers, drivers, and convoy riders to minimize Tara Travel into a dragg
 ---
 
 
-## Plan 14: Day Map Intelligent Route Optimization, OSRM Road Snapping & Offline Map Tile Cache
+## Plan 14: Day Map Intelligent Route Optimization, OSRM Road Snapping & Offline Map Tile Cache `[COMPLETE — IMP-137]`
 
 ### Goal
 Upgrade all map surfaces (Day Map, Live Navigation Map, and Itinerary stops) from drawing simple linear/straight-line connections to calculating and rendering **true road-snapped driving paths (OSRM street-level polylines)**, providing **offline map tile caching** for zero-signal Philippine provincial/island routes, adding **geocoding debounce safeguards**, and optimizing stop sequences (**TSP Route Optimizer**).

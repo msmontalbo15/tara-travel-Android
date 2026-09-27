@@ -46,6 +46,8 @@ class MemberModel {
     this.hideSurname = false,
   });
 
+  bool get isOrganizer => roles.contains(MemberRole.organizer);
+
   MemberModel copyWith({
     String? id,
     String? name,

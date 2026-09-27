@@ -8,6 +8,7 @@ library;
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
 import '../models/trip_model.dart';
 import '../models/member_model.dart';
 import '../utils/invite_code_generator.dart';
@@ -181,7 +182,7 @@ class TripRepository {
       await _supabase.from('trips').update(payload).eq('id', trip.id);
       debugPrint('[TripRepository] Trip ${trip.id} successfully updated in Supabase.');
 
-      // Sync Day 1 Stop 0 (Meet-up / Departure) if departurePoint exists
+      // Sync Day 1 Stop 0 (Meet-up / Departure) if departurePoint exists (Plan 11)
       if (trip.departurePoint != null && trip.departurePoint!.trim().isNotEmpty) {
         try {
           final stops = await _supabase
@@ -192,19 +193,41 @@ class TripRepository {
               .order('sort_order', ascending: true)
               .limit(1);
 
+          final departureTime = trip.transportMeta?['departure_time']?.toString();
+
           if ((stops as List).isNotEmpty) {
             final firstStop = (stops.first as Map).cast<String, dynamic>();
             final stopType = firstStop['type']?.toString();
-            if (stopType == 'transport') {
+            final title = firstStop['title']?.toString().toLowerCase() ?? '';
+            if (stopType == 'transport' || title.contains('meet-up') || title.contains('assembly') || title.contains('departure')) {
               await _supabase.from('itinerary_stops').update({
                 'title': 'Meet-up & Assembly: ${trip.departurePoint!.trim()}',
                 'address': trip.departurePoint!.trim(),
                 if (trip.departureLat != null) 'lat': trip.departureLat,
                 if (trip.departureLng != null) 'lng': trip.departureLng,
+                if (departureTime != null) 'time_start': departureTime,
                 'updated_at': DateTime.now().toUtc().toIso8601String(),
               }).eq('id', firstStop['id']);
               debugPrint('[TripRepository] Stop 0 departure point synced.');
             }
+          } else {
+            // Day 1 has no stops yet — auto-insert Stop 0
+            await _supabase.from('itinerary_stops').insert({
+              'id': const Uuid().v4(),
+              'trip_id': trip.id,
+              'day_number': 1,
+              'sort_order': 0,
+              'title': 'Meet-up & Assembly: ${trip.departurePoint!.trim()}',
+              'notes': 'Trip assembly point & wheels-up departure',
+              'type': 'transport',
+              'address': trip.departurePoint!.trim(),
+              if (trip.departureLat != null) 'lat': trip.departureLat,
+              if (trip.departureLng != null) 'lng': trip.departureLng,
+              if (departureTime != null) 'time_start': departureTime,
+              'created_at': DateTime.now().toUtc().toIso8601String(),
+              'updated_at': DateTime.now().toUtc().toIso8601String(),
+            });
+            debugPrint('[TripRepository] Stop 0 auto-inserted.');
           }
         } catch (stopErr) {
           debugPrint('[TripRepository] Stop 0 sync note: $stopErr');
