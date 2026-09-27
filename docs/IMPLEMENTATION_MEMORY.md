@@ -3229,3 +3229,26 @@
   - Provides offline map persistence so travelers in zero-signal Philippine provincial/island destinations can continue viewing tiles and tracking waypoints.
 - **Verification**:
   - `flutter analyze` completed cleanly with 0 issues across the entire project (ran in 10.3s).
+
+---
+
+### `IMP-138` · What's New & App Update Interactive Discovery Popup System
+- **Date**: September 28, 2026
+- **Associated Capability**: What's New / App Update Release Notes & Discovery System
+- **Target Files**:
+  - `lib/core/models/whats_new_model.dart` [NEW - Release notes categorization engine (`WhatsNewCategory`), item representation (`WhatsNewItem`), and dynamic markdown tag parser (`ReleaseNotesData.parse`) with fallback to `TaraReleaseManifest`]
+  - `lib/core/services/whats_new_service.dart` [NEW - Version delta tracking service backed by Android Keystore `FlutterSecureStorage`, comparing runtime binary versions against `last_seen_app_version`, 24h soft-update snooze management, and Riverpod provider `whatsNewServiceProvider`]
+  - `lib/core/widgets/versioning/whats_new_dialog.dart` [NEW - Rich modal sheet and dialog component supporting both `WhatsNewMode.whatsNew` (post-update celebration) and `WhatsNewMode.updateAvailable` (pre-update OTA download), category quick-filter chips, and brand design tokens]
+  - `lib/features/home/home_screen.dart` [MODIFIED - Integrated post-frame lifecycle trigger in `_HomeBodyState` to non-intrusively display What's New on first run after upgrade, or soft update prompt if unsnoozed]
+  - `lib/features/profile/widgets/profile_account_card.dart` [MODIFIED - Replaced basic info sheets with `WhatsNewDialog.showSheet` so travelers can review release highlights or update anytime from Settings]
+  - `test/services/whats_new_service_test.dart` [NEW - Unit test suite verifying curated manifest retrieval, structured bracket tag parsing, fallback handling, SemanticVersion comparisons, and icon overrides]
+  - `docs/MEMORY.md` [MODIFIED - Added Section 37 documenting What's New architecture, version delta policies, and model contracts]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED - Appended milestone IMP-138]
+- **Architectural Rationale**:
+  - Solves feature discovery gap where travelers updating the app miss out on high-impact releases (Meet-up countdowns, Philippine geocoding, AI Copilot, MPIN encryption).
+  - Employs zero-friction dismissals: remembers acknowledged version in encrypted local keystore so post-update celebrations appear exactly once per release.
+  - Features 24-hour snooze policy for soft updates, preventing user irritation during critical travel planning sessions.
+  - Self-contained offline resilience: includes curated fallback manifest for current versions even when network is unavailable.
+- **Verification**:
+  - Static analysis: `flutter analyze lib/ test/services/whats_new_service_test.dart` passed with 0 errors and 0 warnings.
+

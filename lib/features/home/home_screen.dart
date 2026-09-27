@@ -19,6 +19,9 @@ import '../../core/widgets/navigation/floating_nav_bar.dart';
 import '../../core/widgets/shimmer_loading.dart';
 import '../../core/utils/jit_guard.dart';
 import '../../core/utils/trip_conflict_helper.dart';
+import '../../core/services/app_version_service.dart';
+import '../../core/services/whats_new_service.dart';
+import '../../core/widgets/versioning/whats_new_dialog.dart';
 
 import '../budget/budget_screen.dart';
 import '../explore/explore_screen.dart';
@@ -138,6 +141,7 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
   int _tourStep = 0;
   final ScrollController _scrollCtrl = ScrollController();
   bool _cardCollapsed = false;
+  bool _checkedWhatsNew = false;
 
   String _greeting() {
     final hour = DateTime.now().hour;
@@ -151,11 +155,51 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
     super.initState();
     if (widget.startTour) {
       _scheduleTour();
+    } else {
+      _checkWhatsNewOrUpdate();
     }
     _scrollCtrl.addListener(() {
       final collapsed = _scrollCtrl.offset > 60;
       if (collapsed != _cardCollapsed) {
         setState(() => _cardCollapsed = collapsed);
+      }
+    });
+  }
+
+  void _checkWhatsNewOrUpdate() {
+    if (_checkedWhatsNew) return;
+    _checkedWhatsNew = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      if (widget.startTour || _tourVisible) return;
+
+      try {
+        final whatsNewService = ref.read(whatsNewServiceProvider);
+        final shouldShow = await whatsNewService.shouldShowWhatsNewOnLaunch();
+        if (!mounted) return;
+
+        if (shouldShow) {
+          WhatsNewDialog.showSheet(context, mode: WhatsNewMode.whatsNew);
+          return;
+        }
+
+        final versionResult = await ref.read(appVersionCheckProvider.future);
+        if (!mounted) return;
+
+        if (versionResult.isSoftUpdate && versionResult.remoteConfig != null) {
+          final targetVer = versionResult.remoteConfig!.latestVersion.toString();
+          final isSnoozed = await whatsNewService.isUpdatePromptSnoozed(targetVersion: targetVer);
+          if (!isSnoozed && mounted) {
+            WhatsNewDialog.showSheet(
+              context,
+              mode: WhatsNewMode.updateAvailable,
+              checkResult: versionResult,
+            );
+          }
+        }
+      } catch (e) {
+        debugPrint('[HomeScreen] WhatsNew/Update check warning: $e');
       }
     });
   }
@@ -184,6 +228,7 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
   void _dismissTour() {
     if (!_tourVisible) return;
     setState(() => _tourVisible = false);
+    _checkWhatsNewOrUpdate();
   }
 
   void _advanceTour() {

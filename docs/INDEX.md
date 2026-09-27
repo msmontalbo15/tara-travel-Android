@@ -88,6 +88,7 @@
 | `WeatherForecast`| `weather_model.dart` | In-memory & cached Open-Meteo payload |
 | `ActivityModel` | `activity_model.dart` | `public.activity_logs` |
 | `PersonalAllowance`| `personal_allowance_model.dart` | `public.personal_allowances` |
+| `WhatsNewModel` / `ReleaseNotesData` | `whats_new_model.dart` | Structured release highlights, bracket tag parsing & bundled manifest |
 
 ---
 
@@ -97,6 +98,7 @@
 | :--- | :--- | :--- |
 | `WeatherService` | `weather_service.dart` | Open-Meteo REST client with disk caching & severe condition parsing |
 | `AppVersionService`| `app_version_service.dart` | Supabase Remote Config version validator & update triggers |
+| `WhatsNewService` | `whats_new_service.dart` | First-run version delta tracking, 24h snooze & release notes resolver |
 | `ApkDownloadInstaller`| `apk_download_installer.dart` | Supabase Storage release APK downloader & Android installer |
 | `LocationTrackingService`| `location_tracking_service.dart`| GPS telemetry & geofence distance calculation |
 | `ConnectivityService`| `connectivity_service.dart` | Online/offline detection & network state broadcasting |

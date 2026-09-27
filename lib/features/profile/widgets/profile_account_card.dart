@@ -10,8 +10,7 @@ import '../../../core/widgets/feedback/app_feedback.dart';
 import '../../../core/widgets/npc_privacy_policy_sheet.dart';
 import '../../../core/widgets/versioning/force_update_screen.dart';
 import '../../../core/widgets/versioning/maintenance_mode_screen.dart';
-import '../../../core/widgets/versioning/soft_update_sheet.dart';
-import '../../../core/widgets/versioning/version_info_sheet.dart';
+import '../../../core/widgets/versioning/whats_new_dialog.dart';
 import '../screens/notification_settings_screen.dart';
 import 'profile_card.dart';
 
@@ -58,9 +57,17 @@ class _ProfileAccountCardState extends ConsumerState<ProfileAccountCard> {
           'New update available (v${result.remoteConfig?.latestVersion.displayVersion})! Tap Update to install.',
           title: 'Update Ready 🚀',
         );
-        SoftUpdateSheet.show(context, result);
+        WhatsNewDialog.showSheet(
+          context,
+          mode: WhatsNewMode.updateAvailable,
+          checkResult: result,
+        );
       } else {
-        VersionInfoSheet.show(context, result);
+        WhatsNewDialog.showSheet(
+          context,
+          mode: WhatsNewMode.whatsNew,
+          checkResult: result,
+        );
       }
     } catch (e) {
       if (mounted) {

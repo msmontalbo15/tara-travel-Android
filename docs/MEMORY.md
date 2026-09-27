@@ -1519,5 +1519,44 @@ Decouples rigid coordinate and map requirements, introducing first-class support
 
 ---
 
+## 37. What's New & App Update Release Notes Architecture (`IMP-138`)
+
+### 37.1 Version Delta & First-Run Tracking (`WhatsNewService`)
+- **Location**: `lib/core/services/whats_new_service.dart`
+- **Encrypted Keystore Storage**: Backed by Android Keystore `FlutterSecureStorage` (AES-256-GCM / RSA-2048) and iOS Keychain (`whenUnlocked`).
+- **Keys**:
+  - `tara_last_seen_app_version`: Persists highest acknowledged version string (e.g. `1.0.1+1`).
+  - `tara_last_snooze_update_timestamp`: Expiration timestamp for snoozed soft update reminders (24-hour window).
+  - `tara_last_snooze_version`: The target version string that was snoozed.
+- **Delta Evaluation**:
+  - `shouldShowWhatsNewOnLaunch()`: Compares current binary SemanticVersion against `last_seen_app_version`. Returns true strictly when runtime version is greater than the recorded version.
+  - On fresh install, seeds current version to prevent interrupting initial onboarding.
+  - `snoozeUpdatePrompt(targetVersion, [duration = 24h])`: Suppresses non-mandatory update sheets for 24 hours.
+
+### 37.2 Structured Release Notes & Fallback Manifest (`WhatsNewModel`)
+- **Location**: `lib/core/models/whats_new_model.dart`
+- **Categories**:
+  - `WhatsNewCategory.feature`: 🚀 `NEW` (Coral fill, `Stars` icon)
+  - `WhatsNewCategory.improvement`: ⚡ `IMPROVED` (Sunset/Amber fill, `Bolt` icon)
+  - `WhatsNewCategory.security`: 🛡️ `PRIVACY & SECURITY` (Forest green fill, `Shield` icon)
+  - `WhatsNewCategory.fix`: 🐞 `REFINED` (Blue fill, `Handyman` icon)
+- **Tag Parser (`ReleaseNotesData.parse`)**:
+  - Dynamically extracts bracket tags `[NEW]`, `[FEAT]`, `[PERF]`, `[SEC]`, `[FIX]` from Supabase remote `release_notes`.
+  - Parses bullet items, highlights, and colon-delimited titles and descriptions.
+  - **`TaraReleaseManifest`**: Bundled local repository of curated release highlights for Tara versions (e.g. `1.0.1`, `1.0.0`), guaranteeing rich changelog presentation even during complete offline network cutoffs.
+
+### 37.3 Interactive Presentation UI (`WhatsNewDialog`)
+- **Location**: `lib/core/widgets/versioning/whats_new_dialog.dart`
+- **Modes**:
+  - `WhatsNewMode.whatsNew`: Post-update celebration and on-demand changelog review with "Awesome, Let's Explore" confirmation.
+  - `WhatsNewMode.updateAvailable`: Pre-update announcement with integrated `ApkDownloadInstaller` progress stream and "Remind Later" snooze CTA.
+- **Features**:
+  - Real-time category filter chips with item counters.
+  - Hero header with brand gradient and Playfair Display typography.
+  - Integrated into `HomeScreen` post-frame lifecycle and `ProfileAccountCard` version tile.
+
+---
+
 *This document is the single source of architectural truth for Tara Travel. Update this file whenever database schemas, RPC functions, core repositories, or system flows are modified.*
+
 
