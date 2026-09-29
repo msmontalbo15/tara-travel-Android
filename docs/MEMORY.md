@@ -1483,6 +1483,7 @@ Decouples rigid coordinate and map requirements, introducing first-class support
   - LRU memory cache (64 entries) keyed by high-precision coordinate string hashes.
   - Automatic 500ms internal request debouncing to prevent server rate limiting.
   - Graceful straight-line fallback (`isStraightLineFallback = true`) with Haversine distance and 45 km/h driving speed estimations when network is offline or times out.
+  - Minimal route fallback (`isStraightLineFallback = true`) returned immediately for < 2 waypoints with 0 distance and 0 duration.
 
 ### 36.2 Offline Map Tile Caching & Cache Provider (`MapTileConfig`)
 - **Location**: `lib/core/constants/map_tile_config.dart`

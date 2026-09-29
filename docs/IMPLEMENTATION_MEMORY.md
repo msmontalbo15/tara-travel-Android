@@ -97,6 +97,7 @@
 | **`IMP-134`** | 2026-09-20 | Budget & Expenses / Dual-Lens Budget & Expense Hub (Plan 9) | Multi-channel payment tags (Cash, E-Wallet GCash/Maya, MariBank, Card), Philippine travel quick tags, True Trip Cost calculation, and daily pacing gauge polish. |
 | **`IMP-135`** | 2026-09-20 | Trips & Maps / Flexible & Optional Trip Map: Adventure, Multi-Point & Off-Grid (Plan 10) | Decoupled rigid map requirements, added JourneyMode enum (Standard, Adventure, Multi-Point), Adventure Compass HUD, Multi-Hub route strip, zero-migration destination_details JSONB persistence, and dynamic bottom dock actions. |
 | **`IMP-136`** | 2026-09-27 | Meet-up & Logistics / Meet-up Assembly, Smart Countdown & Departure Detection (Plan 11) | Auto-provisioned Day 1 Stop 0 ("Meet-up & Assembly"), transportMeta grace period & assembly time sync, mounted SmartDepartureAdvisoryCard with live countdown gauge and headcount roster on TripDetailScreen, and added meet-up editor to EditTripSheet. |
+| **`IMP-139`** | 2026-09-29 | CI / OSRM Routing Service Test Stabilization | Fixed 3 CI test failures in `osrm_routing_service_test.dart` by unifying `getRoute()` < 2 waypoints path through `_buildStraightLineFallback`, making assertions environment-agnostic (online OSRM vs offline fallback), and adding deterministic `buildStraightLineFallback` test. |
 
 ---
 
@@ -3251,4 +3252,24 @@
   - Self-contained offline resilience: includes curated fallback manifest for current versions even when network is unavailable.
 - **Verification**:
   - Static analysis: `flutter analyze lib/ test/services/whats_new_service_test.dart` passed with 0 errors and 0 warnings.
+
+---
+
+### `IMP-139` · CI Test Stabilization: OSRM Routing Service Edge-Case Fallback & Environment-Agnostic Assertions
+- **Date**: September 29, 2026
+- **Associated Issue**: 3 failing tests in GitHub Actions CI on `live` branch (`osrm_routing_service_test.dart`)
+- **Target Files**:
+  - `lib/core/services/osrm_routing_service.dart` [MODIFIED - Unified `getRoute()` < 2 waypoints codepath through `_buildStraightLineFallback` (sets `isStraightLineFallback: true`); exposed `@visibleForTesting buildStraightLineFallback()` for deterministic unit testing without network]
+  - `test/services/osrm_routing_service_test.dart` [MODIFIED - Made two-waypoint test environment-agnostic (`greaterThanOrEqualTo(2)` geometry length instead of exact `2`); added deterministic `buildStraightLineFallback` test; added `clearCache()` in setUp]
+  - `docs/MEMORY.md` [MODIFIED - Section 36.1 updated with minimal route fallback invariant for < 2 waypoints]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED - Appended milestone IMP-139]
+- **Root Cause Analysis**:
+  - **Test 1 (Single waypoint)**: `getRoute([single])` returned `isStraightLineFallback: false` because the < 2 waypoints early-return constructed a manual `OsrmRouteResult` without the flag. Fix: delegate to `_buildStraightLineFallback()` which always sets the flag.
+  - **Test 2 (Two waypoints)**: CI runners have internet access, so OSRM returned a real road-snapped route with 348 geometry points. Test expected exactly 2 (straight-line). Fix: assert `greaterThanOrEqualTo(2)` to accept both road-snapped and fallback results.
+  - **Test 3 (Empty list)**: Same root cause as Test 1 — manual `OsrmRouteResult` lacked `isStraightLineFallback: true`.
+- **Architectural Rationale**:
+  - All sub-2-waypoint codepaths now go through a single canonical fallback method, eliminating divergent flag/field states.
+  - Tests no longer assume a specific network environment, making them stable on both offline local machines and online CI runners.
+- **Verification**:
+  - `flutter analyze` passed with 0 issues.
 

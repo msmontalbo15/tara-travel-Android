@@ -126,12 +126,7 @@ class OsrmRoutingService {
     CancelToken? cancelToken,
   }) async {
     if (waypoints.length < 2) {
-      return OsrmRouteResult(
-        geometry: List.unmodifiable(waypoints),
-        legs: const [],
-        totalDistanceKm: 0,
-        totalDurationMin: 0,
-      );
+      return _buildStraightLineFallback(waypoints);
     }
 
     final cacheKey = _waypointCacheKey(waypoints);
@@ -368,6 +363,11 @@ class OsrmRoutingService {
       isStraightLineFallback: true,
     );
   }
+
+  /// Exposed for testing fallback calculations directly without network dependencies.
+  @visibleForTesting
+  OsrmRouteResult buildStraightLineFallback(List<LatLng> waypoints) =>
+      _buildStraightLineFallback(waypoints);
 
   // ── Helpers ────────────────────────────────────────────────────────────
 

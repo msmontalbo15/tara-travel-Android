@@ -8,6 +8,7 @@ void main() {
 
     setUp(() {
       service = OsrmRoutingService.instance;
+      service.clearCache();
     });
 
     test('Single waypoint returns minimal route with 0 distance', () async {
@@ -20,7 +21,7 @@ void main() {
       expect(result.isStraightLineFallback, true);
     });
 
-    test('Two waypoints produces straight-line fallback when offline or without mock', () async {
+    test('Two waypoints produces valid route (road-snapped or straight-line fallback)', () async {
       // Manila to Quezon City
       final points = [
         const LatLng(14.5995, 120.9842),
@@ -29,10 +30,25 @@ void main() {
 
       final result = await service.getRoute(points);
 
+      expect(result.geometry.length, greaterThanOrEqualTo(2));
+      expect(result.legs.length, 1);
+      expect(result.totalDistanceKm, greaterThan(5.0));
+      expect(result.totalDurationMin, greaterThan(5.0));
+    });
+
+    test('Straight-line fallback builds direct segment with positive distance', () {
+      final points = [
+        const LatLng(14.5995, 120.9842),
+        const LatLng(14.6760, 121.0437),
+      ];
+
+      final result = service.buildStraightLineFallback(points);
+
       expect(result.geometry.length, 2);
       expect(result.legs.length, 1);
       expect(result.totalDistanceKm, greaterThan(5.0));
       expect(result.totalDurationMin, greaterThan(5.0));
+      expect(result.isStraightLineFallback, true);
     });
 
     test('Multi-stop route calculates cumulative leg distances', () async {
