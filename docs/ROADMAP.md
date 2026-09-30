@@ -39,7 +39,7 @@ This document serves as our compiled repository master plan, organized hierarchi
 | **18** | [Tara Laravel Middleware & SuperAdmin Dashboard (Universal Links, CMS & Ops)](#plan-18-tara-laravel-middleware-superadmin-dashboard-universal-links-cms-ops) | 🟡 **Drafted / Queued** | Web-to-app deep linking gateway, Filament v3 CMS, trip templates, feedback helpdesk & remote config |
 | **19** | [Universal Responsive Layout Engine & Zero-Overflow Architecture](#plan-19-universal-responsive-layout-engine--zero-overflow-architecture) | 🟢 **Complete** | Breakpoints, clamped text scaler, safe padding/insets, zero hardcoded MediaQuery dimensions |
 | **20** | [Chat Announcements Engine & Trip Detail Command Hub](#plan-20-chat-announcements-engine--trip-detail-command-hub) | 🟢 **Complete** | Interactive `TripAnnouncementsCard`, urgent Coral/notice Sunset banners, 1-tap chat jump |
-| **21** | [Unified Firebase & Supabase Cloud Ecosystem (Remote FCM, Crashlytics & Real-Time Sync)](#plan-21-unified-firebase--supabase-cloud-ecosystem-remote-fcm-crashlytics--real-time-sync) | 🟡 **Drafted / Queued** | Dual-cloud architecture: Supabase backend/RLS/storage + Firebase device-wake push (FCM), Crashlytics & telemetry |
+| **21** | [Unified Firebase & Supabase Cloud Ecosystem (Remote FCM, Crashlytics & Real-Time Sync)](#plan-21-unified-firebase--supabase-cloud-ecosystem-remote-fcm-crashlytics--real-time-sync) | 🟢 **Complete** | Dual-cloud architecture: Supabase backend/RLS/storage + Firebase device-wake push (FCM), Crashlytics & telemetry |
 | **22** | [Advanced Convoy Telemetry, Formation Radar & Geofenced Rendezvous](#plan-22-advanced-convoy-telemetry-formation-radar--geofenced-rendezvous) | 🟢 **Complete** | Lead/tail pace radar, individual stop ETAs, auto-arrival geofencing, midpoint gathering & background PiP HUD |
 | **23** | [GCash Number OTP Verification & Verified QR Upload](#plan-23-gcash-number-otp-verification--verified-qr-upload) | 🟡 **Drafted / Queued** | Firebase Phone Auth OTP, smart QR auto-crop & cross-validation, brand QR regeneration |
 
@@ -73,6 +73,7 @@ This document serves as our compiled repository master plan, organized hierarchi
 | **Plan 17** | Supabase App Versioning & OTA Updates | IMP-094 | ✅ Complete | 3-tier update modals, Remote Config, automated CI/CD release pipeline. |
 | **Plan 19** | Universal Responsive Layout Engine | IMP-091 | ✅ Complete | Breakpoints, clamped text scaler, safe padding/insets, zero-overflow. |
 | **Plan 20** | Chat Announcements Engine & Trip Detail Command Hub | commit:6336b46 | ✅ Complete | Interactive `TripAnnouncementsCard`, urgent Coral/notice Sunset banners, 1-tap chat jump. |
+| **Plan 21** | Unified Firebase & Supabase Cloud Ecosystem | IMP-141 | ✅ Complete | Dual-cloud bootstrap (`firebase_core`), FCM remote device wake-up (`FcmService`), Crashlytics error forensics, and Supabase `push-relay` Edge Function. |
 | **Plan 22** | Advanced Convoy Telemetry, Formation Radar & Geofenced Rendezvous | IMP-140 | ✅ Complete | Lead/mid/tail pace radar, per-companion stop ETAs, auto-arrival geofencing, midpoint gathering & floating bubble HUD. |
 
 *Full architectural specifications and schemas for completed plans are preserved in docs/MEMORY.md and docs/IMPLEMENTATION_MEMORY.md.*
@@ -748,7 +749,7 @@ Provide a streamlined, high-visibility communication bridge between Group Chat a
 ---
 
 
-## Plan 21: Unified Firebase & Supabase Cloud Ecosystem (Remote FCM, Crashlytics & Real-Time Sync)
+## Plan 21: Unified Firebase & Supabase Cloud Ecosystem (Remote FCM, Crashlytics & Real-Time Sync) `[COMPLETE — IMP-141]`
 
 ### Goal
 Establish a high-performance, cost-effective dual-cloud bridge between **Supabase** and **Firebase**. Keep Supabase as the authoritative relational database, RLS security boundary, asset storage, and in-app WebSocket engine, while leveraging Firebase at the mobile device edge for remote wake-up push notifications (**Firebase Cloud Messaging / FCM**), uncaught native/Flutter error forensics (**Crashlytics**), and edge performance tracking.

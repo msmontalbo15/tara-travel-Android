@@ -23,6 +23,9 @@ import 'features/chat/chat_screen.dart';
 import 'features/trips/trips_screen.dart';
 import 'features/friends/friends_screen.dart';
 
+import 'package:firebase_core/firebase_core.dart';
+import 'core/services/crashlytics_service.dart';
+import 'core/services/fcm_service.dart';
 import 'core/widgets/auth_gate.dart';
 import 'core/auth/data/secure_session_repository.dart';
 import 'core/security/three_layer_encryption_service.dart';
@@ -52,6 +55,15 @@ void main() async {
   // All secrets (Supabase keys, Google client IDs) are loaded from .env at
   // runtime — zero hardcoded credentials in source code.
   await dotenv.load(fileName: '.env');
+
+  // ── 1.5 Initialise Firebase & Dual-Cloud Ecosystem (Plan 21) ─────────────
+  try {
+    await Firebase.initializeApp();
+    await CrashlyticsService.instance.initialize();
+    await FcmService.instance.initialize();
+  } catch (e) {
+    debugPrint('[Firebase] Dual-cloud initialization notice: $e');
+  }
 
   // ── 2. Initialise Supabase ───────────────────────────────────────────────
   await Supabase.initialize(

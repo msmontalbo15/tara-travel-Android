@@ -223,4 +223,37 @@ class ProfileRepository {
     if (displayName == null || displayName.trim().isEmpty) return '';
     return displayName.trim().split(' ').first;
   }
+
+  // ── FCM DEVICE TOKEN MANAGEMENT ──────────────────────────────────────────
+
+  /// Updates or registers the user's remote device FCM push token in `public.users`.
+  Future<void> updateFcmToken(String userId, String token) async {
+    try {
+      await _supabase.from('users').update({
+        'fcm_token': token,
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('id', userId);
+      debugPrint('[ProfileRepository] FCM token successfully updated for $userId');
+    } on PostgrestException catch (e) {
+      debugPrint('[ProfileRepository] updateFcmToken PostgrestException: ${e.message}');
+    } catch (e) {
+      debugPrint('[ProfileRepository] updateFcmToken error: $e');
+    }
+  }
+
+  /// Clears the user's FCM device token upon sign-out to prevent ghost notifications.
+  Future<void> clearFcmToken(String userId) async {
+    try {
+      await _supabase.from('users').update({
+        'fcm_token': null,
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('id', userId);
+      debugPrint('[ProfileRepository] FCM token cleared for $userId');
+    } on PostgrestException catch (e) {
+      debugPrint('[ProfileRepository] clearFcmToken PostgrestException: ${e.message}');
+    } catch (e) {
+      debugPrint('[ProfileRepository] clearFcmToken error: $e');
+    }
+  }
 }
+

@@ -588,6 +588,15 @@ Client Tier               Storage Tier                Transport Tier
   - Methods: `initialize()`, `getLastViewed(module, tripId)`, `markViewed(module, tripId)`, `clearTrip(tripId)`.
 - **`SupaService.instance`** (`lib/core/services/supa_service.dart`):
   - Low-level direct table operations, device token registration, and presence pings.
+- **`FcmService.instance`** (`lib/core/services/fcm_service.dart`):
+  - Remote push device token retrieval, refresh listener, and persistence to `users.fcm_token`.
+  - Top-level background message isolate handler (`firebaseMessagingBackgroundHandler`).
+  - Foreground message listener bridging to `InAppNotificationManager.post()` with duplicate route suppression.
+  - Background/cold-start notification tap handler delegating to `NotificationRouter.instance.navigateTo()`.
+  - Topic subscription management (`trip_{tripId}`).
+- **`CrashlyticsService.instance`** (`lib/core/services/crashlytics_service.dart`):
+  - Fatal framework error capture via `FlutterError.onError` and asynchronous platform zone error capture via `PlatformDispatcher.instance.onError`.
+  - Contextual diagnostic telemetry keys (`setCustomKey`), user ID mapping (`setUserIdentifier`), and forensic logs (`log`).
 
 ---
 
@@ -1433,6 +1442,17 @@ Integrates a dual-tier notification framework (Plan 15) and floating convoy mini
   - Companion distance telemetry radar (closest tail).
   - Quick action shortcuts to "Log Toll/Gas" (`expenses`) and "Open Map" (`navigation`).
 - **Surface Triggers**: Accessible via "Pop out Convoy Bubble" in `LiveNavigationScreen` header and "Pop out Bubble" in `TripDetailScreen` popup menu.
+
+### 34.4 Dual-Cloud Remote Push & Crash Telemetry (Plan 21 / IMP-141)
+- **Dual-Cloud Division of Labor**:
+  - **Supabase**: Primary database, RLS security boundary, asset storage, real-time WebSocket channels (`trip:location:{tripId}`).
+  - **Firebase**: Native edge device wake-up (`firebase_messaging`), uncaught exception forensics (`firebase_crashlytics`), and Phone Auth foundation (`firebase_auth`).
+- **Remote Push Relay (`supabase/functions/push-relay/index.ts`)**:
+  - Dispatches high-priority FCM HTTP v1 notifications using server keys to user device tokens (`fcm_token` column on `public.users`) or trip topics (`/topics/trip_{tripId}`).
+  - Inserts notification records into `public.notifications` table for unified in-app notification center history.
+- **Client Processing Pipeline**:
+  - **Terminated / Background**: FCM wakes Android/iOS OS; user tap passes standardized `NotificationPayload` to `NotificationRouter.instance.navigateTo(payload)`.
+  - **Foreground**: `FcmService` translates remote messages into `InAppNotificationItem` and calls `InAppNotificationManager.post(item)` for non-disruptive floating toast banners (suppressed if the user is already on the target screen).
 
 ---
 

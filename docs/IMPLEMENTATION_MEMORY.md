@@ -99,6 +99,7 @@
 | **`IMP-136`** | 2026-09-27 | Meet-up & Logistics / Meet-up Assembly, Smart Countdown & Departure Detection (Plan 11) | Auto-provisioned Day 1 Stop 0 ("Meet-up & Assembly"), transportMeta grace period & assembly time sync, mounted SmartDepartureAdvisoryCard with live countdown gauge and headcount roster on TripDetailScreen, and added meet-up editor to EditTripSheet. |
 | **`IMP-139`** | 2026-09-29 | CI / OSRM Routing Service Test Stabilization | Fixed 3 CI test failures in `osrm_routing_service_test.dart` by unifying `getRoute()` < 2 waypoints path through `_buildStraightLineFallback`, making assertions environment-agnostic (online OSRM vs offline fallback), and adding deterministic `buildStraightLineFallback` test. |
 | **`IMP-140`** | 2026-09-30 | Navigation / Advanced Convoy Telemetry & Formation Radar (Plan 22) | Convoy formation radar with lead/mid/tail role classification, per-companion stop ETAs & distance-to-waypoint, automated 150m arrival & 200m departure geofencing, centroid-based "Meet Halfway" rendezvous, convoy alert banners, floating bubble HUD integration, and unit tests. |
+| **`IMP-141`** | 2026-10-01 | Core & Cloud / Unified Firebase & Supabase Cloud Ecosystem (Plan 21) | Dual-cloud bridge (`firebase_core`, `firebase_messaging`, `firebase_crashlytics`, `firebase_auth`), `FcmService` remote device wake-up & background isolate handler, `CrashlyticsService` forensic exception capture, `users.fcm_token` migration, and `push-relay` Edge Function. |
 
 ---
 
@@ -3297,4 +3298,32 @@
 - **Verification**:
   - `flutter analyze` passed with 0 issues across all modified files.
   - Unit tests authored (Windows native compiler limitation prevented local test execution; tests validated via static analysis and code review).
+
+### `IMP-141` · Unified Firebase & Supabase Cloud Ecosystem (Plan 21)
+- **Date**: October 01, 2026
+- **Target Files**:
+  - `pubspec.yaml` [MODIFIED — Added `firebase_core: ^4.15.0`, `firebase_messaging: ^16.7.0`, `firebase_crashlytics: ^5.4.0`, `firebase_auth: ^6.7.0`]
+  - `android/settings.gradle.kts` [MODIFIED — Added `com.google.firebase.crashlytics` plugin declaration]
+  - `android/app/build.gradle.kts` [MODIFIED — Applied `com.google.firebase.crashlytics` plugin]
+  - `android/app/src/main/AndroidManifest.xml` [MODIFIED — Added default FCM notification channel and icon metadata]
+  - `lib/main.dart` [MODIFIED — Added dual-cloud Firebase bootstrap, Crashlytics initialization, and FcmService startup]
+  - `lib/core/services/crashlytics_service.dart` [NEW — Singleton error forensics service capturing fatal framework errors, platform zone errors, custom diagnostic keys, breadcrumb logs, and user identification]
+  - `lib/core/services/fcm_service.dart` [NEW — Top-level background isolate handler (`firebaseMessagingBackgroundHandler`), token generation/refresh listener, foreground in-app banner dispatch, and background/terminated tap deep-link routing]
+  - `lib/core/services/firebase_notification_service.dart` [MODIFIED — Refactored legacy facade to delegate to `FcmService.instance`]
+  - `lib/core/services/in_app_notification_manager.dart` [MODIFIED — Added static `post(item)` bridge allowing non-UI singleton services to trigger in-app floating toast banners]
+  - `lib/core/repositories/profile_repository.dart` [MODIFIED — Added `updateFcmToken(userId, token)` and `clearFcmToken(userId)` methods syncing tokens to `public.users`]
+  - `supabase/functions/push-relay/index.ts` [NEW — Supabase Edge Function to dispatch remote wake-up notifications to device FCM tokens and trip topics via FCM HTTP v1]
+  - `supabase/migrations/028_fcm_device_tokens.sql` [NEW — Migration adding `fcm_token` column and `idx_users_fcm_token` partial index to `public.users`]
+  - `test/services/fcm_service_test.dart` [NEW — Unit tests for `NotificationPayload` chat/expense/convoy parsing, duplicate route suppression, and initial service safety]
+  - `test/all_tests.dart` [MODIFIED — Registered `fcm_service_test.dart` in unified test suite]
+  - `docs/ROADMAP.md` [MODIFIED — Marked Plan 21 complete with `IMP-141` tag]
+- **Scope & Objectives**:
+  - **Dual-Cloud Architecture**: Keeps Supabase as the primary relational database, RLS security boundary, asset storage, and in-app WebSocket engine, while leveraging Firebase at the device edge for remote wake-up push (`firebase_messaging`), uncaught native/Flutter error forensics (`firebase_crashlytics`), and Phone Auth foundation (`firebase_auth`).
+  - **Remote Device Wake-Up**: When the device is locked or the app is terminated, FCM delivers high-priority remote data packets that wake Android and route via `NotificationRouter`.
+  - **Foreground Toast Integration**: Foreground remote notifications bridge through `InAppNotificationManager.post()` into `InAppNotificationOverlay` with duplicate suppression if the user is already viewing the target screen.
+  - **Error Forensics & Telemetry**: Captures unhandled Dart zone errors and native Android crashes with custom context keys (`active_trip_id`, `connectivity_status`).
+- **Verification**:
+  - `flutter analyze` completed with 0 errors, 0 warnings, 0 infos.
+  - Unit tests registered in `test/all_tests.dart`.
+
 

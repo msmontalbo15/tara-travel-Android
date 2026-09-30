@@ -72,13 +72,29 @@ final inAppNotificationProvider =
 
 /// Manager for in-app floating toast banners with queue, timers, and suppression.
 class InAppNotificationManager extends Notifier<InAppNotificationState> {
+  static InAppNotificationManager? _currentInstance;
+
+  /// Globally accessible dispatcher allowing non-UI services (FCM, geofencing)
+  /// to post floating banners directly into the active UI overlay.
+  static void post(InAppNotificationItem item) {
+    if (_currentInstance != null) {
+      _currentInstance!.show(item);
+    } else {
+      debugPrint('[InAppNotificationManager] No active notifier instance registered to display notification.');
+    }
+  }
+
   final Queue<InAppNotificationItem> _queue = Queue<InAppNotificationItem>();
   Timer? _dismissTimer;
 
   @override
   InAppNotificationState build() {
+    _currentInstance = this;
     ref.onDispose(() {
       _dismissTimer?.cancel();
+      if (_currentInstance == this) {
+        _currentInstance = null;
+      }
     });
     return const InAppNotificationState();
   }

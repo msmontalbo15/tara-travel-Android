@@ -8,6 +8,8 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
     // Google Sign-In support via google-services.json
     id("com.google.gms.google-services")
+    // Firebase Crashlytics native crash reporting
+    id("com.google.firebase.crashlytics")
 }
 
 // ── Signing Config (key.properties or environment variables) ────────
