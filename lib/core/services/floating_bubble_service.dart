@@ -12,6 +12,9 @@ class FloatingBubbleState {
   final double? nextStopDistanceKm;
   final double? closestCompanionDistanceKm;
   final String? closestCompanionName;
+  final String? convoyRole;
+  final double? convoySpreadKm;
+  final String? convoyAlertPrompt;
 
   const FloatingBubbleState({
     this.isVisible = false,
@@ -23,6 +26,9 @@ class FloatingBubbleState {
     this.nextStopDistanceKm,
     this.closestCompanionDistanceKm,
     this.closestCompanionName,
+    this.convoyRole,
+    this.convoySpreadKm,
+    this.convoyAlertPrompt,
   });
 
   FloatingBubbleState copyWith({
@@ -35,6 +41,10 @@ class FloatingBubbleState {
     double? nextStopDistanceKm,
     double? closestCompanionDistanceKm,
     String? closestCompanionName,
+    String? convoyRole,
+    double? convoySpreadKm,
+    String? convoyAlertPrompt,
+    bool clearConvoyAlertPrompt = false,
   }) {
     return FloatingBubbleState(
       isVisible: isVisible ?? this.isVisible,
@@ -47,6 +57,11 @@ class FloatingBubbleState {
       closestCompanionDistanceKm:
           closestCompanionDistanceKm ?? this.closestCompanionDistanceKm,
       closestCompanionName: closestCompanionName ?? this.closestCompanionName,
+      convoyRole: convoyRole ?? this.convoyRole,
+      convoySpreadKm: convoySpreadKm ?? this.convoySpreadKm,
+      convoyAlertPrompt: clearConvoyAlertPrompt
+          ? null
+          : (convoyAlertPrompt ?? this.convoyAlertPrompt),
     );
   }
 }
@@ -76,6 +91,9 @@ class FloatingBubbleNotifier extends Notifier<FloatingBubbleState> {
     double? nextStopDistanceKm,
     double? closestCompanionDistanceKm,
     String? closestCompanionName,
+    String? convoyRole,
+    double? convoySpreadKm,
+    String? convoyAlertPrompt,
   }) {
     state = state.copyWith(
       isVisible: true,
@@ -87,6 +105,36 @@ class FloatingBubbleNotifier extends Notifier<FloatingBubbleState> {
       closestCompanionDistanceKm:
           closestCompanionDistanceKm ?? state.closestCompanionDistanceKm,
       closestCompanionName: closestCompanionName ?? state.closestCompanionName,
+      convoyRole: convoyRole ?? state.convoyRole,
+      convoySpreadKm: convoySpreadKm ?? state.convoySpreadKm,
+      convoyAlertPrompt: convoyAlertPrompt ?? state.convoyAlertPrompt,
+    );
+  }
+
+  /// Updates live convoy telemetry without affecting open/closed or position state
+  void updateConvoyTelemetry({
+    String? nextStopName,
+    String? nextStopEta,
+    double? nextStopDistanceKm,
+    double? closestCompanionDistanceKm,
+    String? closestCompanionName,
+    String? convoyRole,
+    double? convoySpreadKm,
+    String? convoyAlertPrompt,
+    bool clearConvoyAlertPrompt = false,
+  }) {
+    if (!state.isVisible) return;
+    state = state.copyWith(
+      nextStopName: nextStopName ?? state.nextStopName,
+      nextStopEta: nextStopEta ?? state.nextStopEta,
+      nextStopDistanceKm: nextStopDistanceKm ?? state.nextStopDistanceKm,
+      closestCompanionDistanceKm:
+          closestCompanionDistanceKm ?? state.closestCompanionDistanceKm,
+      closestCompanionName: closestCompanionName ?? state.closestCompanionName,
+      convoyRole: convoyRole ?? state.convoyRole,
+      convoySpreadKm: convoySpreadKm ?? state.convoySpreadKm,
+      convoyAlertPrompt: convoyAlertPrompt,
+      clearConvoyAlertPrompt: clearConvoyAlertPrompt,
     );
   }
 

@@ -35,11 +35,13 @@ This document serves as our compiled repository master plan, organized hierarchi
 | **14** | [Day Map Intelligent Route Optimization, OSRM Road Snapping & Offline Map Tile Cache](#plan-14-day-map-intelligent-route-optimization-osrm-road-snapping--offline-map-tile-cache) | 🟢 **Complete** | Street-network OSRM routing, offline tile caching, best order optimization, arrival geofence |
 | **15** | [Comprehensive Mobile Notifications Architecture (Push, In-App Banners & Deep-Link Routing)](#plan-15-comprehensive-mobile-notifications-architecture-push-in-app-banners-deep-link-routing) | 🟢 **Complete** | In-app Dynamic Island banners, background Heads-Up floating alerts, local alarms, FCM push & deep routing |
 | **16** | [Gemini Embedded AI Travel Copilot & Assistant](#plan-16-gemini-embedded-ai-travel-copilot-assistant) | 🟢 **Complete** | Natural language trip planner, smart itinerary recommendations, budget optimization & packing generator |
-| **17** | [Supabase & Middleware App Versioning & OTA Updates](#plan-17-supabase-middleware-app-versioning-ota-updates) | 🟡 **Drafted / Queued** | Version gatekeeper, Shorebird OTA code push, Supabase storage APK download & force/soft update dialogs |
+| **17** | [Supabase & Middleware App Versioning & OTA Updates](#plan-17-supabase-app-versioning-and-ota-updates) | 🟢 **Complete** | Version gatekeeper, Shorebird OTA code push, Supabase storage APK download & force/soft update dialogs |
 | **18** | [Tara Laravel Middleware & SuperAdmin Dashboard (Universal Links, CMS & Ops)](#plan-18-tara-laravel-middleware-superadmin-dashboard-universal-links-cms-ops) | 🟡 **Drafted / Queued** | Web-to-app deep linking gateway, Filament v3 CMS, trip templates, feedback helpdesk & remote config |
 | **19** | [Universal Responsive Layout Engine & Zero-Overflow Architecture](#plan-19-universal-responsive-layout-engine--zero-overflow-architecture) | 🟢 **Complete** | Breakpoints, clamped text scaler, safe padding/insets, zero hardcoded MediaQuery dimensions |
+| **20** | [Chat Announcements Engine & Trip Detail Command Hub](#plan-20-chat-announcements-engine--trip-detail-command-hub) | 🟢 **Complete** | Interactive `TripAnnouncementsCard`, urgent Coral/notice Sunset banners, 1-tap chat jump |
 | **21** | [Unified Firebase & Supabase Cloud Ecosystem (Remote FCM, Crashlytics & Real-Time Sync)](#plan-21-unified-firebase--supabase-cloud-ecosystem-remote-fcm-crashlytics--real-time-sync) | 🟡 **Drafted / Queued** | Dual-cloud architecture: Supabase backend/RLS/storage + Firebase device-wake push (FCM), Crashlytics & telemetry |
-| **22** | [Advanced Convoy Telemetry, Formation Radar & Geofenced Rendezvous](#plan-22-advanced-convoy-telemetry-formation-radar--geofenced-rendezvous) | 🟡 **Drafted / Queued** | Lead/tail pace radar, individual stop ETAs, auto-arrival geofencing, midpoint gathering & background PiP HUD |
+| **22** | [Advanced Convoy Telemetry, Formation Radar & Geofenced Rendezvous](#plan-22-advanced-convoy-telemetry-formation-radar--geofenced-rendezvous) | 🟢 **Complete** | Lead/tail pace radar, individual stop ETAs, auto-arrival geofencing, midpoint gathering & background PiP HUD |
+| **23** | [GCash Number OTP Verification & Verified QR Upload](#plan-23-gcash-number-otp-verification--verified-qr-upload) | 🟡 **Drafted / Queued** | Firebase Phone Auth OTP, smart QR auto-crop & cross-validation, brand QR regeneration |
 
 ### 📱 Screen-by-Screen & Batching Index
 - [Screen-by-Screen Feature Matrix & Implementation Clusters](#-screen-by-screen-feature-matrix--implementation-clusters)
@@ -70,6 +72,8 @@ This document serves as our compiled repository master plan, organized hierarchi
 | **Plan 16** | Gemini Embedded AI Travel Copilot & Assistant | IMP-127 | ✅ Complete | Conversational trip planner, smart itinerary recommendations, budget optimization & packing generator. |
 | **Plan 17** | Supabase App Versioning & OTA Updates | IMP-094 | ✅ Complete | 3-tier update modals, Remote Config, automated CI/CD release pipeline. |
 | **Plan 19** | Universal Responsive Layout Engine | IMP-091 | ✅ Complete | Breakpoints, clamped text scaler, safe padding/insets, zero-overflow. |
+| **Plan 20** | Chat Announcements Engine & Trip Detail Command Hub | commit:6336b46 | ✅ Complete | Interactive `TripAnnouncementsCard`, urgent Coral/notice Sunset banners, 1-tap chat jump. |
+| **Plan 22** | Advanced Convoy Telemetry, Formation Radar & Geofenced Rendezvous | IMP-140 | ✅ Complete | Lead/mid/tail pace radar, per-companion stop ETAs, auto-arrival geofencing, midpoint gathering & floating bubble HUD. |
 
 *Full architectural specifications and schemas for completed plans are preserved in docs/MEMORY.md and docs/IMPLEMENTATION_MEMORY.md.*
 
@@ -707,7 +711,7 @@ Build a lightweight, production-grade **Laravel 11 + Filament v3** web middlewar
 ---
 
 
-## Plan 20: Chat Announcements Engine & Trip Detail Command Hub
+## Plan 20: Chat Announcements Engine & Trip Detail Command Hub `[COMPLETE — commit:6336b46]`
 
 ### Goal
 Provide a streamlined, high-visibility communication bridge between Group Chat and the Trip Detail command screen. Allows organizers and travelers to post high-priority announcements, pin critical updates, and automatically stream them to an interactive announcement card on `TripDetailScreen` (`/trip-detail`) with 1-tap chat jump and deep linking.
@@ -819,7 +823,7 @@ flowchart TD
 ---
 
 
-## Plan 22: Advanced Convoy Telemetry, Formation Radar & Geofenced Rendezvous
+## Plan 22: Advanced Convoy Telemetry, Formation Radar & Geofenced Rendezvous `[COMPLETE — IMP-140]`
 
 ### Goal
 Deepen Tara Travel's real-time location sharing into an intelligent, cooperative convoy and safety radar. Bridge live telemetry with active itinerary milestones, automated geofencing check-ins, formation pace tracking (lead/tail stragglers), mid-journey rendezvous routing, and seamless background PiP navigation overlays.

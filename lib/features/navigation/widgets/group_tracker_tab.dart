@@ -9,6 +9,7 @@ import '../../../core/theme/app_responsive.dart';
 import '../models/navigation_models.dart';
 import '../providers/navigation_provider.dart';
 import 'convoy_alert_banner.dart';
+import 'convoy_radar_card.dart';
 import 'navigate_to_member_sheet.dart';
 import 'shared/member_avatar.dart';
 import 'sos_emergency_modal.dart';
@@ -27,6 +28,10 @@ class GroupTrackerTab extends ConsumerWidget {
         children: [
           // ── Mini map ────────────────────────────────────────
           _MiniMap(members: nav.members),
+          const SizedBox(height: 12),
+
+          // ── Convoy Formation Radar & Live Arrival Board ─────
+          const ConvoyRadarCard(isDark: false),
           const SizedBox(height: 12),
 
           // ── Section label ───────────────────────────────────

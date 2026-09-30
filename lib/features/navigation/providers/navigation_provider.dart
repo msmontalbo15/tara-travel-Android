@@ -7,6 +7,7 @@ import '../../../core/models/trip_model.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/profile_provider.dart';
 import '../../../core/providers/trip_provider.dart';
+import '../../../core/services/floating_bubble_service.dart';
 import '../../../core/services/location_broadcast_service.dart';
 import '../models/navigation_models.dart';
 
@@ -197,14 +198,53 @@ class NavigationNotifier extends Notifier<NavigationState> {
 
     // Recalculate distance to destination
     double distKm = state.destination.distanceKm;
-    if (state.destination.latitude != null && state.destination.longitude != null) {
-      final meters = Geolocator.distanceBetween(
-        pos.latitude,
-        pos.longitude,
-        state.destination.latitude!,
-        state.destination.longitude!,
+    final destLat = state.destination.latitude;
+    final destLng = state.destination.longitude;
+
+    bool arrivedTriggered = state.isArrived;
+    bool departedTriggered = state.hasDepartedStop;
+
+    if (destLat != null && destLng != null && destLat != 0.0 && destLng != 0.0) {
+      final stopInfo = LocationBroadcastService.calculateStopEta(
+        memberLat: pos.latitude,
+        memberLng: pos.longitude,
+        destLat: destLat,
+        destLng: destLng,
+        speedKmh: pos.speed * 3.6,
       );
-      distKm = meters / 1000.0;
+      distKm = stopInfo.distanceKm;
+
+      // 150m automated arrival geofence
+      if (!state.isArrived &&
+          LocationBroadcastService.isWithinArrivalGeofence(
+            userLat: pos.latitude,
+            userLng: pos.longitude,
+            destLat: destLat,
+            destLng: destLng,
+          )) {
+        arrivedTriggered = true;
+        updatedMembers[myIdx] = updatedMembers[myIdx].copyWith(
+          status: MemberStatus.arrived,
+          arrivedAt: '${DateTime.now().hour.toString().padLeft(2, '0')}:${DateTime.now().minute.toString().padLeft(2, '0')}',
+        );
+        HapticFeedback.heavyImpact();
+      }
+
+      // 200m automated departure geofence at > 15 km/h
+      if (state.isArrived &&
+          LocationBroadcastService.hasDepartedGeofence(
+            userLat: pos.latitude,
+            userLng: pos.longitude,
+            destLat: destLat,
+            destLng: destLng,
+            speedKmh: pos.speed * 3.6,
+          )) {
+        arrivedTriggered = false;
+        departedTriggered = true;
+        updatedMembers[myIdx] = updatedMembers[myIdx].copyWith(
+          status: MemberStatus.enRoute,
+        );
+      }
     }
 
     final updatedDest = NavDestination(
@@ -223,8 +263,13 @@ class NavigationNotifier extends Notifier<NavigationState> {
     state = state.copyWith(
       members: updatedMembers,
       destination: updatedDest,
+      isArrived: arrivedTriggered,
+      hasDepartedStop: departedTriggered,
+      lastDepartedStopName: departedTriggered ? state.destination.name : state.lastDepartedStopName,
       groupSpreadKm: _calculateGroupSpread(updatedMembers),
     );
+
+    _evaluateConvoyAndProximity(updatedMembers);
   }
 
   static double _calculateGroupSpread(List<NavMember> members) {
@@ -268,13 +313,44 @@ class NavigationNotifier extends Notifier<NavigationState> {
   void _evaluateConvoyAndProximity(List<NavMember> members) {
     final alerts = <ConvoyAlert>[];
     final foundNearby = Set<String>.from(state.nearbyFoundMembers);
+    final destLat = state.destination.latitude ?? 14.5995;
+    final destLng = state.destination.longitude ?? 120.9842;
 
-    for (final m in members) {
+    // 1. Classify Convoy Roles (Lead, Mid, Tail)
+    final roles = LocationBroadcastService.classifyConvoyRoles(
+      members: members,
+      destLat: destLat,
+      destLng: destLng,
+    );
+
+    // 2. Compute Stop ETAs & update roles for each member
+    final enrichedMembers = members.map((m) {
+      var updated = m.copyWith(convoyRole: roles[m.id] ?? ConvoyRole.mid);
+      if (m.latitude != null && m.longitude != null && destLat != 0.0 && destLng != 0.0) {
+        final stopMetrics = LocationBroadcastService.calculateStopEta(
+          memberLat: m.latitude!,
+          memberLng: m.longitude!,
+          destLat: destLat,
+          destLng: destLng,
+          speedKmh: m.speedKmh,
+        );
+        updated = updated.copyWith(
+          distanceToStopKm: stopMetrics.distanceKm,
+          etaToStop: stopMetrics.eta,
+          durationToStopMin: stopMetrics.durationMin,
+        );
+      }
+      return updated;
+    }).toList();
+
+    String? proactivePrompt;
+
+    for (final m in enrichedMembers) {
       if (m.isMe) continue;
       final distKm = m.distanceKm?.abs() ?? 0.0;
 
       // Convoy break alert threshold > 2.0 km
-      if (distKm > 2.0) {
+      if (distKm > 2.0 || m.isStraggler) {
         alerts.add(ConvoyAlert(
           memberId: m.id,
           memberName: m.name,
@@ -282,6 +358,9 @@ class NavigationNotifier extends Notifier<NavigationState> {
           estimatedMinutesBehind: (distKm / 0.4).round(),
           timestamp: DateTime.now(),
         ));
+
+        proactivePrompt ??=
+            '${m.name} is ${distKm.toStringAsFixed(1)} km behind — suggest a quick pit stop?';
       }
 
       // Proximity radar threshold <= 30m (0.03 km)
@@ -291,10 +370,35 @@ class NavigationNotifier extends Notifier<NavigationState> {
       }
     }
 
+    final spreadKm = _calculateGroupSpread(enrichedMembers);
+
+    // 3. Sync to Floating Bubble
+    final companionsWithDist = enrichedMembers
+        .where((m) => !m.isMe && m.distanceKm != null)
+        .toList()
+      ..sort((a, b) => a.distanceKm!.abs().compareTo(b.distanceKm!.abs()));
+    final nearest = companionsWithDist.isNotEmpty ? companionsWithDist.first : null;
+    final myMember = enrichedMembers.firstWhere((m) => m.isMe, orElse: () => enrichedMembers.first);
+
+    ref.read(floatingBubbleProvider.notifier).updateConvoyTelemetry(
+          nextStopName: state.destination.name,
+          nextStopEta: state.destination.eta,
+          nextStopDistanceKm: state.destination.distanceKm,
+          closestCompanionDistanceKm: nearest?.distanceKm?.abs(),
+          closestCompanionName: nearest?.name,
+          convoyRole: myMember.convoyRole.name.toUpperCase(),
+          convoySpreadKm: spreadKm,
+          convoyAlertPrompt: proactivePrompt,
+          clearConvoyAlertPrompt: proactivePrompt == null,
+        );
+
     state = state.copyWith(
+      members: enrichedMembers,
       convoyAlerts: alerts,
+      convoyPrompt: proactivePrompt,
+      clearConvoyPrompt: proactivePrompt == null,
       nearbyFoundMembers: foundNearby,
-      groupSpreadKm: _calculateGroupSpread(members),
+      groupSpreadKm: spreadKm,
     );
   }
 
@@ -328,6 +432,7 @@ class NavigationNotifier extends Notifier<NavigationState> {
     state = state.copyWith(
       activeMemberRoute: member,
       clearMeetHalfwayPoint: true,
+      clearMeetHalfwayCoord: true,
       currentTurn: TurnInstruction(
         distanceLabel: 'Head toward ${member.name}',
         instruction: 'Follow route to ${member.name} (${member.distanceLabel ?? 'En route'})',
@@ -341,6 +446,7 @@ class NavigationNotifier extends Notifier<NavigationState> {
     state = state.copyWith(
       clearActiveMemberRoute: true,
       clearMeetHalfwayPoint: true,
+      clearMeetHalfwayCoord: true,
       currentTurn: TurnInstruction(
         distanceLabel: state.destination.distanceKm < 1.0
             ? 'In ${(state.destination.distanceKm * 1000).toInt()} m'
@@ -352,17 +458,30 @@ class NavigationNotifier extends Notifier<NavigationState> {
   }
 
   void computeMeetHalfway(NavMember member) {
-    // Geographic or normalized midpoint
+    // Geographic and normalized midpoint
     final myPos = state.members.firstWhere((m) => m.isMe, orElse: () => state.members.first);
     final midX = (myPos.mapPosition.dx + member.mapPosition.dx) / 2.0;
     final midY = (myPos.mapPosition.dy + member.mapPosition.dy) / 2.0;
     final halfwayOffset = Offset(midX, midY);
+
+    double? midLat;
+    double? midLng;
+    if (myPos.latitude != null &&
+        myPos.longitude != null &&
+        member.latitude != null &&
+        member.longitude != null) {
+      midLat = (myPos.latitude! + member.latitude!) / 2.0;
+      midLng = (myPos.longitude! + member.longitude!) / 2.0;
+    }
 
     final midDistKm = ((member.distanceKm?.abs() ?? 2.0) / 2.0);
 
     state = state.copyWith(
       activeMemberRoute: member,
       meetHalfwayPoint: halfwayOffset,
+      meetHalfwayLat: midLat,
+      meetHalfwayLng: midLng,
+      meetHalfwayTitle: 'Midpoint Rendezvous with ${member.name}',
       currentTurn: TurnInstruction(
         distanceLabel: 'Meet Halfway with ${member.name}',
         instruction: 'Proceed to mutual midpoint rendezvous (~${(midDistKm * 1000).toInt()} m away)',
@@ -370,6 +489,74 @@ class NavigationNotifier extends Notifier<NavigationState> {
       ),
     );
     HapticFeedback.mediumImpact();
+  }
+
+  /// Computes the geographical centroid of all online members (Midpoint Gatherer)
+  void computeGroupCentroidRendezvous({List<String>? selectedMemberIds}) {
+    final activeMembers = state.members.where((m) {
+      if (selectedMemberIds != null && selectedMemberIds.isNotEmpty) {
+        return selectedMemberIds.contains(m.id) &&
+            m.latitude != null &&
+            m.longitude != null;
+      }
+      return m.latitude != null &&
+          m.longitude != null &&
+          m.status != MemberStatus.offline;
+    }).toList();
+
+    if (activeMembers.isEmpty) return;
+
+    final points = activeMembers
+        .map((m) => (lat: m.latitude!, lng: m.longitude!))
+        .toList();
+
+    final centroid = LocationBroadcastService.calculateCentroid(points);
+    if (centroid == null) return;
+
+    final myPos = state.members.firstWhere((m) => m.isMe, orElse: () => state.members.first);
+    double myDistToCentroidKm = 0.0;
+    if (myPos.latitude != null && myPos.longitude != null) {
+      myDistToCentroidKm = Geolocator.distanceBetween(
+            myPos.latitude!,
+            myPos.longitude!,
+            centroid.lat,
+            centroid.lng,
+          ) /
+          1000.0;
+    }
+
+    state = state.copyWith(
+      meetHalfwayLat: centroid.lat,
+      meetHalfwayLng: centroid.lng,
+      meetHalfwayTitle: 'Squad Rendezvous Centroid',
+      clearActiveMemberRoute: true,
+      currentTurn: TurnInstruction(
+        distanceLabel:
+            'Rendezvous Centroid (${myDistToCentroidKm < 1.0 ? "${(myDistToCentroidKm * 1000).toInt()} m" : "${myDistToCentroidKm.toStringAsFixed(1)} km"})',
+        instruction:
+            'Head towards the shared centroid rendezvous point for ${activeMembers.length} travelers',
+        kmLeft: myDistToCentroidKm,
+      ),
+    );
+    HapticFeedback.mediumImpact();
+  }
+
+  void cancelRendezvous() {
+    state = state.copyWith(
+      clearMeetHalfwayPoint: true,
+      clearMeetHalfwayCoord: true,
+      currentTurn: TurnInstruction(
+        distanceLabel: state.destination.distanceKm < 1.0
+            ? 'In ${(state.destination.distanceKm * 1000).toInt()} m'
+            : 'In ${state.destination.distanceKm.toStringAsFixed(1)} km',
+        instruction: 'Resume route toward ${state.destination.name}',
+        kmLeft: state.destination.distanceKm,
+      ),
+    );
+  }
+
+  void dismissConvoyPrompt() {
+    state = state.copyWith(clearConvoyPrompt: true);
   }
 
   // ── Privacy & Battery ──────────────────────────────────────────────────────

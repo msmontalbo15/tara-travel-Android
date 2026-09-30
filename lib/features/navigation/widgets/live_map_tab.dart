@@ -11,6 +11,8 @@ import '../../../core/theme/app_colors.dart';
 import '../models/navigation_models.dart';
 import '../providers/navigation_provider.dart';
 import 'convoy_alert_banner.dart';
+import 'convoy_radar_card.dart';
+import 'meet_halfway_sheet.dart';
 import 'navigate_to_member_sheet.dart';
 import 'privacy_control_sheet.dart';
 import 'sos_emergency_modal.dart';
@@ -126,7 +128,9 @@ class _LiveMapTabState extends ConsumerState<LiveMapTab> {
     );
 
     final LatLng targetPoint;
-    if (nav.activeMemberRoute != null &&
+    if (nav.meetHalfwayLat != null && nav.meetHalfwayLng != null) {
+      targetPoint = LatLng(nav.meetHalfwayLat!, nav.meetHalfwayLng!);
+    } else if (nav.activeMemberRoute != null &&
         nav.activeMemberRoute!.latitude != null &&
         nav.activeMemberRoute!.longitude != null) {
       targetPoint = LatLng(
@@ -177,7 +181,10 @@ class _LiveMapTabState extends ConsumerState<LiveMapTab> {
                         // Ambient glow stroke
                         Polyline(
                           points: displayRoute,
-                          color: AppColors.primary.withValues(alpha: 0.35),
+                          color: (nav.meetHalfwayLat != null
+                                  ? AppColors.amber
+                                  : AppColors.primary)
+                              .withValues(alpha: 0.35),
                           strokeWidth: 9,
                           strokeCap: StrokeCap.round,
                           strokeJoin: StrokeJoin.round,
@@ -185,7 +192,9 @@ class _LiveMapTabState extends ConsumerState<LiveMapTab> {
                         // Sharp inner route line
                         Polyline(
                           points: displayRoute,
-                          color: AppColors.primary,
+                          color: nav.meetHalfwayLat != null
+                              ? AppColors.amber
+                              : AppColors.primary,
                           strokeWidth: 4.5,
                           strokeCap: StrokeCap.round,
                           strokeJoin: StrokeJoin.round,
@@ -208,7 +217,19 @@ class _LiveMapTabState extends ConsumerState<LiveMapTab> {
                         ),
                       ),
 
-                      // 2. Active SOS Panic Marker (if active)
+                      // 2. Rendezvous Centroid Marker (if active)
+                      if (nav.meetHalfwayLat != null && nav.meetHalfwayLng != null)
+                        Marker(
+                          point: LatLng(nav.meetHalfwayLat!, nav.meetHalfwayLng!),
+                          width: 140,
+                          height: 50,
+                          alignment: Alignment.topCenter,
+                          child: _RendezvousMarker(
+                            title: nav.meetHalfwayTitle ?? 'Squad Rendezvous',
+                          ),
+                        ),
+
+                      // 3. Active SOS Panic Marker (if active)
                       if (nav.activeSos != null)
                         Marker(
                           point: LatLng(nav.activeSos!.lat, nav.activeSos!.lng),
@@ -217,7 +238,7 @@ class _LiveMapTabState extends ConsumerState<LiveMapTab> {
                           child: _RealSosMarker(beacon: nav.activeSos!),
                         ),
 
-                      // 3. Companion Markers (from real Supabase members)
+                      // 4. Companion Markers (from real Supabase members)
                       ...nav.members.where((m) => !m.isMe).map((m) {
                         final lat = m.latitude ?? (myLatLng.latitude + (m.id.hashCode % 100 - 50) * 0.0003);
                         final lng = m.longitude ?? (myLatLng.longitude + (m.id.hashCode % 90 - 45) * 0.0003);
@@ -332,6 +353,33 @@ class _LiveMapTabState extends ConsumerState<LiveMapTab> {
                         ),
                       ),
                     ],
+                    if (nav.meetHalfwayLat != null && nav.meetHalfwayLng != null) ...[
+                      const SizedBox(height: 6),
+                      _MapBadge(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.handshake_rounded,
+                                color: AppColors.amber, size: 12),
+                            const SizedBox(width: 5),
+                            Text(
+                              nav.meetHalfwayTitle ?? 'Squad Rendezvous',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            GestureDetector(
+                              onTap: notifier.cancelRendezvous,
+                              child: const Icon(Icons.close_rounded,
+                                  color: Colors.white70, size: 14),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -360,6 +408,37 @@ class _LiveMapTabState extends ConsumerState<LiveMapTab> {
                       child: const _MapControl(
                         icon: Icons.fullscreen_rounded,
                         color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    // Convoy Formation Radar
+                    GestureDetector(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        showModalBottomSheet(
+                          context: context,
+                          backgroundColor: Colors.transparent,
+                          isScrollControlled: true,
+                          builder: (_) => const Padding(
+                            padding: EdgeInsets.only(top: 40),
+                            child: SingleChildScrollView(
+                              child: ConvoyRadarCard(isDark: false),
+                            ),
+                          ),
+                        );
+                      },
+                      child: const _MapControl(
+                        icon: Icons.radar_rounded,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    // Meet Halfway Centroid
+                    GestureDetector(
+                      onTap: () => MeetHalfwaySheet.show(context),
+                      child: const _MapControl(
+                        icon: Icons.handshake_outlined,
+                        color: AppColors.amber,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -1083,3 +1162,55 @@ class _HeadingConePainter extends CustomPainter {
   @override
   bool shouldRepaint(_) => false;
 }
+
+// ── Real Rendezvous Centroid Marker ───────────────────────────────────────────
+class _RendezvousMarker extends StatelessWidget {
+  final String title;
+
+  const _RendezvousMarker({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: AppColors.deepEarth,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: AppColors.amber, width: 1.5),
+            boxShadow: const [
+              BoxShadow(
+                color: Colors.black38,
+                blurRadius: 6,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.handshake_rounded, size: 12, color: AppColors.amber),
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const Icon(Icons.arrow_drop_down, color: AppColors.amber, size: 16),
+      ],
+    );
+  }
+}
+

@@ -33,7 +33,7 @@ class AuthRepository {
         '616637846202-puvdihfams46tvjiofdseamheem66pau.apps.googleusercontent.com';
     _googleSignInInstance ??= GoogleSignIn(
       clientId: kIsWeb ? webClientId : null,
-      serverClientId: webClientId,
+      serverClientId: kIsWeb ? null : webClientId,
       scopes: const ['email', 'profile', 'openid'],
     );
     return _googleSignInInstance!;

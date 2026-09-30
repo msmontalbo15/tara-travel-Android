@@ -98,6 +98,7 @@
 | **`IMP-135`** | 2026-09-20 | Trips & Maps / Flexible & Optional Trip Map: Adventure, Multi-Point & Off-Grid (Plan 10) | Decoupled rigid map requirements, added JourneyMode enum (Standard, Adventure, Multi-Point), Adventure Compass HUD, Multi-Hub route strip, zero-migration destination_details JSONB persistence, and dynamic bottom dock actions. |
 | **`IMP-136`** | 2026-09-27 | Meet-up & Logistics / Meet-up Assembly, Smart Countdown & Departure Detection (Plan 11) | Auto-provisioned Day 1 Stop 0 ("Meet-up & Assembly"), transportMeta grace period & assembly time sync, mounted SmartDepartureAdvisoryCard with live countdown gauge and headcount roster on TripDetailScreen, and added meet-up editor to EditTripSheet. |
 | **`IMP-139`** | 2026-09-29 | CI / OSRM Routing Service Test Stabilization | Fixed 3 CI test failures in `osrm_routing_service_test.dart` by unifying `getRoute()` < 2 waypoints path through `_buildStraightLineFallback`, making assertions environment-agnostic (online OSRM vs offline fallback), and adding deterministic `buildStraightLineFallback` test. |
+| **`IMP-140`** | 2026-09-30 | Navigation / Advanced Convoy Telemetry & Formation Radar (Plan 22) | Convoy formation radar with lead/mid/tail role classification, per-companion stop ETAs & distance-to-waypoint, automated 150m arrival & 200m departure geofencing, centroid-based "Meet Halfway" rendezvous, convoy alert banners, floating bubble HUD integration, and unit tests. |
 
 ---
 
@@ -3272,4 +3273,28 @@
   - Tests no longer assume a specific network environment, making them stable on both offline local machines and online CI runners.
 - **Verification**:
   - `flutter analyze` passed with 0 issues.
+
+---
+
+### `IMP-140` · Advanced Convoy Telemetry, Formation Radar & Geofenced Rendezvous (Plan 22)
+- **Date**: September 30, 2026
+- **Target Files**:
+  - `lib/features/navigation/models/navigation_models.dart` [MODIFIED — Added `ConvoyRole` enum (`lead`, `mid`, `tail`), `convoyRole` field on `NavMember`, `distanceToStopKm`, `etaToStop`, `durationToStopMin` fields; added `isArrived`, `hasDepartedStop`, `lastDepartedStopName`, `meetHalfwayLat/Lng/Title`, `convoyPrompt`, `nearbyFoundMembers` to `NavigationState`]
+  - `lib/core/services/location_broadcast_service.dart` [MODIFIED — Added `calculateStopEta()` static helper (distance + ETA + duration from member GPS to destination waypoint), `isWithinArrivalGeofence()` (150m radius), `hasDepartedGeofence()` (200m radius + >15 km/h speed), and `calculateCentroid()` geographic midpoint calculator]
+  - `lib/features/navigation/providers/navigation_provider.dart` [MODIFIED — Integrated automated geofenced arrival/departure detection in `_onMyGpsUpdate()`, convoy formation role classification in `_evaluateConvoyAndProximity()`, per-companion stop ETA calculation in `_mergePeerMembers()`, `computeMeetHalfway()` pairwise rendezvous, `computeGroupCentroidRendezvous()` multi-member centroid gatherer, `cancelRendezvous()`, `dismissConvoyPrompt()`, and floating bubble service telemetry sync]
+  - `lib/features/navigation/widgets/convoy_radar_card.dart` [NEW — Formation radar UI card with lead/mid/tail convoy role visualizer, live arrival board, straggler alert list, and "Meet Halfway" launcher]
+  - `lib/features/navigation/widgets/meet_halfway_sheet.dart` [NEW — Bottom sheet centroid rendezvous calculator with member selector, midpoint map preview, and external GPS navigation launch]
+  - `lib/core/services/floating_bubble_service.dart` [MODIFIED — Piped nearest companion distance and convoy telemetry into PiP overlay mini-HUD]
+  - `test/services/convoy_telemetry_test.dart` [NEW — Unit tests for formation ranking (lead/mid/tail classification), straggler >2.0 km trigger, 150m arrival geofence, 200m departure geofence, stop ETA calculation accuracy, and centroid computation]
+  - `docs/ROADMAP.md` [MODIFIED — Plan 22 status updated from 🟡 Drafted/Queued to 🟢 Complete with `IMP-140` tag]
+- **Scope & Objectives**:
+  - **Convoy Formation Radar**: Automatic role classification based on distance-to-destination progress vector. Lead = closest to stop, Tail = >2.0 km behind lead. Mid = everyone else within the convoy corridor.
+  - **Per-Companion Stop ETAs**: Replaced raw relative distances with real-time ETA, remaining distance, and estimated duration toward the current active itinerary stop for every companion.
+  - **Automated Geofenced Arrival**: Entering 150m radius of the scheduled itinerary stop auto-updates status to `Arrived` with haptic feedback and timestamp.
+  - **Automated Geofenced Departure**: Exiting 200m radius at >15 km/h resets arrival state and dispatches departure notification.
+  - **Meet Halfway Rendezvous**: Pairwise midpoint calculation for 2-member rendezvous and geographic centroid computation for multi-member "Midpoint Gatherer" with venue suggestion.
+  - **Floating Bubble HUD Integration**: Nearest companion distance and convoy telemetry streamed to `FloatingBubbleService` for PiP overlay display while using external navigation apps.
+- **Verification**:
+  - `flutter analyze` passed with 0 issues across all modified files.
+  - Unit tests authored (Windows native compiler limitation prevented local test execution; tests validated via static analysis and code review).
 

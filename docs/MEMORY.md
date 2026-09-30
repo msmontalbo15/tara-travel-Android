@@ -663,6 +663,11 @@ Client Tier               Storage Tier                Transport Tier
 - **Dynamic Member Roster**: Dynamic sync with `activeTrip.members` respecting `hideSurname` privacy rules.
 - **Member-as-Waypoint & Meet Halfway**: Dynamic in-app routing to separated companions, midpoint rendezvous calculation, and external GPS app deep linking (Google Maps/Apple Maps/Waze).
 - **Convoy & SOS Intelligence**: Automated convoy separation alarm (>2.0 km) and emergency SOS panic beacon broadcast.
+- **Convoy Formation Radar (Plan 22 / IMP-140)**: Automatic `ConvoyRole` classification (`lead`, `mid`, `tail`) based on distance-to-destination progress vector via `_evaluateConvoyAndProximity()`. Proactive straggler alerts when companion gap exceeds 2.0 km.
+- **Per-Companion Stop ETAs**: `LocationBroadcastService.calculateStopEta()` replaces raw distances with real-time ETA, remaining km, and estimated duration toward the active itinerary stop for every companion.
+- **Automated Geofenced Arrival/Departure**: `isWithinArrivalGeofence()` triggers auto-arrival at 150m radius with haptic feedback. `hasDepartedGeofence()` detects departure at >200m radius and >15 km/h speed.
+- **Centroid Rendezvous ("Meet Halfway")**: `computeGroupCentroidRendezvous()` calculates geographic centroid of all online members. `computeMeetHalfway()` for pairwise rendezvous. UI via `MeetHalfwaySheet` and `ConvoyRadarCard`.
+- **Floating Bubble Convoy HUD**: Nearest companion distance and convoy telemetry piped into `FloatingBubbleService` for PiP overlay while using external navigation apps.
 
 ### 8. Real-Time Weather & Live Severe Advisory Engine (IDEA-013)
 - **Dual-Source Meteorological Engine**:

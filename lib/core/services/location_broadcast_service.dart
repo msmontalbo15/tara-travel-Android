@@ -566,6 +566,147 @@ class LocationBroadcastService {
     }
   }
 
+  // ── Convoy Telemetry & Formation Algorithms ───────────────────────────────
+
+  /// Computes distance in km and estimated driving ETA to active stop.
+  static ({double distanceKm, String eta, int durationMin}) calculateStopEta({
+    required double memberLat,
+    required double memberLng,
+    required double destLat,
+    required double destLng,
+    double? speedKmh,
+  }) {
+    final meters = Geolocator.distanceBetween(memberLat, memberLng, destLat, destLng);
+    final distanceKm = meters / 1000.0;
+    // Assume average speed ~35 km/h if stationary/low speed, or use live speed
+    final effectiveSpeedKmh = (speedKmh != null && speedKmh > 15.0) ? speedKmh : 35.0;
+    final durationMin = ((distanceKm / effectiveSpeedKmh) * 60).clamp(1, 480).round();
+    final etaString = durationMin < 60
+        ? '$durationMin min away'
+        : '${durationMin ~/ 60}h ${durationMin % 60}m away';
+    return (distanceKm: distanceKm, eta: etaString, durationMin: durationMin);
+  }
+
+  /// Classifies convoy roles (lead, mid, tail) based on progress/distance to destination.
+  static Map<String, ConvoyRole> classifyConvoyRoles({
+    required List<NavMember> members,
+    required double destLat,
+    required double destLng,
+  }) {
+    final result = <String, ConvoyRole>{};
+    final validMembers = members
+        .where((m) =>
+            m.latitude != null &&
+            m.longitude != null &&
+            m.status != MemberStatus.offline &&
+            !m.isLocationPaused)
+        .toList();
+
+    if (validMembers.isEmpty) {
+      for (final m in members) {
+        result[m.id] = ConvoyRole.mid;
+      }
+      return result;
+    }
+
+    if (validMembers.length == 1) {
+      result[validMembers.first.id] = ConvoyRole.lead;
+      for (final m in members) {
+        result.putIfAbsent(m.id, () => ConvoyRole.mid);
+      }
+      return result;
+    }
+
+    // Sort ascending by distance to destination (closest to destination is foremost/lead)
+    final sorted = List<NavMember>.from(validMembers)..sort((a, b) {
+      final distA = Geolocator.distanceBetween(
+        a.latitude!,
+        a.longitude!,
+        destLat,
+        destLng,
+      );
+      final distB = Geolocator.distanceBetween(
+        b.latitude!,
+        b.longitude!,
+        destLat,
+        destLng,
+      );
+      return distA.compareTo(distB);
+    });
+
+    final lead = sorted.first;
+    result[lead.id] = ConvoyRole.lead;
+
+    final tail = sorted.last;
+    final leadDist = Geolocator.distanceBetween(
+      lead.latitude!,
+      lead.longitude!,
+      destLat,
+      destLng,
+    );
+    final tailDist = Geolocator.distanceBetween(
+      tail.latitude!,
+      tail.longitude!,
+      destLat,
+      destLng,
+    );
+    final gapToLeadKm = (tailDist - leadDist).abs() / 1000.0;
+
+    if (gapToLeadKm > 2.0 && tail.id != lead.id) {
+      result[tail.id] = ConvoyRole.tail;
+    } else {
+      result[tail.id] = (sorted.length > 2) ? ConvoyRole.tail : ConvoyRole.mid;
+    }
+
+    for (int i = 1; i < sorted.length - 1; i++) {
+      result[sorted[i].id] = ConvoyRole.mid;
+    }
+
+    for (final m in members) {
+      result.putIfAbsent(m.id, () => ConvoyRole.mid);
+    }
+
+    return result;
+  }
+
+  /// Computes the geographical centroid (average lat, average lng) among coordinates
+  static ({double lat, double lng})? calculateCentroid(List<({double lat, double lng})> points) {
+    if (points.isEmpty) return null;
+    double sumLat = 0.0;
+    double sumLng = 0.0;
+    for (final p in points) {
+      sumLat += p.lat;
+      sumLng += p.lng;
+    }
+    return (lat: sumLat / points.length, lng: sumLng / points.length);
+  }
+
+  /// Checks whether a coordinate is within the arrival geofence (150m)
+  static bool isWithinArrivalGeofence({
+    required double userLat,
+    required double userLng,
+    required double destLat,
+    required double destLng,
+    double thresholdMeters = 150.0,
+  }) {
+    final distance = Geolocator.distanceBetween(userLat, userLng, destLat, destLng);
+    return distance <= thresholdMeters;
+  }
+
+  /// Checks whether the user has departed the stop (> 200m and speed > 15 km/h)
+  static bool hasDepartedGeofence({
+    required double userLat,
+    required double userLng,
+    required double destLat,
+    required double destLng,
+    required double speedKmh,
+    double departureDistanceMeters = 200.0,
+    double speedThresholdKmh = 15.0,
+  }) {
+    final distance = Geolocator.distanceBetween(userLat, userLng, destLat, destLng);
+    return distance > departureDistanceMeters && speedKmh >= speedThresholdKmh;
+  }
+
   void dispose() {
     stopSession();
     _myGpsStreamController.close();

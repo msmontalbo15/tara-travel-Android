@@ -4,6 +4,19 @@ import 'package:flutter/material.dart';
 
 enum MemberStatus { enRoute, arrived, offline, paused }
 
+// ── Convoy Role ───────────────────────────────────────────────────────────────
+
+enum ConvoyRole {
+  /// Foremost traveler setting the convoy pace.
+  lead,
+
+  /// Travelers safely clustered within the convoy corridor.
+  mid,
+
+  /// Travelers falling behind (>2.0 km gap or slowed down).
+  tail,
+}
+
 // ── Privacy Mode ──────────────────────────────────────────────────────────────
 
 enum LocationPrivacyMode { exact, approximate, ghost }
@@ -59,9 +72,13 @@ class NavMember {
   final Color color;
   final MemberStatus status;
   final String role;
+  final ConvoyRole convoyRole;
   final double? speedKmh;
   final String? distanceLabel;   // Human-readable, e.g. "1.4 km ahead"
   final double? distanceKm;      // Signed: positive = ahead, negative = behind
+  final double? distanceToStopKm;// Distance from member to destination waypoint
+  final String? etaToStop;       // e.g. "14 min away"
+  final int? durationToStopMin;  // Estimated duration in minutes to destination stop
   final String? eta;             // e.g. "4:18 PM"
   final String? arrivedAt;       // e.g. "4:12 PM"
   final bool isMe;
@@ -87,9 +104,13 @@ class NavMember {
     required this.color,
     required this.status,
     required this.role,
+    this.convoyRole = ConvoyRole.mid,
     this.speedKmh,
     this.distanceLabel,
     this.distanceKm,
+    this.distanceToStopKm,
+    this.etaToStop,
+    this.durationToStopMin,
     this.eta,
     this.arrivedAt,
     this.isMe = false,
@@ -110,9 +131,14 @@ class NavMember {
   });
 
   // ── Convenience getters (for backward compat with widgets) ────
-  String? get etaLabel => eta;
+  String? get etaLabel => etaToStop ?? eta;
   bool get isLocationPaused => isLocationSharingPaused || isGhostMode;
   bool get isOnline => status != MemberStatus.offline && !isLocationPaused;
+  bool get isLead => convoyRole == ConvoyRole.lead;
+  bool get isMid => convoyRole == ConvoyRole.mid;
+  bool get isTail => convoyRole == ConvoyRole.tail;
+  bool get isStraggler =>
+      convoyRole == ConvoyRole.tail && (distanceKm?.abs() ?? 0.0) > 2.0;
 
   NavMember copyWith({
     String? id,
@@ -121,9 +147,13 @@ class NavMember {
     Color? color,
     MemberStatus? status,
     String? role,
+    ConvoyRole? convoyRole,
     double? speedKmh,
     String? distanceLabel,
     double? distanceKm,
+    double? distanceToStopKm,
+    String? etaToStop,
+    int? durationToStopMin,
     String? eta,
     String? arrivedAt,
     bool? isMe,
@@ -149,9 +179,13 @@ class NavMember {
       color: color ?? this.color,
       status: status ?? this.status,
       role: role ?? this.role,
+      convoyRole: convoyRole ?? this.convoyRole,
       speedKmh: speedKmh ?? this.speedKmh,
       distanceLabel: distanceLabel ?? this.distanceLabel,
       distanceKm: distanceKm ?? this.distanceKm,
+      distanceToStopKm: distanceToStopKm ?? this.distanceToStopKm,
+      etaToStop: etaToStop ?? this.etaToStop,
+      durationToStopMin: durationToStopMin ?? this.durationToStopMin,
       eta: eta ?? this.eta,
       arrivedAt: arrivedAt ?? this.arrivedAt,
       isMe: isMe ?? this.isMe,
@@ -190,12 +224,18 @@ class NavigationState {
   final double groupSpreadKm;
   final NavMember? activeMemberRoute;
   final Offset? meetHalfwayPoint;
+  final double? meetHalfwayLat;
+  final double? meetHalfwayLng;
+  final String? meetHalfwayTitle;
   final List<ConvoyAlert> convoyAlerts;
+  final String? convoyPrompt;
   final SosBeacon? activeSos;
   final LocationPrivacyMode privacyMode;
   final DateTime? ghostUntil;
   final bool isBatterySaver;
   final Set<String> nearbyFoundMembers;
+  final bool hasDepartedStop;
+  final String? lastDepartedStopName;
 
   const NavigationState({
     required this.members,
@@ -211,12 +251,18 @@ class NavigationState {
     this.groupSpreadKm = 2.1,
     this.activeMemberRoute,
     this.meetHalfwayPoint,
+    this.meetHalfwayLat,
+    this.meetHalfwayLng,
+    this.meetHalfwayTitle,
     this.convoyAlerts = const [],
+    this.convoyPrompt,
     this.activeSos,
     this.privacyMode = LocationPrivacyMode.exact,
     this.ghostUntil,
     this.isBatterySaver = false,
     this.nearbyFoundMembers = const {},
+    this.hasDepartedStop = false,
+    this.lastDepartedStopName,
   });
 
   // ── Convenience getters (for backward compat with widgets) ────
@@ -226,7 +272,7 @@ class NavigationState {
   bool get groupViewOn => isGroupViewOn;
   bool get isLive => isNavigating;
   String get etaLabel => activeMemberRoute != null
-      ? (activeMemberRoute!.eta ?? destination.eta)
+      ? (activeMemberRoute!.etaToStop ?? activeMemberRoute!.eta ?? destination.eta)
       : destination.eta;
   double get distanceKm => activeMemberRoute != null
       ? (activeMemberRoute!.distanceKm?.abs() ?? destination.distanceKm)
@@ -235,6 +281,12 @@ class NavigationState {
   List<NavMember> get companions => members.where((m) => !m.isMe).toList();
   bool get isGhostActive => privacyMode == LocationPrivacyMode.ghost ||
       (ghostUntil != null && ghostUntil!.isAfter(DateTime.now()));
+  NavMember? get convoyLead =>
+      members.where((m) => m.convoyRole == ConvoyRole.lead).firstOrNull;
+  List<NavMember> get convoyStragglers =>
+      members.where((m) => m.isStraggler).toList();
+  NavMember? get tailMember =>
+      members.where((m) => m.convoyRole == ConvoyRole.tail).firstOrNull;
 
   NavigationState copyWith({
     List<NavMember>? members,
@@ -252,7 +304,13 @@ class NavigationState {
     bool clearActiveMemberRoute = false,
     Offset? meetHalfwayPoint,
     bool clearMeetHalfwayPoint = false,
+    double? meetHalfwayLat,
+    double? meetHalfwayLng,
+    String? meetHalfwayTitle,
+    bool clearMeetHalfwayCoord = false,
     List<ConvoyAlert>? convoyAlerts,
+    String? convoyPrompt,
+    bool clearConvoyPrompt = false,
     SosBeacon? activeSos,
     bool clearActiveSos = false,
     LocationPrivacyMode? privacyMode,
@@ -260,6 +318,8 @@ class NavigationState {
     bool clearGhostUntil = false,
     bool? isBatterySaver,
     Set<String>? nearbyFoundMembers,
+    bool? hasDepartedStop,
+    String? lastDepartedStopName,
   }) {
     return NavigationState(
       members: members ?? this.members,
@@ -280,13 +340,27 @@ class NavigationState {
       meetHalfwayPoint: clearMeetHalfwayPoint
           ? null
           : (meetHalfwayPoint ?? this.meetHalfwayPoint),
+      meetHalfwayLat: clearMeetHalfwayCoord
+          ? null
+          : (meetHalfwayLat ?? this.meetHalfwayLat),
+      meetHalfwayLng: clearMeetHalfwayCoord
+          ? null
+          : (meetHalfwayLng ?? this.meetHalfwayLng),
+      meetHalfwayTitle: clearMeetHalfwayCoord
+          ? null
+          : (meetHalfwayTitle ?? this.meetHalfwayTitle),
       convoyAlerts: convoyAlerts ?? this.convoyAlerts,
+      convoyPrompt: clearConvoyPrompt
+          ? null
+          : (convoyPrompt ?? this.convoyPrompt),
       activeSos: clearActiveSos ? null : (activeSos ?? this.activeSos),
       privacyMode: privacyMode ?? this.privacyMode,
       ghostUntil:
           clearGhostUntil ? null : (ghostUntil ?? this.ghostUntil),
       isBatterySaver: isBatterySaver ?? this.isBatterySaver,
       nearbyFoundMembers: nearbyFoundMembers ?? this.nearbyFoundMembers,
+      hasDepartedStop: hasDepartedStop ?? this.hasDepartedStop,
+      lastDepartedStopName: lastDepartedStopName ?? this.lastDepartedStopName,
     );
   }
 }
