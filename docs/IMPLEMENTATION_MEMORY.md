@@ -3366,16 +3366,17 @@
 ### `IMP-143` · FcmService Test Isolation & Submodule Index Purge
 - **Date**: October 01, 2026
 - **Target Files**:
-  - `lib/core/services/fcm_service.dart` [MODIFIED — Made `_messaging` lazily resolved via getter instead of evaluating `FirebaseMessaging.instance` eagerly in the private constructor; added initialization and `Firebase.apps.isEmpty` guards to `subscribeToTrip`, `unsubscribeFromTrip`, and `handleSignOut`]
+  - `lib/core/services/fcm_service.dart` [MODIFIED — Made `_messaging` and `_profileRepo` lazily resolved via getters instead of eagerly evaluating `FirebaseMessaging.instance` and `ProfileRepository()` in constructor initializers; added initialization and `Firebase.apps.isEmpty` guards to `subscribeToTrip`, `unsubscribeFromTrip`, and `handleSignOut`]
+  - `lib/core/repositories/profile_repository.dart` [MODIFIED — Made `_supabase` client lazily resolved with optional `client` constructor injection, preventing uninitialized `Supabase.instance` assertions during headless unit testing]
   - `.git` index [MODIFIED — Purged rogue submodule gitlink entry for `tara-admin` (mode 160000) that caused `fatal: No url found for submodule path 'tara-admin' in .gitmodules`]
   - `docs/CHANGELOG.md` [MODIFIED — Appended `IMP-143` entry]
   - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED — Appended `IMP-143` record]
 - **Scope & Objectives**:
-  - **Headless Unit Test Isolation**: In headless CI environments where native Firebase platform channels are not initialized (`Firebase.apps.isEmpty`), constructing `FcmService.instance` threw `[core/no-app] No Firebase App '[DEFAULT]' has been created`. By decoupling `_messaging` to a lazy getter `_messagingOverride ?? FirebaseMessaging.instance` and guarding operations, `FcmService.instance` initial state inspections succeed safely without throwing.
+  - **Headless Unit Test Isolation**: In headless CI environments where native Firebase platform channels (`Firebase.apps.isEmpty`) and remote Supabase sessions (`Supabase.instance`) are not initialized, accessing `FcmService.instance` threw `[core/no-app]` and `Failed assertion: '_instance._isInitialized'`. By decoupling `_messaging` to a lazy getter and `_profileRepo` / `_supabase` to lazy resolvers, singleton state inspections (`isInitialized == false`, `currentToken == null`) execute safely in test runners without runtime mocks.
   - **Git Submodule Sanitation**: Removed orphaned `160000` tree entry for `tara-admin` which broke post-job runner cleanup in GitHub Actions with git exit code 128.
 - **Verification**:
   - `flutter analyze --fatal-infos --fatal-warnings` completed with 0 issues.
-  - Unit test `FcmService initial state is safe before platform initialization` verified to pass without native Firebase runtime requirement.
+  - Unit test `FcmService initial state is safe before platform initialization` verified to pass without native Firebase or Supabase runtime requirements.
 
 
 

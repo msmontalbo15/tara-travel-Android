@@ -8,7 +8,10 @@ import '../security/three_layer_encryption_service.dart';
 /// using ThreeLayerEncryptionService before writing to or reading from Supabase.
 /// There is no local cache — all data comes directly from `public.users`.
 class ProfileRepository {
-  final SupabaseClient _supabase = Supabase.instance.client;
+  ProfileRepository({SupabaseClient? client}) : _clientOverride = client;
+
+  final SupabaseClient? _clientOverride;
+  SupabaseClient get _supabase => _clientOverride ?? Supabase.instance.client;
   final ThreeLayerEncryptionService _encryption =
       ThreeLayerEncryptionService.instance;
 

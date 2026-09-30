@@ -29,14 +29,17 @@ class FcmService {
     FirebaseMessaging? messaging,
     ProfileRepository? profileRepository,
   })  : _messagingOverride = messaging,
-        _profileRepo = profileRepository ?? ProfileRepository();
+        _profileRepoOverride = profileRepository;
 
   static final FcmService instance = FcmService._();
 
   final FirebaseMessaging? _messagingOverride;
-  final ProfileRepository _profileRepo;
+  final ProfileRepository? _profileRepoOverride;
+  ProfileRepository? _lazyProfileRepo;
 
   FirebaseMessaging get _messaging => _messagingOverride ?? FirebaseMessaging.instance;
+  ProfileRepository get _profileRepo =>
+      _profileRepoOverride ?? (_lazyProfileRepo ??= ProfileRepository());
 
   bool _isInitialized = false;
   String? _currentToken;
