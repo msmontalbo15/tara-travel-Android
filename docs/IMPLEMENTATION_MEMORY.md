@@ -101,6 +101,7 @@
 | **`IMP-140`** | 2026-09-30 | Navigation / Advanced Convoy Telemetry & Formation Radar (Plan 22) | Convoy formation radar with lead/mid/tail role classification, per-companion stop ETAs & distance-to-waypoint, automated 150m arrival & 200m departure geofencing, centroid-based "Meet Halfway" rendezvous, convoy alert banners, floating bubble HUD integration, and unit tests. |
 | **`IMP-141`** | 2026-10-01 | Core & Cloud / Unified Firebase & Supabase Cloud Ecosystem (Plan 21) | Dual-cloud bridge (`firebase_core`, `firebase_messaging`, `firebase_crashlytics`, `firebase_auth`), `FcmService` remote device wake-up & background isolate handler, `CrashlyticsService` forensic exception capture, `users.fcm_token` migration, and `push-relay` Edge Function. |
 | **`IMP-142`** | 2026-10-01 | Profile & Payments / GCash Number OTP Verification & Verified QR Upload (Plan 23) | Firebase Phone Auth OTP ownership verification, provider-agnostic `EWalletVerificationService` (GCash & Maya), smart QR decoding & cross-validation, clean branded QR regeneration, and gated payment profile trust badges. |
+| **`IMP-143`** | 2026-10-01 | Core & CI / FcmService Test Isolation & Submodule Index Purge | Made `FirebaseMessaging` resolution lazy in `FcmService` to eliminate `[core/no-app]` crashes during headless test execution, guarded notification and subscription methods, and purged the non-existent `tara-admin` git submodule link from git index. |
 
 ---
 
@@ -3359,5 +3360,22 @@
 - **Verification**:
   - `flutter analyze` completed with 0 errors, 0 warnings, 0 infos.
   - Comprehensive unit test suites registered in `test/all_tests.dart`.
+
+---
+
+### `IMP-143` · FcmService Test Isolation & Submodule Index Purge
+- **Date**: October 01, 2026
+- **Target Files**:
+  - `lib/core/services/fcm_service.dart` [MODIFIED — Made `_messaging` lazily resolved via getter instead of evaluating `FirebaseMessaging.instance` eagerly in the private constructor; added initialization and `Firebase.apps.isEmpty` guards to `subscribeToTrip`, `unsubscribeFromTrip`, and `handleSignOut`]
+  - `.git` index [MODIFIED — Purged rogue submodule gitlink entry for `tara-admin` (mode 160000) that caused `fatal: No url found for submodule path 'tara-admin' in .gitmodules`]
+  - `docs/CHANGELOG.md` [MODIFIED — Appended `IMP-143` entry]
+  - `docs/IMPLEMENTATION_MEMORY.md` [MODIFIED — Appended `IMP-143` record]
+- **Scope & Objectives**:
+  - **Headless Unit Test Isolation**: In headless CI environments where native Firebase platform channels are not initialized (`Firebase.apps.isEmpty`), constructing `FcmService.instance` threw `[core/no-app] No Firebase App '[DEFAULT]' has been created`. By decoupling `_messaging` to a lazy getter `_messagingOverride ?? FirebaseMessaging.instance` and guarding operations, `FcmService.instance` initial state inspections succeed safely without throwing.
+  - **Git Submodule Sanitation**: Removed orphaned `160000` tree entry for `tara-admin` which broke post-job runner cleanup in GitHub Actions with git exit code 128.
+- **Verification**:
+  - `flutter analyze --fatal-infos --fatal-warnings` completed with 0 issues.
+  - Unit test `FcmService initial state is safe before platform initialization` verified to pass without native Firebase runtime requirement.
+
 
 

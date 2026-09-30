@@ -28,13 +28,15 @@ class FcmService {
   FcmService._({
     FirebaseMessaging? messaging,
     ProfileRepository? profileRepository,
-  })  : _messaging = messaging ?? FirebaseMessaging.instance,
+  })  : _messagingOverride = messaging,
         _profileRepo = profileRepository ?? ProfileRepository();
 
   static final FcmService instance = FcmService._();
 
-  final FirebaseMessaging _messaging;
+  final FirebaseMessaging? _messagingOverride;
   final ProfileRepository _profileRepo;
+
+  FirebaseMessaging get _messaging => _messagingOverride ?? FirebaseMessaging.instance;
 
   bool _isInitialized = false;
   String? _currentToken;
@@ -130,7 +132,7 @@ class FcmService {
 
   /// Subscribes the current device to a trip topic for broadcast alerts.
   Future<void> subscribeToTrip(String tripId) async {
-    if (kIsWeb) return;
+    if (kIsWeb || !_isInitialized || Firebase.apps.isEmpty) return;
     try {
       await _messaging.subscribeToTopic('trip_$tripId');
       debugPrint('[FCM] Subscribed to topic: trip_$tripId');
@@ -141,7 +143,7 @@ class FcmService {
 
   /// Unsubscribes the device from a trip topic.
   Future<void> unsubscribeFromTrip(String tripId) async {
-    if (kIsWeb) return;
+    if (kIsWeb || !_isInitialized || Firebase.apps.isEmpty) return;
     try {
       await _messaging.unsubscribeFromTopic('trip_$tripId');
       debugPrint('[FCM] Unsubscribed from topic: trip_$tripId');
@@ -157,7 +159,9 @@ class FcmService {
       if (user != null) {
         await _profileRepo.clearFcmToken(user.id);
       }
-      await _messaging.deleteToken();
+      if (_isInitialized && Firebase.apps.isNotEmpty) {
+        await _messaging.deleteToken();
+      }
       _currentToken = null;
       debugPrint('[FCM] Device token deleted on sign-out.');
     } catch (e) {

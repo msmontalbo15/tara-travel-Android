@@ -679,34 +679,106 @@ Embed Google's **Gemini AI** directly into Tara Travel to deliver an intelligent
 
 ## Plan 18: Tara Laravel Middleware & SuperAdmin Dashboard (Universal Links, CMS & Ops)
 
-*(Originally proposed as IDEA-005)*
+*(Incorporating & extending the existing `@tara-admin` codebase at `D:\Spencer\Downloads\tara-admin`)*
 
 ### Goal
-Build a lightweight, production-grade **Laravel 11 + Filament v3** web middleware and SuperAdmin dashboard (hosted on zero-cost tiers: Fly.io/Render with Cloudflare Edge CDN). Handles **Universal Deep Linking** (web-to-app gateway for invite links, OpenGraph social previews), curated trip template CMS, user support ticket helpdesk, and dynamic remote config.
+Deploy and integrate the existing **`tara-admin`** companion web application (Laravel 13 + Blade + Tailwind/Alpine + direct Supabase Postgres) as Tara Travel's authoritative operations dashboard, web-to-app deep-linking gateway, and remote ops middleware. Hosted on zero-cost tiers (Fly.io/Render with Cloudflare Edge CDN), it bridges mobile travelers with web invites, curated trip templates, dynamic remote configs, and moderation controls without duplicating business logic or compromising database security.
 
-### Core Capabilities
-1. **Universal Deep Linking & Social Previews (Web-to-App Gateway)**:
-   - `https://tara-travel.app/join/{code}`:
-     - Mobile browser: redirects into Flutter app via Android App Links (`tara://trip/join?code=...`) or Play Store fallback.
-     - Desktop browser: renders branded preview page with trip details and QR code to scan.
-   - Dynamic OpenGraph cards with destination cover photo and trip dates for Messenger, WhatsApp, and Telegram.
-   - Hosts `assetlinks.json` and `apple-app-site-association` at domain root.
-2. **Curated Itinerary CMS (Filament v3)**:
-   - Visual trip template builder (e.g., *"4D3N Coron Island Adventure"*, *"3D2N Baguio Food Trail"*).
-   - Manage featured itineraries, seasonal banners, and spotlight destinations on the mobile home screen.
-3. **User Support & Incident Helpdesk**:
-   - Triage user-submitted bug reports and travel dispute flags with sanitized diagnostic telemetry.
-   - Send direct in-app notification responses and broadcast system travel advisories.
-4. **Dynamic Remote Config & Ops Governance**:
-   - No-store-release updates for currency rates, default split methods, and category taxonomies.
-   - Community moderation: freeze abusive accounts or force-revoke compromised invite codes.
+---
+
+### Codebase Analysis of Existing `@tara-admin`
+The existing repository at `D:\Spencer\Downloads\tara-admin` provides a rock-solid, production-minded foundation:
+- **Core Stack**: Laravel 13 (`php: ^8.3`), clean Blade templates with CDN-based Tailwind CSS & Alpine.js (zero node build step required for ops maintenance), isolated `Admin` schema for admin logins (`admin_users` table).
+- **Dual Supabase Connections**: Configured for both Transaction Pooler (`port 6543`, `DB_POOLED=true`) for day-to-day web queries and Direct Postgres (`port 5432`) for schema migrations and DDL.
+- **Implemented Modules**:
+  1. `AuthController` & Session Guard (`admin.auth` / `admin.guest`) with seeded SuperAdmin credentials.
+  2. `DashboardController` & KPI analytics (active travelers, ongoing trips, expenses pending approval, monthly signup/trip charts).
+  3. `UserController` (browse travelers, search by name/email, trip histories, AES-encrypted field protection for sensitive data).
+  4. `TripController` (audit trips, filter by status, change lifecycle status: draft, planned, active, completed, archived).
+  5. `ExpenseController` & `SettlementController` (finance audit, approve/reject expense workflow with rejection notes).
+  6. `DestinationController` (full CRUD for Explore tab destinations: title, tags, regional flags, cost tiers).
+
+---
+
+### Required Upgrades & Actionable Recommendations
+
+#### 1. Schema Ground-Truth & Anti-Hallucination Alignment (Rule 1 Compliance)
+The existing Eloquent models reference several legacy columns that were permanently dropped in prior migrations:
+- **`App\Models\Trip`**:
+  - Remove `$fillable`: `'cover_color'`, `'cover_emoji'`. (Rule 1: Styling and emoji are strictly derived app-side via `trip_type` / `AppTripTypes`).
+  - Remove casts: `'invite_expires_at'`, `'split_meta'`.
+  - Ensure queries use valid columns: `start_date`, `end_date`, `budget`, `split_method`, `owner_id`, `status`, `invite_code`, `type` / `trip_type`, `departure_point`, `departure_lat`, `departure_lng`, `departure_map_url`, `destination_details`, `transport_mode`, `transport_meta`.
+- **`App\Models\Expense`**:
+  - Remove `$fillable`: `'approved_by'`, `'rejected_by'`.
+  - Remove cast: `'split_meta'`.
+  - Strictly maintain columns: `id`, `trip_id`, `description`, `amount`, `category`, `paid_by_user_id`, `status`, `receipt_url`, `rejection_note`.
+
+#### 2. Universal Deep Linking & Social Previews (Web-to-App Gateway)
+Implement high-conversion web landing routes in `routes/web.php` for seamless travel squad invites:
+- **Web-to-App Handler (`/join/{code}`)**:
+  - `InviteController@show`: Queries `trips` where `invite_code = $code`.
+  - **Mobile Browser Request**:
+    - Executes instant intent redirect to Android App Link / custom URI scheme: `tara://trip/join?code={code}`.
+    - Fallback script directs to Google Play Store / APK download if app isn't installed.
+  - **Desktop Browser Request**:
+    - Renders responsive Blade preview (`resources/views/preview/join.blade.php`) featuring destination details, trip dates, organizer name, co-traveler headcount, and an auto-generated high-contrast QR code (`qr-code-styling` or SVG) for instant phone scanning.
+  - **Dynamic OpenGraph & Twitter Cards**:
+    - Generates dynamic `<meta property="og:title">`, `<meta property="og:description">`, and `<meta property="og:image">` tags so shared links render rich preview cards on Viber, Messenger, WhatsApp, and Telegram.
+- **App Link Verification Endpoints**:
+  - `GET /.well-known/assetlinks.json`: Serves SHA-256 fingerprint matching the Flutter Android release keystore for auto-verification of `tara-travel.app` domains.
+  - `GET /.well-known/apple-app-site-association`: Future-proofed iOS universal links endpoint.
+
+#### 3. Curated Itinerary Templates & Explore CMS
+- Extend the existing `DestinationController` to introduce **Curated Itinerary Templates** (`TemplateController`):
+  - Allows admins to build multi-day itinerary presets (e.g., *"3D2N Baguio Highlands Getaway"*, *"4D3N Coron Island Hopping"*) complete with pre-configured itinerary stops, suggested budgets, and packing lists.
+  - Mobile app's Create Trip flow can fetch these templates via Supabase `curated_templates` or public REST endpoint to bootstrap new group trips in 1 tap.
+
+#### 4. Remote Config & App Gatekeeper (Syncing Plan 17)
+- Introduce a **Remote Config Panel** (`RemoteConfigController`):
+  - Reads and writes to `public.remote_configs` table created in Plan 17.
+  - Controls: `min_supported_version`, `latest_stable_version`, `maintenance_mode`, `announcement_banner_text`, and feature flags (`is_ai_copilot_enabled`, `is_convoy_radar_enabled`).
+  - Gives ops immediate control to broadcast system-wide maintenance alerts or soft/force updates without deploying new backend code.
+
+#### 5. Audit Trail & Ops Moderation
+- **Traveler Safety & Moderation**: Add an additive migration (`is_suspended`, `suspended_reason`) or audit table in `Admin` schema to temporarily restrict bad actors or spam invites.
+- **Admin Activity Log**: Log all administrative actions (approving expenses, overriding trip status, modifying destinations) into `Admin.activity_logs` for compliance.
+
+#### 6. Zero-Cost Containerized Deployment (Fly.io / Render)
+- Create a hardened, multi-stage `Dockerfile`:
+  - PHP 8.3-FPM + Nginx on Alpine base.
+  - Non-root user execution (`www-data`).
+  - OPcache and production autoloader optimization (`composer install --no-dev --optimize-autoloader`).
+  - Standardized health check route (`/up`).
+
+---
+
+### Phased Implementation Strategy
+
+| Phase | Milestone | Focus Areas | Key Deliverables |
+| :---: | :---: | :--- | :--- |
+| **Phase 1** | Schema Grounding & Polish | Rule 1 compliance, purge dropped columns from models, verify connection pooler. | Updated `Trip.php`, `Expense.php`, clean database seeders. |
+| **Phase 2** | Universal Deep Links | Web invite landing page, OpenGraph tags, Android App Links verification. | `InviteController`, `join.blade.php`, `assetlinks.json`. |
+| **Phase 3** | Curated Templates CMS | Itinerary template builder, Explore feed curation, destination tags. | `TemplateController`, template views, Supabase sync. |
+| **Phase 4** | Remote Config & Ops | App version gates, maintenance mode toggle, user suspension actions. | `RemoteConfigController`, audit logging. |
+| **Phase 5** | Container & Deployment | Production Dockerfile, Fly.io / Render deployment config, Cloudflare SSL. | `Dockerfile`, `fly.toml`, production runbook. |
+
+---
 
 ### Impacted Files & Architecture
-- `backend/` *(NEW — Laravel 11 project with Filament v3 panel)*
-- `backend/routes/web.php` *(NEW — deep link routes: `/join/{code}`, `/trip/{id}`, `/friend/{code}`)*
-- `backend/public/.well-known/assetlinks.json` *(NEW — Android App Links verification)*
-- `backend/Dockerfile` *(NEW — multi-stage non-root container for Fly.io/Render deployment)*
-- `lib/core/middleware/gateway_interceptor.dart` *(MODIFY — handshake with middleware headers)*
+- **`tara-admin/` Codebase**:
+  - `app/Models/Trip.php` *(MODIFY — align schema to Rule 1, remove dropped columns)*
+  - `app/Models/Expense.php` *(MODIFY — remove dropped columns `split_meta`, `rejected_by`)*
+  - `app/Http/Controllers/InviteController.php` *(NEW — web-to-app invite resolver & desktop QR preview)*
+  - `app/Http/Controllers/Admin/RemoteConfigController.php` *(NEW — Plan 17 remote config editor)*
+  - `app/Http/Controllers/Admin/TemplateController.php` *(NEW — curated itinerary template CMS)*
+  - `resources/views/preview/join.blade.php` *(NEW — branded web invite landing page with QR & App Link trigger)*
+  - `resources/views/admin/remote_config/index.blade.php` *(NEW — versioning & maintenance toggle UI)*
+  - `routes/web.php` *(MODIFY — add `/join/{code}`, `/.well-known/assetlinks.json`, remote config routes)*
+  - `public/.well-known/assetlinks.json` *(NEW — Android App Links digital asset links verification)*
+  - `Dockerfile` *(NEW — hardened multi-stage PHP 8.3-FPM + Nginx container for zero-cost deployment)*
+- **`tara_travel/` Flutter Codebase**:
+  - `android/app/src/main/AndroidManifest.xml` *(MODIFY — verify autoVerify Android App Links intent-filter for `https://tara-travel.app/join/`)*
+  - `lib/core/services/notification_router.dart` *(VERIFY — ensure `/join/{code}` deep links route into `JoinTripScreen`)*
 
 ---
 
