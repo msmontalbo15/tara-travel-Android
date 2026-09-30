@@ -100,6 +100,7 @@
 | **`IMP-139`** | 2026-09-29 | CI / OSRM Routing Service Test Stabilization | Fixed 3 CI test failures in `osrm_routing_service_test.dart` by unifying `getRoute()` < 2 waypoints path through `_buildStraightLineFallback`, making assertions environment-agnostic (online OSRM vs offline fallback), and adding deterministic `buildStraightLineFallback` test. |
 | **`IMP-140`** | 2026-09-30 | Navigation / Advanced Convoy Telemetry & Formation Radar (Plan 22) | Convoy formation radar with lead/mid/tail role classification, per-companion stop ETAs & distance-to-waypoint, automated 150m arrival & 200m departure geofencing, centroid-based "Meet Halfway" rendezvous, convoy alert banners, floating bubble HUD integration, and unit tests. |
 | **`IMP-141`** | 2026-10-01 | Core & Cloud / Unified Firebase & Supabase Cloud Ecosystem (Plan 21) | Dual-cloud bridge (`firebase_core`, `firebase_messaging`, `firebase_crashlytics`, `firebase_auth`), `FcmService` remote device wake-up & background isolate handler, `CrashlyticsService` forensic exception capture, `users.fcm_token` migration, and `push-relay` Edge Function. |
+| **`IMP-142`** | 2026-10-01 | Profile & Payments / GCash Number OTP Verification & Verified QR Upload (Plan 23) | Firebase Phone Auth OTP ownership verification, provider-agnostic `EWalletVerificationService` (GCash & Maya), smart QR decoding & cross-validation, clean branded QR regeneration, and gated payment profile trust badges. |
 
 ---
 
@@ -3325,5 +3326,38 @@
 - **Verification**:
   - `flutter analyze` completed with 0 errors, 0 warnings, 0 infos.
   - Unit tests registered in `test/all_tests.dart`.
+
+---
+
+### `IMP-142` · GCash Number OTP Verification & Verified QR Upload (Plan 23)
+- **Date**: October 01, 2026
+- **Target Files**:
+  - `lib/core/models/payment_provider.dart` [NEW — `PaymentProvider` enum (`gcash`, `maya`) with brand colors (GCash `#007DFE`, Maya `#2FB86E`), display names, and parsing logic]
+  - `lib/core/services/ewallet_verification_service.dart` [NEW — Provider-agnostic abstract base class defining OTP dispatch/verification, PH phone validation (`09XXXXXXXXX`), E.164 normalization (`+639XXXXXXXXX`), display formatting (`09XX ••• XXXX`), and 10-digit invariant cross-matching]
+  - `lib/core/services/gcash_verification_service.dart` [NEW — Concrete `EWalletVerificationService` for GCash wrapping Firebase Phone Auth (`verifyPhoneNumber`, `PhoneAuthProvider.credential`), transient credential cleanup, and multi-format GCash QR URI decoding (`qrph.gcash.com`, `gcash://`, standard URL parameter parsing)]
+  - `lib/core/services/gcash_qr_processor.dart` [NEW — Pipeline service utilizing `mobile_scanner` (`MobileScannerController.analyzeImage`) for local file barcode detection, cross-validating extracted phone numbers against verified credentials, and rendering 320×320 px clean branded QR codes via `qr_flutter` (`QrPainter`, `QrEyeStyle`, `QrDataModuleStyle`)]
+  - `lib/core/models/member_model.dart` [MODIFIED — Added `gcashVerified` (bool) and `paymentProvider` (PaymentProvider) fields to constructor, `copyWith`, `fromMap`, and `toMap` for member trust rendering]
+  - `lib/core/providers/profile_provider.dart` [MODIFIED — Added `gcashVerified`, `gcashVerifiedAt`, `paymentProvider` to `ProfileState` with JSON serialization; added `setGcashVerified()`, `updatePaymentProvider()`, `updateGcashQr()` methods with automatic state and QR resets upon number change or provider switch]
+  - `lib/core/repositories/profile_repository.dart` [MODIFIED — Added `uploadGcashQr(userId, localFilePath)` to Supabase Storage bucket `avatars` under `gcash_qr/{userId}.png`, serialized `gcash_verified`, `gcash_verified_at`, and `payment_provider` in `_toRemoteJson` and `_fromRemoteJson`]
+  - `lib/features/profile/widgets/gcash_otp_verification_sheet.dart` [NEW — Multi-step bottom sheet featuring provider segmented selector (`GCash` | `Maya`), 11-digit PH mobile input with real-time validation, 60s countdown timer with resend button, 6-digit OTP verification code entry with loading feedback, and profile mutation]
+  - `lib/features/profile/widgets/profile_payment_card.dart` [MODIFIED — Upgraded with provider segmented chips, green `✓ Verified` / amber `⚠ Unverified` badge indicators, gated QR upload button (locked with tooltip when unverified), smart QR decode & regeneration workflow, and mismatched number alert dialog]
+  - `lib/features/profile/profile_screen.dart` [MODIFIED — Wired `_editGcash` to launch `GcashOtpVerificationSheet`]
+  - `lib/features/members/members_screen.dart` [MODIFIED — Added verified checkmark badge (`Icons.verified_rounded`) to member list tiles and detail bottom sheet payment section]
+  - `supabase/migrations/029_add_gcash_verification.sql` [NEW — Added `gcash_verified boolean default false`, `gcash_verified_at timestamptz`, `payment_provider text default 'gcash'`, and partial index `idx_users_payment_verified`]
+  - `test/services/ewallet_verification_service_test.dart` [NEW — Unit tests for PH phone validation, E.164 normalization, formatting, and cross-matching]
+  - `test/services/gcash_verification_service_test.dart` [NEW — Unit tests for GCash QR payload decoding, plain mobile numbers, URI queries, and phone number cross-validation]
+  - `test/services/gcash_qr_processor_test.dart` [NEW — Unit tests for `QrProcessingResult` success/failure models and validation rejection payloads]
+  - `test/all_tests.dart` [MODIFIED — Registered GCash verification and QR processor test suites in unified test suite]
+  - `docs/ROADMAP.md` [MODIFIED — Marked Plan 23 as Complete with `IMP-142` tag]
+- **Scope & Objectives**:
+  - **Phone Number Ownership Verification**: Enforces SMS OTP verification via Firebase Phone Auth before saving e-wallet numbers to `public.users`, eliminating typos and fraudulent numbers.
+  - **Provider-Agnostic Abstraction**: `EWalletVerificationService` establishes a unified interface for Philippine e-wallets (GCash and Maya), sharing 100% of the Firebase Phone Auth OTP flow while encapsulating provider-specific QR URI payloads.
+  - **Smart QR Auto-Crop & Cross-Validation**: Scans uploaded QR screenshots using `mobile_scanner`, extracts embedded phone numbers, and rejects uploads if the QR number does not match the verified profile number.
+  - **Clean Branded QR Regeneration**: Rather than storing messy screenshot crops, decoded payloads are regenerated into pristine 320×320 px branded QR codes (`qr_flutter`) styled with brand colors (GCash blue or Maya green) and uploaded to Supabase Storage.
+  - **Gated Upload & Auto-Reset Safeguards**: QR upload button is disabled until phone number ownership is verified. Changing numbers or toggling providers immediately resets verification status and clears stored QRs to prevent mismatches.
+  - **Verified Badges for Settlement Trust**: Green `✓ Verified` badges displayed across `ProfilePaymentCard`, member lists, and member detail sheets so co-travelers send funds with confidence.
+- **Verification**:
+  - `flutter analyze` completed with 0 errors, 0 warnings, 0 infos.
+  - Comprehensive unit test suites registered in `test/all_tests.dart`.
 
 

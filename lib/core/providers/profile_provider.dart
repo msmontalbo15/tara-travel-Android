@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 import '../auth/presentation/auth_notifier.dart';
+import '../models/payment_provider.dart';
 import 'auth_provider.dart';
 import 'repository_providers.dart';
 
@@ -21,6 +22,9 @@ class ProfileState {
   final String? contactNumber;
   final String? gcashNumber;
   final String? gcashQrUrl;
+  final bool gcashVerified;
+  final DateTime? gcashVerifiedAt;
+  final PaymentProvider paymentProvider;
   final List<String> healthNotes;
   final String? bloodType;
   final bool shareHealthWithOrganizer;
@@ -46,6 +50,9 @@ class ProfileState {
     this.contactNumber,
     this.gcashNumber,
     this.gcashQrUrl,
+    this.gcashVerified = false,
+    this.gcashVerifiedAt,
+    this.paymentProvider = PaymentProvider.gcash,
     this.healthNotes = const [],
     this.bloodType,
     this.shareHealthWithOrganizer = false,
@@ -128,6 +135,9 @@ class ProfileState {
     String? contactNumber,
     String? gcashNumber,
     String? gcashQrUrl,
+    bool? gcashVerified,
+    DateTime? gcashVerifiedAt,
+    PaymentProvider? paymentProvider,
     List<String>? healthNotes,
     String? bloodType,
     bool? shareHealthWithOrganizer,
@@ -154,6 +164,9 @@ class ProfileState {
       contactNumber: contactNumber ?? this.contactNumber,
       gcashNumber: gcashNumber ?? this.gcashNumber,
       gcashQrUrl: gcashQrUrl ?? this.gcashQrUrl,
+      gcashVerified: gcashVerified ?? this.gcashVerified,
+      gcashVerifiedAt: gcashVerifiedAt ?? this.gcashVerifiedAt,
+      paymentProvider: paymentProvider ?? this.paymentProvider,
       healthNotes: healthNotes ?? this.healthNotes,
       bloodType: bloodType ?? this.bloodType,
       shareHealthWithOrganizer:
@@ -185,6 +198,9 @@ class ProfileState {
       'contactNumber': contactNumber,
       'gcashNumber': gcashNumber,
       'gcashQrUrl': gcashQrUrl,
+      'gcashVerified': gcashVerified,
+      'gcashVerifiedAt': gcashVerifiedAt?.toIso8601String(),
+      'paymentProvider': paymentProvider.name,
       'healthNotes': healthNotes,
       'bloodType': bloodType,
       'shareHealthWithOrganizer': shareHealthWithOrganizer,
@@ -212,6 +228,11 @@ class ProfileState {
       contactNumber: json['contactNumber'] as String?,
       gcashNumber: json['gcashNumber'] as String?,
       gcashQrUrl: json['gcashQrUrl'] as String?,
+      gcashVerified: json['gcashVerified'] as bool? ?? false,
+      gcashVerifiedAt: json['gcashVerifiedAt'] != null
+          ? DateTime.tryParse('${json['gcashVerifiedAt']}')
+          : null,
+      paymentProvider: PaymentProvider.fromString(json['paymentProvider'] as String?),
       healthNotes: (json['healthNotes'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
@@ -444,8 +465,52 @@ class ProfileNotifier extends Notifier<ProfileState> {
   }
 
   void updateGCash(String number, String? qrUrl) {
-    state = state.copyWith(gcashNumber: number, gcashQrUrl: qrUrl);
+    final isNumberChanged = state.gcashNumber != number;
+    state = state.copyWith(
+      gcashNumber: number,
+      gcashQrUrl: isNumberChanged ? null : (qrUrl ?? state.gcashQrUrl),
+      gcashVerified: isNumberChanged ? false : state.gcashVerified,
+      gcashVerifiedAt: isNumberChanged ? null : state.gcashVerifiedAt,
+    );
     _persist();
+  }
+
+  /// Sets the verified status of the user's e-wallet number following successful OTP.
+  void setGcashVerified({required String number, required DateTime verifiedAt}) {
+    state = state.copyWith(
+      gcashNumber: number,
+      gcashVerified: true,
+      gcashVerifiedAt: verifiedAt,
+    );
+    _persist();
+  }
+
+  /// Updates the payment provider (GCash / Maya) and resets verified state and QR.
+  void updatePaymentProvider(PaymentProvider provider) {
+    if (state.paymentProvider == provider) return;
+    state = state.copyWith(
+      paymentProvider: provider,
+      gcashVerified: false,
+      gcashVerifiedAt: null,
+      gcashQrUrl: null,
+    );
+    _persist();
+  }
+
+  /// Uploads and attaches a verified QR code image URL to the user's profile.
+  Future<String?> updateGcashQr(String localFilePath) async {
+    final supaUser = Supabase.instance.client.auth.currentUser;
+    if (supaUser == null) {
+      state = state.copyWith(gcashQrUrl: localFilePath);
+      _persist();
+      return localFilePath;
+    }
+
+    final repo = ref.read(profileRepositoryProvider);
+    final publicUrl = await repo.uploadGcashQr(supaUser.id, localFilePath);
+    state = state.copyWith(gcashQrUrl: publicUrl ?? localFilePath);
+    _persist();
+    return publicUrl ?? localFilePath;
   }
 
   /// Signs the user out by delegating to [AuthNotifier], which clears the

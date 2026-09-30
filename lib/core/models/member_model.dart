@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'payment_provider.dart';
 
 enum MemberStatus {
   pending,
@@ -29,6 +30,8 @@ class MemberModel {
   final String? gcashQrUrl;
   final MemberStatus status;
   final bool hideSurname;
+  final bool gcashVerified;
+  final PaymentProvider paymentProvider;
 
   const MemberModel({
     required this.id,
@@ -44,6 +47,8 @@ class MemberModel {
     this.gcashQrUrl,
     this.status = MemberStatus.approved,
     this.hideSurname = false,
+    this.gcashVerified = false,
+    this.paymentProvider = PaymentProvider.gcash,
   });
 
   bool get isOrganizer => roles.contains(MemberRole.organizer);
@@ -62,6 +67,8 @@ class MemberModel {
     String? gcashQrUrl,
     MemberStatus? status,
     bool? hideSurname,
+    bool? gcashVerified,
+    PaymentProvider? paymentProvider,
   }) {
     return MemberModel(
       id: id ?? this.id,
@@ -77,6 +84,8 @@ class MemberModel {
       gcashQrUrl: gcashQrUrl ?? this.gcashQrUrl,
       status: status ?? this.status,
       hideSurname: hideSurname ?? this.hideSurname,
+      gcashVerified: gcashVerified ?? this.gcashVerified,
+      paymentProvider: paymentProvider ?? this.paymentProvider,
     );
   }
 
@@ -157,6 +166,10 @@ class MemberModel {
       gcashQrUrl: map['gcash_qr_url'] ?? nestedUser?['gcash_qr_url'],
       status: status,
       hideSurname: hideSurname,
+      gcashVerified: map['gcash_verified'] == true || nestedUser?['gcash_verified'] == true,
+      paymentProvider: PaymentProvider.fromString(
+        map['payment_provider']?.toString() ?? nestedUser?['payment_provider']?.toString(),
+      ),
     );
   }
 
@@ -183,6 +196,8 @@ class MemberModel {
       'gcash_qr_url': gcashQrUrl,
       'status': status.name,
       'hide_surname': hideSurname,
+      'gcash_verified': gcashVerified,
+      'payment_provider': paymentProvider.name,
     };
   }
 }

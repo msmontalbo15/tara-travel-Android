@@ -1,7 +1,7 @@
 # 🧠 TARA TRAVEL — ARCHITECTURAL MEMORY & AI GROUND TRUTH
 > **AUTHORITATIVE CONTEXT FOR AI ASSISTANTS & CORE DEVELOPERS**  
 > **Status**: Production Verified  
-> **Last Synced**: September 2026  
+> **Last Synced**: October 2026  
 > **Scope**: Complete Database Schema, Stored Functions, RPCs, Repositories, State Providers, Security Invariants, Feature Implementations, Software Design Patterns & REST Standards.
 
 ---
@@ -35,6 +35,10 @@ public.users (
   phone text,                              -- encrypted at rest (3-Layer)
   gcash_number text,                       -- encrypted at rest (3-Layer)
   gcash_qr_url text,
+  fcm_token text,                          -- Firebase Cloud Messaging device push token
+  gcash_verified boolean default false,    -- Phone Auth OTP verification status
+  gcash_verified_at timestamptz,           -- Timestamp of verification
+  payment_provider text default 'gcash',   -- 'gcash' | 'maya'
   bio text,
   blood_type text,
   home_city text,
@@ -1580,6 +1584,47 @@ Decouples rigid coordinate and map requirements, introducing first-class support
   - Real-time category filter chips with item counters.
   - Hero header with brand gradient and Playfair Display typography.
   - Integrated into `HomeScreen` post-frame lifecycle and `ProfileAccountCard` version tile.
+
+---
+
+## 38. Unified Firebase & Supabase Cloud Ecosystem (`IMP-141`)
+
+### 38.1 Dual-Cloud Partition Architecture
+- **Supabase Core**: Relational database (PostgreSQL 15), Row Level Security (RLS), Supabase Storage buckets (`avatars`), PostgREST CRUD, and Realtime WebSocket presence/channels. Single source of truth.
+- **Firebase Device Edge**: Native hardware push wake-up via `firebase_messaging` (FCM), native and Flutter framework crash forensics via `firebase_crashlytics`, and phone authentication via `firebase_auth`.
+
+### 38.2 Remote Device Wake-up (`FcmService`)
+- **Location**: `lib/core/services/fcm_service.dart`
+- **Background Isolate**: `firebaseMessagingBackgroundHandler` handles background/terminated FCM payloads.
+- **Deep-Link Navigation**: Dispatches to `NotificationRouter` for auto-navigation to Chat, Expenses, Navigation, or Profile.
+- **Foreground Bridge**: Passes foreground push payloads to `InAppNotificationManager.post()` for non-blocking dynamic toast presentation with route de-duplication.
+- **Edge Relay**: Supabase Edge Function `push-relay` relays trip notifications from database webhooks to FCM HTTP v1.
+
+---
+
+## 39. E-Wallet OTP Verification & Clean QR Processing Architecture (`IMP-142`)
+
+### 39.1 Provider-Agnostic Abstraction (`EWalletVerificationService`)
+- **Location**: `lib/core/services/ewallet_verification_service.dart`
+- **Interface**:
+  - `sendOtp(String phoneNumber)`: Formats and dispatches Firebase Phone Auth SMS.
+  - `verifyOtp(String verificationId, String smsCode)`: Validates 6-digit code.
+  - `decodeQrPayload(String rawQrData)`: Extracts phone number from provider-specific QR payload.
+  - `validateQrMatchesVerifiedNumber(String qrNumber, String verifiedNumber)`: Normalizes to last 10 digits (`9XXXXXXXXX`) to guarantee invariant comparison regardless of `+63`, `09`, or national prefix formats.
+- **Supported Providers**: `PaymentProvider.gcash` (`#007DFE`) and `PaymentProvider.maya` (`#2FB86E`).
+
+### 39.2 GCash Concrete Service (`GcashVerificationService`)
+- **Location**: `lib/core/services/gcash_verification_service.dart`
+- **Phone Auth**: Wraps `FirebaseAuth.instance.verifyPhoneNumber`, with auto-retrieval timeouts, verification ID handling, and credential cleanup upon verification completion.
+- **QR Payload Parser**: Decodes `qrph.gcash.com` URLs, `gcash://` deeplinks, standard URL parameter queries, and plain PH mobile numbers.
+
+### 39.3 Smart QR Decoding, Cross-Validation & Regeneration Pipeline (`GcashQrProcessor`)
+- **Location**: `lib/core/services/gcash_qr_processor.dart`
+- **Barcode Detection**: Uses `MobileScannerController.analyzeImage(filePath)` to detect QR codes in local gallery screenshots.
+- **Cross-Validation Invariant**: Phone number extracted from QR MUST match the user's verified phone number; rejects uploads with mismatched numbers.
+- **Brand QR Regeneration**: Rather than saving raw screenshot clutter (battery bars, app chrome), decoded payload is regenerated into a pristine 320×320 px branded QR code (`qr_flutter`) styled with brand colors and exported to PNG.
+- **Storage Target**: Uploaded to Supabase Storage `avatars/gcash_qr/{userId}.png`.
+- **Safety Lifecycle**: Resetting or editing phone number or toggling payment provider immediately revokes verification (`gcash_verified = false`) and clears stored QR code.
 
 ---
 

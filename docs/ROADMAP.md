@@ -26,7 +26,7 @@ This document serves as our compiled repository master plan, organized hierarchi
 | **11** | [Meet-up Assembly, Smart Countdown & Automatic Departure Detection](#plan-11-meet-up-assembly-smart-countdown-automatic-departure-detection) | 🟢 **Complete** | Day 1 Stop 0 auto-insertion, meet-up grace period, GPS distance countdown & auto departure |
 | **12** | [Floating Travel Bubble & System Overlay HUD (PiP / Chathead Mode)](#plan-12-floating-travel-bubble-system-overlay-hud-pip-chathead-mode) | 🟢 **Complete** | In-app floating bubble + opt-in `SYSTEM_ALERT_WINDOW` convoy overlay, live radar & quick expense logging |
 | **20** | [Chat Announcements Engine & Trip Detail Command Hub](#plan-20-chat-announcements-engine--trip-detail-command-hub) | 🟢 **Complete** | Pinned announcements, priority tinting (Urgent vs Notice), live banner on Trip Detail & chat deep-linking |
-| **23** | [GCash Number OTP Verification & Verified QR Upload](#plan-23-gcash-number-otp-verification--verified-qr-upload) | 🟡 **Drafted / Queued** | Firebase Phone Auth OTP for GCash number ownership, verified QR upload gated behind OTP, tamper-proof payment profile |
+| **23** | [GCash Number OTP Verification & Verified QR Upload](#plan-23-gcash-number-otp-verification--verified-qr-upload) | 🟢 **Complete** | Firebase Phone Auth OTP for GCash number ownership, verified QR upload gated behind OTP, tamper-proof payment profile (IMP-142) |
  
 ### 🔴 Tier 3: Major Architecture & Platform (End-to-End Systems, AI & Middleware)
 | # | Plan / Feature | Status | Key Focus |
@@ -41,7 +41,7 @@ This document serves as our compiled repository master plan, organized hierarchi
 | **20** | [Chat Announcements Engine & Trip Detail Command Hub](#plan-20-chat-announcements-engine--trip-detail-command-hub) | 🟢 **Complete** | Interactive `TripAnnouncementsCard`, urgent Coral/notice Sunset banners, 1-tap chat jump |
 | **21** | [Unified Firebase & Supabase Cloud Ecosystem (Remote FCM, Crashlytics & Real-Time Sync)](#plan-21-unified-firebase--supabase-cloud-ecosystem-remote-fcm-crashlytics--real-time-sync) | 🟢 **Complete** | Dual-cloud architecture: Supabase backend/RLS/storage + Firebase device-wake push (FCM), Crashlytics & telemetry |
 | **22** | [Advanced Convoy Telemetry, Formation Radar & Geofenced Rendezvous](#plan-22-advanced-convoy-telemetry-formation-radar--geofenced-rendezvous) | 🟢 **Complete** | Lead/tail pace radar, individual stop ETAs, auto-arrival geofencing, midpoint gathering & background PiP HUD |
-| **23** | [GCash Number OTP Verification & Verified QR Upload](#plan-23-gcash-number-otp-verification--verified-qr-upload) | 🟡 **Drafted / Queued** | Firebase Phone Auth OTP, smart QR auto-crop & cross-validation, brand QR regeneration |
+| **23** | [GCash Number OTP Verification & Verified QR Upload](#plan-23-gcash-number-otp-verification--verified-qr-upload) | 🟢 **Complete** | Firebase Phone Auth OTP, smart QR auto-crop & cross-validation, brand QR regeneration (IMP-142) |
 
 ### 📱 Screen-by-Screen & Batching Index
 - [Screen-by-Screen Feature Matrix & Implementation Clusters](#-screen-by-screen-feature-matrix--implementation-clusters)
@@ -75,6 +75,7 @@ This document serves as our compiled repository master plan, organized hierarchi
 | **Plan 20** | Chat Announcements Engine & Trip Detail Command Hub | commit:6336b46 | ✅ Complete | Interactive `TripAnnouncementsCard`, urgent Coral/notice Sunset banners, 1-tap chat jump. |
 | **Plan 21** | Unified Firebase & Supabase Cloud Ecosystem | IMP-141 | ✅ Complete | Dual-cloud bootstrap (`firebase_core`), FCM remote device wake-up (`FcmService`), Crashlytics error forensics, and Supabase `push-relay` Edge Function. |
 | **Plan 22** | Advanced Convoy Telemetry, Formation Radar & Geofenced Rendezvous | IMP-140 | ✅ Complete | Lead/mid/tail pace radar, per-companion stop ETAs, auto-arrival geofencing, midpoint gathering & floating bubble HUD. |
+| **Plan 23** | GCash Number OTP Verification & Verified QR Upload | IMP-142 | ✅ Complete | Firebase Phone Auth OTP verification, provider-agnostic `EWalletVerificationService` (GCash & Maya), smart QR decoding, cross-validation & brand-styled clean QR regeneration. |
 
 *Full architectural specifications and schemas for completed plans are preserved in docs/MEMORY.md and docs/IMPLEMENTATION_MEMORY.md.*
 
@@ -873,7 +874,7 @@ Deepen Tara Travel's real-time location sharing into an intelligent, cooperative
 ---
 
 
-## Plan 23: GCash Number OTP Verification & Verified QR Upload
+## Plan 23: GCash Number OTP Verification & Verified QR Upload [COMPLETE — IMP-142]
 
 ### Goal
 Harden Tara Travel's GCash payment profile by enforcing **phone number ownership verification via Firebase Phone Auth OTP** before the number is saved and before a GCash QR code image can be uploaded. Additionally, **auto-decode, cross-validate, and regenerate** uploaded QR code screenshots into clean, brand-consistent renders. Guarantees that the GCash number entered by the user and the QR code attached to their profile belong to the **same verified phone number**, eliminating mismatched, fraudulent, or typo-ridden payment credentials across group expense settlements.

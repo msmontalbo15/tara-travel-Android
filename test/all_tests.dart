@@ -7,6 +7,8 @@ import 'core_model_mapping_test.dart' as core_model_mapping_test;
 import 'services/convoy_telemetry_test.dart' as convoy_telemetry_test;
 import 'services/departure_advisory_service_test.dart' as departure_advisory_service_test;
 import 'services/fcm_service_test.dart' as fcm_service_test;
+import 'services/gcash_qr_processor_test.dart' as gcash_qr_processor_test;
+import 'services/gcash_verification_service_test.dart' as gcash_verification_service_test;
 import 'services/geofence_arrival_service_test.dart' as geofence_arrival_service_test;
 import 'services/google_maps_parser_service_test.dart' as google_maps_parser_service_test;
 import 'services/osrm_routing_service_test.dart' as osrm_routing_service_test;
@@ -25,5 +27,7 @@ void main() {
     geofence_arrival_service_test.main();
     convoy_telemetry_test.main();
     fcm_service_test.main();
+    gcash_verification_service_test.main();
+    gcash_qr_processor_test.main();
   });
 }

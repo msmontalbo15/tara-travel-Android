@@ -10,6 +10,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/widgets/feedback/app_feedback.dart';
 import '../../core/widgets/ph_location_picker.dart';
 import '../../core/widgets/profile_completion_banner.dart';
+import 'widgets/gcash_otp_verification_sheet.dart';
 import 'widgets/profile_account_card.dart';
 import 'widgets/profile_card.dart';
 import 'widgets/profile_health_card.dart';
@@ -311,14 +312,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   void _editGcash(BuildContext context) {
-    _showTextEditDialog(
-      context: context,
-      title: 'GCash Number',
-      hint: '+63 9XX XXX XXXX',
-      initialValue: ref.read(profileProvider).gcashNumber ?? '',
-      keyboardType: TextInputType.phone,
-      onSave: (val) => ref.read(profileProvider.notifier).updateGCash(val, null),
-    );
+    final provider = ref.read(profileProvider).paymentProvider;
+    GcashOtpVerificationSheet.show(context, initialProvider: provider);
   }
 
   Future<void> _editDob(BuildContext context, ProfileState profile) async {

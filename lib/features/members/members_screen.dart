@@ -667,11 +667,24 @@ class _MemberCard extends StatelessWidget {
                 ),
                 if (member.gcashNumber != null) ...[
                   const SizedBox(height: 6),
-                  Text(
-                    member.gcashNumber!,
-                    style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.muted),
+                  Row(
+                    children: [
+                      Text(
+                        member.gcashNumber!,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.muted,
+                        ),
+                      ),
+                      if (member.gcashVerified) ...[
+                        const SizedBox(width: 4),
+                        const Icon(
+                          Icons.verified_rounded,
+                          size: 13,
+                          color: Color(0xFF007DFE),
+                        ),
+                      ],
+                    ],
                   ),
                 ],
               ],
@@ -994,9 +1007,11 @@ class _ContactSheet extends ConsumerWidget {
           if (member.gcashNumber != null)
             _contactRow(
               icon: Icons.account_balance_wallet_rounded,
-              action: 'GCash',
+              action: member.gcashVerified
+                  ? '${member.paymentProvider.displayName} (✓ Verified)'
+                  : member.paymentProvider.displayName,
               detail: member.gcashNumber!,
-              color: const Color(0xFF0066CC),
+              color: member.paymentProvider.brandColor,
             ),
         ],
       ),

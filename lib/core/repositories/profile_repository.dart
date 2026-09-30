@@ -52,6 +52,38 @@ class ProfileRepository {
     }
   }
 
+  /// Uploads an OTP-verified e-wallet QR code image to Supabase Storage bucket `avatars`
+  /// path: `gcash_qr/{userId}.png`.
+  Future<String?> uploadGcashQr(String userId, String localFilePath) async {
+    try {
+      final file = File(localFilePath);
+      if (!file.existsSync()) {
+        debugPrint('[ProfileRepository] uploadGcashQr: file does not exist at $localFilePath');
+        return null;
+      }
+
+      final ext = localFilePath.split('.').last.toLowerCase();
+      final storagePath = 'gcash_qr/$userId.$ext';
+
+      await _supabase.storage.from('avatars').upload(
+        storagePath,
+        file,
+        fileOptions: const FileOptions(upsert: true),
+      );
+
+      final publicUrl = _supabase.storage.from('avatars').getPublicUrl(storagePath);
+      final bustedUrl = '$publicUrl?t=${DateTime.now().millisecondsSinceEpoch}';
+      debugPrint('[ProfileRepository] uploadGcashQr success: $bustedUrl');
+      return bustedUrl;
+    } on StorageException catch (e) {
+      debugPrint('[ProfileRepository] uploadGcashQr StorageException: ${e.message}');
+      return null;
+    } catch (e) {
+      debugPrint('[ProfileRepository] uploadGcashQr error: $e');
+      return null;
+    }
+  }
+
   // ── REMOTE STORAGE (SUPABASE WITH 3-LAYER ENCRYPTION) ──────────────────────
 
   /// Fetches a user's profile from Supabase, decrypting sensitive fields.
@@ -130,6 +162,11 @@ class ProfileRepository {
       'avatar_url': data['profilePhotoUrl'],
       'gcash_qr_url': data['gcashQrUrl'],
       'gcash_number': encryptedGcash ?? rawGcashNumber,
+      'gcash_verified': data['gcashVerified'] ?? false,
+      'gcash_verified_at': data['gcashVerifiedAt'] is DateTime
+          ? (data['gcashVerifiedAt'] as DateTime).toIso8601String()
+          : data['gcashVerifiedAt']?.toString(),
+      'payment_provider': data['paymentProvider'] ?? 'gcash',
       'health_notes': encryptedHealth ?? primaryHealthNote,
       'allergies': healthNotes is List ? healthNotes.cast<String>() : const <String>[],
       'home_city': data['homeCity'],
@@ -209,6 +246,11 @@ class ProfileRepository {
       'contactNumber': decryptedPhone,
       'gcashNumber': decryptedGcash,
       'gcashQrUrl': row['gcash_qr_url'],
+      'gcashVerified': row['gcash_verified'] == true,
+      'gcashVerifiedAt': row['gcash_verified_at'] != null
+          ? DateTime.tryParse('${row['gcash_verified_at']}')
+          : null,
+      'paymentProvider': row['payment_provider'] ?? 'gcash',
       'healthNotes': healthNotes,
       'shareHealthWithOrganizer': row['share_health_with_org'] ?? false,
       'hideSurname': row['hide_surname'] == true ||
