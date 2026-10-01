@@ -11,28 +11,38 @@ import '../../../core/widgets/feedback/app_feedback.dart';
 /// Opens a modal bottom-sheet that lets the user enter a 6-character trip
 /// invite code. On success, the `allTripsProvider` is refreshed and the sheet
 /// is dismissed with a success snackbar.
-void showJoinTripModal(BuildContext context, [WidgetRef? ref]) {
+/// Optional [initialCode] allows auto-populating from universal links (Plan 18).
+void showJoinTripModal(BuildContext context, [WidgetRef? ref, String? initialCode]) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (context) => const _JoinTripSheet(),
+    builder: (context) => _JoinTripSheet(initialCode: initialCode),
   );
 }
 
 // ── Private Sheet Widget ─────────────────────────────────────────────────────
 
 class _JoinTripSheet extends ConsumerStatefulWidget {
-  const _JoinTripSheet();
+  final String? initialCode;
+  const _JoinTripSheet({this.initialCode});
 
   @override
   ConsumerState<_JoinTripSheet> createState() => _JoinTripSheetState();
 }
 
 class _JoinTripSheetState extends ConsumerState<_JoinTripSheet> {
-  final _codeController = TextEditingController();
+  late final TextEditingController _codeController;
   bool _isLoading = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _codeController = TextEditingController(
+      text: widget.initialCode?.toUpperCase().trim() ?? '',
+    );
+  }
 
   @override
   void dispose() {

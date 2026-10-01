@@ -32,6 +32,7 @@ import 'core/security/three_layer_encryption_service.dart';
 import 'core/services/notification_router.dart';
 import 'core/widgets/notifications/in_app_notification_overlay.dart';
 import 'features/navigation/widgets/in_app_floating_bubble.dart';
+import 'features/trips/widgets/join_trip_modal.dart';
 
 
 void main() async {
@@ -93,8 +94,33 @@ void main() async {
   );
 }
 
-class TaraApp extends StatelessWidget {
+class TaraApp extends StatefulWidget {
   const TaraApp({super.key});
+
+  @override
+  State<TaraApp> createState() => _TaraAppState();
+}
+
+class _TaraAppState extends State<TaraApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  Future<bool> didPushRouteInformation(RouteInformation routeInformation) async {
+    final uri = routeInformation.uri;
+    final handled = await NotificationRouter.instance.handleDeepLink(uri);
+    if (handled) return true;
+    return super.didPushRouteInformation(routeInformation);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -116,6 +142,30 @@ class TaraApp extends StatelessWidget {
           );
         },
         initialRoute: '/',
+        onGenerateRoute: (settings) {
+          final name = settings.name;
+          if (name != null) {
+            final uri = Uri.tryParse(name);
+            if (uri != null && (uri.path == '/join' || uri.path.startsWith('/join/'))) {
+              String? code;
+              if (uri.pathSegments.length > 1) {
+                code = uri.pathSegments[1].trim();
+              } else {
+                code = uri.queryParameters['code']?.trim();
+              }
+              return MaterialPageRoute<void>(
+                settings: settings,
+                builder: (context) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    showJoinTripModal(context, null, code);
+                  });
+                  return const HomeScreen();
+                },
+              );
+            }
+          }
+          return null;
+        },
         routes: {
           '/':             (context) => SplashScreen(
                 onGetStarted: () =>

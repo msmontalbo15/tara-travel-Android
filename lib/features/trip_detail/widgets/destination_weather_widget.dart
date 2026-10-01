@@ -120,19 +120,21 @@ class DestinationWeatherWidget extends ConsumerWidget {
         !effectiveTitle.toLowerCase().contains(city.toLowerCase().trim());
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isRainy
-              ? [const Color(0xFF1E2A38), const Color(0xFF2C3E50)]
-              : [const Color(0xFF2C1A14), const Color(0xFF3F271E)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
+        color: isRainy ? const Color(0xFF1E2834) : const Color(0xFF281912),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: Colors.white.withValues(alpha: 0.08),
+          width: 0.8,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -141,7 +143,7 @@ class DestinationWeatherWidget extends ConsumerWidget {
             children: [
               const Icon(
                 Icons.wb_sunny_outlined,
-                size: 14,
+                size: 13,
                 color: AppColors.amber,
               ),
               const SizedBox(width: 6),
@@ -153,25 +155,25 @@ class DestinationWeatherWidget extends ConsumerWidget {
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
-                      letterSpacing: 1.1,
+                      letterSpacing: 0.8,
                       color: Colors.white.withValues(alpha: 0.65),
                     ),
                     children: [
-                      const TextSpan(text: 'NEXT DESTINATION • '),
+                      const TextSpan(text: 'WEATHER · '),
                       TextSpan(
                         text: effectiveTitle.toUpperCase(),
                         style: const TextStyle(
                           color: Colors.white,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                       if (shouldShowCity) ...[
                         TextSpan(
                           text: ' ($city)',
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.7),
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.3,
+                            color: Colors.white.withValues(alpha: 0.6),
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: 0.2,
                           ),
                         ),
                       ],
@@ -182,17 +184,17 @@ class DestinationWeatherWidget extends ConsumerWidget {
               if (weather.hasAlert) ...[
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                   decoration: BoxDecoration(
-                    color: AppColors.red.withValues(alpha: 0.25),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppColors.red.withValues(alpha: 0.5)),
+                    color: AppColors.red.withValues(alpha: 0.20),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.red.withValues(alpha: 0.4), width: 0.8),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.warning_amber_rounded, size: 12, color: AppColors.red),
-                      const SizedBox(width: 4),
+                      const Icon(Icons.warning_amber_rounded, size: 11, color: AppColors.red),
+                      const SizedBox(width: 3),
                       Text(
                         weather.alertLevel ?? 'ALERT',
                         style: const TextStyle(
@@ -207,30 +209,30 @@ class DestinationWeatherWidget extends ConsumerWidget {
               ],
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           Row(
             children: [
               Text(
                 weather.conditionIcon,
-                style: const TextStyle(fontSize: 32),
+                style: const TextStyle(fontSize: 28),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     '${weather.temperature.round()}°C',
                     style: const TextStyle(
-                      fontSize: 24,
+                      fontSize: 20,
                       fontWeight: FontWeight.w800,
                       color: Colors.white,
-                      letterSpacing: -0.5,
+                      letterSpacing: -0.3,
                     ),
                   ),
                   Text(
                     weather.condition,
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 11,
                       fontWeight: FontWeight.w500,
                       color: Colors.white.withValues(alpha: 0.70),
                     ),
@@ -243,7 +245,7 @@ class DestinationWeatherWidget extends ConsumerWidget {
                 label: '${weather.rainProbability.round()}% Rain',
                 color: weather.rainProbability > 30 ? const Color(0xFF64B5F6) : Colors.white70,
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               _buildTelemetryBadge(
                 icon: Icons.wb_twilight_rounded,
                 label: 'UV ${weather.uvIndex}',

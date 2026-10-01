@@ -44,6 +44,30 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="taratravel" android:host="callback" />
             </intent-filter>
+
+            <!-- Universal App Links for Web Trip Invites (Plan 18) -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="tara-travel.app"
+                    android:pathPrefix="/join" />
+                <data
+                    android:scheme="https"
+                    android:host="www.tara-travel.app"
+                    android:pathPrefix="/join" />
+            </intent-filter>
+
+            <!-- Custom URI scheme for Direct Trip Invites (tara://trip/join?code=...) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="tara" android:host="trip" android:pathPrefix="/join" />
+                <data android:scheme="taratravel" android:host="trip" android:pathPrefix="/join" />
+            </intent-filter>
         </activity>
 
         <!-- FileProvider for installing downloaded APKs -->

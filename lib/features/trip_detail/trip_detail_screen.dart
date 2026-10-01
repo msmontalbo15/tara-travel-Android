@@ -473,11 +473,6 @@ class _CollapsibleHeroHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final accentLight = HSLColor.fromColor(coverColor)
-        .withLightness(
-            (HSLColor.fromColor(coverColor).lightness + 0.18).clamp(0.0, 1.0))
-        .toColor();
-
     final emoji = trip.coverEmoji;
     final imageUrl = trip.destinationDetails?['image'] ??
         trip.destinationDetails?['cover_image'] ??
@@ -682,7 +677,7 @@ class _CollapsibleHeroHeader extends ConsumerWidget {
                   Positioned.fill(
                     child: IgnorePointer(
                       child: Opacity(
-                        opacity: 0.14,
+                        opacity: 0.10,
                         child: Image.network(
                           imageUrl.toString(),
                           fit: BoxFit.cover,
@@ -692,46 +687,20 @@ class _CollapsibleHeroHeader extends ConsumerWidget {
                     ),
                   ),
 
-                // Large emoji watermark
+                // Subtle emoji accent
                 Positioned(
-                  right: -20,
-                  bottom: -30,
+                  right: -10,
+                  bottom: -20,
                   child: IgnorePointer(
                     child: Opacity(
-                      opacity: 0.12,
+                      opacity: 0.10,
                       child: Transform.rotate(
-                        angle: -0.10,
+                        angle: -0.08,
                         child: Text(
                           emoji,
-                          style: const TextStyle(fontSize: 160, height: 1.0),
+                          style: const TextStyle(fontSize: 120, height: 1.0),
                         ),
                       ),
-                    ),
-                  ),
-                ),
-
-                // Ambient mesh blobs
-                Positioned(
-                  top: -40,
-                  right: -30,
-                  child: Container(
-                    width: 180,
-                    height: 180,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: accentLight.withValues(alpha: 0.22),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  bottom: -20,
-                  left: -40,
-                  child: Container(
-                    width: 130,
-                    height: 130,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white.withValues(alpha: 0.07),
                     ),
                   ),
                 ),
@@ -1018,36 +987,36 @@ class _ItineraryHubCard extends StatelessWidget {
       return GestureDetector(
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(18),
             border: Border.all(
-                color: AppColors.primary.withValues(alpha: 0.25), width: 1.2),
+                color: const Color(0xFFEBE8E3), width: 1.0),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.08),
-                blurRadius: 14,
-                offset: const Offset(0, 4),
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
               ),
             ],
           ),
           child: Row(
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   nextStop!.type.icon,
                   color: AppColors.primary,
-                  size: 22,
+                  size: 20,
                 ),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1069,18 +1038,18 @@ class _ItineraryHubCard extends StatelessWidget {
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
                             color: AppColors.primary,
-                            letterSpacing: 0.6,
+                            letterSpacing: 0.5,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 3),
                     Text(
                       nextStop!.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 15,
+                        fontSize: 14,
                         fontWeight: FontWeight.w700,
                         color: Color(0xFF1A1A1A),
                       ),
@@ -1091,7 +1060,7 @@ class _ItineraryHubCard extends StatelessWidget {
                       Row(
                         children: [
                           const Icon(Icons.place_outlined,
-                              size: 12, color: Color(0xFF8E8E93)),
+                              size: 11, color: Color(0xFF8E8E93)),
                           const SizedBox(width: 3),
                           Expanded(
                             child: Text(
@@ -1099,7 +1068,7 @@ class _ItineraryHubCard extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
-                                fontSize: 12,
+                                fontSize: 11,
                                 color: Color(0xFF8E8E93),
                               ),
                             ),
@@ -1110,16 +1079,9 @@ class _ItineraryHubCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF2F2F7),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.chevron_right_rounded,
-                    size: 18, color: Color(0xFF8E8E93)),
-              ),
+              const SizedBox(width: 6),
+              const Icon(Icons.chevron_right_rounded,
+                  size: 20, color: Color(0xFFB0B0B8)),
             ],
           ),
         ),
@@ -1132,35 +1094,35 @@ class _ItineraryHubCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFE5E5EA), width: 0.8),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFEBE8E3), width: 1.0),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
         child: Row(
           children: [
             Container(
-              width: 44,
-              height: 44,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
-                color: const Color(0xFF185FA5).withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(14),
+                color: const Color(0xFF185FA5).withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(
                 Icons.calendar_month_rounded,
                 color: Color(0xFF185FA5),
-                size: 22,
+                size: 20,
               ),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1168,7 +1130,7 @@ class _ItineraryHubCard extends StatelessWidget {
                   Text(
                     isCompleted ? 'All Stops Completed 🎉' : 'Trip Itinerary',
                     style: const TextStyle(
-                      fontSize: 15,
+                      fontSize: 14,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF1A1A1A),
                     ),
@@ -1179,22 +1141,15 @@ class _ItineraryHubCard extends StatelessWidget {
                         ? '$visitedStops of $totalStops stops visited · $dayCount days'
                         : 'Plan activities, food, hotels & stops',
                     style: const TextStyle(
-                      fontSize: 12,
+                      fontSize: 11,
                       color: Color(0xFF8E8E93),
                     ),
                   ),
                 ],
               ),
             ),
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF2F2F7),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(Icons.chevron_right_rounded,
-                  size: 18, color: Color(0xFF8E8E93)),
-            ),
+            const Icon(Icons.chevron_right_rounded,
+                size: 20, color: Color(0xFFB0B0B8)),
           ],
         ),
       ),
@@ -1250,16 +1205,16 @@ class _LogisticsCard extends StatelessWidget {
     final transportMode = trip.transportMode;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE5E5EA), width: 0.8),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFEBE8E3), width: 1.0),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -1272,12 +1227,12 @@ class _LogisticsCard extends StatelessWidget {
               const Row(
                 children: [
                   Icon(Icons.near_me_rounded,
-                      size: 16, color: AppColors.primary),
+                      size: 15, color: AppColors.primary),
                   SizedBox(width: 6),
                   Text(
                     'Logistics & Departure',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF1A1A1A),
                     ),
@@ -1287,16 +1242,16 @@ class _LogisticsCard extends StatelessWidget {
               if (transportMode != null && transportMode.isNotEmpty)
                 Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
                   decoration: BoxDecoration(
                     color: AppColors.sand,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(_resolveTransportIcon(transportMode),
-                          size: 13, color: AppColors.primary),
+                          size: 12, color: AppColors.primary),
                       const SizedBox(width: 4),
                       Text(
                         _formatTransportLabel(transportMode),
@@ -1312,21 +1267,21 @@ class _LogisticsCard extends StatelessWidget {
             ],
           ),
           if (hasDeparture) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Container(
-                  width: 36,
-                  height: 36,
+                  width: 32,
+                  height: 32,
                   decoration: BoxDecoration(
                     color: const Color(0xFFF2F2F7),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(Icons.place_rounded,
-                      size: 18, color: Color(0xFF185FA5)),
+                      size: 16, color: Color(0xFF185FA5)),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1337,7 +1292,7 @@ class _LogisticsCard extends StatelessWidget {
                           fontSize: 9,
                           fontWeight: FontWeight.w700,
                           color: Color(0xFF8E8E93),
-                          letterSpacing: 0.6,
+                          letterSpacing: 0.5,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -1356,25 +1311,26 @@ class _LogisticsCard extends StatelessWidget {
                 ),
                 IconButton(
                   icon: const Icon(Icons.copy_rounded,
-                      size: 16, color: Color(0xFF8E8E93)),
+                      size: 15, color: Color(0xFF8E8E93)),
                   tooltip: 'Copy Departure Point',
+                  visualDensity: VisualDensity.compact,
                   onPressed: () => _copyDeparturePoint(context),
                 ),
               ],
             ),
           ],
           if (trip.transportMeta != null && trip.transportMeta!.isNotEmpty) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
               decoration: BoxDecoration(
                 color: AppColors.surfaceLight,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.directions_car_filled_rounded, size: 14, color: AppColors.primary),
-                  const SizedBox(width: 8),
+                  const Icon(Icons.directions_car_filled_rounded, size: 13, color: AppColors.primary),
+                  const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       () {
@@ -1395,7 +1351,7 @@ class _LogisticsCard extends StatelessWidget {
                         return kml != null ? 'Vehicle: $vName ($kml km/L)' : 'Vehicle: $vName';
                       }(),
                       style: const TextStyle(
-                        fontSize: 12,
+                        fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
                       ),
@@ -1435,16 +1391,16 @@ class _SquadPreviewCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFE5E5EA), width: 0.8),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFEBE8E3), width: 1.0),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
@@ -1452,28 +1408,28 @@ class _SquadPreviewCard extends StatelessWidget {
           children: [
             // Overlapping avatar cluster
             SizedBox(
-              height: 38,
-              width: (displayMembers.length * 26.0) +
-                  (remainingCount > 0 ? 32 : 12),
+              height: 34,
+              width: (displayMembers.length * 24.0) +
+                  (remainingCount > 0 ? 30 : 10),
               child: Stack(
                 children: [
                   for (int i = 0; i < displayMembers.length; i++)
                     Positioned(
-                      left: i * 24.0,
+                      left: i * 22.0,
                       child: MemberAvatarCircle(
                         photoUrl: displayMembers[i].profilePhotoUrl,
                         initials: displayMembers[i].initials,
                         color: displayMembers[i].color,
-                        size: 36,
+                        size: 32,
                         border: Border.all(color: Colors.white, width: 2),
                       ),
                     ),
                   if (remainingCount > 0)
                     Positioned(
-                      left: displayMembers.length * 24.0,
+                      left: displayMembers.length * 22.0,
                       child: Container(
-                        width: 36,
-                        height: 36,
+                        width: 32,
+                        height: 32,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: const Color(0xFF2C1A14),
@@ -1483,7 +1439,7 @@ class _SquadPreviewCard extends StatelessWidget {
                         child: Text(
                           '+$remainingCount',
                           style: const TextStyle(
-                            fontSize: 11,
+                            fontSize: 10,
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
                           ),
@@ -1501,12 +1457,12 @@ class _SquadPreviewCard extends StatelessWidget {
                   Text(
                     '${members.length} Squad ${members.length == 1 ? 'Member' : 'Members'}',
                     style: const TextStyle(
-                      fontSize: 14,
+                      fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF1A1A1A),
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 1),
                   const Text(
                     'Manage roles & split participants',
                     style: TextStyle(
@@ -1517,29 +1473,8 @@ class _SquadPreviewCard extends StatelessWidget {
                 ],
               ),
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF2F2F7),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Manage',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF1A1A1A),
-                    ),
-                  ),
-                  SizedBox(width: 2),
-                  Icon(Icons.chevron_right_rounded,
-                      size: 16, color: Color(0xFF8E8E93)),
-                ],
-              ),
-            ),
+            const Icon(Icons.chevron_right_rounded,
+                size: 20, color: Color(0xFFB0B0B8)),
           ],
         ),
       ),
@@ -1587,16 +1522,16 @@ class _BudgetCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: const Color(0xFFE5E5EA), width: 0.8),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFEBE8E3), width: 1.0),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 14,
-              offset: const Offset(0, 5),
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
@@ -1610,23 +1545,23 @@ class _BudgetCard extends StatelessWidget {
                 Row(
                   children: [
                     Container(
-                      width: 34,
-                      height: 34,
+                      width: 32,
+                      height: 32,
                       decoration: BoxDecoration(
                         color: _barColor.withValues(alpha: 0.10),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(9),
                       ),
                       child: Icon(Icons.account_balance_wallet_rounded,
-                          size: 18, color: _barColor),
+                          size: 16, color: _barColor),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 9),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
                           'Trip Budget & Expenses',
                           style: TextStyle(
-                            fontSize: 15,
+                            fontSize: 14,
                             fontWeight: FontWeight.w700,
                             color: Color(0xFF1A1A1A),
                           ),
@@ -1646,15 +1581,15 @@ class _BudgetCard extends StatelessWidget {
                 if (budget > 0)
                   Container(
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: _pctColor.withValues(alpha: 0.10),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
                       '${(budgetPct * 100).round()}% used',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 11,
                         fontWeight: FontWeight.w700,
                         color: _pctColor,
                       ),
@@ -1663,15 +1598,15 @@ class _BudgetCard extends StatelessWidget {
                 else
                   Container(
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF2F2F7),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Text(
                       'No Budget Set',
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: 10,
                         fontWeight: FontWeight.w600,
                         color: Color(0xFF8E8E93),
                       ),
@@ -1679,25 +1614,25 @@ class _BudgetCard extends StatelessWidget {
                   ),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
 
             // Progress bar
             if (budget > 0) ...[
               ClipRRect(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(6),
                 child: TweenAnimationBuilder<double>(
                   tween: Tween(begin: 0, end: budgetPct),
                   duration: const Duration(milliseconds: 900),
                   curve: Curves.easeOutCubic,
                   builder: (_, val, __) => LinearProgressIndicator(
                     value: val,
-                    minHeight: 8,
+                    minHeight: 6,
                     backgroundColor: const Color(0xFFF2F2F7),
                     valueColor: AlwaysStoppedAnimation<Color>(_barColor),
                   ),
                 ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
             ],
 
             // Spent / Pending / Remaining

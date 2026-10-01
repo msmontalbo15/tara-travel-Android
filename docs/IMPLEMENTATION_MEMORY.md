@@ -102,6 +102,7 @@
 | **`IMP-141`** | 2026-10-01 | Core & Cloud / Unified Firebase & Supabase Cloud Ecosystem (Plan 21) | Dual-cloud bridge (`firebase_core`, `firebase_messaging`, `firebase_crashlytics`, `firebase_auth`), `FcmService` remote device wake-up & background isolate handler, `CrashlyticsService` forensic exception capture, `users.fcm_token` migration, and `push-relay` Edge Function. |
 | **`IMP-142`** | 2026-10-01 | Profile & Payments / GCash Number OTP Verification & Verified QR Upload (Plan 23) | Firebase Phone Auth OTP ownership verification, provider-agnostic `EWalletVerificationService` (GCash & Maya), smart QR decoding & cross-validation, clean branded QR regeneration, and gated payment profile trust badges. |
 | **`IMP-143`** | 2026-10-01 | Core & CI / FcmService Test Isolation & Submodule Index Purge | Made `FirebaseMessaging` resolution lazy in `FcmService` to eliminate `[core/no-app]` crashes during headless test execution, guarded notification and subscription methods, and purged the non-existent `tara-admin` git submodule link from git index. |
+| **`IMP-144`** | 2026-10-02 | Deep Links & Laravel / Plan 18 Partial: Flutter Universal Deep Links & tara-admin Schema Alignment | Flutter Android App Links verification, `TaraApp` StatefulWidget deep link observer, `onGenerateRoute` `/join/{code}` handler, `NotificationRouter.handleDeepLink`, Laravel model Rule 1 alignment, `InviteController`, `assetlinks.json`, `RemoteConfigController`, and branded `join.blade.php` preview page. |
 
 ---
 
@@ -3378,5 +3379,54 @@
   - `flutter analyze --fatal-infos --fatal-warnings` completed with 0 issues.
   - Unit test `FcmService initial state is safe before platform initialization` verified to pass without native Firebase or Supabase runtime requirements.
 
+---
 
+### `IMP-144` · Plan 18 Partial: Flutter Universal Deep Links & tara-admin Schema Alignment (Deferred)
+- **Date**: October 02, 2026
+- **Status**: ⏳ Partial — Plan 18 deferred to last priority per user request.
+- **Target Files**:
+  - `android/app/src/main/AndroidManifest.xml` [MODIFIED — Added `android:autoVerify="true"` intent-filter for `https://tara-travel.app/join` and `https://www.tara-travel.app/join`, plus custom scheme intent-filters for `tara://trip/join` and `taratravel://trip/join`]
+  - `lib/main.dart` [MODIFIED — Converted `TaraApp` from `StatelessWidget` to `StatefulWidget` with `WidgetsBindingObserver`; added `didPushRouteInformation` deep link handler and `onGenerateRoute` for `/join/{code}` routes opening `showJoinTripModal`]
+  - `lib/core/services/notification_router.dart` [MODIFIED — Added `NotificationTargetScreen.joinTrip` enum value, `handleDeepLink(Uri)` method parsing universal links and custom schemes, and `navigateTo` case for `joinTrip`]
+  - `lib/features/trips/widgets/join_trip_modal.dart` [MODIFIED — Added optional `initialCode` parameter to `showJoinTripModal` and `_JoinTripSheet` for prefilling invite codes from deep links]
+  - `D:\Spencer\Downloads\tara-admin\app\Models\Trip.php` [MODIFIED — Purged dropped columns (`cover_color`, `cover_emoji`, `invite_expires_at`, `split_meta`) per Rule 1; aligned `$fillable` and `casts()` to ground-truth schema]
+  - `D:\Spencer\Downloads\tara-admin\app\Models\Expense.php` [MODIFIED — Purged dropped columns (`approved_by`, `rejected_by`, `split_meta`) per Rule 1]
+  - `D:\Spencer\Downloads\tara-admin\app\Models\ItineraryStop.php` [MODIFIED — Aligned casts to ground-truth schema (`cost`, `latitude`, `longitude`, `stop_date`, `order_index`)]
+  - `D:\Spencer\Downloads\tara-admin\app\Models\RemoteConfig.php` [NEW — Eloquent model for `remote_configs` table with UUID primary key, type-aware `parsedValue` accessor]
+  - `D:\Spencer\Downloads\tara-admin\app\Http\Controllers\InviteController.php` [NEW — Universal link handler for `/join/{code}` with mobile deep link redirect, desktop branded preview, JSON API, and Rule 4 surname privacy]
+  - `D:\Spencer\Downloads\tara-admin\app\Http\Controllers\Admin\RemoteConfigController.php` [NEW — Full CRUD + toggle + public JSON feed at `/api/v1/remote-config`]
+  - `D:\Spencer\Downloads\tara-admin\resources\views\preview\join.blade.php` [NEW — Branded Tara Travel invite preview page with OG tags, QR code, auto-redirect for mobile, and copy-to-clipboard]
+  - `D:\Spencer\Downloads\tara-admin\resources\views\admin\configs\index.blade.php` [NEW — Remote config listing table with inline status toggle]
+  - `D:\Spencer\Downloads\tara-admin\resources\views\admin\configs\create.blade.php` [NEW — Config parameter creation form]
+  - `D:\Spencer\Downloads\tara-admin\resources\views\admin\configs\edit.blade.php` [NEW — Config parameter edit form]
+  - `D:\Spencer\Downloads\tara-admin\public\.well-known\assetlinks.json` [NEW — Android Digital Asset Links with SHA-256 fingerprint for `ph.taratravel.app`]
+  - `D:\Spencer\Downloads\tara-admin\routes\web.php` [MODIFIED — Added `/join/{code}`, `/.well-known/assetlinks.json`, `/api/v1/remote-config` routes and `RemoteConfigController` admin resource]
+  - `D:\Spencer\Downloads\tara-admin\resources\views\admin\layouts\app.blade.php` [MODIFIED — Added "Remote Config" sidebar nav entry under renamed "Content & Ops" section]
+  - `D:\Spencer\Downloads\tara-admin\database\migrations\2026_10_02_000001_create_remote_configs_table.php` [NEW — Creates `remote_configs` table with UUID PK, unique key, typed value, active flag]
+  - `docs/ROADMAP.md` [MODIFIED — Moved Plan 18 to last row in Tier 3 table, status changed to ⏳ Deferred (Last Priority)]
+- **Scope & Objectives**:
+  - **Flutter Android Deep Links (Complete)**: Wired `autoVerify` intent-filters for HTTPS App Links on `tara-travel.app/join` and custom URI schemes (`tara://`, `taratravel://`). Converted `TaraApp` to StatefulWidget with `WidgetsBindingObserver.didPushRouteInformation` for system-delivered deep links. Added `onGenerateRoute` fallback for `/join/{code}` route names. `NotificationRouter.handleDeepLink` parses all URI variants and opens `showJoinTripModal` with prefilled invite code.
+  - **Laravel Model Rule 1 Compliance (Complete)**: Purged all permanently dropped columns from `Trip.php` (`cover_color`, `cover_emoji`, `invite_expires_at`, `split_meta`) and `Expense.php` (`approved_by`, `rejected_by`, `split_meta`). Aligned `ItineraryStop.php` casts to ground-truth schema.
+  - **Universal Link Web Gateway (Complete)**: `InviteController` serves mobile deep link redirects and branded desktop previews with OG tags, QR code, and copy-to-clipboard. `assetlinks.json` provides Android App Links verification.
+  - **Remote Config Admin Panel (Complete)**: Full CRUD admin interface for `remote_configs` table with sidebar navigation, public JSON feed API, and inline status toggle.
+  - **Remaining (Deferred)**: Curated Itinerary Templates CMS (`TemplateController`), Audit Trail / Ops Moderation, and Containerized Deployment (`Dockerfile`, `fly.toml`) are deferred per user decision.
+- **Verification**:
+  - `flutter analyze` on `lib/main.dart`, `lib/core/services/notification_router.dart`, `lib/features/trips/widgets/join_trip_modal.dart` completed with 0 issues.
+  - `php artisan route:list` confirmed all new routes registered (24 total).
+
+---
+
+### `IMP-063` (2026-10-02) — Trip Detail Screen Simplification & Visual Cleanup
+
+- **Milestone**: `IMP-063`
+- **Component(s)**: `TripDetailScreen`, `DestinationWeatherWidget`, `OngoingTripHud`, `_CollapsibleHeroHeader`, `_ItineraryHubCard`, `_LogisticsCard`, `_BudgetCard`, `_SquadPreviewCard`
+- **Files Modified**:
+  - `lib/features/trip_detail/trip_detail_screen.dart` [MODIFIED — De-cluttered Hero Header background: removed random ambient mesh blobs and oversized emoji watermarks; refined title and metadata spacing; unified card styling with 18px radii, subtle `#EBE8E3` borders, and minimal soft shadows for Itinerary, Logistics, Budget, and Squad cards; purged unused variables]
+  - `lib/features/trip_detail/widgets/destination_weather_widget.dart` [MODIFIED — Redesigned weather card into clean, modern dark card with compact padding, subtle 0.8px border, refined typography, and sleek telemetry pills]
+  - `lib/features/trip_detail/widgets/ongoing_trip_hud.dart` [MODIFIED — Polished active trip HUD to match simplified modern design language: clean background, 18px radius, elegant status tag, and reduced visual weight]
+- **Scope & Objectives**:
+  - Make the Trip Detail screen simpler, cleaner, and less visually cluttered while preserving all essential trip info and navigation targets.
+  - Standardize card borders, corner radiuses, and shadow elevations across all sections.
+- **Verification**:
+  - `flutter analyze lib/features/trip_detail/` passed with 0 warnings and 0 errors.
 

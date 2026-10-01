@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../features/trips/widgets/join_trip_modal.dart';
 
 /// Supported notification target screen destinations.
 enum NotificationTargetScreen {
@@ -10,6 +11,7 @@ enum NotificationTargetScreen {
   navigation,
   tripDetail,
   notifications,
+  joinTrip,
 }
 
 /// Standardized notification routing payload.
@@ -65,6 +67,12 @@ class NotificationPayload {
       case 'trip':
       case 'trip_detail':
         target = NotificationTargetScreen.tripDetail;
+        break;
+      case 'join':
+      case 'jointrip':
+      case 'join_trip':
+      case 'invite':
+        target = NotificationTargetScreen.joinTrip;
         break;
       default:
         target = NotificationTargetScreen.notifications;
@@ -129,6 +137,8 @@ class NotificationRouter {
         return currentRouteName == '/trip-detail';
       case NotificationTargetScreen.notifications:
         return currentRouteName == '/notifications';
+      case NotificationTargetScreen.joinTrip:
+        return false;
     }
   }
 
@@ -191,6 +201,46 @@ class NotificationRouter {
       case NotificationTargetScreen.notifications:
         nav.pushNamed('/notifications');
         return true;
+
+      case NotificationTargetScreen.joinTrip:
+        final code = payload.targetItemId ?? payload.extra?['code']?.toString();
+        showJoinTripModal(nav.context, null, code);
+        return true;
     }
+  }
+
+  /// Parses universal link or custom scheme URI and executes deep-link navigation.
+  /// Supports:
+  /// • `https://tara-travel.app/join/{code}`
+  /// • `https://www.tara-travel.app/join/{code}`
+  /// • `tara://trip/join?code={code}`
+  /// • `taratravel://trip/join?code={code}`
+  Future<bool> handleDeepLink(Uri uri) async {
+    String? inviteCode;
+
+    if (uri.scheme == 'http' || uri.scheme == 'https') {
+      if (uri.pathSegments.isNotEmpty && uri.pathSegments.first == 'join') {
+        if (uri.pathSegments.length > 1) {
+          inviteCode = uri.pathSegments[1].trim();
+        } else if (uri.queryParameters.containsKey('code')) {
+          inviteCode = uri.queryParameters['code']?.trim();
+        }
+      }
+    } else if (uri.scheme == 'tara' || uri.scheme == 'taratravel') {
+      if ((uri.host == 'trip' && uri.path == '/join') || uri.path == '/trip/join') {
+        inviteCode = uri.queryParameters['code']?.trim();
+      } else if (uri.host == 'join' || uri.path == '/join') {
+        inviteCode = uri.queryParameters['code']?.trim();
+      }
+    }
+
+    if (inviteCode != null && inviteCode.isNotEmpty) {
+      return navigateTo(NotificationPayload(
+        targetScreen: NotificationTargetScreen.joinTrip,
+        targetItemId: inviteCode,
+      ));
+    }
+
+    return false;
   }
 }
