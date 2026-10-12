@@ -141,8 +141,10 @@ jobs:
           echo "safe_version=${SAFE_VERSION}" >> $GITHUB_OUTPUT
 
           # 2. Release Notes Resolution
-          if [ -n "${{ github.event.inputs.release_notes }}" ]; then
-            NOTES="${{ github.event.inputs.release_notes }}"
+          # NOTE: release_notes is passed via env var (INPUT_RELEASE_NOTES) to prevent bash
+          # from interpreting backtick-wrapped text (e.g. `IMP-XXX`) as command substitution.
+          if [ -n "$INPUT_RELEASE_NOTES" ]; then
+            NOTES="$INPUT_RELEASE_NOTES"
           else
             # Extract latest milestone summary from docs/IMPLEMENTATION_MEMORY.md or latest git commit
             LATEST_IMP=$(grep -E '^### `IMP-[0-9]+`' docs/IMPLEMENTATION_MEMORY.md 2>/dev/null | tail -n 1 | sed -E 's/^### `(IMP-[0-9]+)`[[:space:]]*[·.][[:space:]]*(.+)/\1: \2/' || true)
@@ -176,6 +178,8 @@ jobs:
           fi
           TARGET_APP_ID="${PKG_APP_ID:-1:616637846202:android:4c3feeff8af62994e6e883}"
           echo "firebase_app_id=${TARGET_APP_ID}" >> $GITHUB_OUTPUT
+        env:
+          INPUT_RELEASE_NOTES: ${{ github.event.inputs.release_notes }}
 
   # ── 3. COMPILE PRODUCTION ANDROID ARTIFACTS ─────────────────────────────────
   build-android:
