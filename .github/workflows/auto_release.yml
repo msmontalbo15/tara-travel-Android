@@ -371,6 +371,7 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           DOWNLOAD_URL: ${{ steps.upload_apk.outputs.DOWNLOAD_URL }}
+          RELEASE_NOTES: ${{ needs.prepare-release.outputs.release_notes }}
         run: |
           if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
             echo "⚠️ Supabase secrets not configured; skipping version DB bump."
@@ -379,7 +380,7 @@ jobs:
 
           VERSION="${{ needs.prepare-release.outputs.full_version }}"
           MIN_VER="${{ github.event.inputs.min_supported_version || '1.0.0' }}"
-          NOTES="${{ needs.prepare-release.outputs.release_notes }}"
+          NOTES="$RELEASE_NOTES"
           MAINTENANCE="${{ github.event.inputs.maintenance_mode || 'false' }}"
           FALLBACK_URL="${DOWNLOAD_URL:-https://tara-travel.app/download/android}"
 
@@ -425,6 +426,7 @@ jobs:
       - name: 🚀 Create / Update GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_NOTES: ${{ needs.prepare-release.outputs.release_notes }}
         run: |
           VERSION="${{ needs.prepare-release.outputs.full_version }}"
           TAG="v${VERSION}"
@@ -439,7 +441,7 @@ jobs:
           find release-upload -name "app-release.apk" -exec cp {} "release-upload/tara-travel-v${SAFE_VERSION}.apk" \; || true
           find release-upload -name "app-release.aab" -exec cp {} "release-upload/tara-travel-v${SAFE_VERSION}.aab" \; || true
 
-          NOTES="${{ needs.prepare-release.outputs.release_notes }}"
+          NOTES="$RELEASE_NOTES"
 
           echo "Publishing GitHub Release $TAG with assets:"
           ls -la release-upload
