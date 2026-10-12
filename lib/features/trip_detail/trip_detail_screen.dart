@@ -12,7 +12,6 @@ import '../../core/providers/repository_providers.dart';
 import '../../core/providers/expense_provider.dart';
 import '../../core/providers/itinerary_provider.dart';
 import '../../core/models/trip_model.dart';
-import '../../core/models/expense_model.dart';
 import '../../core/models/itinerary_model.dart';
 import '../../core/models/member_model.dart';
 import '../../core/widgets/buttons/app_back_button.dart';
@@ -33,6 +32,8 @@ import 'widgets/smart_departure_advisory_card.dart';
 
 import 'widgets/trip_detail_bottom_bar.dart';
 import '../../core/services/floating_bubble_service.dart';
+import '../../core/services/departure_advisory_service.dart';
+import '../itinerary/widgets/stop_detail_sheet.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TripDetailScreen — Streamlined Dashboard (Zero-Redundancy Rich Hub)
@@ -152,45 +153,22 @@ class _TripDashboardState extends ConsumerState<_TripDashboard> {
     final trip = widget.trip;
     final coverColor = trip.coverColor;
 
-    // ── Expenses ─────────────────────────────────────────────────
-    final expensesAsync = ref.watch(expenseProvider(trip.id));
-    final expenses = expensesAsync.asData?.value ?? trip.expenses;
-
-    final totalSpent = expenses
-        .where((e) => e.status == ExpenseStatus.approved)
-        .fold<double>(0, (s, e) => s + e.amount);
-    final totalPending = expenses
-        .where((e) => e.status == ExpenseStatus.pending)
-        .fold<double>(0, (s, e) => s + e.amount);
+    // ── Expenses Summary (Memoized) ──────────────────────────────
+    final expenseSummary = ref.watch(expenseSummaryProvider(trip.id));
+    final totalSpent = expenseSummary.totalSpent;
+    final totalPending = expenseSummary.totalPending;
     final remaining = trip.totalBudget - totalSpent;
     final budgetPct = trip.totalBudget > 0
         ? (totalSpent / trip.totalBudget).clamp(0.0, 1.0)
         : 0.0;
 
-    // ── Itinerary ────────────────────────────────────────────────
-    final itineraryProviderInst = ref.watch(itineraryProvider(trip.id));
-    final itineraryAsync = ref.watch(itineraryProviderInst);
-    final itineraryState = itineraryAsync.asData?.value;
-    final itineraryDayCount = itineraryState?.days.length ?? 0;
-
-    int totalStops = 0;
-    int visitedStops = 0;
-    ItineraryStop? nextStop;
-    DateTime? nextStopDate;
-
-    if (itineraryState != null) {
-      for (final day in itineraryState.days) {
-        totalStops += day.stops.length;
-        for (final stop in day.stops) {
-          if (stop.isCompleted) {
-            visitedStops++;
-          } else if (nextStop == null) {
-            nextStop = stop;
-            nextStopDate = day.date;
-          }
-        }
-      }
-    }
+    // ── Itinerary Summary (Memoized) ─────────────────────────────
+    final itinerarySummary = ref.watch(itinerarySummaryProvider(trip.id));
+    final totalStops = itinerarySummary.totalStops;
+    final visitedStops = itinerarySummary.visitedStops;
+    final nextStop = itinerarySummary.nextStop;
+    final nextStopDate = itinerarySummary.nextStopDate;
+    final itineraryDayCount = itinerarySummary.dayCount;
 
     final nights = trip.toDate.difference(trip.fromDate).inDays;
     final isActive = trip.isOngoing;
@@ -241,7 +219,7 @@ class _TripDashboardState extends ConsumerState<_TripDashboard> {
                     ),
                     const SizedBox(height: 12),
 
-                    // 2. Ongoing Travel Cockpit HUD (Active Trips) OR Standard Hub Card
+                    // 2. Next Up: Ongoing Cockpit (Active Trips) OR Meet-up Assembly (Pre-departure) OR Standard Next Stop Hub Card
                     if (isActive) ...[
                       OngoingTripHud(
                         tripId: trip.id,
@@ -253,8 +231,23 @@ class _TripDashboardState extends ConsumerState<_TripDashboard> {
                             Navigator.pushNamed(context, '/itinerary'),
                       ),
                       const SizedBox(height: 12),
+                    ] else if ((trip.departurePoint != null &&
+                            trip.departurePoint!.trim().isNotEmpty) ||
+                        (nextStop != null &&
+                            (nextStop.title.toLowerCase().contains('meet-up') ||
+                             nextStop.title.toLowerCase().contains('departure') ||
+                             nextStop.title.toLowerCase().contains('assembly')))) ...[
+                      SmartDepartureAdvisoryCard(
+                        trip: trip,
+                        nextStop: nextStop,
+                        nextStopDate: nextStopDate,
+                        onOpenItinerary: () =>
+                            Navigator.pushNamed(context, '/itinerary'),
+                      ),
+                      const SizedBox(height: 12),
                     ] else ...[
                       _ItineraryHubCard(
+                        trip: trip,
                         nextStop: nextStop,
                         nextStopDate: nextStopDate,
                         totalStops: totalStops,
@@ -265,16 +258,14 @@ class _TripDashboardState extends ConsumerState<_TripDashboard> {
                       const SizedBox(height: 12),
                     ],
 
-                    // 3. Meet-up Assembly & Smart Departure Advisory (Plan 11)
-                    if ((trip.departurePoint != null &&
-                            trip.departurePoint!.trim().isNotEmpty) ||
-                        (nextStop != null &&
-                            (nextStop.title.toLowerCase().contains('meet-up') ||
-                             nextStop.title.toLowerCase().contains('departure') ||
-                             nextStop.title.toLowerCase().contains('assembly')))) ...[
-                      SmartDepartureAdvisoryCard(trip: trip),
-                      const SizedBox(height: 12),
-                    ] else if (trip.transportMode != null &&
+                    // Logistics fallback when no meet-up advisory is present but transport mode is configured
+                    if (!isActive &&
+                        (trip.departurePoint == null || trip.departurePoint!.trim().isEmpty) &&
+                        (nextStop == null ||
+                            (!nextStop.title.toLowerCase().contains('meet-up') &&
+                             !nextStop.title.toLowerCase().contains('departure') &&
+                             !nextStop.title.toLowerCase().contains('assembly'))) &&
+                        trip.transportMode != null &&
                         trip.transportMode!.trim().isNotEmpty) ...[
                       _LogisticsCard(trip: trip),
                       const SizedBox(height: 12),
@@ -957,7 +948,8 @@ class _StatusBadge extends StatelessWidget {
 // Authoritative Itinerary / Next Stop Hub Card
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _ItineraryHubCard extends StatelessWidget {
+class _ItineraryHubCard extends ConsumerWidget {
+  final TripModel trip;
   final ItineraryStop? nextStop;
   final DateTime? nextStopDate;
   final int totalStops;
@@ -966,6 +958,7 @@ class _ItineraryHubCard extends StatelessWidget {
   final VoidCallback onTap;
 
   const _ItineraryHubCard({
+    required this.trip,
     this.nextStop,
     this.nextStopDate,
     required this.totalStops,
@@ -974,8 +967,52 @@ class _ItineraryHubCard extends StatelessWidget {
     required this.onTap,
   });
 
+  bool get _isMeetUpStop {
+    if (nextStop == null) return false;
+    final t = nextStop!.title.toLowerCase();
+    return t.contains('meet-up') || t.contains('departure') || t.contains('assembly') || nextStop!.type == StopType.transport;
+  }
+
+  void _openStopDetail(BuildContext context, WidgetRef ref, ItineraryStop targetStop) {
+    final currentUserId = ref.read(currentUserProvider)?.id ?? '';
+    final canManage = trip.ownerId == currentUserId ||
+        trip.members.any((m) => m.id == currentUserId && m.isOrganizer);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StopDetailSheet(
+        stop: targetStop,
+        members: trip.members,
+        currentUserId: currentUserId,
+        canManage: canManage,
+        onEdit: () {
+          Navigator.pop(ctx);
+          onTap();
+        },
+        onCheckIn: () async {
+          try {
+            final subProvider = ref.read(itineraryProvider(trip.id));
+            final itineraryState = ref.read(subProvider).asData?.value;
+            if (itineraryState != null) {
+              await ref.read(subProvider.notifier).toggleStopVisited(
+                itineraryState.activeDay,
+                targetStop.id,
+                currentUserId,
+              );
+              ref.invalidate(itineraryStopsProvider(trip.id));
+            }
+          } catch (e) {
+            debugPrint('[_ItineraryHubCard] check-in error: $e');
+          }
+        },
+      ),
+    );
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (nextStop != null) {
       final dateStr = nextStopDate != null
           ? DateFormat('EEE, MMM d').format(nextStopDate!)
@@ -984,15 +1021,55 @@ class _ItineraryHubCard extends StatelessWidget {
           ? nextStop!.startTime!.format(context)
           : 'Scheduled';
 
+      final isAssembly = _isMeetUpStop;
+      final departurePoint = trip.departurePoint ?? nextStop!.location;
+
+      // Compute departure advisory state if this is an assembly stop or departurePoint exists
+      final advisory = isAssembly
+          ? DepartureAdvisoryService.instance.computeState(trip: trip, meetUpStop: nextStop)
+          : null;
+
+      Color badgeDotColor = AppColors.greenBright;
+      String nextBadgeLabel = 'NEXT UP · $timeStr${dateStr.isNotEmpty ? ' ($dateStr)' : ''}';
+
+      if (advisory != null) {
+        switch (advisory.status) {
+          case DepartureAdvisoryStatus.onTime:
+            badgeDotColor = const Color(0xFF10B981);
+            nextBadgeLabel = 'NEXT UP · ASSEMBLY (ON TIME)';
+            break;
+          case DepartureAdvisoryStatus.approachingGracePeriod:
+            badgeDotColor = AppColors.primary;
+            nextBadgeLabel = 'NEXT UP · ASSEMBLY SOON';
+            break;
+          case DepartureAdvisoryStatus.withinGracePeriod:
+            badgeDotColor = const Color(0xFFEF9F27);
+            nextBadgeLabel = 'NEXT UP · GRACE PERIOD';
+            break;
+          case DepartureAdvisoryStatus.delayed:
+            badgeDotColor = const Color(0xFFDC2626);
+            nextBadgeLabel = 'NEXT UP · ROLLING OUT';
+            break;
+          case DepartureAdvisoryStatus.departed:
+            badgeDotColor = const Color(0xFF6366F1);
+            nextBadgeLabel = 'NEXT UP · DEPARTED';
+            break;
+        }
+      }
+
       return GestureDetector(
-        onTap: onTap,
+        onTap: () {
+          HapticFeedback.lightImpact();
+          _openStopDetail(context, ref, nextStop!);
+        },
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
-                color: const Color(0xFFEBE8E3), width: 1.0),
+                color: isAssembly ? AppColors.primary.withValues(alpha: 0.35) : const Color(0xFFEBE8E3),
+                width: isAssembly ? 1.2 : 1.0),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.03),
@@ -1001,87 +1078,125 @@ class _ItineraryHubCard extends StatelessWidget {
               ),
             ],
           ),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  nextStop!.type.icon,
-                  color: AppColors.primary,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+              Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      nextStop!.type.icon,
+                      color: AppColors.primary,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          width: 6,
-                          height: 6,
-                          decoration: const BoxDecoration(
-                            color: AppColors.greenBright,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 5),
-                        Text(
-                          'NEXT UP · $timeStr${dateStr.isNotEmpty ? ' ($dateStr)' : ''}',
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primary,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      nextStop!.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF1A1A1A),
-                      ),
-                    ),
-                    if (nextStop!.location != null &&
-                        nextStop!.location!.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          const Icon(Icons.place_outlined,
-                              size: 11, color: Color(0xFF8E8E93)),
-                          const SizedBox(width: 3),
-                          Expanded(
-                            child: Text(
-                              nextStop!.location!,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 11,
-                                color: Color(0xFF8E8E93),
+                        Row(
+                          children: [
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                color: badgeDotColor,
+                                shape: BoxShape.circle,
                               ),
                             ),
+                            const SizedBox(width: 5),
+                            Expanded(
+                              child: Text(
+                                nextBadgeLabel,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.primary,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          nextStop!.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF1A1A1A),
+                          ),
+                        ),
+                        if (departurePoint != null && departurePoint.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              const Icon(Icons.place_outlined,
+                                  size: 11, color: Color(0xFF8E8E93)),
+                              const SizedBox(width: 3),
+                              Expanded(
+                                child: Text(
+                                  departurePoint,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Color(0xFF8E8E93),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  const Icon(Icons.chevron_right_rounded,
+                      size: 20, color: Color(0xFFB0B0B8)),
+                ],
+              ),
+
+              // Embedded Meet-up Assembly details
+              if (advisory != null) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.sand.withValues(alpha: 0.55),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.cardBorder, width: 0.8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.timer_outlined, size: 14, color: AppColors.primary),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Buffer: ${advisory.gracePeriodMinutes}m',
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.deepEarth),
+                      ),
+                      const Spacer(),
+                      const Icon(Icons.groups_rounded, size: 14, color: AppColors.textSecondary),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${advisory.arrivedCount}/${advisory.totalCount} Arrived',
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.deepEarth),
                       ),
                     ],
-                  ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 6),
-              const Icon(Icons.chevron_right_rounded,
-                  size: 20, color: Color(0xFFB0B0B8)),
+              ],
             ],
           ),
         ),

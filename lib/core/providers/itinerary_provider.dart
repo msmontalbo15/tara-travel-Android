@@ -522,3 +522,52 @@ final itineraryStopsProvider = Provider.autoDispose.family<AsyncValue<List<Itine
   });
 });
 
+class ItinerarySummary {
+  final int dayCount;
+  final int totalStops;
+  final int visitedStops;
+  final ItineraryStop? nextStop;
+  final DateTime? nextStopDate;
+
+  const ItinerarySummary({
+    this.dayCount = 0,
+    this.totalStops = 0,
+    this.visitedStops = 0,
+    this.nextStop,
+    this.nextStopDate,
+  });
+}
+
+/// Memoized summary provider avoiding redundant stop loops across widgets.
+final itinerarySummaryProvider = Provider.autoDispose.family<ItinerarySummary, String>((ref, tripId) {
+  final subProvider = ref.watch(itineraryProvider(tripId));
+  final asyncState = ref.watch(subProvider);
+  final state = asyncState.asData?.value;
+  if (state == null) return const ItinerarySummary();
+
+  int total = 0;
+  int visited = 0;
+  ItineraryStop? next;
+  DateTime? nextDate;
+
+  for (final day in state.days) {
+    total += day.stops.length;
+    for (final stop in day.stops) {
+      if (stop.isCompleted) {
+        visited++;
+      } else if (next == null) {
+        next = stop;
+        nextDate = day.date;
+      }
+    }
+  }
+
+  return ItinerarySummary(
+    dayCount: state.days.length,
+    totalStops: total,
+    visitedStops: visited,
+    nextStop: next,
+    nextStopDate: nextDate,
+  );
+});
+

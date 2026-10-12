@@ -103,6 +103,12 @@
 | **`IMP-142`** | 2026-10-01 | Profile & Payments / GCash Number OTP Verification & Verified QR Upload (Plan 23) | Firebase Phone Auth OTP ownership verification, provider-agnostic `EWalletVerificationService` (GCash & Maya), smart QR decoding & cross-validation, clean branded QR regeneration, and gated payment profile trust badges. |
 | **`IMP-143`** | 2026-10-01 | Core & CI / FcmService Test Isolation & Submodule Index Purge | Made `FirebaseMessaging` resolution lazy in `FcmService` to eliminate `[core/no-app]` crashes during headless test execution, guarded notification and subscription methods, and purged the non-existent `tara-admin` git submodule link from git index. |
 | **`IMP-144`** | 2026-10-02 | Deep Links & Laravel / Plan 18 Partial: Flutter Universal Deep Links & tara-admin Schema Alignment | Flutter Android App Links verification, `TaraApp` StatefulWidget deep link observer, `onGenerateRoute` `/join/{code}` handler, `NotificationRouter.handleDeepLink`, Laravel model Rule 1 alignment, `InviteController`, `assetlinks.json`, `RemoteConfigController`, and branded `join.blade.php` preview page. |
+| **`IMP-145`** | 2026-10-10 | Create Trip / Journey Style & Navigation Mode Module Removal | Removed "Journey Style & Navigation Mode" card (`_buildJourneyStyleCard`) and mode options (`_journeyModeOption`) from `DetailsStep` during trip creation, cleaning unused controllers and imports. |
+| **`IMP-146`** | 2026-10-10 | Notifications & Background Service / Built-in High-Urgency Itinerary Alarms & Active Trip Keep-Alive | Configured built-in audio alerts (`tara_urgent_alert`), USAGE_ALARM stream, full-screen lock screen intent wake-up, persistent Foreground Service (`flutter_foreground_task`) for active trip days, and `ActiveTripBackgroundCoordinator`. |
+| **`IMP-147`** | 2026-10-12 | Android Build / Core Library Desugaring for Local Notifications | Enabled `isCoreLibraryDesugaringEnabled = true` and integrated `desugar_jdk_libs:2.1.4` in `android/app/build.gradle.kts` to satisfy `flutter_local_notifications` Java 8+ API desugaring requirement. |
+| **`IMP-148`** | 2026-10-13 | Trip Detail / Redundancy Elimination & Provider Optimization | Removed dead widget `trip_quick_actions_grid.dart`, merged transport logistics directly into `SmartDepartureAdvisoryCard`, centralized memoized `itinerarySummaryProvider` and `expenseSummaryProvider`, and eliminated duplicate calculations and unused imports in `TripDetailScreen`. |
+| **`IMP-149`** | 2026-10-13 | Profile / App Version & Updates Modal Restricted to New Releases | Reverted `_handleCheckUpdate` in `ProfileAccountCard` so `WhatsNewDialog.showSheet` only opens when a new version is actually available (`isSoftUpdate`); displays non-intrusive `AppFeedback.showSuccess` toast when up to date. |
+| **`IMP-150`** | 2026-10-13 | Trip Detail / Interactive Next Up Stop Details Bottom Sheet | Made the Next Up cards (`SmartDepartureAdvisoryCard` and `_ItineraryHubCard`) interactive by reusing `StopDetailSheet` from the Itinerary module on tap, supporting real-time GPS ETA, check-ins, companion rosters, and navigation. |
 
 ---
 
@@ -3429,4 +3435,79 @@
   - Standardize card borders, corner radiuses, and shadow elevations across all sections.
 - **Verification**:
   - `flutter analyze lib/features/trip_detail/` passed with 0 warnings and 0 errors.
+
+---
+
+### `IMP-145` (2026-10-10) — Create Trip Wizard: Journey Style & Navigation Mode Module Removal
+
+- **Milestone**: `IMP-145`
+- **Component(s)**: `DetailsStep` (`lib/features/create_trip/steps/details_step.dart`)
+- **Files Modified**:
+  - `lib/features/create_trip/steps/details_step.dart` [MODIFIED — Removed the "Journey Style & Navigation Mode" card, 3-mode selector (`_journeyModeOption`), sequential route hubs input, and map tracking toggle from the first wizard step. Cleaned up unused `_hubController` and unused `package:flutter/services.dart` import. Preserved trip creation defaults on `NewTripModel` (`isMapEnabled = true`, `journeyMode = 'standard'`).]
+- **Scope & Objectives**:
+  - Simplify the initial trip creation flow by removing the complex "Journey Style & Navigation Mode" card from `DetailsStep` to streamline trip onboarding.
+- **Verification**:
+  - `flutter analyze lib/features/create_trip/steps/details_step.dart` passed with 0 issues.
+
+---
+
+### `IMP-146` (2026-10-10) — Built-in High-Urgency Itinerary Alarms & Active Trip Background Keep-Alive
+
+- **Milestone**: `IMP-146`
+- **Component(s)**: `ItineraryAlarmService`, `TripForegroundService`, `ActiveTripBackgroundCoordinator`, Android Manifest, Native Audio Asset
+- **Files Modified / Added**:
+  - `pubspec.yaml` [MODIFIED — Added `flutter_local_notifications: ^18.0.1`, `flutter_foreground_task: ^9.0.0`, and `timezone: ^0.9.4`]
+  - `android/app/src/main/res/raw/tara_urgent_alert.mp3` [NEW — Native built-in audio resource for alarms and itinerary notifications]
+  - `android/app/src/main/AndroidManifest.xml` [MODIFIED — Added permissions `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_SPECIAL_USE`, `FOREGROUND_SERVICE_DATA_SYNC`, `WAKE_LOCK`, `RECEIVE_BOOT_COMPLETED`, `SCHEDULE_EXACT_ALARM`, `USE_EXACT_ALARM`, `USE_FULL_SCREEN_INTENT`, and registered `ForegroundService`]
+  - `lib/core/services/itinerary_alarm_service.dart` [NEW — Native local notification manager scheduling exact alarms with `AudioAttributesUsage.alarm`, `fullScreenIntent` lock screen wake-up, and heavy vibration pattern]
+  - `lib/core/services/trip_foreground_service.dart` [NEW — Persistent foreground service keep-alive manager preventing OS app termination during active trip days]
+  - `lib/core/services/active_trip_background_coordinator.dart` [NEW — Automated coordinator linking active trip dates and itinerary stops to foreground status and stop alarms]
+  - `lib/main.dart` [MODIFIED — Initialized `ItineraryAlarmService` and `TripForegroundService` on app boot]
+  - `lib/features/home/home_screen.dart` [MODIFIED — Automatically triggered background coordinator sync upon loading `HomeScreen`]
+- **Scope & Objectives**:
+  - Guarantee that when a trip is active on that day, Tara Travel runs persistently in the background without being terminated by OS battery optimization.
+  - Implement built-in high-urgency notifications using the device Alarm audio stream (`USAGE_ALARM`) and lock-screen wake-up (`fullScreenIntent`) so travelers never miss itinerary departures even with the screen off or app minimized.
+- **Verification**:
+  - `flutter analyze` completed with 0 errors and 0 warnings.
+
+---
+
+### `IMP-148` (2026-10-13) — Trip Detail Redundancy Elimination & Provider Optimization
+
+- **Milestone**: `IMP-148`
+- **Component(s)**: `TripDetailScreen`, `SmartDepartureAdvisoryCard`, `ItineraryProvider`, `ExpenseProvider`
+- **Files Modified / Deleted**:
+  - `lib/features/trip_detail/widgets/trip_quick_actions_grid.dart` [DELETED — Purged orphaned dead code that was superseded by `TripDetailBottomBar`.]
+  - `lib/features/trip_detail/widgets/smart_departure_advisory_card.dart` [MODIFIED — Integrated transport mode and logistics vehicle metadata strip into the departure advisory card; added `NEXT UP · ` prefix to all live countdown badges; structured stop title and pickup location cleanly.]
+  - `lib/core/providers/itinerary_provider.dart` [MODIFIED — Added `ItinerarySummary` data class and `itinerarySummaryProvider` to centralize and memoize itinerary stop metrics (stop counts, next stop, visited progress).]
+  - `lib/core/providers/expense_provider.dart` [MODIFIED — Added `ExpenseSummary` data class and `expenseSummaryProvider` to compute and memoize total spent and pending expenses.]
+  - `lib/features/trip_detail/trip_detail_screen.dart` [MODIFIED — Refactored dashboard build method to consume memoized providers instead of performing inline iterations on every rebuild; purged unused `ExpenseModel` import; replaced the duplicate Next Up card stack by elevating Meet-up Assembly directly into slot 2 as the authoritative Next Up card.]
+- **Scope & Objectives**:
+  - Resolve architectural and UX redundancies identified on the trip detail screen.
+  - Eliminate duplicate data loops in the UI build cycle and convert Meet-up Assembly into the primary Next Up itinerary stop card.
+- **Verification**:
+  - `flutter analyze lib/features/trip_detail lib/core/providers/itinerary_provider.dart lib/core/providers/expense_provider.dart` passed with 0 issues.
+
+---
+
+### `IMP-149` (2026-10-13) — Profile App Version & Updates Revert: Modal Popup Restricted to New Updates
+
+- **Milestone**: `IMP-149`
+- **Component(s)**: `ProfileAccountCard` (`lib/features/profile/widgets/profile_account_card.dart`)
+- **Files Modified**:
+  - `lib/features/profile/widgets/profile_account_card.dart` [MODIFIED — Reverted the `_handleCheckUpdate` tap handler and subtitle behavior so that the modal sheet (`WhatsNewDialog.showSheet`) is only presented when a new version update is actually available (`isSoftUpdate`). When the app is already on the latest version, a non-intrusive `AppFeedback.showSuccess` toast is displayed instead ("You're on the latest version of Tara Travel (vX.Y.Z) ✨"), avoiding unnecessary popup dialogs. Subtitle reverted to `"Tap to check for updates"` when up to date.]
+---
+
+### `IMP-150` (2026-10-13) — Trip Detail Interactive Next Up Stop Details Bottom Sheet
+
+- **Milestone**: `IMP-150`
+- **Component(s)**: `TripDetailScreen`, `SmartDepartureAdvisoryCard`, `_ItineraryHubCard`, `StopDetailSheet`
+- **Files Modified**:
+  - `lib/features/trip_detail/widgets/smart_departure_advisory_card.dart` [MODIFIED — Wrapped departure advisory card in `GestureDetector` with haptic feedback, opening `StopDetailSheet` on tap with live check-in, companion presence, and route navigation.]
+  - `lib/features/trip_detail/trip_detail_screen.dart` [MODIFIED — Reused `StopDetailSheet` from the Itinerary module in `_ItineraryHubCard`, making the Next Up card interactive and displaying full stop details on tap.]
+- **Scope & Objectives**:
+  - Seamlessly reuse the Itinerary module's stop detail sheet (`StopDetailSheet`) across the Trip Detail dashboard's Next Up and Meet-up Assembly cards.
+- **Verification**:
+  - `flutter analyze lib/features/trip_detail/` passed with 0 issues.
+
 

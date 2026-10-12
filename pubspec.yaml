@@ -55,6 +55,11 @@ dependencies:
   firebase_messaging: ^16.7.0
   firebase_crashlytics: ^5.4.0
   firebase_auth: ^6.7.0
+
+  # 🔔 Native Notifications & Active Trip Background Service
+  flutter_local_notifications: ^18.0.1
+  flutter_foreground_task: ^9.0.0
+  timezone: ^0.9.4
 dev_dependencies:
   flutter_test:
     sdk: flutter

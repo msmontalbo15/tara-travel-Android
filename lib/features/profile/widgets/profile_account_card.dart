@@ -63,10 +63,10 @@ class _ProfileAccountCardState extends ConsumerState<ProfileAccountCard> {
           checkResult: result,
         );
       } else {
-        WhatsNewDialog.showSheet(
+        AppFeedback.showSuccess(
           context,
-          mode: WhatsNewMode.whatsNew,
-          checkResult: result,
+          'You\'re on the latest version of Tara Travel (v${result.currentVersion.displayVersion}) ✨',
+          title: 'Up to Date',
         );
       }
     } catch (e) {
@@ -648,7 +648,7 @@ class _ProfileAccountCardState extends ConsumerState<ProfileAccountCard> {
                           Text(
                             hasUpdate
                                 ? 'v${latestVersion?.displayVersion ?? 'New'} available • Tap to update'
-                                : 'v${AppVersionService.currentAppDisplayVersion} • Tap to view details',
+                                : 'v${AppVersionService.currentAppDisplayVersion} • Tap to check for updates',
                             style: TextStyle(
                               fontSize: 12,
                               color: hasUpdate ? AppColors.primary : AppColors.textSecondary,

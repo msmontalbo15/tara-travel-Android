@@ -289,6 +289,11 @@ class WeatherService {
       rainProbability: dailyForecasts.isNotEmpty ? dailyForecasts.first.rainProbability : 20.0,
       windSpeed: windSpeed,
       forecast: dailyForecasts,
+      hasAlert: dailyForecasts.any((f) => f.rainProbability >= 70 || f.conditionIcon == '⛈️'),
+      alertMessage: dailyForecasts.any((f) => f.conditionIcon == '⛈️')
+          ? 'Thunderstorms and heavy rainfall forecasted for upcoming travel dates. Outdoor boat & island tours may be delayed.'
+          : null,
+      alertLevel: dailyForecasts.any((f) => f.conditionIcon == '⛈️') ? 'warning' : null,
     );
   }
 

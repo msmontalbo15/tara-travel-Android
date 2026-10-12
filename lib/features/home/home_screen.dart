@@ -21,6 +21,7 @@ import '../../core/utils/jit_guard.dart';
 import '../../core/utils/trip_conflict_helper.dart';
 import '../../core/services/app_version_service.dart';
 import '../../core/services/whats_new_service.dart';
+import '../../core/services/active_trip_background_coordinator.dart';
 import '../../core/widgets/versioning/whats_new_dialog.dart';
 
 import '../budget/budget_screen.dart';
@@ -153,6 +154,14 @@ class _HomeBodyState extends ConsumerState<_HomeBody> {
   @override
   void initState() {
     super.initState();
+
+    // Sync active trip foreground service & high-urgency alarms
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.read(activeTripBackgroundCoordinatorProvider).syncActiveTripBackgroundState();
+      }
+    });
+
     if (widget.startTour) {
       _scheduleTour();
     } else {

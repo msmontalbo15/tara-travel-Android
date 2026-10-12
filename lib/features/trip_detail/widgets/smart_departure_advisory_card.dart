@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/trip_model.dart';
 import '../../../core/models/itinerary_model.dart';
@@ -8,6 +9,7 @@ import '../../../core/providers/auth_provider.dart';
 import '../../../core/services/departure_advisory_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../itinerary/widgets/navigate_route_button.dart';
+import '../../itinerary/widgets/stop_detail_sheet.dart';
 
 /// SmartDepartureAdvisoryCard
 /// ─────────────────────────────────────────────────────────────────────────────
@@ -21,10 +23,16 @@ import '../../itinerary/widgets/navigate_route_button.dart';
 /// ─────────────────────────────────────────────────────────────────────────────
 class SmartDepartureAdvisoryCard extends ConsumerStatefulWidget {
   final TripModel trip;
+  final ItineraryStop? nextStop;
+  final DateTime? nextStopDate;
+  final VoidCallback? onOpenItinerary;
 
   const SmartDepartureAdvisoryCard({
     super.key,
     required this.trip,
+    this.nextStop,
+    this.nextStopDate,
+    this.onOpenItinerary,
   });
 
   @override
@@ -49,6 +57,45 @@ class _SmartDepartureAdvisoryCardState extends ConsumerState<SmartDepartureAdvis
     super.dispose();
   }
 
+  void _openStopDetail(ItineraryStop targetStop) {
+    final trip = widget.trip;
+    final currentUserId = ref.read(currentUserProvider)?.id ?? '';
+    final canManage = trip.ownerId == currentUserId ||
+        trip.members.any((m) => m.id == currentUserId && m.isOrganizer);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StopDetailSheet(
+        stop: targetStop,
+        members: trip.members,
+        currentUserId: currentUserId,
+        canManage: canManage,
+        onEdit: () {
+          Navigator.pop(ctx);
+          widget.onOpenItinerary?.call();
+        },
+        onCheckIn: () async {
+          try {
+            final subProvider = ref.read(itineraryProvider(trip.id));
+            final itineraryState = ref.read(subProvider).asData?.value;
+            if (itineraryState != null) {
+              await ref.read(subProvider.notifier).toggleStopVisited(
+                itineraryState.activeDay,
+                targetStop.id,
+                currentUserId,
+              );
+              ref.invalidate(itineraryStopsProvider(trip.id));
+            }
+          } catch (e) {
+            debugPrint('[SmartDepartureAdvisoryCard] check-in error: $e');
+          }
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final trip = widget.trip;
@@ -63,7 +110,7 @@ class _SmartDepartureAdvisoryCardState extends ConsumerState<SmartDepartureAdvis
         break;
       }
     }
-    meetUpStop ??= stops.isNotEmpty ? stops.first : null;
+    meetUpStop ??= widget.nextStop ?? (stops.isNotEmpty ? stops.first : null);
 
     final departurePoint = trip.departurePoint ?? meetUpStop?.location;
     if (departurePoint == null || departurePoint.trim().isEmpty) {
@@ -88,99 +135,115 @@ class _SmartDepartureAdvisoryCardState extends ConsumerState<SmartDepartureAdvis
       case DepartureAdvisoryStatus.onTime:
         statusColor = const Color(0xFF10B981);
         statusBg = const Color(0xFFECFDF5);
-        statusBadge = 'ON TIME';
+        statusBadge = 'NEXT UP · ON TIME';
         break;
       case DepartureAdvisoryStatus.approachingGracePeriod:
         statusColor = AppColors.primary;
         statusBg = const Color(0xFFFFF2ED);
-        statusBadge = 'ASSEMBLY SOON';
+        statusBadge = 'NEXT UP · ASSEMBLY SOON';
         break;
       case DepartureAdvisoryStatus.withinGracePeriod:
         statusColor = const Color(0xFFEF9F27);
         statusBg = const Color(0xFFFFFBEB);
-        statusBadge = 'GRACE PERIOD';
+        statusBadge = 'NEXT UP · GRACE PERIOD';
         break;
       case DepartureAdvisoryStatus.delayed:
         statusColor = const Color(0xFFDC2626);
         statusBg = const Color(0xFFFEF2F2);
-        statusBadge = 'ROLLING OUT';
+        statusBadge = 'NEXT UP · ROLLING OUT';
         break;
       case DepartureAdvisoryStatus.departed:
         statusColor = const Color(0xFF6366F1);
         statusBg = const Color(0xFFEEF2FF);
-        statusBadge = 'DEPARTED';
+        statusBadge = 'NEXT UP · DEPARTED';
         break;
     }
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: statusColor.withValues(alpha: 0.35), width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Top Row: Status badge + Headcount pill
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: statusBg,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: statusColor.withValues(alpha: 0.4)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle),
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      statusBadge,
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        color: statusColor,
-                        letterSpacing: 0.6,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Spacer(),
-              if (advisory.totalCount > 0)
+    final targetStop = meetUpStop ?? ItineraryStop(
+      id: 'dep',
+      title: 'Meet-up & Assembly',
+      type: StopType.transport,
+      lat: trip.departureLat,
+      lng: trip.departureLng,
+      location: departurePoint,
+    );
+
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        _openStopDetail(targetStop);
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: statusColor.withValues(alpha: 0.35), width: 1.2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Top Row: Status badge + Headcount pill + Chevron
+            Row(
+              children: [
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceLight,
+                    color: statusBg,
                     borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: statusColor.withValues(alpha: 0.4)),
                   ),
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.group_rounded, size: 13, color: AppColors.textSecondary),
-                      const SizedBox(width: 4),
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle),
+                      ),
+                      const SizedBox(width: 5),
                       Text(
-                        '${advisory.arrivedCount}/${advisory.totalCount} Arrived',
-                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.deepEarth),
+                        statusBadge,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          color: statusColor,
+                          letterSpacing: 0.6,
+                        ),
                       ),
                     ],
                   ),
                 ),
-            ],
-          ),
+                const Spacer(),
+                if (advisory.totalCount > 0)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceLight,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.group_rounded, size: 13, color: AppColors.textSecondary),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${advisory.arrivedCount}/${advisory.totalCount} Arrived',
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.deepEarth),
+                        ),
+                      ],
+                    ),
+                  ),
+                const SizedBox(width: 6),
+                const Icon(Icons.chevron_right_rounded, size: 20, color: Color(0xFFB0B0B8)),
+              ],
+            ),
 
           const SizedBox(height: 12),
 
@@ -203,7 +266,7 @@ class _SmartDepartureAdvisoryCardState extends ConsumerState<SmartDepartureAdvis
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      departurePoint.trim(),
+                      meetUpStop?.title ?? 'Meet-up & Assembly',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -213,10 +276,29 @@ class _SmartDepartureAdvisoryCardState extends ConsumerState<SmartDepartureAdvis
                       ),
                     ),
                     const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        const Icon(Icons.place_outlined, size: 12, color: AppColors.textSecondary),
+                        const SizedBox(width: 3),
+                        Expanded(
+                          child: Text(
+                            departurePoint.trim(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
                     Text(
                       advisory.statusDescription,
                       style: const TextStyle(
-                        fontSize: 12,
+                        fontSize: 11,
                         color: AppColors.textSecondary,
                         height: 1.3,
                       ),
@@ -252,6 +334,56 @@ class _SmartDepartureAdvisoryCardState extends ConsumerState<SmartDepartureAdvis
               ],
             ),
           ),
+
+          // Transport mode & Vehicle details
+          if ((trip.transportMode != null && trip.transportMode!.trim().isNotEmpty) ||
+              (trip.transportMeta != null && trip.transportMeta!.isNotEmpty)) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+              decoration: BoxDecoration(
+                color: AppColors.sand.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.cardBorder, width: 0.8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.directions_car_filled_rounded, size: 14, color: AppColors.primary),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      () {
+                        final meta = trip.transportMeta;
+                        if (meta != null && meta.isNotEmpty) {
+                          final mode = meta['mode']?.toString() ?? '';
+                          if (mode == 'rental') {
+                            final days = meta['rental_days'] ?? 1;
+                            final driver = meta['has_driver'] == true ? 'with driver' : 'self-drive';
+                            return 'Charter: $days-day van rental ($driver)';
+                          }
+                          if (mode == 'commute') {
+                            final fare = meta['fare_per_pax'];
+                            final hub = meta['transit_hub_name'] ?? 'Transit';
+                            return fare != null ? 'Commute: ₱$fare/pax via $hub' : 'Commute: $hub';
+                          }
+                          final vName = meta['vehicle_name'] ?? 'Personal Vehicle';
+                          final kml = meta['kml'];
+                          return kml != null ? 'Vehicle: $vName ($kml km/L)' : 'Vehicle: $vName';
+                        }
+                        final mode = trip.transportMode ?? '';
+                        return mode.isNotEmpty ? 'Transport: ${mode[0].toUpperCase()}${mode.substring(1)}' : 'Land Transport';
+                      }(),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.deepEarth,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
 
           const SizedBox(height: 12),
 
@@ -366,6 +498,7 @@ class _SmartDepartureAdvisoryCardState extends ConsumerState<SmartDepartureAdvis
           ],
         ],
       ),
+    ),
     );
   }
 

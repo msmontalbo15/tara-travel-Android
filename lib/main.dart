@@ -30,6 +30,8 @@ import 'core/widgets/auth_gate.dart';
 import 'core/auth/data/secure_session_repository.dart';
 import 'core/security/three_layer_encryption_service.dart';
 import 'core/services/notification_router.dart';
+import 'core/services/itinerary_alarm_service.dart';
+import 'core/services/trip_foreground_service.dart';
 import 'core/widgets/notifications/in_app_notification_overlay.dart';
 import 'features/navigation/widgets/in_app_floating_bubble.dart';
 import 'features/trips/widgets/join_trip_modal.dart';
@@ -85,6 +87,9 @@ void main() async {
   // Subsequent calls are instant (keys are cached in memory after first load).
   await ThreeLayerEncryptionService.instance.init();
 
+  // ── 5. Initialise Native Itinerary Alarms & Foreground Keep-Alive ────────
+  await ItineraryAlarmService.instance.initialize();
+  TripForegroundService.instance.initForegroundTask();
 
   runApp(
     const ProviderScope(
