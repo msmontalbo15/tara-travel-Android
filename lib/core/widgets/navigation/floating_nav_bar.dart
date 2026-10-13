@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../theme/app_colors.dart';
 import '../../../features/home/home_route_args.dart';
 
@@ -26,26 +27,42 @@ class FloatingNavBar extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
+          // Ambient depth shadow
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 30,
+            color: Colors.black.withValues(alpha: 0.22),
+            blurRadius: 22,
             spreadRadius: 0,
-            offset: const Offset(0, 10),
+            offset: const Offset(0, 8),
+          ),
+          // Brand coral glow
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.35),
+            blurRadius: 24,
+            spreadRadius: -2,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(32),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.88),
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFFE26135), // Vibrant coral
+                  AppColors.primary, // Brand Coral (#D85A30)
+                  Color(0xFFC04B22), // Deep burnt coral
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               borderRadius: BorderRadius.circular(32),
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.9),
-                width: 1.5,
+                color: Colors.white.withValues(alpha: 0.28),
+                width: 1.2,
               ),
             ),
             child: Row(
@@ -105,6 +122,7 @@ class FloatingNavBar extends StatelessWidget {
     return Expanded(
       child: GestureDetector(
         onTap: () {
+          HapticFeedback.lightImpact().catchError((_) {});
           if (onItemSelected != null) {
             onItemSelected!(index);
           } else {
@@ -127,13 +145,23 @@ class FloatingNavBar extends StatelessWidget {
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: active ? AppColors.sand : Colors.transparent,
+                  color: active
+                      ? Colors.white.withValues(alpha: 0.24)
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
+                  border: active
+                      ? Border.all(
+                          color: Colors.white.withValues(alpha: 0.35),
+                          width: 1.0,
+                        )
+                      : null,
                 ),
                 child: Icon(
                   active ? activeIcon : inactiveIcon,
                   size: 22,
-                  color: active ? AppColors.primary : AppColors.warmMuted,
+                  color: active
+                      ? Colors.white
+                      : Colors.white.withValues(alpha: 0.72),
                 ),
               ),
               const SizedBox(height: 2),
@@ -141,8 +169,10 @@ class FloatingNavBar extends StatelessWidget {
                 label,
                 style: TextStyle(
                   fontSize: 10,
-                  fontWeight: active ? FontWeight.w600 : FontWeight.w500,
-                  color: active ? AppColors.primary : AppColors.warmMuted,
+                  fontWeight: active ? FontWeight.w800 : FontWeight.w500,
+                  color: active
+                      ? Colors.white
+                      : Colors.white.withValues(alpha: 0.72),
                   letterSpacing: 0.2,
                 ),
                 maxLines: 1,

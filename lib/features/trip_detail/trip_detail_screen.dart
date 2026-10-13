@@ -497,97 +497,119 @@ class _CollapsibleHeroHeader extends ConsumerWidget {
             final currentMember = ref.watch(currentMemberProvider(trip));
             final canEditTrip = isOwner || (currentMember?.canManageTripSettings ?? false);
 
-            return PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert_rounded, color: Colors.white),
-              color: const Color(0xFF2C2016),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
-              onSelected: (value) {
-                if (value == 'bubble') {
-                  HapticFeedback.lightImpact().catchError((_) {});
-                  ref.read(floatingBubbleProvider.notifier).showBubble(
-                    tripId: trip.id,
-                    nextStopName: trip.destination,
-                    nextStopEta: 'Trip Active',
-                  );
-                }
-                if (value == 'edit') EditTripSheet.show(context, trip);
-                if (value == 'archive') _toggleArchiveTrip(context, ref);
-                if (value == 'delete') _confirmDeleteTrip(context, ref);
-                if (value == 'leave') _confirmLeaveTrip(context, ref);
-              },
-              itemBuilder: (_) => [
-                const PopupMenuItem(
-                  value: 'bubble',
-                  child: Row(
-                    children: [
-                      Icon(Icons.bubble_chart_rounded,
-                          size: 18, color: AppColors.primary),
-                      SizedBox(width: 12),
-                      Text('Pop out Bubble', style: TextStyle(color: Colors.white)),
-                    ],
+            return Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: Container(
+                    height: 40,
+                    width: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.22),
+                        width: 1.0,
+                      ),
+                    ),
+                    child: PopupMenuButton<String>(
+                      icon: const Icon(Icons.more_vert_rounded, color: Colors.white, size: 20),
+                      padding: EdgeInsets.zero,
+                      color: const Color(0xFF2C2016),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
+                      onSelected: (value) {
+                        if (value == 'bubble') {
+                          HapticFeedback.lightImpact().catchError((_) {});
+                          ref.read(floatingBubbleProvider.notifier).showBubble(
+                            tripId: trip.id,
+                            nextStopName: trip.destination,
+                            nextStopEta: 'Trip Active',
+                          );
+                        }
+                        if (value == 'edit') EditTripSheet.show(context, trip);
+                        if (value == 'archive') _toggleArchiveTrip(context, ref);
+                        if (value == 'delete') _confirmDeleteTrip(context, ref);
+                        if (value == 'leave') _confirmLeaveTrip(context, ref);
+                      },
+                      itemBuilder: (_) => [
+                        const PopupMenuItem(
+                          value: 'bubble',
+                          child: Row(
+                            children: [
+                              Icon(Icons.bubble_chart_rounded,
+                                  size: 18, color: AppColors.primary),
+                              SizedBox(width: 12),
+                              Text('Pop out Bubble', style: TextStyle(color: Colors.white)),
+                            ],
+                          ),
+                        ),
+                        if (canEditTrip)
+                          const PopupMenuItem(
+                            value: 'edit',
+                            child: Row(
+                              children: [
+                                Icon(Icons.edit_outlined,
+                                    size: 18, color: Colors.white70),
+                                SizedBox(width: 12),
+                                Text('Edit Trip', style: TextStyle(color: Colors.white)),
+                              ],
+                            ),
+                          ),
+                        if (isOwner)
+                          PopupMenuItem(
+                            value: 'archive',
+                            child: Row(
+                              children: [
+                                Icon(
+                                  trip.isArchived
+                                      ? Icons.unarchive_outlined
+                                      : Icons.archive_outlined,
+                                  size: 18,
+                                  color: Colors.white70,
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  trip.isArchived ? 'Unarchive Trip' : 'Archive Trip',
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                              ],
+                            ),
+                          ),
+                        const PopupMenuDivider(),
+                        if (isOwner)
+                          const PopupMenuItem(
+                            value: 'delete',
+                            child: Row(
+                              children: [
+                                Icon(Icons.delete_outline_rounded,
+                                    size: 18, color: Colors.redAccent),
+                                SizedBox(width: 12),
+                                Text('Delete Trip',
+                                    style: TextStyle(color: Colors.redAccent)),
+                              ],
+                            ),
+                          )
+                        else
+                          const PopupMenuItem(
+                            value: 'leave',
+                            child: Row(
+                              children: [
+                                Icon(Icons.logout_rounded,
+                                    size: 18, color: Colors.redAccent),
+                                SizedBox(width: 12),
+                                Text('Leave Trip',
+                                    style: TextStyle(color: Colors.redAccent)),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
-                if (canEditTrip)
-                  const PopupMenuItem(
-                    value: 'edit',
-                    child: Row(
-                      children: [
-                        Icon(Icons.edit_outlined,
-                            size: 18, color: Colors.white70),
-                        SizedBox(width: 12),
-                        Text('Edit Trip', style: TextStyle(color: Colors.white)),
-                      ],
-                    ),
-                  ),
-                if (isOwner)
-                  PopupMenuItem(
-                    value: 'archive',
-                    child: Row(
-                      children: [
-                        Icon(
-                          trip.isArchived
-                              ? Icons.unarchive_outlined
-                              : Icons.archive_outlined,
-                          size: 18,
-                          color: Colors.white70,
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          trip.isArchived ? 'Unarchive Trip' : 'Archive Trip',
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                      ],
-                    ),
-                  ),
-                const PopupMenuDivider(),
-                if (isOwner)
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        Icon(Icons.delete_outline_rounded,
-                            size: 18, color: Colors.redAccent),
-                        SizedBox(width: 12),
-                        Text('Delete Trip',
-                            style: TextStyle(color: Colors.redAccent)),
-                      ],
-                    ),
-                  )
-                else
-                  const PopupMenuItem(
-                    value: 'leave',
-                    child: Row(
-                      children: [
-                        Icon(Icons.logout_rounded,
-                            size: 18, color: Colors.redAccent),
-                        SizedBox(width: 12),
-                        Text('Leave Trip',
-                            style: TextStyle(color: Colors.redAccent)),
-                      ],
-                    ),
-                  ),
-              ],
+              ),
             );
           },
         ),
@@ -612,9 +634,8 @@ class _CollapsibleHeroHeader extends ConsumerWidget {
                     child: Container(
                       height: kToolbarHeight,
                       alignment: Alignment.centerLeft,
-                      padding: const EdgeInsets.only(left: 60, right: 52),
+                      padding: const EdgeInsets.only(left: 64, right: 60),
                       child: Row(
-                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Container(
                             width: 8,
@@ -623,16 +644,40 @@ class _CollapsibleHeroHeader extends ConsumerWidget {
                             decoration: BoxDecoration(
                               color: statusDotColor,
                               shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: statusDotColor.withValues(alpha: 0.6),
+                                  blurRadius: 4,
+                                ),
+                              ],
                             ),
                           ),
-                          Flexible(
-                            child: Text(
-                              trip.name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: AppTextStyles.titleMedium.copyWith(
-                                color: Colors.white,
-                              ),
+                          Expanded(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  trip.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTextStyles.titleMedium.copyWith(
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                Text(
+                                  trip.destination,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.70),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
@@ -838,30 +883,61 @@ class _CollapsibleHeroHeader extends ConsumerWidget {
                           ),
                         ],
 
-                        const SizedBox(height: 4),
-                        Text(
-                          () {
-                            final String dateStr;
-                            if (trip.fromDate.year == trip.toDate.year) {
-                              if (trip.fromDate.month == trip.toDate.month) {
-                                dateStr =
-                                    '${DateFormat('MMM d').format(trip.fromDate)}–${trip.toDate.day}, ${trip.toDate.year}';
-                              } else {
-                                dateStr =
-                                    '${DateFormat('MMM d').format(trip.fromDate)} – ${DateFormat('MMM d').format(trip.toDate)}, ${trip.toDate.year}';
-                              }
-                            } else {
-                              dateStr =
-                                  '${DateFormat('MMM d, yyyy').format(trip.fromDate)} – ${DateFormat('MMM d, yyyy').format(trip.toDate)}';
-                            }
-                            return '$dateStr · $nights nights';
-                          }(),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.white.withValues(alpha: 0.55),
-                          ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Icon(Icons.calendar_today_rounded,
+                                color: Colors.white.withValues(alpha: 0.75),
+                                size: 12),
+                            const SizedBox(width: 5),
+                            Expanded(
+                              child: Text(
+                                () {
+                                  final String dateStr;
+                                  if (trip.fromDate.year == trip.toDate.year) {
+                                    if (trip.fromDate.month == trip.toDate.month) {
+                                      dateStr =
+                                          '${DateFormat('MMM d').format(trip.fromDate)}–${trip.toDate.day}, ${trip.toDate.year}';
+                                    } else {
+                                      dateStr =
+                                          '${DateFormat('MMM d').format(trip.fromDate)} – ${DateFormat('MMM d').format(trip.toDate)}, ${trip.toDate.year}';
+                                    }
+                                  } else {
+                                    dateStr =
+                                        '${DateFormat('MMM d, yyyy').format(trip.fromDate)} – ${DateFormat('MMM d, yyyy').format(trip.toDate)}';
+                                  }
+                                  return dateStr;
+                                }(),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.white.withValues(alpha: 0.80),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.20),
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: Text(
+                                '$nights ${nights == 1 ? 'night' : 'nights'}',
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -1222,49 +1298,92 @@ class _ItineraryHubCard extends ConsumerWidget {
             ),
           ],
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: const Color(0xFF185FA5).withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.calendar_month_rounded,
-                color: Color(0xFF185FA5),
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    isCompleted ? 'All Stops Completed 🎉' : 'Trip Itinerary',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF1A1A1A),
-                    ),
+            Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF185FA5).withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    totalStops > 0
-                        ? '$visitedStops of $totalStops stops visited · $dayCount days'
-                        : 'Plan activities, food, hotels & stops',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: Color(0xFF8E8E93),
-                    ),
+                  child: const Icon(
+                    Icons.calendar_month_rounded,
+                    color: Color(0xFF185FA5),
+                    size: 20,
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              isCompleted ? 'All Stops Completed 🎉' : 'Trip Itinerary',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF1A1A1A),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (dayCount > 0) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF185FA5).withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                '$dayCount ${dayCount == 1 ? 'Day' : 'Days'}',
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF185FA5),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        totalStops > 0
+                            ? '$visitedStops of $totalStops stops visited'
+                            : 'Plan activities, food, hotels & stops',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFF8E8E93),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right_rounded,
+                    size: 20, color: Color(0xFFB0B0B8)),
+              ],
             ),
-            const Icon(Icons.chevron_right_rounded,
-                size: 20, color: Color(0xFFB0B0B8)),
+            if (totalStops > 0 && !isCompleted) ...[
+              const SizedBox(height: 10),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: (visitedStops / totalStops).clamp(0.0, 1.0),
+                  minHeight: 4,
+                  backgroundColor: const Color(0xFFF2F2F7),
+                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF185FA5)),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -1383,69 +1502,78 @@ class _LogisticsCard extends StatelessWidget {
           ),
           if (hasDeparture) ...[
             const SizedBox(height: 10),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF2F2F7),
-                    borderRadius: BorderRadius.circular(8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF9F8F6),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFEFECE6), width: 0.8),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: AppColors.sand,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.place_rounded,
+                        size: 16, color: AppColors.primary),
                   ),
-                  child: const Icon(Icons.place_rounded,
-                      size: 16, color: Color(0xFF185FA5)),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'MEETUP / DEPARTURE POINT',
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF8E8E93),
-                          letterSpacing: 0.5,
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'MEETUP / DEPARTURE POINT',
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF8E8E93),
+                            letterSpacing: 0.5,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        trip.departurePoint!,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF1A1A1A),
+                        const SizedBox(height: 2),
+                        Text(
+                          trip.departurePoint!,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1A1A1A),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.copy_rounded,
-                      size: 15, color: Color(0xFF8E8E93)),
-                  tooltip: 'Copy Departure Point',
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () => _copyDeparturePoint(context),
-                ),
-              ],
+                  IconButton(
+                    icon: const Icon(Icons.copy_rounded,
+                        size: 16, color: Color(0xFF8E8E93)),
+                    tooltip: 'Copy Departure Point',
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => _copyDeparturePoint(context),
+                  ),
+                ],
+              ),
             ),
           ],
           if (trip.transportMeta != null && trip.transportMeta!.isNotEmpty) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               decoration: BoxDecoration(
-                color: AppColors.surfaceLight,
-                borderRadius: BorderRadius.circular(8),
+                color: const Color(0xFFF9F8F6),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFEFECE6), width: 0.8),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.directions_car_filled_rounded, size: 13, color: AppColors.primary),
-                  const SizedBox(width: 6),
+                  const Icon(Icons.directions_car_filled_rounded, size: 14, color: AppColors.primary),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       () {
@@ -1466,7 +1594,7 @@ class _LogisticsCard extends StatelessWidget {
                         return kml != null ? 'Vehicle: $vName ($kml km/L)' : 'Vehicle: $vName';
                       }(),
                       style: const TextStyle(
-                        fontSize: 11,
+                        fontSize: 11.5,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
                       ),
@@ -1523,10 +1651,11 @@ class _SquadPreviewCard extends StatelessWidget {
           children: [
             // Overlapping avatar cluster
             SizedBox(
-              height: 34,
+              height: 36,
               width: (displayMembers.length * 24.0) +
-                  (remainingCount > 0 ? 30 : 10),
+                  (remainingCount > 0 ? 32 : 12),
               child: Stack(
+                alignment: Alignment.centerLeft,
                 children: [
                   for (int i = 0; i < displayMembers.length; i++)
                     Positioned(
@@ -1535,7 +1664,7 @@ class _SquadPreviewCard extends StatelessWidget {
                         photoUrl: displayMembers[i].profilePhotoUrl,
                         initials: displayMembers[i].initials,
                         color: displayMembers[i].color,
-                        size: 32,
+                        size: 34,
                         border: Border.all(color: Colors.white, width: 2),
                       ),
                     ),
@@ -1543,18 +1672,18 @@ class _SquadPreviewCard extends StatelessWidget {
                     Positioned(
                       left: displayMembers.length * 22.0,
                       child: Container(
-                        width: 32,
-                        height: 32,
+                        width: 34,
+                        height: 34,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: const Color(0xFF2C1A14),
+                          color: AppColors.deepEarth,
                           border: Border.all(color: Colors.white, width: 2),
                         ),
                         alignment: Alignment.center,
                         child: Text(
                           '+$remainingCount',
                           style: const TextStyle(
-                            fontSize: 10,
+                            fontSize: 10.5,
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
                           ),
@@ -1564,20 +1693,44 @@ class _SquadPreviewCard extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    '${members.length} Squad ${members.length == 1 ? 'Member' : 'Members'}',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF1A1A1A),
-                    ),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          '${members.length} Squad ${members.length == 1 ? 'Member' : 'Members'}',
+                          style: const TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF1A1A1A),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppColors.sand,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          '${members.where((m) => m.isOrganizer).length} Host',
+                          style: const TextStyle(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.darkAccent,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 1),
+                  const SizedBox(height: 2),
                   const Text(
                     'Manage roles & split participants',
                     style: TextStyle(
@@ -1751,36 +1904,54 @@ class _BudgetCard extends StatelessWidget {
             ],
 
             // Spent / Pending / Remaining
-            Row(
-              children: [
-                Expanded(
-                  child: _BudgetStat(
-                    label: 'Spent',
-                    value: '₱${_fmt(totalSpent)}',
-                    valueColor: const Color(0xFF1A1A1A),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF9F8F6),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFEFECE6), width: 0.8),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _BudgetStat(
+                      label: 'Spent',
+                      value: '₱${_fmt(totalSpent)}',
+                      valueColor: const Color(0xFF1A1A1A),
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: _BudgetStat(
-                    label: 'Pending',
-                    value: '₱${_fmt(totalPending)}',
-                    valueColor: const Color(0xFF854F0B),
-                    align: CrossAxisAlignment.center,
+                  Container(
+                    width: 1,
+                    height: 28,
+                    color: const Color(0xFFE5E2DC),
                   ),
-                ),
-                Expanded(
-                  child: _BudgetStat(
-                    label: budget > 0 ? 'Remaining' : 'Total Budget',
-                    value: budget > 0
-                        ? '₱${_fmt(remaining.abs())}${remaining < 0 ? ' over' : ''}'
-                        : '₱${_fmt(budget)}',
-                    valueColor: remaining < 0
-                        ? const Color(0xFFA32D2D)
-                        : const Color(0xFF3B6D11),
-                    align: CrossAxisAlignment.end,
+                  Expanded(
+                    child: _BudgetStat(
+                      label: 'Pending',
+                      value: '₱${_fmt(totalPending)}',
+                      valueColor: const Color(0xFF854F0B),
+                      align: CrossAxisAlignment.center,
+                    ),
                   ),
-                ),
-              ],
+                  Container(
+                    width: 1,
+                    height: 28,
+                    color: const Color(0xFFE5E2DC),
+                  ),
+                  Expanded(
+                    child: _BudgetStat(
+                      label: budget > 0 ? 'Remaining' : 'Total Budget',
+                      value: budget > 0
+                          ? '₱${_fmt(remaining.abs())}${remaining < 0 ? ' over' : ''}'
+                          : '₱${_fmt(budget)}',
+                      valueColor: remaining < 0
+                          ? const Color(0xFFA32D2D)
+                          : const Color(0xFF3B6D11),
+                      align: CrossAxisAlignment.end,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -1807,12 +1978,26 @@ class _BudgetStat extends StatelessWidget {
     return Column(
       crossAxisAlignment: align,
       children: [
-        Text(label,
-            style: const TextStyle(fontSize: 11, color: Color(0xFF8E8E93))),
-        const SizedBox(height: 2),
-        Text(value,
-            style: TextStyle(
-                fontSize: 13, fontWeight: FontWeight.w700, color: valueColor)),
+        Text(
+          label.toUpperCase(),
+          style: const TextStyle(
+            fontSize: 9.5,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF8E8E93),
+            letterSpacing: 0.4,
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: valueColor,
+          ),
+        ),
       ],
     );
   }

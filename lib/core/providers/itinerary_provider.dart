@@ -539,28 +539,54 @@ class ItinerarySummary {
 }
 
 /// Memoized summary provider avoiding redundant stop loops across widgets.
+///
+/// Date-aware: picks the first non-completed stop from today onward.
+/// Past-day missed stops are only surfaced as a fallback when there is nothing
+/// upcoming, preventing a stale Day-1 stop from permanently blocking the card.
 final itinerarySummaryProvider = Provider.autoDispose.family<ItinerarySummary, String>((ref, tripId) {
   final subProvider = ref.watch(itineraryProvider(tripId));
   final asyncState = ref.watch(subProvider);
   final state = asyncState.asData?.value;
   if (state == null) return const ItinerarySummary();
 
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+
   int total = 0;
   int visited = 0;
-  ItineraryStop? next;
-  DateTime? nextDate;
+
+  // Candidates: prefer today-or-future, fallback to past missed.
+  ItineraryStop? upcomingNext;
+  DateTime? upcomingNextDate;
+  ItineraryStop? pastMissedNext;
+  DateTime? pastMissedNextDate;
 
   for (final day in state.days) {
+    final dayMidnight = DateTime(day.date.year, day.date.month, day.date.day);
+    final isTodayOrFuture = !dayMidnight.isBefore(today);
+
     total += day.stops.length;
     for (final stop in day.stops) {
       if (stop.isCompleted) {
         visited++;
-      } else if (next == null) {
-        next = stop;
-        nextDate = day.date;
+        continue;
+      }
+      // First non-completed stop on today or a future day.
+      if (isTodayOrFuture && upcomingNext == null) {
+        upcomingNext = stop;
+        upcomingNextDate = day.date;
+      }
+      // First non-completed stop on a past day (fallback).
+      if (!isTodayOrFuture && pastMissedNext == null) {
+        pastMissedNext = stop;
+        pastMissedNextDate = day.date;
       }
     }
   }
+
+  // Prefer upcoming; fall back to past missed only when nothing is ahead.
+  final next = upcomingNext ?? pastMissedNext;
+  final nextDate = upcomingNext != null ? upcomingNextDate : pastMissedNextDate;
 
   return ItinerarySummary(
     dayCount: state.days.length,

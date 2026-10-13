@@ -109,6 +109,9 @@
 | **`IMP-148`** | 2026-10-13 | Trip Detail / Redundancy Elimination & Provider Optimization | Removed dead widget `trip_quick_actions_grid.dart`, merged transport logistics directly into `SmartDepartureAdvisoryCard`, centralized memoized `itinerarySummaryProvider` and `expenseSummaryProvider`, and eliminated duplicate calculations and unused imports in `TripDetailScreen`. |
 | **`IMP-149`** | 2026-10-13 | Profile / App Version & Updates Modal Restricted to New Releases | Reverted `_handleCheckUpdate` in `ProfileAccountCard` so `WhatsNewDialog.showSheet` only opens when a new version is actually available (`isSoftUpdate`); displays non-intrusive `AppFeedback.showSuccess` toast when up to date. |
 | **`IMP-150`** | 2026-10-13 | Trip Detail / Interactive Next Up Stop Details Bottom Sheet | Made the Next Up cards (`SmartDepartureAdvisoryCard` and `_ItineraryHubCard`) interactive by reusing `StopDetailSheet` from the Itinerary module on tap, supporting real-time GPS ETA, check-ins, companion rosters, and navigation. |
+| **`IMP-151`** | 2026-10-13 | Trip Detail / UI & UX Aesthetic Polish & Frosted Glass Refinements | Refined TripDetailScreen hero header buttons with frosted glass containers, improved collapsed title bar with destination subtitle and status pulse, upgraded hero calendar date pill with night counter, elevated budget card with partitioned metric chips, added host tag to squad card, and added progress indicator to itinerary hub. |
+| **`IMP-152`** | 2026-10-14 | Home Navigation / Rich Brand Coral & Orange Gradient Navigator | Transformed `FloatingNavBar` into a rich Tara Travel brand coral gradient (`#E26135` to `AppColors.primary` `#D85A30` to `#C04B22`) with warm orange ambient depth glow, frosted white glass active pill (`alpha: 0.24`, subtle 1px border), crisp white glyphs, and tactile haptic feedback. |
+| **`IMP-153`** | 2026-10-14 | Trip Detail / Smart Departure Advisory Swipe & Auto-Next Itinerary Stop Carousel | Implemented PageView carousel in `SmartDepartureAdvisoryCard`: swipe right to preview next destination stop when convoy departs (`advisory.isDeparted`), automatic smooth carousel animation when all squad companions arrive (`arrivedCount >= totalCount`), and interactive pagination dots. |
 
 ---
 
@@ -3510,4 +3513,27 @@
 - **Verification**:
   - `flutter analyze lib/features/trip_detail/` passed with 0 issues.
 
+---
+
+### `IMP-151` (2026-10-13) — Trip Detail UI/UX Aesthetic Polish & Frosted Glass Refinements
+
+- **Milestone**: `IMP-151`
+- **Component(s)**: `TripDetailScreen` (`lib/features/trip_detail/trip_detail_screen.dart`)
+- **Files Modified**:
+  - `lib/features/trip_detail/trip_detail_screen.dart` [MODIFIED — Enhanced hero header more button with brand frosted glass container (`ImageFilter.blur`), added destination subtitle and glowing status dot in the collapsed app bar, transformed trip date/nights row with icon badge and duration pill, modernized budget card metrics into partitioned high-contrast chips with uppercase labels, added host/organizer count tag to squad preview card with expanded 34px avatar clusters, polished logistics departure tile with warm tinted background and copy button, and added day tag and progress bar to itinerary fallback card.]
+- **Scope & Objectives**:
+  - Upgrade Trip Detail screen UI/UX according to Tara Travel brand identity and modern mobile design standards: frosted glassmorphism, responsive typography hierarchy, tactile feedback, and crisp visual separation.
+- **Verification**:
+---
+
+### `IMP-152` (2026-10-14) — Home Navigation Rich Brand Coral & Orange Gradient Navigator
+
+- **Milestone**: `IMP-152`
+- **Component(s)**: `FloatingNavBar` (`lib/core/widgets/navigation/floating_nav_bar.dart`)
+- **Files Modified**:
+  - `lib/core/widgets/navigation/floating_nav_bar.dart` [MODIFIED — Transformed the entire navigator pill container to a rich Tara Travel brand coral gradient (`const LinearGradient` from `#E26135` to `AppColors.primary` `#D85A30` to `#C04B22`) with warm coral ambient depth shadow (`AppColors.primary` alpha 0.35, blur 24) and soft translucent border (`0.28` alpha). Configured active items with an elevated frosted glass pill (`Colors.white` alpha 0.24, 1px border), bright white icon and bold label (`FontWeight.w800`); set inactive items to high-contrast translucent white (`0.72` alpha); maintained `HapticFeedback.lightImpact` on tab selection.]
+- **Scope & Objectives**:
+  - Infuse Tara Travel's signature Coral brand color into the primary Home navigation bar with rich modern gradient glassmorphism and high visual contrast.
+- **Verification**:
+  - `flutter analyze lib/core/widgets/navigation/floating_nav_bar.dart` passed with 0 issues.
 
