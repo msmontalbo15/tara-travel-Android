@@ -33,6 +33,7 @@ import 'widgets/smart_departure_advisory_card.dart';
 import 'widgets/trip_detail_bottom_bar.dart';
 import '../../core/services/departure_advisory_service.dart';
 import '../itinerary/widgets/stop_detail_sheet.dart';
+import '../itinerary/widgets/edit_stop_form.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TripDetailScreen — Streamlined Dashboard (Zero-Redundancy Rich Hub)
@@ -1045,7 +1046,40 @@ class _ItineraryHubCard extends ConsumerWidget {
         canManage: canManage,
         onEdit: () {
           Navigator.pop(ctx);
-          onTap();
+          final subProvider = ref.read(itineraryProvider(trip.id));
+          final itineraryState = ref.read(subProvider).asData?.value;
+          int dayIndex = itineraryState?.days
+                  .indexWhere((d) => d.stops.any((s) => s.id == targetStop.id)) ??
+              0;
+          if (dayIndex < 0) dayIndex = 0;
+
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (editCtx) => Padding(
+              padding: EdgeInsets.only(
+                bottom: editCtx.keyboardHeight,
+              ),
+              child: SingleChildScrollView(
+                child: Container(
+                  margin: const EdgeInsets.all(12),
+                  child: EditStopForm(
+                    stop: targetStop,
+                    members: trip.members,
+                    onSave: (updated) async {
+                      await ref
+                          .read(subProvider.notifier)
+                          .updateStop(dayIndex, updated);
+                      ref.invalidate(itineraryStopsProvider(trip.id));
+                      if (editCtx.mounted) Navigator.pop(editCtx);
+                    },
+                    onCancel: () => Navigator.pop(editCtx),
+                  ),
+                ),
+              ),
+            ),
+          );
         },
         onCheckIn: () async {
           try {

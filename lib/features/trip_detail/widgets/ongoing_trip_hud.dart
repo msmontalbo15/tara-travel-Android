@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/itinerary_model.dart';
 import '../../../core/models/member_model.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_responsive.dart';
 import '../../itinerary/widgets/stop_detail_sheet.dart';
+import '../../itinerary/widgets/edit_stop_form.dart';
 import '../../../core/providers/itinerary_provider.dart';
 import '../../../core/providers/trip_provider.dart';
 import '../../../core/providers/auth_provider.dart';
@@ -50,7 +52,40 @@ class OngoingTripHud extends ConsumerWidget {
         canManage: true,
         onEdit: () {
           Navigator.pop(ctx);
-          onOpenItinerary();
+          final subProvider = ref.read(itineraryProvider(tripId));
+          final itineraryState = ref.read(subProvider).asData?.value;
+          int dayIndex = itineraryState?.days
+                  .indexWhere((d) => d.stops.any((s) => s.id == targetStop.id)) ??
+              0;
+          if (dayIndex < 0) dayIndex = 0;
+
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (editCtx) => Padding(
+              padding: EdgeInsets.only(
+                bottom: editCtx.keyboardHeight,
+              ),
+              child: SingleChildScrollView(
+                child: Container(
+                  margin: const EdgeInsets.all(12),
+                  child: EditStopForm(
+                    stop: targetStop,
+                    members: members,
+                    onSave: (updated) async {
+                      await ref
+                          .read(subProvider.notifier)
+                          .updateStop(dayIndex, updated);
+                      ref.invalidate(itineraryStopsProvider(tripId));
+                      if (editCtx.mounted) Navigator.pop(editCtx);
+                    },
+                    onCancel: () => Navigator.pop(editCtx),
+                  ),
+                ),
+              ),
+            ),
+          );
         },
         onCheckIn: () async {
           try {

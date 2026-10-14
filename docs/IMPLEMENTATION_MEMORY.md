@@ -115,6 +115,7 @@
 | **`IMP-154`** | 2026-10-14 | Trip Detail / OngoingTripHud Redundant Actions Elimination | Removed redundant "Navigate" and "Mark Arrived" footer buttons from `OngoingTripHud`, pruned unused imports and `_markStopArrived` method, and added trailing chevron affordance for `StopDetailSheet`. |
 | **`IMP-155`** | 2026-10-14 | Trip Detail / SmartDepartureAdvisoryCard Redundant Actions Elimination | Removed redundant "Navigate", "I'm Here / Arrived", and "View Timeline" buttons from `SmartDepartureAdvisoryCard` across both carousel pages, calibrated card height to 255px, and removed unused `NavigateRouteButton` import. |
 | **`IMP-156`** | 2026-10-15 | Navigation & Overlay / Pop out Bubble Feature Retirement & Optimization | Completely removed the floating Pop out Bubble HUD feature (`floating_bubble_service.dart`, `in_app_floating_bubble.dart`, unit tests), purged 'Pop out Bubble' options from Trip Detail and Live Navigation, and optimized navigation provider telemetry streams. |
+| **`IMP-157`** | 2026-10-15 | Trip Detail & Itinerary / In-Place Stop Editing from Next Up Detail Sheet | Replaced redirect to full itinerary screen with in-place `EditStopForm` bottom sheet when tapping Edit from `StopDetailSheet` across Trip Detail cards (`_ItineraryHubCard`, `SmartDepartureAdvisoryCard`, `OngoingTripHud`), and restricted Edit button display to organizers (`canManage`). |
 
 ---
 
@@ -3586,4 +3587,21 @@
   - Completely decommissioned the experimental pop out floating bubble overlay to eliminate rendering overhead on the root app tree, reduce battery consumption by eliminating redundant companion distance calculations, and clean up the UI menus across the app.
 - **Verification**:
   - `flutter analyze` completed across the entire project with 0 issues found.
+
+---
+
+### `IMP-157` (2026-10-15) — In-Place Stop Editing from Next Up Detail Sheet
+
+- **Milestone**: `IMP-157`
+- **Component(s)**: `StopDetailSheet`, `TripDetailScreen`, `SmartDepartureAdvisoryCard`, `OngoingTripHud`
+- **Files Modified**:
+  - `lib/features/itinerary/widgets/stop_detail_sheet.dart` [MODIFIED — Gated display of top-right Edit button with `if (widget.canManage)` so only trip owners and organizers can trigger stop editing.]
+  - `lib/features/trip_detail/trip_detail_screen.dart` [MODIFIED — Updated `_ItineraryHubCard._openStopDetail`: replaced navigation redirect to full itinerary with direct opening of `EditStopForm` bottom sheet; saves changes via `ItineraryNotifier.updateStop` and invalidates `itineraryStopsProvider`.]
+  - `lib/features/trip_detail/widgets/smart_departure_advisory_card.dart` [MODIFIED — Updated `_openStopDetail`: replaced `onOpenItinerary` callback with direct `EditStopForm` modal bottom sheet upon tapping Edit.]
+  - `lib/features/trip_detail/widgets/ongoing_trip_hud.dart` [MODIFIED — Updated `_openStopDetail`: replaced `onOpenItinerary` callback with direct `EditStopForm` modal bottom sheet upon tapping Edit.]
+- **Scope & Objectives**:
+  - Previously, tapping the Edit button on the "Next Up" stop detail sheet closed the modal and redirected the user to the full itinerary screen (`/itinerary`), forcing them to re-locate the stop on the timeline to edit it. This was replaced with direct in-place editing via `EditStopForm` without losing the Trip Detail context.
+- **Verification**:
+  - `flutter analyze lib/features/trip_detail/ lib/features/itinerary/widgets/stop_detail_sheet.dart` passed with 0 issues found.
+
 
