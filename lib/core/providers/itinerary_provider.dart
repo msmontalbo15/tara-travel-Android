@@ -153,7 +153,12 @@ class ItineraryNotifier extends AsyncNotifier<ItineraryState> {
     updatedDays[dayIndex] = updatedDay;
 
     state = AsyncData(currentState.copyWith(days: updatedDays));
-    await repo.saveItineraryDay(_tripId, updatedDay);
+
+    // Delete the stop row from Supabase, then persist updated sort_order
+    await repo.deleteStop(stopId);
+    if (updatedStops.isNotEmpty) {
+      await repo.saveItineraryDay(_tripId, updatedDay);
+    }
   }
 
 
