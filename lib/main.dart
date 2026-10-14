@@ -33,7 +33,6 @@ import 'core/services/notification_router.dart';
 import 'core/services/itinerary_alarm_service.dart';
 import 'core/services/trip_foreground_service.dart';
 import 'core/widgets/notifications/in_app_notification_overlay.dart';
-import 'features/navigation/widgets/in_app_floating_bubble.dart';
 import 'features/trips/widgets/join_trip_modal.dart';
 
 
@@ -141,9 +140,7 @@ class _TaraAppState extends State<TaraApp> with WidgetsBindingObserver {
         builder: (context, child) {
           final scaledChild = AppResponsive.clampedTextScaleBuilder(context, child);
           return InAppNotificationOverlay(
-            child: InAppFloatingBubbleContainer(
-              child: scaledChild,
-            ),
+            child: scaledChild,
           );
         },
         initialRoute: '/',

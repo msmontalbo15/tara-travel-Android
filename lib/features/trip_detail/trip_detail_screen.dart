@@ -31,7 +31,6 @@ import 'widgets/planning_recommendations_card.dart';
 import 'widgets/smart_departure_advisory_card.dart';
 
 import 'widgets/trip_detail_bottom_bar.dart';
-import '../../core/services/floating_bubble_service.dart';
 import '../../core/services/departure_advisory_service.dart';
 import '../itinerary/widgets/stop_detail_sheet.dart';
 
@@ -521,31 +520,12 @@ class _CollapsibleHeroHeader extends ConsumerWidget {
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16)),
                       onSelected: (value) {
-                        if (value == 'bubble') {
-                          HapticFeedback.lightImpact().catchError((_) {});
-                          ref.read(floatingBubbleProvider.notifier).showBubble(
-                            tripId: trip.id,
-                            nextStopName: trip.destination,
-                            nextStopEta: 'Trip Active',
-                          );
-                        }
                         if (value == 'edit') EditTripSheet.show(context, trip);
                         if (value == 'archive') _toggleArchiveTrip(context, ref);
                         if (value == 'delete') _confirmDeleteTrip(context, ref);
                         if (value == 'leave') _confirmLeaveTrip(context, ref);
                       },
                       itemBuilder: (_) => [
-                        const PopupMenuItem(
-                          value: 'bubble',
-                          child: Row(
-                            children: [
-                              Icon(Icons.bubble_chart_rounded,
-                                  size: 18, color: AppColors.primary),
-                              SizedBox(width: 12),
-                              Text('Pop out Bubble', style: TextStyle(color: Colors.white)),
-                            ],
-                          ),
-                        ),
                         if (canEditTrip)
                           const PopupMenuItem(
                             value: 'edit',

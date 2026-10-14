@@ -1,7 +1,7 @@
 # Tara Travel - Version Changelog
 
 > Auto-generated from IMPLEMENTATION_MEMORY.md + git log
-> Last updated: **2026-10-14 00:46 PHT**
+> Last updated: **2026-10-14 22:20 PHT**
 
 ---
 
@@ -232,6 +232,8 @@
 
 ## 2026-10-14
 
+- **IMP-155** (Trip Detail / SmartDepartureAdvisoryCard Redundant Actions Elimination): Removed redundant "Navigate", "I'm Here / Arrived", and "View Timeline" action buttons from `SmartDepartureAdvisoryCard` across both assembly and next-destination pages, calibrated card height to 255px, and removed unused `NavigateRouteButton` import.
+- **IMP-154** (Trip Detail / OngoingTripHud Redundant Actions Elimination): Removed redundant "Navigate" and "Mark Arrived" footer action buttons and divider from `OngoingTripHud` hero card, eliminated unused imports and `_markStopArrived` handler, and added trailing chevron affordance pointing to `StopDetailSheet`.
 - **IMP-153** (Trip Detail / Smart Departure Advisory Swipe & Auto-Next Itinerary Stop Carousel): Implemented PageView carousel in `SmartDepartureAdvisoryCard`: swipe right to preview next destination stop when convoy departs (`advisory.isDeparted`), automatic smooth carousel animation when all squad companions arrive (`arrivedCount >= totalCount`), and interactive pagination dots.
 - **IMP-152** (Home Navigation / Rich Brand Coral & Orange Gradient Navigator): Transformed `FloatingNavBar` into a rich Tara Travel brand coral gradient (`#E26135` to `AppColors.primary` `#D85A30` to `#C04B22`) with warm orange ambient depth glow, frosted white glass active pill (`alpha: 0.24`, subtle 1px border), crisp white glyphs, and tactile haptic feedback.
 

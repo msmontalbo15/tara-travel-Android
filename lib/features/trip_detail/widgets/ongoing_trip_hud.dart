@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/itinerary_model.dart';
 import '../../../core/models/member_model.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../itinerary/widgets/navigate_route_button.dart';
 import '../../itinerary/widgets/stop_detail_sheet.dart';
 import '../../../core/providers/itinerary_provider.dart';
 import '../../../core/providers/trip_provider.dart';
@@ -14,9 +13,8 @@ import '../../../core/providers/auth_provider.dart';
 /// Travel Cockpit Hero for Ongoing Trips (Plan 13):
 /// • Displays Current Active / Next Upcoming Stop prominently.
 /// • Shows stop type, start/end time, and location summary.
-/// • 1-tap "Navigate" trigger via Google Maps / Waze.
-/// • 1-tap "Mark Arrived" / "Slide to Arrive" action that updates Supabase.
-/// • Tapping the HUD card opens the full [StopDetailSheet].
+/// • Tapping the HUD card opens the full [StopDetailSheet] (which includes
+///   turn-by-turn navigation, location directions, and slide-to-arrive).
 /// ─────────────────────────────────────────────────────────────────────────────
 class OngoingTripHud extends ConsumerWidget {
   final String tripId;
@@ -54,22 +52,26 @@ class OngoingTripHud extends ConsumerWidget {
           Navigator.pop(ctx);
           onOpenItinerary();
         },
+        onCheckIn: () async {
+          try {
+            final subProvider = ref.read(itineraryProvider(tripId));
+            final itineraryState = ref.read(subProvider).asData?.value;
+            if (itineraryState != null) {
+              await ref.read(subProvider.notifier).toggleStopVisited(
+                itineraryState.activeDay,
+                targetStop.id,
+                currentUserId ?? 'me',
+              );
+              ref.invalidate(itineraryStopsProvider(tripId));
+            }
+          } catch (e) {
+            debugPrint('[OngoingTripHud] check-in error: $e');
+          }
+        },
       ),
     );
   }
 
-  Future<void> _markStopArrived(BuildContext context, WidgetRef ref, ItineraryStop stop) async {
-    try {
-      final subProvider = ref.read(itineraryProvider(tripId));
-      final itineraryState = ref.read(subProvider).asData?.value;
-      if (itineraryState == null) return;
-      final notifier = ref.read(subProvider.notifier);
-      final currentUserId = ref.read(currentUserProvider)?.id ?? 'me';
-      await notifier.toggleStopVisited(itineraryState.activeDay, stop.id, currentUserId);
-    } catch (e) {
-      debugPrint('[OngoingTripHud] mark arrived error: $e');
-    }
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -307,6 +309,12 @@ class OngoingTripHud extends ConsumerWidget {
                       ],
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 14,
+                    color: Colors.white.withValues(alpha: 0.35),
+                  ),
                 ],
               ),
             ),
@@ -327,61 +335,7 @@ class OngoingTripHud extends ConsumerWidget {
               ),
             ),
 
-            const SizedBox(height: 14),
-            Divider(height: 1, color: Colors.white.withValues(alpha: 0.08)),
-
-            // Action Footer Buttons
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextButton.icon(
-                      onPressed: () {
-                        NavigateRouteButton.launchDirectionsUrl(
-                          context: context,
-                          stops: [targetStop],
-                        );
-                      },
-                      icon: const Icon(Icons.navigation_rounded, size: 16, color: Color(0xFFFF9F69)),
-                      label: const Text(
-                        'Navigate',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFFFF9F69),
-                        ),
-                      ),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                      ),
-                    ),
-                  ),
-                  Container(
-                    width: 1,
-                    height: 22,
-                    color: Colors.white.withValues(alpha: 0.12),
-                  ),
-                  Expanded(
-                    child: TextButton.icon(
-                      onPressed: () => _markStopArrived(context, ref, targetStop),
-                      icon: const Icon(Icons.check_circle_outline_rounded, size: 16, color: AppColors.greenBright),
-                      label: const Text(
-                        'Mark Arrived',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.greenBright,
-                        ),
-                      ),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            const SizedBox(height: 18),
           ],
         ),
       ),

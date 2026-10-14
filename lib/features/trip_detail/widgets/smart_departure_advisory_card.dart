@@ -8,7 +8,6 @@ import '../../../core/providers/itinerary_provider.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/services/departure_advisory_service.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../itinerary/widgets/navigate_route_button.dart';
 import '../../itinerary/widgets/stop_detail_sheet.dart';
 
 /// SmartDepartureAdvisoryCard
@@ -17,9 +16,9 @@ import '../../itinerary/widgets/stop_detail_sheet.dart';
 /// • Displays real-time Assembly countdown and Wheels-Up Hard Deadline.
 /// • Customizable Grace Period visual gauge (e.g. 15-min buffer).
 /// • Live companion attendance ratio (e.g. "4/6 arrived").
-/// • 1-tap "I'm Here / Arrived" button logging member arrival to Day 1 Stop 0.
-/// • 1-tap "Navigate to Meet-up" launching Google Maps / Waze.
-/// • Automatically transitions to completed badge once convoy departs.
+/// • Auto-transition or swipe preview to the next destination stop.
+/// • Tapping either card opens the comprehensive driver-ready [StopDetailSheet]
+///   with turn-by-turn navigation, real-time GPS ETA, and slide-to-arrive.
 /// ─────────────────────────────────────────────────────────────────────────────
 class SmartDepartureAdvisoryCard extends ConsumerStatefulWidget {
   final TripModel trip;
@@ -170,8 +169,6 @@ class _SmartDepartureAdvisoryCardState extends ConsumerState<SmartDepartureAdvis
     final currentUserId = ref.watch(currentUserProvider)?.id ?? '';
     final isOrganizer = trip.ownerId == currentUserId ||
         trip.members.any((m) => m.id == currentUserId && m.isOrganizer);
-    final hasUserCheckedIn = meetUpStop != null &&
-        meetUpStop.checkedInMembers.containsKey(currentUserId);
 
     Color statusColor;
     Color statusBg;
@@ -225,7 +222,6 @@ class _SmartDepartureAdvisoryCardState extends ConsumerState<SmartDepartureAdvis
       statusColor: statusColor,
       statusBg: statusBg,
       statusBadge: statusBadge,
-      hasUserCheckedIn: hasUserCheckedIn,
       isOrganizer: isOrganizer,
       currentUserId: currentUserId,
       canSwipeToNext: canSwipeToNext,
@@ -250,7 +246,7 @@ class _SmartDepartureAdvisoryCardState extends ConsumerState<SmartDepartureAdvis
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         SizedBox(
-          height: 300,
+          height: 240,
           child: PageView(
             controller: _pageController,
             onPageChanged: (index) {
@@ -321,7 +317,6 @@ class _SmartDepartureAdvisoryCardState extends ConsumerState<SmartDepartureAdvis
     required Color statusColor,
     required Color statusBg,
     required String statusBadge,
-    required bool hasUserCheckedIn,
     required bool isOrganizer,
     required String currentUserId,
     required bool canSwipeToNext,
@@ -591,27 +586,7 @@ class _SmartDepartureAdvisoryCardState extends ConsumerState<SmartDepartureAdvis
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
-                        () {
-                          final meta = trip.transportMeta;
-                          if (meta != null && meta.isNotEmpty) {
-                            final mode = meta['mode']?.toString() ?? '';
-                            if (mode == 'rental') {
-                              final days = meta['rental_days'] ?? 1;
-                              final driver = meta['has_driver'] == true ? 'with driver' : 'self-drive';
-                              return 'Charter: $days-day van rental ($driver)';
-                            }
-                            if (mode == 'commute') {
-                              final fare = meta['fare_per_pax'];
-                              final hub = meta['transit_hub_name'] ?? 'Transit';
-                              return fare != null ? 'Commute: ₱$fare/pax via $hub' : 'Commute: $hub';
-                            }
-                            final vName = meta['vehicle_name'] ?? 'Personal Vehicle';
-                            final kml = meta['kml'];
-                            return kml != null ? 'Vehicle: $vName ($kml km/L)' : 'Vehicle: $vName';
-                          }
-                          final mode = trip.transportMode ?? '';
-                          return mode.isNotEmpty ? 'Transport: ${mode[0].toUpperCase()}${mode.substring(1)}' : 'Land Transport';
-                        }(),
+                        _buildTransportDescription(trip),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -626,78 +601,6 @@ class _SmartDepartureAdvisoryCardState extends ConsumerState<SmartDepartureAdvis
               ),
             ],
 
-            const SizedBox(height: 8),
-
-            // Action Buttons: Check-in / Arrived & Navigate
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      final lat = trip.departureLat ?? meetUpStop?.lat;
-                      final lng = trip.departureLng ?? meetUpStop?.lng;
-                      if (lat != null && lng != null) {
-                        final target = meetUpStop ??
-                            ItineraryStop(
-                              id: 'dep',
-                              title: departurePoint,
-                              type: StopType.transport,
-                              lat: lat,
-                              lng: lng,
-                              location: departurePoint,
-                            );
-                        NavigateRouteButton.launchDirectionsUrl(
-                          context: context,
-                          stops: [target],
-                        );
-                      }
-                    },
-                    icon: const Icon(Icons.directions_rounded, size: 15),
-                    label: const Text('Navigate'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.deepEarth,
-                      side: const BorderSide(color: AppColors.cardBorder),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed: hasUserCheckedIn
-                        ? null
-                        : () async {
-                            if (meetUpStop == null || currentUserId.isEmpty) return;
-                            try {
-                              final subProvider = ref.read(itineraryProvider(trip.id));
-                              final itineraryState = ref.read(subProvider).asData?.value;
-                              if (itineraryState != null) {
-                                await ref.read(subProvider.notifier).toggleStopVisited(
-                                  itineraryState.activeDay,
-                                  meetUpStop.id,
-                                  currentUserId,
-                                );
-                                ref.invalidate(itineraryStopsProvider(trip.id));
-                              }
-                            } catch (e) {
-                              debugPrint('[SmartDepartureAdvisoryCard] check-in error: $e');
-                            }
-                          },
-                    icon: Icon(
-                      hasUserCheckedIn ? Icons.check_circle_rounded : Icons.how_to_reg_rounded,
-                      size: 15,
-                    ),
-                    label: Text(hasUserCheckedIn ? 'Arrived ✓' : "I'm Here"),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: hasUserCheckedIn ? const Color(0xFF10B981) : AppColors.primary,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                    ),
-                  ),
-                ),
-              ],
-            ),
 
             if (isOrganizer && !advisory.isDeparted && meetUpStop != null) ...[
               const SizedBox(height: 4),
@@ -910,6 +813,12 @@ class _SmartDepartureAdvisoryCardState extends ConsumerState<SmartDepartureAdvis
                     ],
                   ),
                 ),
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 14,
+                  color: AppColors.textSecondary.withValues(alpha: 0.4),
+                ),
               ],
             ),
 
@@ -953,48 +862,6 @@ class _SmartDepartureAdvisoryCardState extends ConsumerState<SmartDepartureAdvis
               ),
             ),
 
-            const SizedBox(height: 10),
-
-            // Action Buttons: Navigate & Full Itinerary
-            Row(
-              children: [
-                if (nextStop.lat != null && nextStop.lng != null) ...[
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        NavigateRouteButton.launchDirectionsUrl(
-                          context: context,
-                          stops: [nextStop],
-                        );
-                      },
-                      icon: const Icon(Icons.directions_rounded, size: 15),
-                      label: const Text('Navigate'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.deepEarth,
-                        side: const BorderSide(color: AppColors.cardBorder),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed: () {
-                      widget.onOpenItinerary?.call();
-                    },
-                    icon: const Icon(Icons.map_outlined, size: 15),
-                    label: const Text('View Timeline'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                    ),
-                  ),
-                ),
-              ],
-            ),
           ],
         ),
       ),
@@ -1006,5 +873,27 @@ class _SmartDepartureAdvisoryCardState extends ConsumerState<SmartDepartureAdvis
     final m = tod.minute.toString().padLeft(2, '0');
     final period = tod.period == DayPeriod.am ? 'AM' : 'PM';
     return '$h:$m $period';
+  }
+
+  String _buildTransportDescription(TripModel trip) {
+    final meta = trip.transportMeta;
+    if (meta != null && meta.isNotEmpty) {
+      final mode = meta['mode']?.toString() ?? '';
+      if (mode == 'rental') {
+        final days = meta['rental_days'] ?? 1;
+        final driver = meta['has_driver'] == true ? 'with driver' : 'self-drive';
+        return 'Charter: $days-day van rental ($driver)';
+      }
+      if (mode == 'commute') {
+        final fare = meta['fare_per_pax'];
+        final hub = meta['transit_hub_name'] ?? 'Transit';
+        return fare != null ? 'Commute: ₱$fare/pax via $hub' : 'Commute: $hub';
+      }
+      final vName = meta['vehicle_name'] ?? 'Personal Vehicle';
+      final kml = meta['kml'];
+      return kml != null ? 'Vehicle: $vName ($kml km/L)' : 'Vehicle: $vName';
+    }
+    final mode = trip.transportMode ?? '';
+    return mode.isNotEmpty ? 'Transport: ${mode[0].toUpperCase()}${mode.substring(1)}' : 'Land Transport';
   }
 }

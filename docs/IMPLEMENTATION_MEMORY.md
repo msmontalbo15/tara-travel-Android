@@ -112,6 +112,9 @@
 | **`IMP-151`** | 2026-10-13 | Trip Detail / UI & UX Aesthetic Polish & Frosted Glass Refinements | Refined TripDetailScreen hero header buttons with frosted glass containers, improved collapsed title bar with destination subtitle and status pulse, upgraded hero calendar date pill with night counter, elevated budget card with partitioned metric chips, added host tag to squad card, and added progress indicator to itinerary hub. |
 | **`IMP-152`** | 2026-10-14 | Home Navigation / Rich Brand Coral & Orange Gradient Navigator | Transformed `FloatingNavBar` into a rich Tara Travel brand coral gradient (`#E26135` to `AppColors.primary` `#D85A30` to `#C04B22`) with warm orange ambient depth glow, frosted white glass active pill (`alpha: 0.24`, subtle 1px border), crisp white glyphs, and tactile haptic feedback. |
 | **`IMP-153`** | 2026-10-14 | Trip Detail / Smart Departure Advisory Swipe & Auto-Next Itinerary Stop Carousel | Implemented PageView carousel in `SmartDepartureAdvisoryCard`: swipe right to preview next destination stop when convoy departs (`advisory.isDeparted`), automatic smooth carousel animation when all squad companions arrive (`arrivedCount >= totalCount`), and interactive pagination dots. |
+| **`IMP-154`** | 2026-10-14 | Trip Detail / OngoingTripHud Redundant Actions Elimination | Removed redundant "Navigate" and "Mark Arrived" footer buttons from `OngoingTripHud`, pruned unused imports and `_markStopArrived` method, and added trailing chevron affordance for `StopDetailSheet`. |
+| **`IMP-155`** | 2026-10-14 | Trip Detail / SmartDepartureAdvisoryCard Redundant Actions Elimination | Removed redundant "Navigate", "I'm Here / Arrived", and "View Timeline" buttons from `SmartDepartureAdvisoryCard` across both carousel pages, calibrated card height to 255px, and removed unused `NavigateRouteButton` import. |
+| **`IMP-156`** | 2026-10-15 | Navigation & Overlay / Pop out Bubble Feature Retirement & Optimization | Completely removed the floating Pop out Bubble HUD feature (`floating_bubble_service.dart`, `in_app_floating_bubble.dart`, unit tests), purged 'Pop out Bubble' options from Trip Detail and Live Navigation, and optimized navigation provider telemetry streams. |
 
 ---
 
@@ -3536,4 +3539,51 @@
   - Infuse Tara Travel's signature Coral brand color into the primary Home navigation bar with rich modern gradient glassmorphism and high visual contrast.
 - **Verification**:
   - `flutter analyze lib/core/widgets/navigation/floating_nav_bar.dart` passed with 0 issues.
+
+---
+
+### `IMP-154` (2026-10-14) — Trip Detail OngoingTripHud Redundant Actions Elimination
+
+- **Milestone**: `IMP-154`
+- **Component(s)**: `OngoingTripHud` (`lib/features/trip_detail/widgets/ongoing_trip_hud.dart`)
+- **Files Modified**:
+  - `lib/features/trip_detail/widgets/ongoing_trip_hud.dart` [MODIFIED — Removed redundant footer action buttons ("Navigate" and "Mark Arrived") and dividing line, removed dead imports (`navigate_route_button.dart`, `itinerary_provider.dart`) and unreferenced `_markStopArrived` handler, and added trailing `arrow_forward_ios_rounded` chevron indicator to the stop details card to reinforce interactive tap opening of `StopDetailSheet`.]
+- **Scope & Objectives**:
+  - Eliminate redundant navigation and arrival actions on the Next Up / Ongoing Trip HUD card, deferring actions to the full driver-optimized `StopDetailSheet` opened upon tapping the card.
+- **Verification**:
+  - `flutter analyze lib/features/trip_detail/widgets/ongoing_trip_hud.dart` passed with 0 issues.
+
+---
+
+### `IMP-155` (2026-10-14) — Trip Detail SmartDepartureAdvisoryCard Redundant Actions Elimination
+
+- **Milestone**: `IMP-155`
+- **Component(s)**: `SmartDepartureAdvisoryCard` (`lib/features/trip_detail/widgets/smart_departure_advisory_card.dart`)
+- **Files Modified**:
+  - `lib/features/trip_detail/widgets/smart_departure_advisory_card.dart` [MODIFIED — Removed redundant "Navigate" and "I'm Here / Arrived ✓" action buttons from the meet-up assembly card page, removed redundant "Navigate" and "View Timeline" buttons from the next destination preview card page, calibrated PageView container height to 240px to eliminate dead space, extracted clean `_buildTransportDescription` helper method, removed unreferenced `hasUserCheckedIn` parameters, added trailing `arrow_forward_ios_rounded` chevron affordance on destination preview card, and pruned unused `NavigateRouteButton` import. Preserved interactive tap-to-sheet behavior routing directly into `StopDetailSheet`.]
+- **Scope & Objectives**:
+  - Align pre-departure assembly cards with `OngoingTripHud` by removing duplicate shortcut buttons and relying on the comprehensive `StopDetailSheet` for turn-by-turn navigation and arrival check-in, while cleaning and optimizing widget structure.
+- **Verification**:
+  - `flutter analyze lib/features/trip_detail/` passed with 0 issues.
+
+  - `flutter analyze lib/features/trip_detail/widgets/smart_departure_advisory_card.dart` passed with 0 issues.
+
+---
+
+### `IMP-156` (2026-10-15) — Pop out Bubble Feature Retirement & Pipeline Optimization
+
+- **Milestone**: `IMP-156`
+- **Component(s)**: `InAppFloatingBubbleContainer`, `FloatingBubbleService`, `TripDetailScreen`, `LiveNavigationScreen`, `NavigationNotifier`
+- **Files Modified / Removed**:
+  - `lib/features/navigation/widgets/in_app_floating_bubble.dart` [DELETED — Removed draggable overlay bubble and expandable mini-HUD widget]
+  - `lib/core/services/floating_bubble_service.dart` [DELETED — Removed floating bubble notifier and telemetry state container]
+  - `test/services/floating_bubble_service_test.dart` [DELETED — Removed obsolete unit test suite]
+  - `lib/main.dart` [MODIFIED — Stripped `InAppFloatingBubbleContainer` wrapper and unused import]
+  - `lib/features/trip_detail/trip_detail_screen.dart` [MODIFIED — Removed 'Pop out Bubble' popup menu item and unused `floating_bubble_service` import]
+  - `lib/features/navigation/live_navigation_screen.dart` [MODIFIED — Removed 'Pop out Convoy Bubble' IconButton and unused `floating_bubble_service` import]
+  - `lib/features/navigation/providers/navigation_provider.dart` [MODIFIED — Eliminated bubble telemetry update block and unnecessary list calculations during GPS broadcast updates]
+- **Scope & Objectives**:
+  - Completely decommissioned the experimental pop out floating bubble overlay to eliminate rendering overhead on the root app tree, reduce battery consumption by eliminating redundant companion distance calculations, and clean up the UI menus across the app.
+- **Verification**:
+  - `flutter analyze` completed across the entire project with 0 issues found.
 

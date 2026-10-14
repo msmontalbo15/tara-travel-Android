@@ -7,7 +7,6 @@ import '../../../core/models/trip_model.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/profile_provider.dart';
 import '../../../core/providers/trip_provider.dart';
-import '../../../core/services/floating_bubble_service.dart';
 import '../../../core/services/location_broadcast_service.dart';
 import '../models/navigation_models.dart';
 
@@ -371,26 +370,6 @@ class NavigationNotifier extends Notifier<NavigationState> {
     }
 
     final spreadKm = _calculateGroupSpread(enrichedMembers);
-
-    // 3. Sync to Floating Bubble
-    final companionsWithDist = enrichedMembers
-        .where((m) => !m.isMe && m.distanceKm != null)
-        .toList()
-      ..sort((a, b) => a.distanceKm!.abs().compareTo(b.distanceKm!.abs()));
-    final nearest = companionsWithDist.isNotEmpty ? companionsWithDist.first : null;
-    final myMember = enrichedMembers.firstWhere((m) => m.isMe, orElse: () => enrichedMembers.first);
-
-    ref.read(floatingBubbleProvider.notifier).updateConvoyTelemetry(
-          nextStopName: state.destination.name,
-          nextStopEta: state.destination.eta,
-          nextStopDistanceKm: state.destination.distanceKm,
-          closestCompanionDistanceKm: nearest?.distanceKm?.abs(),
-          closestCompanionName: nearest?.name,
-          convoyRole: myMember.convoyRole.name.toUpperCase(),
-          convoySpreadKm: spreadKm,
-          convoyAlertPrompt: proactivePrompt,
-          clearConvoyAlertPrompt: proactivePrompt == null,
-        );
 
     state = state.copyWith(
       members: enrichedMembers,

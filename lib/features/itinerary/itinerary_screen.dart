@@ -132,7 +132,8 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
 
   /// Listen to real-time location stream and check proximity to uncompleted stops
   void _startGpsGeofencing() {
-    _gpsSub = LocationTrackingService.instance.snapshotStream.listen((snapshot) {
+    _gpsSub =
+        LocationTrackingService.instance.snapshotStream.listen((snapshot) {
       if (!mounted) return;
       final trip = ref.read(activeTripProvider).value;
       if (trip == null) return;
@@ -324,8 +325,8 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
     ItineraryStop? previousStop,
   }) {
     final notifier = ref.read(ref.read(itineraryProvider(tripId)).notifier);
-    final selfId = currentUserId ??
-        (members.isNotEmpty ? members.first.id : 'me');
+    final selfId =
+        currentUserId ?? (members.isNotEmpty ? members.first.id : 'me');
 
     showModalBottomSheet(
       context: context,
@@ -482,7 +483,8 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                                         Text(
                                           trip.name,
                                           style: const TextStyle(
-                                            fontFamily: AppTextStyles.fontHeading,
+                                            fontFamily:
+                                                AppTextStyles.fontHeading,
                                             fontSize: 22,
                                             fontWeight: FontWeight.w700,
                                             color: Colors.white,
@@ -499,48 +501,73 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                         ),
-                                        if (trip.isAdventureMode || !trip.isMapEnabled) ...[
+                                        if (trip.isAdventureMode ||
+                                            !trip.isMapEnabled) ...[
                                           const SizedBox(height: 3),
                                           Row(
                                             children: [
                                               Icon(
-                                                trip.isAdventureMode ? Icons.explore_rounded : Icons.map_outlined,
+                                                trip.isAdventureMode
+                                                    ? Icons.explore_rounded
+                                                    : Icons.map_outlined,
                                                 size: 11,
-                                                color: trip.isAdventureMode ? const Color(0xFFEF6C00) : Colors.white60,
+                                                color: trip.isAdventureMode
+                                                    ? const Color(0xFFEF6C00)
+                                                    : Colors.white60,
                                               ),
                                               const SizedBox(width: 4),
                                               Text(
-                                                trip.isAdventureMode ? 'Off-Grid Adventure' : 'Mapless Mode',
+                                                trip.isAdventureMode
+                                                    ? 'Off-Grid Adventure'
+                                                    : 'Mapless Mode',
                                                 style: TextStyle(
                                                   fontSize: 10,
                                                   fontWeight: FontWeight.w600,
-                                                  color: trip.isAdventureMode ? const Color(0xFFEF6C00) : Colors.white60,
+                                                  color: trip.isAdventureMode
+                                                      ? const Color(0xFFEF6C00)
+                                                      : Colors.white60,
                                                 ),
                                               ),
                                             ],
                                           ),
                                         ],
-                                        if (trip.isMultiPointMode && trip.destinationHubs.isNotEmpty) ...[
+                                        if (trip.isMultiPointMode &&
+                                            trip.destinationHubs
+                                                .isNotEmpty) ...[
                                           const SizedBox(height: 4),
                                           SingleChildScrollView(
                                             scrollDirection: Axis.horizontal,
                                             child: Row(
-                                              children: trip.destinationHubs.asMap().entries.map((e) {
-                                                final isLast = e.key == trip.destinationHubs.length - 1;
+                                              children: trip.destinationHubs
+                                                  .asMap()
+                                                  .entries
+                                                  .map((e) {
+                                                final isLast = e.key ==
+                                                    trip.destinationHubs
+                                                            .length -
+                                                        1;
                                                 return Row(
-                                                  mainAxisSize: MainAxisSize.min,
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
                                                   children: [
                                                     Text(
                                                       e.value,
                                                       style: const TextStyle(
                                                         fontSize: 11,
-                                                        fontWeight: FontWeight.w700,
-                                                        color: AppColors.primary,
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                        color:
+                                                            AppColors.primary,
                                                       ),
                                                     ),
                                                     if (!isLast) ...[
                                                       const SizedBox(width: 4),
-                                                      const Icon(Icons.arrow_forward_rounded, size: 10, color: Colors.white54),
+                                                      const Icon(
+                                                          Icons
+                                                              .arrow_forward_rounded,
+                                                          size: 10,
+                                                          color:
+                                                              Colors.white54),
                                                       const SizedBox(width: 4),
                                                     ],
                                                   ],
@@ -669,7 +696,8 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                                       day: currentDay,
                                       onStopTap: (s) {
                                         final stops = currentDay.stops;
-                                        final idx = stops.indexWhere((st) => st.id == s.id);
+                                        final idx = stops
+                                            .indexWhere((st) => st.id == s.id);
                                         _showStopDetail(
                                           context,
                                           s,
@@ -679,7 +707,8 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                                           currentDay.date,
                                           currentUserId: currentMember?.id,
                                           canManage: canManageItinerary,
-                                          previousStop: idx > 0 ? stops[idx - 1] : null,
+                                          previousStop:
+                                              idx > 0 ? stops[idx - 1] : null,
                                         );
                                       },
                                     )
@@ -945,24 +974,25 @@ class _ItineraryScreenState extends ConsumerState<ItineraryScreen> {
                           ),
                         ),
 
-                      // Inline edit form
-                      if (isEditing) ...[
-                        const SizedBox(height: 8),
-                        EditStopForm(
-                          stop: stop,
-                          members: members,
-                          onSave: (updated) {
-                            notifier.updateStop(dayIndex, updated);
-                            setState(() => _editingStopId = null);
-                          },
-                          onCancel: () => setState(() => _editingStopId = null),
-                        ),
-                        const SizedBox(height: 8),
+                        // Inline edit form
+                        if (isEditing) ...[
+                          const SizedBox(height: 8),
+                          EditStopForm(
+                            stop: stop,
+                            members: members,
+                            onSave: (updated) {
+                              notifier.updateStop(dayIndex, updated);
+                              setState(() => _editingStopId = null);
+                            },
+                            onCancel: () =>
+                                setState(() => _editingStopId = null),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
-                ),
-              );
+                );
               },
             ),
 
