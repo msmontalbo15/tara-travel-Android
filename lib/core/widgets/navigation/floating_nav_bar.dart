@@ -17,96 +17,149 @@ class FloatingNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final viewPadding = MediaQuery.of(context).viewPadding;
-    // In edge-to-edge mode viewPadding.bottom gives the system gesture bar height.
-    // We add a small extra gap so the pill floats above it.
     final sysNavHeight = viewPadding.bottom;
     final bottomMargin = sysNavHeight > 0 ? sysNavHeight + 6.0 : 16.0;
 
+    const double barHeight = 72.0;
+    const double centerButtonSize = 56.0;
+
     return Container(
       margin: EdgeInsets.fromLTRB(16, 0, 16, bottomMargin),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(32),
-        boxShadow: [
-          // Ambient depth shadow
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.22),
-            blurRadius: 22,
-            spreadRadius: 0,
-            offset: const Offset(0, 8),
-          ),
-          // Brand coral glow
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.35),
-            blurRadius: 24,
-            spreadRadius: -2,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(32),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.center,
+        children: [
+          // 1. Navigation Bar Base with Glow & Ambient Shadow
+          Container(
+            height: barHeight,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [
-                  Color(0xFFE26135), // Vibrant coral
-                  AppColors.primary, // Brand Coral (#D85A30)
-                  Color(0xFFC04B22), // Deep burnt coral
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(32),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.28),
-                width: 1.2,
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _navItem(
-                  context: context,
-                  index: 0,
-                  inactiveIcon: Icons.home_outlined,
-                  activeIcon: Icons.home_rounded,
-                  label: 'Home',
+              borderRadius: BorderRadius.circular(36),
+              boxShadow: [
+                // Deep ambient shadow
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.24),
+                  blurRadius: 24,
+                  spreadRadius: 0,
+                  offset: const Offset(0, 8),
                 ),
-                _navItem(
-                  context: context,
-                  index: 1,
-                  inactiveIcon: Icons.luggage_outlined,
-                  activeIcon: Icons.luggage_rounded,
-                  label: 'Trips',
-                ),
-                _navItem(
-                  context: context,
-                  index: 2,
-                  inactiveIcon: Icons.account_balance_wallet_outlined,
-                  activeIcon: Icons.account_balance_wallet_rounded,
-                  label: 'Budget',
-                ),
-                _navItem(
-                  context: context,
-                  index: 3,
-                  inactiveIcon: Icons.explore_outlined,
-                  activeIcon: Icons.explore_rounded,
-                  label: 'Explore',
-                ),
-                _navItem(
-                  context: context,
-                  index: 4,
-                  inactiveIcon: Icons.person_outline_rounded,
-                  activeIcon: Icons.person_rounded,
-                  label: 'Profile',
+                // Brand glow
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.35),
+                  blurRadius: 26,
+                  spreadRadius: -2,
+                  offset: const Offset(0, 6),
                 ),
               ],
             ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(36),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                child: Container(
+                  height: barHeight,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [
+                        Color(0xFFE26135), // Vibrant coral
+                        AppColors.primary, // Brand Coral (#D85A30)
+                        Color(0xFFC04B22), // Deep burnt coral
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(36),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.32),
+                      width: 1.2,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      // Home (0)
+                      _navItem(
+                        context: context,
+                        index: 0,
+                        inactiveIcon: Icons.home_outlined,
+                        activeIcon: Icons.home_rounded,
+                        label: 'Home',
+                      ),
+                      // Trips (1)
+                      _navItem(
+                        context: context,
+                        index: 1,
+                        inactiveIcon: Icons.luggage_outlined,
+                        activeIcon: Icons.luggage_rounded,
+                        label: 'Trips',
+                      ),
+                      // Spacer reserve for the elevated center plus button
+                      const SizedBox(width: centerButtonSize + 12),
+                      // Budget (2)
+                      _navItem(
+                        context: context,
+                        index: 2,
+                        inactiveIcon: Icons.account_balance_wallet_outlined,
+                        activeIcon: Icons.account_balance_wallet_rounded,
+                        label: 'Budget',
+                      ),
+                      // Explore (3)
+                      _navItem(
+                        context: context,
+                        index: 3,
+                        inactiveIcon: Icons.explore_outlined,
+                        activeIcon: Icons.explore_rounded,
+                        label: 'Explore',
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
-        ),
+
+          // 2. Elevated Centered Circular Plus Button
+          Positioned(
+            top: -14,
+            child: GestureDetector(
+              onTap: () {
+                HapticFeedback.mediumImpact().catchError((_) {});
+                Navigator.pushNamed(context, '/create-trip');
+              },
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                width: centerButtonSize,
+                height: centerButtonSize,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    width: 3.0,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.22),
+                      blurRadius: 14,
+                      offset: const Offset(0, 6),
+                    ),
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.38),
+                      blurRadius: 12,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.add_rounded,
+                    size: 32,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -140,39 +193,40 @@ class FloatingNavBar extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.all(6),
+                padding: const EdgeInsets.all(7),
                 decoration: BoxDecoration(
                   color: active
-                      ? Colors.white.withValues(alpha: 0.24)
+                      ? Colors.white.withValues(alpha: 0.26)
                       : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                   border: active
                       ? Border.all(
-                          color: Colors.white.withValues(alpha: 0.35),
+                          color: Colors.white.withValues(alpha: 0.38),
                           width: 1.0,
                         )
                       : null,
                 ),
                 child: Icon(
                   active ? activeIcon : inactiveIcon,
-                  size: 22,
+                  size: 24,
                   color: active
                       ? Colors.white
                       : Colors.white.withValues(alpha: 0.72),
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 3),
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 10,
+                  fontSize: 11,
                   fontWeight: active ? FontWeight.w800 : FontWeight.w500,
                   color: active
                       ? Colors.white
-                      : Colors.white.withValues(alpha: 0.72),
+                      : Colors.white.withValues(alpha: 0.75),
                   letterSpacing: 0.2,
                 ),
                 maxLines: 1,
