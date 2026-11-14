@@ -9,7 +9,12 @@
 create extension if not exists postgis schema public;
 
 -- 2. Drop existing view if it exists (legacy 000_master_schema definition)
-drop view if exists public.member_locations cascade;
+do $$
+begin
+  if exists (select 1 from pg_views where schemaname = 'public' and viewname = 'member_locations') then
+    execute 'drop view public.member_locations cascade';
+  end if;
+end $$;
 
 -- 3. Create dedicated physical table for live GPS telemetry
 create table if not exists public.member_locations (

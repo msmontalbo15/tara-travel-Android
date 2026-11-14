@@ -3590,18 +3590,26 @@
 
 ---
 
-### `IMP-157` (2026-10-15) — In-Place Stop Editing from Next Up Detail Sheet
 
-- **Milestone**: `IMP-157`
-- **Component(s)**: `StopDetailSheet`, `TripDetailScreen`, `SmartDepartureAdvisoryCard`, `OngoingTripHud`
+---
+
+### `IMP-158` (2026-11-14) — Fix Trip Creation Failure: Add destination_details Migration & DB Sync
+
+- **Milestone**: `IMP-158`
+- **Component(s)**: `CreateTripFlow`, `TripRepository`, `TripModel`, Supabase Database
 - **Files Modified**:
-  - `lib/features/itinerary/widgets/stop_detail_sheet.dart` [MODIFIED — Gated display of top-right Edit button with `if (widget.canManage)` so only trip owners and organizers can trigger stop editing.]
-  - `lib/features/trip_detail/trip_detail_screen.dart` [MODIFIED — Updated `_ItineraryHubCard._openStopDetail`: replaced navigation redirect to full itinerary with direct opening of `EditStopForm` bottom sheet; saves changes via `ItineraryNotifier.updateStop` and invalidates `itineraryStopsProvider`.]
-  - `lib/features/trip_detail/widgets/smart_departure_advisory_card.dart` [MODIFIED — Updated `_openStopDetail`: replaced `onOpenItinerary` callback with direct `EditStopForm` modal bottom sheet upon tapping Edit.]
-  - `lib/features/trip_detail/widgets/ongoing_trip_hud.dart` [MODIFIED — Updated `_openStopDetail`: replaced `onOpenItinerary` callback with direct `EditStopForm` modal bottom sheet upon tapping Edit.]
+  - `supabase/migrations/030_add_destination_details_column.sql` [ADDED — Adds missing `destination_details jsonb` column to `public.trips`.]
+  - `supabase/migrations/000_master_schema.sql` [MODIFIED — Added `destination_details jsonb` to master schema definition for `public.trips`.]
+  - `supabase/migrations/004_postgis_live_tracking.sql` [MODIFIED — Safely dropped view only if it exists in `pg_views` to prevent SQLSTATE 42809 when table already exists.]
+  - `lib/core/models/trip_model.dart` [MODIFIED — Normalized `start_date` and `end_date` serialization to `YYYY-MM-DD` via `.split('T').first` for strict Postgres date compatibility.]
+  - `lib/core/repositories/trip_repository.dart` [MODIFIED — Automatically inserts selected friend travelers into `public.trip_members` upon trip creation.]
 - **Scope & Objectives**:
-  - Previously, tapping the Edit button on the "Next Up" stop detail sheet closed the modal and redirected the user to the full itinerary screen (`/itinerary`), forcing them to re-locate the stop on the timeline to edit it. This was replaced with direct in-place editing via `EditStopForm` without losing the Trip Detail context.
+  - Investigated and resolved the critical blocker preventing users from creating trips ("Final Confirm" failure).
+  - Cause: PostgREST error 42703 (`column trips.destination_details does not exist`). The trip wizard model generated a `destination_details` JSON payload, but the column was absent in Supabase PostgreSQL schema.
+  - Solution: Authored migration 030, synchronized unpushed migrations (004, 017-030) to the live remote Supabase instance via Supabase CLI, and verified `trips.destination_details` exists.
 - **Verification**:
-  - `flutter analyze lib/features/trip_detail/ lib/features/itinerary/widgets/stop_detail_sheet.dart` passed with 0 issues found.
+  - Verified remote Supabase schema via PostgREST endpoint: `trips.destination_details` verified accessible.
+  - `flutter analyze lib/core/models/trip_model.dart lib/core/repositories/trip_repository.dart lib/features/create_trip/` passed with 0 issues found.
+
 
 

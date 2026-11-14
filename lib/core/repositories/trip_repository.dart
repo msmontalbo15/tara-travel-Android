@@ -142,7 +142,27 @@ class TripRepository {
       // Unique-violation (already a member) is acceptable
       debugPrint('[TripRepository] trip_members insert note: $memberErr');
     }
+
+    // 4. Add any selected friend travelers to trip_members
+    for (final member in trip.members) {
+      if (member.id != ownerId && _uuidRegex.hasMatch(member.id)) {
+        try {
+          await _supabase.from('trip_members').insert({
+            'trip_id': trip.id,
+            'user_id': member.id,
+            'roles': ['member'],
+            'status': 'approved',
+          });
+        } catch (memberErr) {
+          debugPrint('[TripRepository] traveler insert note: $memberErr');
+        }
+      }
+    }
   }
+
+  static final RegExp _uuidRegex = RegExp(
+    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+  );
 
   /// Regenerates a fresh invite code for a trip (organizer action).
   Future<String> regenerateInviteCode(String tripId) async {

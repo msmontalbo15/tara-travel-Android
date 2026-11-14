@@ -253,6 +253,7 @@ create table if not exists public.trips (
   departure_point     text,
   departure_lat       double precision,
   departure_lng       double precision,
+  destination_details jsonb,
   -- Metadata
   created_at          timestamptz not null default now(),
   updated_at          timestamptz not null default now()
